@@ -36,6 +36,8 @@ int main(int argc, char** argv) {
         u[i] = gaussian(a + i * d_x, mu, sigma);
         printf("%.3f ", u[i]);
     }
+    u[0] = 0.;
+    u[grid_size - 1] = 0.;
     printf("\n");
 
     double t;
