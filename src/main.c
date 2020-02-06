@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     const double d_t = .05;
     const double d_x = .25;
 
-    const int grid_size = (int) ((b - a) / d_x);
+    const int grid_size = (int) ((b - a) / d_x) + 1;
     double* u = malloc(grid_size * sizeof(double));
     double* d2_u = malloc(grid_size * sizeof(double));
 
