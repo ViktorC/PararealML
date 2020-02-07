@@ -13,11 +13,19 @@ double second_order_finite_diff(double u, double u_prev, double u_next,
     return (u_prev - 2 * u + u_next) / (d_x * d_x);
 }
 
-double euler(double u, double d_u_wrt_t, double d_t) {
-    return u + d_t * d_u_wrt_t;
+double euler(double y, double d_y_wrt_t, double d_t) {
+    return y + d_t * d_y_wrt_t;
 }
 
-int main(int argc, char** argv) {
+double runge_kutta_4(double y, double t, double (*d_y_wrt_t)(double, double), double d_t) {
+    double k1 = d_t * d_y_wrt_t(t, y);
+    double k2 = d_t * d_y_wrt_t(t + d_t / 2, y + k1 / 2);
+    double k3 = d_t * d_y_wrt_t(t + d_t / 2, y + k2 / 2);
+    double k4 = d_t * d_y_wrt_t(t + d_t, y + k3);
+    return y + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
+}
+
+void simulate_1d_diffusion() {
     const double a = -3;
     const double b = 3;
     const double mu = 0;
@@ -33,11 +41,15 @@ int main(int argc, char** argv) {
 
     int i;
     for (i = 0; i < grid_size; i++) {
-        u[i] = gaussian(a + i * d_x, mu, sigma);
+        if (i == 0) {
+            u[i] = 0;
+        } else if (i == grid_size - 1) {
+            u[i] = 0;
+        } else {
+            u[i] = gaussian(a + i * d_x, mu, sigma);
+        }
         printf("%.3f ", u[i]);
     }
-    u[0] = 0.;
-    u[grid_size - 1] = 0.;
     printf("\n");
 
     double t;
@@ -58,4 +70,30 @@ int main(int argc, char** argv) {
 
     free(u);
     free(d2_u);
+}
+
+double d_rabbit_population_wrt_t(double t, double n) {
+    static const double r = .01;
+    return r * n;
+}
+
+void simulate_rabbit_population() {
+    const double n0 = 1000;
+    const double duration = 10;
+    const double d_t = .05;
+    const double r = d_rabbit_population_wrt_t(0, 1);
+
+    double n_g = n0;
+    double n_f = n0;
+    double t;
+    for (t = 0; t <= duration; t += d_t) {
+        n_g = euler(n_g, d_rabbit_population_wrt_t(t, n_g), d_t);
+        n_f = runge_kutta_4(n_f, t, d_rabbit_population_wrt_t, d_t);
+        double n_a = n0 * exp(r * (t + d_t));
+        printf("coarse: %.3f; fine: %.3f; analytic: %.3f\n", n_g, n_f, n_a);
+    }
+}
+
+int main(int argc, char** argv) {
+    simulate_rabbit_population();
 }
