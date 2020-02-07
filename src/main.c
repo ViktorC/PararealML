@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -77,21 +79,108 @@ double d_rabbit_population_wrt_t(double t, double n) {
     return r * n;
 }
 
+typedef struct {
+    int start_ind;
+    int time_steps;
+    double d_t;
+    double* ns;
+    double* corrections;
+} parareal_thread_args;
+
+void* correct_estimates(void* args) {
+    parareal_thread_args* thread_args = (parareal_thread_args*) args;
+    int i;
+    for (i = thread_args->start_ind; i < thread_args->start_ind + thread_args->time_steps; i++) {
+        double t = i * thread_args->d_t;
+        double n = thread_args->ns[i];
+        double f = runge_kutta_4(n, t, d_rabbit_population_wrt_t, thread_args->d_t);
+        double g = euler(n, d_rabbit_population_wrt_t(t, n), thread_args->d_t);
+        thread_args->corrections[i] = f - g;
+    }
+    return NULL;
+}
+
+void print_array(double* array, int size) {
+    int i;
+    for (i = 0; i < size; i++) {
+        printf("%.3f ", array[i]);
+    }
+    printf("\n");
+}
+
 void simulate_rabbit_population() {
-    const double n0 = 1000;
-    const double duration = 10;
-    const double d_t = .05;
+    const double n0 = 10000;
     const double r = d_rabbit_population_wrt_t(0, 1);
 
-    double n_g = n0;
-    double n_f = n0;
-    double t;
-    for (t = 0; t <= duration; t += d_t) {
-        n_g = euler(n_g, d_rabbit_population_wrt_t(t, n_g), d_t);
-        n_f = runge_kutta_4(n_f, t, d_rabbit_population_wrt_t, d_t);
-        double n_a = n0 * exp(r * (t + d_t));
-        printf("coarse: %.3f; fine: %.3f; analytic: %.3f\n", n_g, n_f, n_a);
+    const double duration = 20;
+    const double d_t = .5;
+    const int time_steps = (int) (duration / d_t);
+
+    const int k = 2;
+    const double n_threads = 4;
+    const int time_steps_per_thread = time_steps / n_threads;
+
+    double* ns = malloc(time_steps * sizeof(double));
+    double* corrections = malloc(time_steps * sizeof(double));
+    double* analytic_ns = malloc(time_steps * sizeof(double));
+
+    ns[0] = n0;
+    corrections[0] = n0;
+    analytic_ns[0] = n0;
+
+    int i;
+    for (i = 1; i < time_steps; i++) {
+        double t = i * d_t;
+        analytic_ns[i] = n0 * exp(r * t);
     }
+
+    for (i = 0; i < time_steps - 1; i++) {
+        double t = i * d_t;
+        ns[i + 1] = euler(ns[i], d_rabbit_population_wrt_t(t, ns[i]), d_t);
+    }
+
+    printf("Coarse solution:\n");
+    print_array(ns, time_steps);
+
+    pthread_t* threads = malloc(n_threads * sizeof(pthread_t));
+    parareal_thread_args* thread_args = malloc(n_threads * sizeof(parareal_thread_args));
+
+    for (i = 0; i < n_threads; i++) {
+        thread_args[i].start_ind = i * time_steps_per_thread;
+        thread_args[i].time_steps = time_steps_per_thread;
+        thread_args[i].d_t = d_t;
+        thread_args[i].ns = ns;
+        thread_args[i].corrections = corrections;
+    }
+
+    for (i = 0; i < k; i++) {
+        int rc;
+        int j;
+        for (j = 0; j < n_threads; j++) {
+            rc = pthread_create(&threads[j], NULL, correct_estimates, &thread_args[j]);
+            assert(!rc);
+        }
+        for (j = 0; j < n_threads; j++) {
+            rc = pthread_join(threads[j], NULL);
+            assert(!rc);
+        }
+        for (j = 0; j < time_steps - 1; j++) {
+            double t = j * d_t;
+            ns[j + 1] = euler(ns[j], d_rabbit_population_wrt_t(t, ns[j]), d_t) + corrections[j];
+        }
+        printf("Fine solution %d:\n", i + 1);
+        print_array(ns, time_steps);
+    }
+
+    printf("Analytic solution:\n");
+    print_array(analytic_ns, time_steps);
+
+    free(threads);
+    free(thread_args);
+
+    free(ns);
+    free(corrections);
+    free(analytic_ns);
 }
 
 int main(int argc, char** argv) {

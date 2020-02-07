@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-O3
-LDFLAGS=-lm
+LDFLAGS=-lm -lpthread
 
 SRC_DIR=src
 SRC=$(wildcard $(SRC_DIR)/*.c)
