@@ -10,30 +10,25 @@
 
 ## Description
 
-This repository serves as an example of MSc project repository. The repository 
-should clearly identify the student and project, and contain all relevant
-information, in a reasonably structured way. 
+Differential equations describe numerous phenomena that play important roles in science, engineering, and finance. Several different numerical methods can be used to solve differential equations based on their properties. Due to the prevalence of these equations, a lot of effort has been put into parallelising their solution. One wall clock time efficient way of doing this for time dependent, fixed sized problems is parallelising across the time steps. The best known parallel-in-time method is the parareal algorithm which relies on the iterative application of a course operator _G_ to approximate the solution serially followed by a fine operator _F_ to refine the estimate. This project is concerned with the training of a machine learning (ML) model and using it as the operator _G_ in a parareal framework.
 
-Note that it is meant to serve as an example and you do not have to adhere to 
-the presented structure, you are free to structure your repository in any way 
-suitable for you, your project and your supervisor. 
+The hypotheses of the project are that:
+* an ML model can be trained and used as the course operator _G_
+* for a given level of accuracy, the trained ML model can outperform a traditional operator for some problems
+* for a given number of CPU (and GPU) cores, the ML accelerated parareal framework outperforms a traditional parallel solver for some problems
 
-Your repository (relevance of content, it's structure, frequency and quality of 
-updates etc.) is an assessed part of the Project Preparation course and 
-contributes 10% towards the final mark. Further details about marking the 
-repository were given during Lecture 2, and are available on Learn.
+The original project proposal: [link](https://www.wiki.ed.ac.uk/pages/viewpage.action?spaceKey=hpcdis&title=Parallel-in-time+methods+with+ML)
 
 ## Content
 
-The repository should contain the following:
-*  Project Proposal Documents:
-    * Initial project proposal
-    * Final project proposal
-    * Workplan
-    * Risk analysis
-    * **Final Report**
-* Minutes from supervisor meetings
-* Background documents (e.g., articles, links, ...)
+The repository contains the following:
+
 * Preliminary work:
-    * code
-    * ...
+    * Code:
+        * C:
+            * The serial solution of a 1D diffusion equation by discretising along the spatial dimension using the finite difference method and applying the Euler method to the resulting system of ODEs
+            * The parallel solution of the rabbit population differential equation in a parareal framework built on top of POSIX threads using the Euler method as _G_ and RK4 for as _F_
+        * Python:
+            * A port of the C code to Python using `mpi4py` allowing for different time step sizes across the two operators _G_ and _F_
+* Project presentation
+* Minutes from supervisor meetings and other notes (in the Wiki)
