@@ -14,8 +14,8 @@ Differential equations describe numerous phenomena that play important roles in 
 
 The hypotheses of the project are that:
 * an ML model can be trained and used as the course operator _G_
-* for a given level of accuracy, the trained ML model can outperform a traditional operator for some problems
-* for a given number of CPU (and GPU) cores, the ML accelerated parareal framework outperforms a traditional parallel solver for some problems
+* for a given level of accuracy, the trained ML model can outperform a traditional operator in terms of wall clock time for some problems
+* for a given number of CPU (and GPU) cores, the ML accelerated parareal framework outperforms a traditional parallel solver in terms of wall clock time for some problems
 
 The original project proposal: [link](https://www.wiki.ed.ac.uk/pages/viewpage.action?spaceKey=hpcdis&title=Parallel-in-time+methods+with+ML)
 
@@ -27,7 +27,7 @@ The repository contains the following:
     * Code:
         * C:
             * The serial solution of a 1D diffusion equation by discretising along the spatial dimension using the finite difference method and applying the Euler method to the resulting system of ODEs
-            * The parallel solution of the rabbit population differential equation in a parareal framework built on top of POSIX threads using the Euler method as _G_ and RK4 for as _F_
+            * The parallel solution of the rabbit population differential equation in a parareal framework built on top of POSIX threads using the Euler method as _G_ and RK4 as _F_
         * Python:
             * A port of the C code to Python using `mpi4py` allowing for different time step sizes across the two operators _G_ and _F_
 * Project presentation
