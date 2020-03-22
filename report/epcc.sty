@@ -1,0 +1,2373 @@
+% epcc.sty
+% Nicholas J Radcliffe, Brian J N Wylie, Evan Welsh, Scott Telford,
+% Mark Parsons.
+% 
+% This file provides most of the facilities in standard use in EPCC
+% and is for use primarily as a modifer to the standard article style
+% file.
+%
+% 1996 EPCC corporate ID update by Scott Telford.
+%
+% 2007 Edinburgh University charity line added. Mario Antonioletti.
+%
+
+\def\fileversion{$Revision: 3.6 $}
+\def\filedate{$Date: 1998/01/09 09:32:33 $}
+\typeout{EPCC's LaTeX 2e local style file $Revision: 3.6 $ $Date: 1998/01/09 09:32:33 $}
+
+% TABLE OF CONTENTS
+% =================
+%
+% <0>   RCS History
+%
+% <1>   Internal Macros
+% <1.1> Boxes
+% <1.2> Ifs
+% <1.3> Commercial Group Header and Items
+%
+% <2>   Page Layout
+% <2.1> A4.sty
+% <2.2> Paragraphing
+% <2.3> fancyheaders.sty (and rules)
+% <2.4> enhanced \maketitle with \appears
+%
+% <3>   Logos
+% <3.1> TeX Logos
+% <3.2> PostScript Logos
+% <3.3> Logo Access Routines
+% <3.4> Three logos
+%
+% <4>   EPCC Main Environments
+% <4.1> Project management      {project}
+% <4.2> Letter head             {letterhead}
+% <4.3> Fax                     {epccfax}, {fax}
+% <4.4> Contact form            {epcccontact}
+% <4.5> Report cover            {reportcover}
+% <4.6> Minutes                 {epccminutes}, {minutes}, {agenda}
+% <4.7> Poster                  {???}
+% <4.8> Code Segments           {codeseg}
+% <4.9> Flier style             {flier}
+%
+% <5>   RCS Support
+%
+% <6>   PostScript Support
+% <6.1> Font Selection
+% <6.2> epsf.sty
+% <6.3> rotate.sty
+%
+% <7>   Miscellaneous
+% <7.1> Underscore and carets   (\makeusactive, \textscripts)
+% <7.2> Tables                  (\aboveline, \midline, belowline)
+% <7.3> Time formatting
+% <7.4> Bibliography Dump
+% <7.5> \brk, \ignore
+%
+% <8>   Mailshot and Database macros
+%
+% <9>   Default Settings
+%
+% <10>  RCS Identifier
+
+
+
+% =================
+% <0>   RCS History
+% =================
+%
+% $Log: epcc.sty,v $
+% Revision 3.6  1998/01/09 09:32:33  st
+% Added \status field to "project" environment for ENTICE documents (from
+% Lyndon).
+%
+% Revision 3.5  1997/09/23 15:13:56  st
+% Changed letterhead to more closely resemble preprinted stationery.
+%
+% Revision 3.4  1997/09/01 10:53:57  st
+% Changed letterhead footer to reflect new Director and Chairman.
+%
+% Revision 3.3  1997/05/07 14:44:25  st
+% Added FRSE to Prof Kenway's name in letterhead footer.
+%
+% Revision 3.2  1997/03/19 10:48:05  st
+% Changed letterhead* "Direct line" and "E-mail" lines for new preprinted
+% stationery; changed letterhead "Tel no:"/"Fax no:"/etc. lines to match
+% those on stationery.
+%
+% Revision 3.1  1997/02/17 12:58:34  st
+% Fixed spurious space in default phone no. in fax header.
+%
+% Revision 3.0  1997/02/13 16:17:42  st
+% Updated for 1996/7 new EPCC corporate ID.
+%
+% Revision 2.0  1996/08/29 10:24:21  st
+% Updated for LaTeX 2e by Mark Parsons.
+%
+% Revision 1.84  1996/06/03 16:02:26  st
+% Added Dr D E S Truman to Executive Committee; added Chairman of the
+% Advisory Board line under Executive Committee; added FRSE to Prof Forty.
+%
+% Revision 1.83  1996/04/09 16:22:54  st
+% Moved \newdimen\headexcess out of \def\letterhead to avoid running out of
+% registers during multiple \begin{letterhead}s. Bug fix from Mark Parsons.
+%
+% Revision 1.82  1995/04/24 14:54:37  st
+% Changed phone numbers in fax header from 31 to 131; changed comments
+% in letterhead code likewise.
+%
+% Revision 1.81  1995/03/29 09:25:53  st
+% Changed phone prefix to +44 131; Deleted "Dr" from B A C Gilmore's name.
+%
+% Revision 1.80  1995/02/08 15:13:22  welsh
+% Updated executive committee.
+%
+% Revision 1.79  1994/10/26 12:43:30  njr
+% Deleted Our ref from fax and letterhead
+% Updated Executive Committee details on letterhead
+%
+% Revision 1.78  1994/04/21 13:30:21  welsh
+% Fixed \RCSident to prevent wrapping at the .ps file (Nick's fix).
+% Version 1.0L
+%
+% Revision 1.77  1994/04/20  15:24:35  welsh
+% Added \makeatletter to \epccbibliographydumpunit definition for loading
+% bibunits.sty conditionally.
+%
+% Revision 1.76  1994/04/20  14:59:13  welsh
+% Added \bibliographydumpunit to allow multiple invocations.
+%
+% Revision 1.75  1994/04/06  12:04:24  njr
+% Changed EPCC logo to fat version for flier style
+%
+% Revision 1.74  1994/01/19  16:33:01  njr
+% Moved date back into place after \\ inadvertantly deleted
+% Version 1.0H
+%
+% Revision 1.73  1994/01/18  10:45:23  njr
+% Version 1.0G
+% Updated version number.
+%
+% Revision 1.72  1994/01/17  17:06:38  tex
+% Re-fixed telex field problem with new headed paper (NJR had stomped all
+% over it).
+%
+% Revision 1.71  1994/01/14  11:21:13  njr
+% Version 1.0F
+% Enhanced flier style so explicit newpage is required only after the first
+% page.
+%
+% Revision 1.70  1994/01/07  11:01:52  njr
+% Version 1.0E
+% Added \appears macro
+%
+% Revision 1.69  1993/12/21  14:34:50  njr
+% Added flier style
+%
+% Revision 1.68  1993/12/13  18:01:45  welsh
+% Removed telex field from letterheads to reflect headed notepaper.
+%
+% Revision 1.67  1993/11/12  16:12:02  njr
+% Corrected bug in Main Authorship field (spotted by REW)
+% Version 1.0C
+%
+% Revision 1.66  1993/11/01  12:25:03  njr
+% Corrected default minuteby
+% Added \listoffigures
+% Sorted spacing on \listoftables and \listoffigures
+% Corrected mailshot macros
+%
+% Revision 1.65  1993/10/21  16:36:53  njr
+% Version 1.0A
+% First release version
+% Major reorganisation from previous versions (NJR)
+% epccfax, textscripts, mailshot macros all incorporated
+%
+%
+
+% =====================
+% <0>     LaTeX2e setup
+% =====================
+% <0.1> Initialisation
+% ---------------------
+%
+\NeedsTeXFormat{LaTeX2e}
+%\ProvidesPackage{epcc}[\filedate\space\fileversion\space
+%EPCC Local Style]
+\usepackage{times}              % University regulation ersatz Perpetua
+\usepackage{t1enc}              % To get pound signs
+%
+% =====================
+% <1>   Internal Macros
+% =====================
+% <1.1> Boxes
+% ---------------------
+%
+% \FB@x{foo}    Puts a frame box with 2pt gap around foo
+% \openb@x      Produces an empty box of size determined by \openboxinn@r
+% \filledb@x    Produces a filled box of size determined by \filledboxinn@r
+%
+
+\def\Fb@x#1{\vbox{\hrule\hbox{\vrule\kern 2pt%  % Frame Box
+\vbox{\kern 2pt\hbox{#1}\kern 2pt}%
+\kern 2pt%
+\vrule}%
+\hrule}%
+}
+
+\def\openboxinn@r{2pt}
+\def\filledboxinn@r{6.8pt}              % 4.8pt more than above
+
+\def\openb@x{\hbox
+        {\kern1pt\Fb@x{\hbox to \openboxinn@r{\vbox to \openboxinn@r
+                {\vfil}\hfil}}\kern1pt}%
+}
+%
+\def\filledb@x{\hbox{\kern1pt\vrule
+                        height \filledboxinn@r
+                        depth 0pt
+                        width \filledboxinn@r}%
+\kern1pt%
+}
+
+
+% ---------
+% <1.2> Ifs
+% ---------
+%
+% \EPCCTracingtrue      Turns on tracing:
+%                       Anything in \EPCCtrace{} is echoed to the screen
+%                       Anything in \EPCCbox{} is boxed in the output
+%
+% \EPCCTracingfalse     Turns off tracing
+%
+% \EPCCOnlytrue         Anything in \EPCCComment{} is printed
+% \EPCCOnlyfalse        Anything in \EPCCComment{} is suppressed
+%
+%
+% \ifundefined{foo}
+%       ...             happens if \foo is NOT defined
+% \else
+%       ...             happens if \foo IS defined
+% \fi
+%
+%
+% \ifxpt                true if document is at 10pt
+% \ifxipt               true if document is at 11pt
+% \ifxiipt              true if document is at 12pt
+% \ifnxpt               true if document is not at 10pt
+% \ifnxipt              true if document is not at 11pt
+% \ifnxiipt             true if document is not at 12pt
+%
+%
+
+
+\newif\ifEPCCtracing    \EPCCtracingfalse
+\def\EPCCtrace#1{\ifEPCCtracing\typeout{#1}\fi}
+\def\EPCCbox#1{\ifEPCCtracing\fbox{#1}\else\mbox{#1}\fi}
+
+\newif\ifEPCConly       \EPCConlytrue
+\def\EPCCcomment#1{\ifEPCConly{#1}\fi}
+
+\def\ifundefined#1{\expandafter\ifx\csname#1\endcsname\relax}
+
+
+\def\ifxpt{\if\@ptsize0}
+\def\ifxipt{\if\@ptsize1}
+\def\ifxiipt{\if\@ptsize2}
+\def\ifnxpt{\if\@ptsize0\else}
+\def\ifnxipt{\if\@ptsize1\else}
+\def\ifnxiipt{\if\@ptsize2\else}
+
+
+
+% ---------------------------------------
+% <1.3> Commercial Group Header and Items
+% ---------------------------------------
+%
+% The following fields are used extensively by the Commercial Group:
+%
+%               \ourcontact{}
+%               \theircontact{}
+%               \contactorg{}
+%               \contacttype{}
+%               \contactdate{}
+%               \projectcode{}
+%               \summary{}
+%
+% \cgheader makes them available.
+%
+% The following item types are used extensively by the Commercial Group
+%
+%       \hotbutton      foo     (precedes foo by a five-point star)
+%       \detail         foo     (precedes foo by a circle)
+%       \record         foo     (precedes foo by a disc)
+%
+% \cgitems makes them available.
+%
+
+\def\cgheader
+{
+        \def\ourcontact##1{\def\ourc@ntact{##1}}
+        \def\theircontact##1{\def\theirc@ntact{##1}}
+        \def\contactorg##1{\def\c@ntactorg{##1}}
+        \def\contacttype##1{\def\c@ntacttype{##1}}
+        \def\contactdate##1{\def\c@ntactdate{##1}}
+        \def\projectcode##1{\def\pr@jectcode{##1}}
+        \def\summary##1{\def\summ@ry{##1}}
+        \def\minuteby##1{\def\min@teby{##1}}
+        \def\min@teby{\ourc@ntact}
+}
+
+\def\cgitems
+{
+        \def\hotbutton{\item[$\star$]}
+        \def\detail{\item[$\circ$]}
+        \def\record{\item[$\bullet$]}
+}
+
+% =================
+% <2>   Page Layout
+% =================
+% <2.1>   Default page size A4 and margin settings for EPCC
+% ---------------------------------------------------------
+%
+
+\newlength{\p@perwidth}
+\setlength{\p@perwidth}{21 true cm}      % a4 paper width
+\newlength{\p@perlength}
+\setlength{\p@perlength}{29.7 true cm}  % a4 paper height
+
+\setlength{\voffset}{0 true in}         % shift origin to paper corner
+\setlength{\hoffset}{0 true in}
+
+% pick up point size of current font
+% these parameters are not changed by the macros below
+\newlength{\mainsize}
+\setlength{\mainsize}{1\@ptsize pt}
+\setlength{\topskip}{\mainsize} % plain has 10pt
+\setlength{\maxdepth}{.4\mainsize}      % plain has 4pt
+\setlength{\@maxdepth}{\maxdepth}       % this has to be set as well
+
+\newlength{\leftsidemargin}
+\newlength{\leftsideshift}
+\newlength{\rightsidemargin}
+\newlength{\rightsideshift}
+\newlength{\headsidemargin}
+\newlength{\footsidemargin}
+\newlength{\footheight}
+
+\let\resetmargins\relax
+
+\def\setleftmargin#1#2{% set left printer margin and odd page shift
+  \setlength{\leftsidemargin}{#1}%
+  \setlength{\leftsideshift}{#2}%
+  \resetmargins
+}
+\setleftmargin{1.25 true in}{0 in}
+
+\def\setrightmargin#1#2{% set right printer margin and even page shift
+  \setlength{\rightsidemargin}{#1}%
+  \setlength{\rightsideshift}{#2}%
+  \resetmargins
+}
+\setrightmargin{0.25 true in}{0 in}
+
+\def\setheadmargin#1#2#3{% set head printer margin, size, and separation
+  \setlength{\headsidemargin}{#1}%
+  \setlength{\headheight}{#2}%
+  \setlength{\headsep}{#3}%
+  \resetmargins
+}
+\setheadmargin{1 true in}{\mainsize}{2\mainsize}
+
+\def\setfootmargin#1#2#3{% set foot printer margin, size, and separation
+  \setlength{\footsidemargin}{#1}%
+  \setlength{\footheight}{#2}%
+  \setlength{\footskip}{#3}%
+  \addtolength{\footskip}{\footheight}%
+  \resetmargins
+}
+\setfootmargin{1.5 true in}{2\mainsize}{2\mainsize}
+
+\def\setmarginnote#1#2{% set marginal note width and separation
+  \setlength{\marginparwidth}{#1}%
+  \setlength{\marginparsep}{#2}%
+  \resetmargins
+}
+%\setmarginnote{62 pt}{10pt}
+\setmarginnote{62.27 true pt}{10 true pt}
+
+\def\resetmargins{% reset textheight and length from parameters
+  \setlength{\oddsidemargin}{\leftsidemargin}%
+  \addtolength{\oddsidemargin}{-1 true in}%
+  \addtolength{\oddsidemargin}{\leftsideshift}%
+  \setlength{\evensidemargin}{\oddsidemargin}%
+  \addtolength{\evensidemargin}{-\rightsideshift}%
+  \setlength{\textwidth}{\p@perwidth}% start at full width
+  \addtolength{\textwidth}{-\leftsidemargin}%
+  \addtolength{\textwidth}{-\leftsideshift}%
+  \addtolength{\textwidth}{-\marginparwidth}%
+  \addtolength{\textwidth}{-\marginparsep}%
+  \addtolength{\textwidth}{-\rightsidemargin}%
+  \setlength{\topmargin}{\headsidemargin}%
+  \addtolength{\topmargin}{-1 true in}%
+  \setlength{\textheight}{\p@perlength}% start at full height
+  \addtolength{\textheight}{-\headsidemargin}%
+  \addtolength{\textheight}{-\headheight}%
+  \addtolength{\textheight}{-\headsep}%
+  \addtolength{\textheight}{-\footskip}%
+  \addtolength{\textheight}{-\footsidemargin}%
+}
+\resetmargins
+
+% ------------------
+% <2.2> Paragraphing
+% ------------------
+%
+% \indentedparagraphing restores `normal' paragraphing as used in article.sty
+%                       and report.sty.
+%                       In this style paragraphs are indented by 15pt except
+%                       after section headings and there is little or no
+%                       extra space between paragraphs
+%
+% \flushparagraphing    sets modern paragraphing style, i.e. no indent
+%                       and a gap (roughly half a line space) between
+%                       paragraphs.
+%
+
+\def\indentedparagraphing
+{
+        \parskip=0pt plus 1pt
+        \parindent=15pt
+
+        \def\@listI{\leftmargin\leftmargini
+                \parsep 4pt plus 2pt minus 1pt\topsep 8pt plus 2pt minus 4pt
+                \itemsep 4pt plus 2pt minus 1pt}
+                \let\@listi\@listI
+                \@listi 
+        \def\@listii{\leftmargin\leftmarginii
+                \labelwidth\leftmarginii\advance\labelwidth-\labelsep
+                \topsep 4pt plus 2pt minus 1pt
+                \parsep 2pt plus 1pt minus 1pt
+                \itemsep \parsep}
+        \def\@listiii{\leftmargin\leftmarginiii
+                \labelwidth\leftmarginiii\advance\labelwidth-\labelsep
+                \topsep 2pt plus 1pt minus 1pt 
+                \parsep \z@ \partopsep 1pt plus 0pt minus 1pt
+                \itemsep \topsep}
+}
+
+
+\def\flushparagraphing
+{
+        \parskip=1.5ex plus 1pt minus 1pt
+        \parindent=\z@
+
+        % The following is taken from parskip.sty
+        % by H.Partl, TU Wien, as of 19 Jan 1989.
+        % To accompany this, the vertical spacing in the list environments
+        % is changed to use the same as \parskip in all relevant places
+        % (for normalsize only):
+        %   \parsep = \parskip
+        %   \itemsep = \z@ % add nothing to \parskip between items
+        %   \topsep = \z@ % add nothing to \parskip before first item
+         
+        \def\@listI{\leftmargin\leftmargini
+           \topsep\z@ \parsep\parskip \itemsep\z@}
+        \let\@listi\@listI
+        \@listi
+         
+        \def\@listii{\leftmargin\leftmarginii
+           \labelwidth\leftmarginii\advance\labelwidth-\labelsep
+           \topsep\z@ \parsep\parskip \itemsep\z@}
+         
+        \def\@listiii{\leftmargin\leftmarginiii
+                \labelwidth\leftmarginiii\advance\labelwidth-\labelsep
+                \topsep\z@ \parsep\parskip \itemsep\z@}
+         
+        % Note that listiv, listv and listvi don't change vertical parameters.
+
+        \let\@oldtableofcontents=\tableofcontents
+        \def\tableofcontents{{\parskip=0pt\@oldtableofcontents}}
+        \let\@oldlistoffigures=\listoffigures
+        \def\listoffigures{{\parskip=0pt\@oldlistoffigures}}
+        \let\@oldlistoftables=\listoftables
+        \def\listoftables{{\parskip=0pt\@oldlistoftables}}
+         
+}
+
+% ----------------------------------
+% <2.3> fancyheaders.sty (and rules)
+% ----------------------------------
+
+\usepackage{fancyheadings}
+
+%  Rules
+% Rules across pages
+
+% counter for the number of (potential) horizontal lines on a page
+%  0 : none (NJR minimalism/anarchy)
+%  1 : footnoterule extends fully across page
+%  2 : caption seperators (topfigrule & botfigrule)
+%  4 : headrule
+%  8 : footrule
+% 16 : head/footrules even on plain pages
+
+\newdimen\pagerulewidth\pagerulewidth=1pt
+\newcount\@pcclines\@pcclines=0
+\newcount\@pcclinemax\@pcclinemax=31
+
+\def\setEPCClines#1{
+  \@pcclines=#1
+  \EPCCtrace{EPCClines:=\the\@pcclines}
+  \ifnum\@pcclines>\@pcclinemax{
+        % limit EPCC lines to current implementation maximum
+        \typeout{EPCClines: limited to current maximum of \the\@pcclinemax!}
+        \global\@pcclines=\@pcclinemax
+  }\fi
+  \ifnum\@pcclines>15{
+        % make head/foot rules on plain pages same as normal pages
+        \global\plainheadrulewidth=\pagerulewidth
+        \global\plainfootrulewidth=\pagerulewidth
+        \EPCCtrace{EPCClines:(\the\@pcclines-16) added head/foot rules to plain pages}
+        \global\advance\@pcclines by -16
+  }\fi
+  \ifnum\@pcclines>7{
+        % make foot rule same as head rule
+        \global\footrulewidth=\pagerulewidth%\headrulewidth
+        \EPCCtrace{EPCClines:(\the\@pcclines-8) added foot rule to match head rule}
+        \global\advance\@pcclines by -8
+  }\fi
+  \ifnum\@pcclines>3{
+        % add thickened headrule
+        \global\headrulewidth=\pagerulewidth
+        \EPCCtrace{EPCClines: (\the\@pcclines-4) added (thick) head rule}
+        \global\advance\@pcclines by -4
+  }\fi
+  \ifnum\@pcclines>1{
+        % include ruled lines to seperate figure caption from following text
+        \gdef\topfigrule{\kern 3pt \hrule width \textwidth \kern -10pt}
+        \gdef\botfigrule{\kern -5pt \hrule width \textwidth \kern 4.6pt}
+        \EPCCtrace{EPCClines: (\the\@pcclines-2) added caption seperator rule}
+        \global\advance\@pcclines by -2
+  }\fi
+  \ifnum\@pcclines>0{
+        % make the footnoterule extend all the way across the page
+        \gdef\footnoterule{\kern-3pt \hrule width \textwidth \kern 2.6pt}
+        \EPCCtrace{EPCClines: (\the\@pcclines-1) added full-width footnote rule}
+        \global\advance\@pcclines by -1
+  }\fi
+  \ifnum\@pcclines>0
+        \EPCCtrace{EPCClines:  (\the\@pcclines) remaining!}
+  \fi
+}
+
+
+% ---------------------------------------
+% <2.4> Enhanced \maketitle with \appears
+% ---------------------------------------
+%
+% This adds the macros \appears{...} to the title environment.
+% If this is used a line appears at the top right containing
+% the text given as the argument to \appears.
+% This is handy for putting credits in papers.
+% This functionality is also available through the appears.sty
+% style modifier file.
+% The gap from the top of title up to the appears line is controlled
+% by defining \appearsskip, which is 1.5in by default.
+%
+
+
+\def\appears#1{\def\@ppearstext{#1}}
+\def\appearsskip{1.5in}
+\def\@ppearsline
+{
+        \vbox to 0pt
+        {
+                \vskip -\appearsskip
+                \hbox to \textwidth {\hfil \@ppearstext}
+                \vss
+        }%
+}
+
+\def\@maketitle{\newpage
+ \null
+ \ifundefined{@ppearstext}
+ \else
+        \@ppearsline
+ \fi
+ \vskip 2em
+ \begin{center}%
+  {\LARGE \@title \par}%
+  \vskip 1.5em
+  {\large
+   \lineskip .5em
+   \begin{tabular}[t]{c}\@author
+   \end{tabular}\par}%
+  \vskip 1em
+  {\large \@date}%
+ \end{center}%
+ \par
+ \vskip 1.5em}
+
+
+% ===============
+% <3>   Logos
+% ===============
+% <3.1> TeX Logos
+% ---------------
+%
+% \BibTeX, \SliTeX and \PS produce the recommended formatted forms of
+% BIBTeX, SliTeX and PostScript respectively.
+%
+
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+        T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\def\SliTeX{{\rm S\kern-.06emL\kern-.18em\raise.32ex\hbox
+                                {\sc i}\kern -.03em\TeX}}
+
+\def\PS{{\sc Post\-Script}}
+
+
+% ----------------------
+% <3.2> PostScript Logos
+% ----------------------
+%
+% \lEPCClogo            prints the EPCC logo
+% \rUofElogo            prints the University crest 
+%
+
+\newcommand{\lEPCClogo}{
+%    \raisebox{-12mm}[0pt][0pt]{\makebox[12mm][r]{
+    \makebox[12mm][r]{
+    \resizebox{72pt}{!}
+%    {\includegraphics{/usr/local/share/logos/logo_black}}}}%}
+    {\includegraphics{logos/logo_black}}}}%}
+\newcommand{\rUofElogo}{
+    \raisebox{-14mm}[0pt][0pt]{\makebox[13mm][l]{
+    \resizebox{26mm}{!}{
+%    \includegraphics{/usr/local/share/logos/crest_bw}}}}}
+    \includegraphics{logos/crest_bw}}}}}
+
+
+% --------------------------
+% <3.3> Logo Access Routines
+% --------------------------
+%
+% \EPCCheaderLogos              Prints the University Crest to the right
+%                               and the EPCC logo to the left.
+%                               Use of \thirdlogo alters this behaviour
+%
+% \headerlogos                  Obselete: produces error message
+%
+% \makeEPCCtitle                Like \maketitle but includes the logos
+%
+
+
+
+\newcommand{\EPCCheaderLogos}
+{
+        \ifundefined{thirdl@go}
+                 \relax\null\vskip -48pt\hbox to\headwidth{\vbox{\hbox
+                 {\rlap{\parbox[b]{\headwidth}
+                        {\raggedright\lEPCClogo\strut}}\hfill
+                 \parbox[b]{\headwidth}{\centering\null\strut}\hfill
+                 \llap{\parbox[b]{\headwidth}{\raggedleft\rUofElogo\strut}}}}}
+                 \null 
+                 \vskip 22pt
+        \else
+                \threelogos
+        \fi
+}
+
+
+\newcommand{\headerLogos}{
+        \message{epcc.sty:
+                \string\headerLogos\space obsolete:
+                use \string\EPCCheaderLogos.}
+}
+
+%  EPCC titles with header logos
+
+% Since the report style has its own \maketitle titlepage macro, which
+% precludes adding *anything* to that titlepage, we need our own :-(
+% There are also difficulties hacking stuff into the article \maketitle
+% too, so it has been necessary to copy both cases here and provide a
+% pair of access routes:
+%   \makeEPCCtitle        does pretty much an article \maketitle
+% & \makeEPCCtitle*      does pretty much a report/titlepage \maketitle
+% Each is a standard \maketitle with the \EPCCheaderLogos added
+
+\def\makeEPCCtitle{\@ifstar{\@rtit}{\@atit}}
+
+\def\@atit{\EPCCtrace{makeEPCCtitle: Notta star! -- a la article}
+ \par
+ \begingroup
+   \def\thefootnote{\fnsymbol{footnote}}%
+   \def\@makefnmark{\hbox to\z@{$\m@th^{\@thefnmark}$\hss}}%
+   \if@twocolumn
+         \twocolumn[\@makeEPCCtitle]%
+         \else \newpage
+         \global\@topnum\z@
+         \@makeEPCCtitle \fi\thispagestyle{plain}\@thanks
+ \endgroup
+ \setcounter{footnote}{0}%
+ \let\makeEPCCtitle\relax
+ \let\@maketitle\relax
+ \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\thanks\relax
+}
+
+\def\@rtit{\EPCCtrace{makeEPCCtitle: Gotta star! -- a la report}
+  \begin{titlepage}
+        \let\footnotesize\small \let\footnoterule\relax \setcounter{page}{0}
+        \EPCCheaderLogos
+        \vfil
+        \vskip 20pt \begin{center}
+        {\LARGE \@title \par} \vskip 3em {\large \lineskip .75em
+        \begin{tabular}[t]{c}\@author
+        \end{tabular}\par}
+        \vskip 1.5em {\large \@date \par} \end{center} \par
+        \@thanks
+        \vfil
+        \null
+  \end{titlepage}
+  \setcounter{footnote}{0} \let\thanks\relax
+  \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\makeEPCCtitle\relax
+}
+
+\def\@makeEPCCtitle{\newpage
+ \EPCCheaderLogos
+ \null
+ \vskip 2em
+ \begin{center}%
+  {\LARGE \@title \par}%
+  \vskip 1.5em
+  {\large
+   \lineskip .5em
+   \begin{tabular}[t]{c}\@author
+   \end{tabular}\par}%
+  \vskip 1em
+  {\large \@date}%
+ \end{center}%
+ \par
+ \vskip 1.5em
+}
+
+% -----------------
+% <3.4> Three logos
+% -----------------
+%
+% \thirdlogo{file}          Uses file as a 1 inch-wide EPS logo
+%                               for use in addition to the EPCC logo
+%                               and the University crest.
+%                               This appears on tile pages and report
+%                               covers at the top left, in place of the
+%                               EPCC logo, which then appears bottom right.
+%                               
+%                               This is the approved way of incorporating
+%                               a collaborators logo on EPCC documents.
+%
+% \thirdlogobox{file}       As \thirdlogo except the size is not set
+%                               to 1 inch.
+%
+% \threelogos                   Formats the three logos appropriately
+%                               for use on a title page.
+%                               Used by \EPCCheaderLogos
+%
+
+\def\thirdlogobox#1{\def\thirdl@go{#1}
+            \def\thirdl@g@{\raisebox{-12mm}[0mm][0mm]{\makebox[12mm][r]{#1}}}}
+\def\thirdlogo#1{\thirdlogobox{\resizebox{24mm}{!}{\includegraphics{#1}}}}
+
+\def\threelogos
+{
+         \relax
+         \null
+         \vskip -48pt
+         \hbox to\headwidth
+         {
+                \hss
+                \vbox
+                {
+                        \hbox
+                        {
+                                \rlap{\parbox[b]{\headwidth}
+                                        {\raggedright\thirdl@g@\strut}}\hfill
+                                \parbox[b]{\headwidth}
+                                        {\centering\null\strut}\hfill
+                                \llap{\parbox[b]{\headwidth}
+                                        {\raggedleft\rUofElogo\strut}}
+                        }
+                }
+                \hss
+        }
+        \null 
+        \vskip 22pt
+        \vbox to 0pt
+        {
+                \vskip 8.6in
+                \null
+                \hskip\headwidth
+                \hbox to 0pt{\hskip .07in\lEPCClogo\hss}
+                \vss
+        }
+
+}
+
+
+% =======================================
+% <4>   EPCC Main Environments
+% =======================================
+% <4.1> Project management      {project}
+% ---------------------------------------
+%
+% The EPCC project management environment is fully documented
+% in the EPCC style guide.
+%
+
+
+\def\project
+{
+        \def\projtitle##1{\def\pr@jtitle{##1}}
+        \def\@idoctitle[##1]##2{\def\d@ctitle{##2}
+                                \setbox0=\hbox{##1}
+                                \ifdim\wd0=0pt
+                                        \def\d@cshorttitle{##2}
+                                \else
+                                        \def\d@cshorttitle{##1}
+                                \fi}
+        \def\doctitle{\@ifnextchar [{\@idoctitle}{\@idoctitle[]}}
+        \def\docsubtitle##1{\def\d@csubtitle{##1}}
+        \def\mainauthor##1{\def\m@inauthor{##1}}
+        \def\docauthor##1{\def\d@cauthor{##1}}
+        \def\doccontributor##1{\def\d@ccontributor{##1}}
+        \def\id##1{\def\i@d{##1}}
+        \def\status##1{\def\s@tatus{##1}}
+        \def\security##1{\gdef\s@curity{##1}}
+        \def\author##1{\gdef\@@thor{##1}}
+        \def\version##1{\gdef\v@rsi@n{##1}}
+        \def\summary##1{\gdef\s@mm@ry{##1}}
+        \def\date##1{\gdef\d@t@{##1}}
+        \def\s@cur@ty{\ifundefined{s@curity}\else \s@curity\fi}
+        \def\hdl@ne{}
+
+        \setlength{\headrulewidth}{0.5pt}
+        \setlength{\plainheadrulewidth}{\headrulewidth}
+        \lhead[\rm\thepage]{\rm\hdl@ne}
+        \rhead[\rm\hdl@ne]{\rm\thepage}
+        \chead[\rm\s@cur@ty]{\rm\s@cur@ty}
+        \cfoot{}
+        %
+        \def\titlepage
+        {
+                \EPCCheaderLogos
+                \thispagestyle{empty}
+                \begingroup
+                \@defpmmaketitle
+        }
+        \def\endtitlepage
+        {
+                \xdef\hdl@ne{\i@d\ \v@rsion}
+                \endgroup
+                \vfil\eject
+        }
+        %
+        \def\history
+        {
+                \paragraph*{Document history:}
+                \begin{flushleft}
+                        \begin{tabular}{llll}
+                                \aboveline
+                                Personnel       & Date &
+                                Summary         & Version
+                                \midline
+        }
+        \def\endhistory
+        {\ignorespaces
+                                \@uthor & \d@te & \s@mmary & \v@rsion
+                                \belowline
+                        \end{tabular}
+                \end{flushleft}
+        }
+        \def\release##1{\hbox to 0pt{\hss ##1}\ignorespaces
+                        \@@thor & \d@t@ & \s@mm@ry & \v@rsi@n\\}
+        %
+        \long\def\approval##1##2
+        {
+                \n@melist {Approval List} {{\it ##1\brk}##2}
+        }
+        \long\def\distribution##1##2
+        {
+                \n@melist {Distribution List} {{\it ##1\brk}##2}
+        }
+        \long\def\sponsors##1{\n@melist{Sponsors}{\it ##1}}
+        %
+        \long\def\n@melist##1##2
+        {
+                \parskip=0pt
+                \raggedright
+                \paragraph*{##1:} ##2 \par
+        }
+}
+\def\endproject{\clearpage}
+\def\el{\\}
+
+\def\@defpmmaketitle
+{
+        \def\maketitle
+        {
+                \def\m@keerr{You have issued \string\maketitle\space without
+                                defining the necessary fields.}
+                \ifundefined{pr@jtitle}
+                        \@latexerr{\string\projtitle\space undefined}\m@keerr
+                \fi
+                \ifundefined{d@ctitle}
+                        \@latexerr{\string\doctitle\space undefined}\m@keerr
+                \fi
+                \ifundefined{i@d}
+                        \@latexerr{\string\id\space undefined}\m@keerr
+                \fi
+                \ifundefined{d@t@}
+                        \@latexerr{\string\date\space undefined}\m@keerr
+                \fi
+                \ifundefined{v@rsi@n}
+                        \@latexerr{\string\version\space undefined}\m@keerr
+                \fi
+                \ifundefined{s@mm@ry}
+                        \@latexerr{\string\summary\space undefined}\m@keerr
+                \fi
+                \ifundefined{@@thor}
+                        \@latexerr{\string\author\space undefined}\m@keerr
+                \fi
+                %
+                                \vspace*{2mm}
+                \begin{huge}
+                        \begin{center}
+                                \d@cshorttitle
+                                \ifundefined{d@csubtitle}
+                                \else
+                                \\[\bigskipamount]
+                                \Large \d@csubtitle
+                                \fi     
+                                \bigskip                        
+                        \end{center}
+                \end{huge}
+                \paragraph*{Project Title:}
+                {
+                        \pr@jtitle
+                }
+                \paragraph*{Document Title:}
+                {
+                        \def\el{}
+                        \d@ctitle\ifundefined{d@csubtitle}
+                                 \else
+                                        : \d@csubtitle
+                                 \fi
+                }
+                \paragraph*{Document Identifier:}       \i@d\ \v@rsi@n
+                \ifundefined{s@tatus}
+                \else
+                        \paragraph*{Document Status:}
+                        \s@tatus
+                \fi
+                \ifundefined{s@curity}
+                \else
+                        \paragraph*{Distribution Classification:}
+                        \s@curity
+                \fi
+                \ifundefined{d@cauthor}
+                \else
+                        \paragraph*{Authorship:}
+                        \d@cauthor
+                \fi
+                \ifundefined{m@inauthor}
+                \else
+                        \paragraph*{Main Authorship:}
+                        \m@inauthor
+                \fi
+                \ifundefined{d@ccontributor}
+                \else
+                        \paragraph*{Additional Contributions:}
+                        \d@ccontributor
+                \fi
+                \global\let\d@te=\d@t@
+                \global\let\v@rsion=\v@rsi@n
+                \global\let\s@mmary=\s@mm@ry
+                \global\let\@uthor=\@@thor
+        }
+        \let\makeEPCCtitle\maketitle
+}
+
+% ------------------------------------------
+% <4.2> Letter head             {letterhead}
+% ------------------------------------------
+%
+%       The following two commands may be used in the preamble:
+%
+%       \renewcommand{\phoneprefix}{(0131) }    To alter phone/fax prefix
+%                                               to (0131).  (Default {+44 131 })
+%
+%       After the begin{document}, type the following:
+%
+%       \begin{letterhead}
+%               \name{Recipient's name}         (optional)
+%               \org{Recipient organisation}    (optional, ignored)
+%               \position{Recipients position}  (optional, ignored)
+%               \address
+%               {
+%                       Recipient's address \\
+%                       ...                     \\
+%                       Recipient's postcode
+%               }
+%               \ext{5020}                      Your phone extension (optional)
+%               \email{njr@epcc.ed.ac.uk}       You email address (optional)
+%       \end{letterhead}
+%
+%       \begin{letterhead*} ... \end{letterhead*}
+%       provides the same functionality, but for pre-headed paper.
+%
+%       Within the letterhead environment the extra fields
+%
+%               \ourcontact{}
+%               \theircontact{}
+%               \contactorg{}
+%               \contacttype{}
+%               \contactdate{}
+%               \projectcode{}
+%               \summary{}
+%
+%       may also be used.   If they are, an `Our reference: '
+%       field is generated, which contains
+%               \projectcode/\contactdate\contacttype.
+%
+%
+%       Within the main body of the letter, the following features
+%       are also available.
+%
+%       \subjectline{Subject}           Prints centered, underlined Subject
+%
+%       \cc                             Lists carbon copies
+%       {
+%               Carbon copy 1   \\
+%               Carbon copy 2   \\
+%               ...             \\
+%               Carbon copy n
+%       }
+%
+%       \encl   % or \encs              Lists inclusions
+%       {
+%               Enclosed item 1 \\
+%               Enclosed item 2 \\
+%               ...
+%               Enclosed item n \\
+%       }
+
+\newdimen\headexcess
+\def\letterhead{%
+\thispagestyle{empty}
+\headexcess=0pt
+\def\phoneprefix{+44 131 }
+\begingroup
+\def\email##1{\def\em@il{##1}}
+\def\ext##1{\def\@xt{##1}}
+\def\date##1{\def\d@te{##1}}
+\def\name##1{\def\n@me{##1}}
+\let\org=\ignore
+\let\position=\ignore
+\def\address##1{\def\@ddress{##1}}
+\font\letterfootfont=ptmr at 7pt 
+\cgheader
+}
+
+\def\cc#1{cc:\begin{tabular}[t]{l} #1 \end{tabular}\brk}
+\def\encl#1{encl:\begin{tabular}[t]{l} #1 \end{tabular}\brk}
+\let\encs\encl
+\def\subjectline#1{\centerline{\underline{#1}}\bigskip}
+
+\def\endletterhead{
+{
+        \vbox to 0pt
+        {
+          \begin{small}
+            \vskip -92pt
+            \hbox to \textwidth{\hfil \resizebox{88pt}{!}{
+                \includegraphics{/usr/local/share/logos/crest_bw}}
+              \hskip -68pt}
+            \vskip 18pt
+            \rightline
+            {
+              \begin{tabular}{r}
+                EPCC\\[10pt]
+                The University of Edinburgh\\
+                James Clerk Maxwell Building\\
+                Mayfield Road\\
+                Edinburgh EH9 3JZ\\
+                UK\\[6pt]
+                \letterfootfont Fax~~\phoneprefix 650 6555\\
+                \letterfootfont Telephone~~\phoneprefix 650 5030\\
+                \ifundefined{@xt}
+                \else
+                        \letterfootfont Direct line~~\phoneprefix \@xt\\
+                        \advance\headexcess by 10pt
+                \fi
+                \ifundefined{em@il}
+                \else
+                        \letterfootfont E-mail~~\em@il\\
+                        \advance\headexcess by 10pt
+                \fi
+                \\
+                \ifundefined{d@te}
+                        {\normalsize \today}
+                        \message{EPCC Warning:
+                                 \string\date undefined: using \today!}
+                \else
+                        {\normalsize \d@te}
+                \fi
+                \end{tabular}
+                \hskip -30pt
+        }
+        \vskip 554pt
+        \ifundefined{@xt}
+        \else
+                \vskip -11pt
+        \fi
+        \ifundefined{em@il}
+        \else
+                \vskip -11pt
+        \fi
+        \centerline{\letterfootfont DIRECTOR \quad Professor A S Trew \qquad
+                    CHAIRMAN \quad Professor R D Kenway FRSE \hspace{50pt}}
+        \centerline{The University of Edinburgh is a charitable body, 
+                    registered in Scotland, with registration number SC005336.
+                    \hspace{80pt}}
+        %\centerline{\letterfootfont CHAIRMAN OF THE ADVISORY BOARD \quad
+        %               Professor Sir William Stewart FRS FRSE \hspace{50pt}}
+        \vbox to 0pt
+        {
+          \vskip -34pt
+          \hskip -26pt
+          \hbox to \textwidth{\hfil
+            \resizebox{72pt}{!}{
+              \includegraphics{/usr/local/share/logos/logo_black}}
+            \hskip -50pt}
+          \vss
+        }
+        \vss
+        \end{small}
+        }
+%       \advance\headexcess by 136pt
+        \advance\headexcess by 146pt
+        \lh@ddress
+}
+\endgroup
+}
+
+\def\endletterheadstar{
+{
+        \vbox to 0pt
+        {
+        \begin{footnotesize}
+        \vskip 120pt
+        \rightline
+        {
+                \begin{tabular}{r}
+                \ifundefined{@xt}
+                \else
+                        \letterfootfont Direct line \phoneprefix 650 \@xt\\[2pt]
+                        \advance\headexcess by 11pt
+                \fi
+                \ifundefined{em@il}
+                \else
+                        \letterfootfont E-mail \em@il\\
+                        \advance\headexcess by 11pt
+                \fi
+                \\
+                \ifundefined{d@te}
+                        {\normalsize \today}
+                        \message{EPCC Warning:
+                                 \string\date undefined: using \today!}
+                \else
+                        {\normalsize \d@te}
+                \fi
+                \end{tabular}
+                \hskip -29pt
+        }
+        \end{footnotesize}
+        \vss
+        }
+        \advance\headexcess by 180pt
+        \lh@ddress
+}
+\endgroup
+}
+
+\def\lh@ddress
+{
+        \vbox to \headexcess
+        {
+                \let\\=\brk
+%                \vskip 8pt
+                \vskip 16pt
+                \ifundefined{n@me}
+                \else
+                        \n@me\\
+                \fi
+                \@ddress\\
+                \if0                            % deleted for the moment!
+                        \@urref{Our reference:}
+                \fi
+                \vfil
+        }
+}
+
+\def\@urref#1
+{
+        \ifundefined{pr@jectcode}
+        \else
+                \@urrefinner{#1}
+        \fi
+}
+
+\def\@urrefinner#1
+{
+        \ifundefined{c@ntactdate}
+        \else
+                \@urrefininner{#1}
+        \fi
+}
+
+\def\@urrefininner#1
+{
+        \ifundefined{c@ntacttype}
+        \else
+                \par
+                #1 \pr@jectcode/\c@ntactdate\c@ntacttype
+                \par
+        \fi
+}
+
+
+\@namedef{letterhead*}{\letterhead}
+\@namedef{endletterhead*}{\endletterheadstar}
+
+
+% ----------------------------------------------
+% <4.3> Fax                     {epccfax}, {fax}
+% ----------------------------------------------
+%
+% \documentstyle[epcc,fax]{article}
+%
+% \begin{document}
+%
+%       \Phone{5020}                    % your extension
+%       \From{Nicholas Radcliffe}       % who the fax is from
+%       \FAO{Stuart Reid}               % who the fax is to
+%       \FaxNo{(071) 215 1967}          % the desination fax number
+%       \FaxPages{1}                    % number of pages incl. cover sheet
+%       \Date{9th September 1992}       % of sending fax
+%
+%       \Urgent or \Routine             % Optional: mark the fax as this
+%                                       %               priority
+%       \Remarks:                       % Optional
+%
+%       
+%       \begin{fax}
+%       Dear ...
+%
+%       Body of fax
+%
+%       Yours ...
+%       \vskip 1in
+%       
+% \end{document}
+%
+% Note that a 12pt modifier makes little different to the appearance
+% of the fax.
+%
+% The commercial group header is also available within a fax, and if
+% used will generate an `Our reference' line.
+%
+
+\def\epccfax
+{
+        \usepackage{futura}
+        \parindent=0pt
+        \parskip=.8\baselineskip
+        \setleftmargin{20mm}{0in}
+        \setrightmargin{20mm}{0in}
+        \global\advance\topmargin by -48pt
+        \global\advance\textheight by 48pt
+        \global\advance\textwidth by 25mm
+
+        \thispagestyle{empty}
+        \def\@oddfoot{\reset@font\hfil\thepage} % page # in right footer
+        \let\@evenfoot\@oddfoot
+
+        \def\carlasPhone{5030}
+        \def\Phone##1{\def\faxphone{##1}}
+        \def\From##1{\def\faxfrom{##1}}
+        \def\FAO##1{\def\faxFAO{##1}}
+        \def\FaxNo##1{\def\faxfax{##1}}
+        \def\FaxPages##1{\def\faxpages{##1}}
+        \def\Urgent{\def\priority{URGENT}}
+        \def\Routine{\def\priority{ROUTINE}}
+        \def\Date##1{\def\faxdate{##1}}
+        \def\Remarks{\def\faxremarks{Remarks:}}
+
+        \cgheader
+
+        \def\fax
+        {
+                \ifxpt
+                        \large\FaxHead\Large
+                \else
+                        \FaxHead\large
+                \fi
+        }
+        \def\endfax{}
+
+        \def\FaxHead
+        {
+                \hskip -10mm
+                \framebox[190mm][l]
+                {
+                        \hskip 6mm
+                        \raisebox{-1mm}[22mm][0mm]
+                        {
+                                \resizebox{!}{15mm}
+                                {       
+                                        \includegraphics{/usr/local/share/logos/logo_black}
+                                }
+                        }
+                }
+                \vskip 8mm
+                \begin{flushright}
+                EPCC\\
+                The University of Edinburgh\\
+                James Clerk Maxwell Building, Mayfield Road\\
+                Edinburgh, EH9 3JZ, UK\\
+                Telephone: +44 131 650 
+                \ifundefined%
+                        {faxphone}%
+                        {\carlasPhone}
+                \else
+                        \faxphone
+                \fi
+                \\Fax: +44 131 650 6555
+                \\[5pt]No. of pages: \faxpages\\
+                \normalsize (inc.\ this page)
+                \end{flushright}
+                \bigskip
+                \leftline{\makebox[3.5in][l]{\LARGE FAO: \faxFAO} 
+                        \LARGE Dest.\ Fax No: \faxfax
+                }
+                \bigskip
+                \leftline{\makebox[3.5in][l]{\LARGE From: \faxfrom}
+                        \LARGE Date: \ifundefined{faxdate}
+                                                \today
+                                        \else
+                                                \faxdate
+                                        \fi
+                }
+                \if0
+                        \@urref{Our reference:}
+                \fi
+                \bigskip
+                \ifundefined{priority}
+                \else
+                        \leftline{\LARGE Priority: \priority}
+                \fi
+
+                \ifundefined{faxremarks}
+                \else
+                        \leftline{\large\faxremarks}
+                \fi
+                \medskip
+        }
+}
+
+% -------------------------------------------
+% <4.4> Contact form            {epcccontact}
+% -------------------------------------------
+%  epcccontact environment
+%
+% \begin{epcccontact}
+%
+%       \ourcontact{initials}           % mandatory
+%       \theircontact{Name}             % mandatory
+%       \contactorg{Organisation}       % mandatory
+%       \contacttype{type}              % list of types from Commercial Group
+%       \contactdate{931103}            % mandatory, in this format
+%       \projectcode{company/project}   % mandatory
+%       \summary{Max 40 characters}     % mandatory
+%
+%
+%       \begin{details}                 % mandatory
+%
+%               \detail First detail
+%
+%               \record First record (placed in relevant minutes automatically)
+%
+%               \hotbutton
+%                       First hot button
+%
+%               % repeated in any order as often as necessary
+%
+%       \end{details}
+%
+%       \begin{actions}                 % optional
+%
+%               \act{intials} to ...    (placed in relevant minutes
+%                                        automatically)
+%
+%       \end{actions}
+%
+% \end{epcccontact}
+%
+%
+
+\def\epcccontact{%
+\begingroup
+\cgheader
+%
+\def\actions{\subsection*{Actions}
+\list{}{\raggedright\labelsep=5pt\leftmargin=20pt\labelwidth=10pt}\itemindent=0pt}
+\def\act##1{\item[$\openb@x$] {\bf Action: ##1}}
+\def\acted##1{\item[$\filledb@x$] {\bf ##1 acted:}}
+\let\endactions=\endlist
+\def\details
+{
+        \thispagestyle{empty}
+        \begin{LARGE}
+        \centerline
+        {
+                \bf EPCC Contact
+        }
+        \end{LARGE}
+        \par\vskip .5in
+        \begin{tabular}{@{}ll}
+                {\bf Client Organisation:}
+                &
+                \ifundefined{c@ntactorg}
+                        \errmessage{EPCC Error:
+                                 undefined \string\contactorg}
+                \else
+                        \c@ntactorg
+                \fi
+                \\
+                {\bf Our Contact:}
+                &
+                \ifundefined{ourc@ntact}
+                        \errmessage{EPCC Error:
+                                 undefined \string\ourcontact}
+                \else
+                        \ourc@ntact
+                \fi
+                \\
+                {\bf Minute by:}
+                &
+                        \min@teby
+                \\
+                {\bf Their Contact:}
+                &
+                \ifundefined{theirc@ntact}
+                        \errmessage{EPCC Error:
+                                undefined \string\theircontact}
+                \else
+                        \theirc@ntact
+                \fi
+                \\
+                {\bf Contact Summary:}
+                &
+                \ifundefined{summ@ry}
+                        \errmessage{EPCC Error:
+                                undefined \string\summ{} undefined}
+                \else
+                        \summ@ry
+                \fi
+                \\
+                {\bf File:}
+                &
+                \ifundefined{c@ntacttype}
+                        \errmessage{EPCC Error:
+                                undefined \string\contacttype}
+                \else
+                        \c@ntactinner
+                \fi
+        \end{tabular}
+        \par\bigskip
+%
+\cgitems
+\subsection*{Details}
+\itemize
+}
+%
+\let\enddetails=\enditemize
+}
+\let\endepcccontact=\endgroup
+
+\def\c@ntactinner
+{
+        \ifundefined{c@ntactdate}
+                \errmessage{EPCC Error:
+                        undefined \string\contactdate}
+        \else
+                \c@ntactininner
+        \fi
+}
+
+\def\c@ntactininner
+{
+        \ifundefined{pr@jectcode}
+                \errmessage{EPCC Error:
+                undefined \string\projectcode}
+        \else
+            \pr@jectcode/\c@ntactdate\c@ntacttype.tex
+        \fi
+}
+
+
+% -------------------------------------------
+% <4.5> Report cover            {reportcover}
+% -------------------------------------------
+%
+%  report cover
+%
+% EPCC Report Cover macros (reportcover environment)
+% NJR 30.4.92
+% bjnw 08/02/93 (reworked \thirdl@go and made spacing more consistent)
+%
+% The reportcover environment is used to generate the text for printing
+% on the EPCC report cover.   It should work indepently of the fonts
+% being used, the point size selected and the position in the document.
+%
+% All three fields (doctitle, author and id are mandatory)
+%
+% Example usage:
+%
+%       \begin{reportcover}
+%               \doctitle
+%               {
+%                       An Introduction to the Work\\
+%                       and Facilities of EPCC
+%               }
+%               \author
+%               {
+%                       Linda K.\ Chantler
+%               }
+%               \id{EPCC-TR92-57}
+%       \end{reportcover}
+%       
+
+\def\reportcover{%
+\begingroup
+%\font\titlefont=ptmb at 24pt     % Times-Bold
+\font\titlefont=pfub8a at 24pt    % Futura-Bold 
+%\font\authorfont=ptmb at 14pt
+\font\authorfont=pfub8a at 14pt    
+\def\papercover{\message{Paper covers not implemented yet --- sorry!}}
+\def\doctitle##1{\def\t@tle{##1}}
+\def\author##1{\def\a@thor{##1}}
+\def\id##1{\def\@d{##1}}}
+\def\endreportcover
+{
+        \thispagestyle{empty}
+        \begin{flushleft}
+        \hbox
+        {\hskip -15mm
+                \ifundefined{thirdl@go}
+                \else
+                \vbox to 0pt
+                {
+                        \vskip -260mm
+                        \hbox to 0pt
+                        {
+                                \thirdl@go\hss
+                        }
+                        \vss
+                }
+                \fi
+                \vbox to \vsize
+                {
+                        \hsize=132mm
+                        \vskip 95pt
+                        \begin{center}
+                                \baselineskip=28pt
+                                {\titlefont \t@tle\\[2.5\medskipamount]}
+                                \baselineskip=17pt
+                                \ifundefined{a@thor}
+                                \else
+                                        {\authorfont
+                                         \a@thor\\[1.25\medskipamount]}
+                                \fi
+                                {\authorfont \@d\\}
+                        \end{center}
+                        \vfil
+                }
+        }
+        \end{flushleft}
+\endgroup
+}
+
+% ----------------------------------------------------------------
+% <4.6> Minutes                 {epccminutes}, {minutes}, {agenda}
+% ----------------------------------------------------------------
+
+%  epccminutes environment
+%
+% epccminutes environment
+% NJR 30.4.92
+%
+% \begin{epccminutes}
+%       \minutedate{date}               % mandatory
+%       \minuteby{initials}             % mandatory
+%       \thismeeting{date, time, room}  % mandatory if using minutes env.
+%       \nextmeeting{date, time, room}  % mandatory if using agenda env.
+%       \meetingname{Name of Meeting}   % mandatory
+%
+% \begin{agenda}
+%
+%       \heading{First Heading}
+%       \heading{Second Heading}
+%       ...
+%       \heading{Last Heading}
+%
+% \end{agenda}
+%
+% \begin{minutes}
+%
+%       \begin{actions}
+%
+%               \act{initials} NJR to write notes on epccminutes environment
+%
+%               \acted{initials} NJR wrote epccminutes macros
+%
+%               (etc}
+%
+%
+%       \end{actions}
+%
+%       \heading{First Heading}
+%
+%       Notes on first heading
+%
+%       \heading{Second Heading}
+%
+%       ...
+%
+%       \heading{Last Heading}
+%
+% \end{minutes}
+%
+% \end{epccminutes}
+%
+% Optional extra fields within the minutes environment
+%
+%       \ourcontact{}
+%       \theircontact{}
+%       \contactorg{}
+%       \contacttype{}
+%       \contactdate{}
+%       \projectcode{}
+%       \summary{}
+%
+% are all ignored by epcc.sty but are used by the Commercial Group.
+% Within the actions fields, in addition to \act{} and \acted{}
+% the following are available:
+%
+%       \hotbutton      foo     (precedes foo by a five-point star)
+%       \detail         foo     (precedes foo by a circle)
+%       \record         foo     (precedes foo by a disc)
+%
+% These are used mainly by the Commercial Group.
+%
+
+\def\epccminutes
+{
+\newcount\hno
+\long\def\agenda{\hno=0\centerline{\bf Agenda for \@meetingname}
+\medskip\centerline{\bf \@nextmeeting}\bigskip\bigskip}
+\def\endagenda{\vskip.5in\rightline{\min@teby\ \@mindate}\hno=0\newpage}
+\long\def\minutes{\hno=0\centerline{\bf Minutes of \@meetingname}
+\medskip\centerline{\bf \@thismeeting}\bigskip\bigskip}
+\def\endminutes{\vskip.5in\rightline{\min@teby\ \@mindate}\hno=0\newpage}
+
+\def\namelist##1##2{\flushleft{\bf ##1:} ##2\endflushleft}
+\def\attendance{\namelist{In attendance}}
+\def\apologies{\namelist{Apologies}}
+\def\circulation{\namelist{Circulation}}
+\def\heading##1{\bigskip\global\advance\hno by 1\leftline{\bf\the\hno. ##1}
+                \par\nobreak}
+\def\actions{\list{}{\raggedright\labelsep=5pt\leftmargin=20pt\labelwidth=10pt}\itemindent=0pt}
+\def\act##1{\item[$\openb@x$] {\bf Action: ##1}}
+\def\acted##1{\item[$\filledb@x$] {\bf ##1 acted:}}
+\cgitems
+\let\endactions=\endlist
+\def\theenumi{\roman{enumi}}
+
+\def\minutedate##1{\def\@mindate{##1}}
+\def\nextmeeting##1{\def\@nextmeeting{##1}}
+\def\thismeeting##1{\def\@thismeeting{##1}}
+\def\meetingname##1{\def\@meetingname{##1}}
+
+\cgheader
+}
+\def\endepccminutes{}
+%
+
+% -----------------------------------
+% <4.7> Poster                  {???}
+% -----------------------------------
+%
+%
+% Not yet incorporated
+%
+
+
+% ---------------------------------------
+% <4.8> Code Segments           {codedeg}
+% ---------------------------------------
+%
+%
+% Usage:
+%
+% \documentstyle[codeseg]{article}
+%
+% \listofcodesegs
+%
+% \begin{codeseg}
+%
+%       \caption
+%       {
+%               Informative caption
+%               \label{cs:foo}
+%       }
+%
+% \end{codeseg}
+%
+% ... (see code segment~\ref{cs:foo}).
+%
+%
+%
+%
+
+
+\def\listcodesegname{List of Code Segments}
+\def\codesegname{Code Segment}
+
+\def\listofcodesegs{{\parskip=0pt\section*{\listcodesegname
+    \@mkboth{\uppercase{\listcodesegname}}{\uppercase{\listcodesegname}}}%
+  \@starttoc{locs}}}
+
+\def\l@codeseg{\@dottedtocline{1}{1.5em}{2.3em}}
+
+\newcounter{codeseg}
+\def\thecodeseg{\@arabic\c@codeseg}
+
+\def\fps@codeseg{tbp}
+\def\ftype@codeseg{1}
+\def\ext@codeseg{locs}
+
+\def\fnum@codeseg{\codesegname~\thecodeseg}
+
+\def\codeseg#1{\refstepcounter{codeseg}
+                \bigskip\hrule\medskip
+                \centerline{{\bf Code Segment \thecodeseg:} #1}
+                \medskip
+                \hrule
+                \bigskip
+                \addtocontents{\ext@codeseg}
+                        {\protect\l@codeseg{\thecodeseg\ #1}{\thepage}}
+                \begingroup}
+
+\let\endcodeseg\endgroup
+
+
+% ---------------------------------------
+% <4.9> Flier Environnent       {flier}
+% ---------------------------------------
+%
+% Produces a standard EPCC-style flier
+%
+%
+%
+% Usage:
+%
+%
+%       \begin{flier}{ Title first line \\ title second line}
+%
+%               \section{Foo}
+%
+%               text etc
+%
+%               \newpage                % mandatory for end of first page
+%
+%               \section{Bar}
+%
+%               text etc.
+%
+%       \end{flier}
+%
+%
+% Note that the first page is in a different style from the others.
+% Because of this, a \newpage command has to be used explicitly to
+% move onto the second page.   This means that paragraphs cannot
+% (easily) be made to span the cover page and page 2.
+%
+
+\def\flier#1
+{
+        \let\latexnewpage=\newpage
+        \def\newpage{\latexnewpage\changepagestyle}
+        \begingroup
+        \pagestyle{fancy}
+        \lhead{\leftvbar}
+        \cfoot{}
+        \thispagestyle{empty}
+        \setleftmargin{0.4in}{0pt}
+        \setrightmargin{2.4in}{0pt}
+        \setmarginnote{0pt}{0pt}
+        \hsize=\textwidth
+        \linewidth=\hsize
+        \latexnewpage
+        \font\mainheadfont=pplri scaled \magstep3
+        \font\subheadfont=pplri scaled \magstep2
+        \vbox to 0pt
+        {
+                \hbox to 0pt
+                {
+                        \hbox to 7.6in
+                        {
+                                \hskip 5.7in
+                                \hbox to 1pt
+                                {
+                                        \vbox to 0pt
+                                        {
+                                                \vskip -1.35in
+                                                \vrule  height .75in
+                                                        depth 10.25in
+                                                        width 1pt
+                                                \vss
+                                        }
+                                        \hss
+                                }
+                                \vbox to 0pt
+                                {
+                                        \vskip -0.9in
+                                        \hbox
+                                        {
+                                                \hskip .4in
+%                                                \epsfxsize=1.35in
+                                                 \resizebox{26mm}{!}{
+                                                 \includegraphics{/usr/local/share/logos/crest_bw}
+                                                 }
+                                        }
+                                        \brk
+                                        \vskip 1.0in
+                                        \hbox
+                                        {
+                                                \hskip .8in
+                                                \includegraphics{/usr/local/share/logos/epccvert}
+                                        }
+                                        \brk
+                                        \vskip 1.0in
+                                        \hbox
+                                        {
+                                                \hskip 0.45in
+%                                                \epsfxsize=1.1in
+                                                 \resizebox{72pt}{!}{
+                                                 \includegraphics{/usr/local/share/logos/logo_black}
+                                                 }
+                                        }
+                                        \vss
+                                }
+                                \hss
+                        }
+                }
+                \vss
+        }
+        \vbox to .75in
+        {
+                \vss
+                \vbox to 1.25in
+                {
+                        \baselineskip=.35in
+                        \vfill
+                        \begin{flushright}
+                                \mainheadfont #1
+                        \end{flushright}
+                        \vskip.4in
+                        \hrule height .05in depth 0pt
+                        \vskip .2in     
+                }
+        }
+        \def\section{\@startsection {section}{1}
+                        {\z@}{8pt plus 14pt}{8pt plus 14pt}
+                        {\reset@font\subheadfont}}
+
+
+        \def\changepagestyle
+        {
+                \setleftmargin{0.65in}{0pt}
+                \setrightmargin{0.35in}{0pt}
+                \setmarginnote{0pt}{0pt}
+                \setheadmargin{.9in}{0pt}{0pt}
+                \setfootmargin{.9in}{0pt}{0pt}
+                \hsize=\textwidth
+                \vsize=\textheight
+                \linewidth=\hsize
+        }
+        \def\leftvbar
+        {
+                \hbox to 0pt
+                {
+                        \hskip -.25in
+                        \vbox to 0pt
+                        {
+                                \vskip -.45in
+                                \vrule height .75in depth 10.25in width 1pt
+                                \vss
+                        }
+                        \hfil                   
+                }
+        }
+}
+\def\endflier{\latexnewpage\endgroup}
+
+
+% <5>   RCS Support
+
+%  RCS
+% Some RCS thoughts and hackery (bjnw 30/08/91)
+
+% Want the \RCSident{\$Id\$} command to be added at the head of every
+% included file, and similarly (when tracing) want that information to
+% appear in the RCS footer information -- probably just for one page only
+% since retaining it for the duration of the inclusion would be difficult.
+
+% hack some RCS identification information into the .dvi file which will
+% propagate into the resulting PostScr!pt too!
+\newcommand{\RCSident}[1]{\def\RCSinfo{#1}%
+  \special{ps: /RCSident (\RCSinfo) def}% add to .dvi (and route to .ps)
+  \ifEPCCtracing%
+        \EPCCtrace{RCSident: \RCSinfo}% perhaps write to screen
+  \else%
+        \immediate\write\m@ne{RCSident: \RCSinfo}% add to .log file
+  \fi%
+}
+
+%Should perhaps attempt to cleanly add the RCSinfo to the additional
+%  LaTeX files: .aux, .toc, .lof, .lot, etc
+%Removed 11/02/92 since it proved to be a bit patchy/intrusive
+%\write\@mainaux{\string\def\string\RCSinfo{\RCSinfo}}% add to .aux file
+%\write\@auxout{\string\def\string\RCSinfo{#1}}% add to .aux file
+%NB: use #1 instead of \RCSinfo since it must be expanded straight away
+
+
+
+% ==============================================
+% <6>   PostScript Support      (font selection)
+% ==============================================
+% <6.1> Font Selection
+% ----------------------------------------------
+%
+% Not needed in LaTeX2e. Just include fonts as described in the manual.
+%
+% -------------
+% <6.2> epsf.sty
+% --------------
+
+\usepackage{graphics}
+
+% ----------------
+% <6.3> rotate.sty
+% ----------------
+%
+% This functionality is now included in the graphics package.
+%
+
+% ===========================================================
+% <7>   Miscellaneous
+% ===========================================================
+% <7.1> Underscore and carets   (\makeusactive, \textscripts)
+% -----------------------------------------------------------
+%
+% \makeusactive:        Make underscore and caret produce their usual
+%                       symbols outside math mode
+%                       but continue to work for subscripts and superscripts
+%                       inside math mode.
+%
+% \makeusnormal:        Restore normal use of _ and ^ after \makeusactive
+%
+% \textscripts:         Make _ and ^ work to produce subscripts
+%                       and superscripts outside math mode as well as within
+
+
+{\catcode`\_=\active\catcode`\^\active%
+  \gdef\makeusactive{\catcode`\_=\active\gdef_{\ifmmode\sb\else\_\fi}\relax%
+                                         \catcode`\^=\active\gdef^{\ifmmode\sp\else\^{}\fi}\relax}
+  \gdef\makeusnormal{\catcode`\_=8\catcode`\^=7\relax}
+}
+
+
+\def\textscripts
+{
+        \let\@sb=_
+        \let\@sp=^
+        \catcode`\_=\active
+        \catcode`\^=\active
+        \def\@tsb##1{\ifmmode \@sb{##1} \else ${}\@sb{\rm ##1}$\fi}
+        \let_=\@tsb
+        \def\@tsp##1{\ifmmode \@sp{##1} \else ${}\@sp{\rm ##1}$\fi}
+        \let^=\@tsp
+}
+
+
+% ------------
+% <7.2> Tables
+% ------------
+
+\newdimen\t@bSkip
+\newdimen\reverseT@bSkip
+\def\setT@bSkip{\reverseT@bSkip=-.5\baselineskip
+                \t@bSkip=.3\baselineskip}
+\setT@bSkip
+\def\aboveline{\hline\\[\reverseT@bSkip]}
+\def\midline{\\[\t@bSkip]\hline\\[\reverseT@bSkip]}
+\def\belowline{\\[\t@bSkip]\hline}
+
+
+% ---------------------
+% <7.3> Time formatting
+% ---------------------
+
+%  time
+% provides a reasonably formatted version of time (much like \today)
+% called as \hhmm (from Nelson Beebe)
+
+\newcount\hh
+\newcount\mm
+\mm=\time
+\hh=\time
+\divide\hh by 60
+\divide\mm by 60
+\multiply\mm by 60
+\mm=-\mm
+\advance\mm by \time
+\def\hhmm{\number\hh:\ifnum\mm<10{}0\fi\number\mm}
+%
+
+
+% -----------------------
+% <7.4> Bibliography Dump
+% -----------------------
+%
+%  Bibliography dump (annotated)
+% 18 Feb 92 -- bjnw
+% Annote a .bib bibliography file, by citing each entry and formatting
+% each in a separate block (along with its abstract and/or review, if they
+% exist) headed by the citation key.
+% Usage: \epccbibliographydump{biblio}{EPCC Project Bibliography}
+% where biblio.bib is the name of the bibliography file and the second
+% argument is the `title' of the bibliography, which will appear on the
+% titlepage and in the header of each succeeding page
+% NB: Only one \epccbibliographydump can be done in any one document,
+% and cannot be mixed (sensibly) with any other citations or bibliography.
+% 20 Apr 94 - Evan
+% In order to allow multiple bibliography dumps, \epccbibliographydumpunit
+% uses bibunits.sty to create them separately. The catch is that instead of
+% (or as well as -- it seems to be possible to mix freely with normal
+% \bibliography or \epccbibliographydump commands) running bibtex on foo
+% (if the file is foo.tex), one runs bibtex on foo.1, foo.2, foo.3,
+% ... foo.n where n is the number of invocations of
+% \epccbibliographydumpunit.
+\newcommand{\epccbibliographydump}[2]{
+  \def\bibtitle{#2}
+  \def\thebibliography##1{\clearpage
+        \pagestyle{fancyplain}\thispagestyle{plain}%
+        \setEPCClines{15}
+        \setlength{\plainfootrulewidth}{\footrulewidth}
+        \chead{}\cfoot{}
+        \lhead[\fancyplain{}{}]{\fancyplain{}{\sl\bibtitle}}
+        \rhead[\fancyplain{}{}]{\fancyplain{}{\sl\thepage}}
+        \lfoot[\fancyplain{}{}]{\fancyplain{\footnotesize\today}{}}
+        \rfoot[\fancyplain{}{}]{\fancyplain{\footnotesize\mbox{$\RCSinfo$}}{}}
+        \centerline{\huge\bf\bibtitle}\bigskip\list
+        {[\arabic{enumi}]}{\leftmargin=25pt\usecounter{enumi}}
+        \def\newblock{\hskip .11em plus .33em minus .07em}
+        \sloppy\clubpenalty4000\widowpenalty4000
+        \sfcode`\.=1000\relax}
+  \gdef\endthebibliography{\clearpage\endlist}
+  \newdimen\hackwidth\hackwidth=\textwidth\advance\hackwidth by -5pt
+  \def\@biblabel##1{\makebox[\hackwidth][l]{[{##1}]}\relax}
+  \bibliographystyle{labels}
+  \nocite{*}
+  \bibliography{#1}
+}
+%
+\newcommand{\epccbibliographydumpunit}[2]{
+  \@ifundefined{bibunit}{\makeatletter\input{bibunits.sty}}{}
+  \def\bibtitle{#2}
+  \def\thebibliography##1{\clearpage
+      \pagestyle{fancyplain}\thispagestyle{plain}%
+      \setEPCClines{15}
+      \setlength{\plainfootrulewidth}{\footrulewidth}
+      \chead{}\cfoot{}
+      \lhead[\fancyplain{}{}]{\fancyplain{}{\sl\bibtitle}}
+      \rhead[\fancyplain{}{}]{\fancyplain{}{\sl\thepage}}
+      \lfoot[\fancyplain{}{}]{\fancyplain{\footnotesize\today}{}}
+      \rfoot[\fancyplain{}{}]{\fancyplain{\footnotesize\mbox{$\RCSinfo$}}{}}
+      \centerline{\huge\bf\bibtitle}\bigskip\list
+      {[\arabic{enumi}]}{\leftmargin=25pt\usecounter{enumi}}
+      \def\newblock{\hskip .11em plus .33em minus .07em}
+      \sloppy\clubpenalty4000\widowpenalty4000
+      \sfcode`\.=1000\relax}
+  \gdef\endthebibliography{\clearpage\endlist}
+  \newdimen\hackwidth\hackwidth=\textwidth\advance\hackwidth by -5pt
+  \def\@biblabel##1{\makebox[\hackwidth][l]{[{##1}]}\relax}
+  \begin{bibunit}[labels]
+    \nocite{*}
+    \putbib[#1]
+  \end{bibunit}
+}
+%
+
+
+% -------------------
+% <7.5> \brk, \ignore
+% -------------------
+%
+% \brk          terminates a line cleanly
+%               (like \\ but works reliably anywhere without generating
+%                        underfull hbox errors)
+%
+% \ignore{foo}  discards foo
+%
+
+
+\def\brk{\hfil\break}
+\def\ignore#1{}
+
+
+% ==================================
+% <8>   Mailshot and Database macros
+% ==================================
+% 
+% The mailshot macros provide support for producing mailshots.
+%
+% To use them you need three files, the root file, the keys file
+% and the body file.
+%
+% The root file is the one to be latexed and contains field
+% definitions, and a specification of the file containing
+% main text of the mailshot and the file with the details
+% for each particular letter.
+% It looks something like the following:
+%
+%
+% msroot.tex:
+%
+% \documentstyle[epcc]{article}
+% 
+% \field\name\namefield
+% \field\address\addressfield
+%
+% \textfile{msbody}
+% 
+% \begin{document}
+%       \mailshot{mskeys}
+% \end{document}
+%
+% There is a field for every part of the mailshot which is personalised,
+% followed by the name to be used in the body file and the name to be used
+% in the keys file.
+%
+% The body file consists of the body of text to be used for each letter,
+% with the personalised bits being replaced by the fieldname as follows:
+% Note that you will normally want the body file to end with \newpage,
+% and that the page counter is automatically reset at the start of each
+% letter.
+%
+% msbody.tex:
+%
+% \begin{flushright}
+%       \begin{tabular}{l}
+%               Nick Radcliffe\\
+%               Room 3402\\
+%               EPCC\\
+%               JCMB
+%       \end{tabular}
+% \end{flushright}
+% 
+% 6th March 1991
+% 
+% \begin{flushleft}
+% \addressfield\\
+% JCMB
+% \end{flushleft}
+% 
+% Dear \namefield,
+% 
+% I am writing to inform you about a new set of macros
+% which provide general mailshot facilities.
+% These are available in \verb+~epcc/tex+.
+% The idea is that you have some piece of text which you wish to
+% print out a number of times,
+% each with slightly different content.
+% The package lets you use an arbitrary set of fields,
+% read from a file of keys.
+% 
+% To use the package you need to use the \verb+[mailshot]+
+% document style option,
+% having set your \verb+TEXINPUTS+ environment variable
+% to include \verb+/u/user11/epcc/epcc/tex+.
+% You will need three files:
+% \begin{itemize}
+% 
+%       \item   the {\it root\/} file
+%               (in this case \verb+msroot.tex+)
+%               contains the field definitions and calls up the other
+%               two files;
+% 
+%       \item   the {\it body\/} file,
+%               (in this case \verb+msbody.tex+)
+%               contains the common text,
+%               using control sequences in place of the
+%               variable text;
+% 
+%       \item   the {\it key\/} file,
+%               (in this case \verb+mskeys+)
+%               contains the values for each field for each pass
+%               of the body file.
+% 
+% \end{itemize}
+% 
+% In the root file you specify for each field the name which you
+% will use to refer to it in the body file and the name you will
+% use in the key file using the \verb+\field+ command.
+% This has the format
+% \begin{verbatim}
+%       \field\keyfieldname\bodyfieldname
+% \end{verbatim}
+% For example,
+% this file contains the entries
+% \begin{verbatim}
+%       \field\address\addressfield
+%       \field\name\namefield
+% \end{verbatim}
+% In the body file you simply use your chosen body field name in place
+% of the name.
+% For example,
+% that this letter includes the line
+% \begin{verbatim}
+%       Dear \namefield,
+% \end{verbatim}
+% 
+% The key file simply contains each of the key field names
+% with their values in braces,
+% followed by \verb+\eod+,
+% as many times as is needed.
+% For example,
+% the start of the file used in this case was
+% \begin{verbatim}
+%       \name{Colin Brough}
+%       \address{Room 3404\\EPCC}
+%       \eod
+%       
+%       \name{Malcolm Brown}
+%       \address{Room 3405\\EPCC}
+%       \eod
+% \end{verbatim}
+% 
+% Finally,
+% the root file should contain a line \verb+\textfile{bodyname}+
+% in the preamble to specify the name of the body file,
+% and,
+% between the \verb+\begin+ and \verb+\end{document}+,
+% one or more entries
+% \begin{verbatim}
+%       \mailshot{keyfile}
+% \end{verbatim}
+% 
+% The example files are all in \verb+~epcc/tex+ on castle for your perusal.
+% 
+% Regards (and happy junk-mailing \dots)
+% 
+% Nick
+% 
+% p.s.  If you want a \verb+newpage+ at the end of each copy,
+%       you need to put this in the body file.
+%       It's not there by default for maximum flexibility.
+% \newpage
+% 
+%
+% Finally, the keys file is a set of records to be used to generate the
+% mailshot.   Each consists of the set of fields (all are required)
+% followed by \eod.
+% Here's an example:
+%
+% mskeys.tex
+%
+% 
+% \name{Kevin Collins}
+% \address{Room 3415\\EPCC}
+% \eod
+% 
+% \name{Neil Heywood}
+% \address{Room 3415\\EPCC}
+% \eod
+% 
+% \name{Brian Wylie}
+% \address{Room 3404\\EPCC}
+% \eod
+
+\let\Argdef=\@reargdef
+\def\field#1#2{\@argdef#2[1]{}\@argdef#1[1]{\Argdef#2[0]{##1}}}
+\def\eod{\setcounter{page}{1}\input \textfilen@me}
+\def\textfile#1{\def\textfilen@me{#1}}
+\def\mailshot#1{\ifundefined{textfilen@me}
+                        \message{Haven't defined textfile!}\textfilben@me
+                \else
+                        \input #1
+                \fi}
+
+% ======================
+% <9>   Default Settings
+% ======================
+
+% paragraphing
+
+\flushparagraphing
+
+% headers & footers
+% the fancy headers and footers style
+
+\pagestyle{fancyplain}  % ... and use all the default "fancy" settings
+
+\addtolength{\headheight}{2.5pt}
+\setlength{\headrulewidth}{0pt}
+\setlength{\footrulewidth}{\headrulewidth}
+\setlength{\plainheadrulewidth}{\headrulewidth}
+\setlength{\plainfootrulewidth}{\footrulewidth}
+
+% Dummy initialisation of headers & footers
+
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\rm\thepage}\rfoot{}
+
+
+\addtolength{\textheight}{5mm}  % leave equal 30mm gaps at head and foot
+
+% rulings
+\setEPCClines{1}
+%
+
+
+% ====================
+% <10>  RCS Identifier
+% ====================
+%
+% Leave the RCS identifier as the last line of this epcc.sty file
+
+\RCSident{$Id: epcc.sty,v 3.6 1998/01/09 09:32:33 st Exp $}
