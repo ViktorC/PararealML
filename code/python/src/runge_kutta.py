@@ -3,7 +3,7 @@ from typing import Callable
 
 class ForwardEulerMethod:
     """
-    The forward Euler method, an explicit first order Runge-Kutta procedure.
+    The forward Euler method, an explicit first order Runge-Kutta method.
     """
 
     def __call__(self, y: float, x: float, d_x: float, d_y_wrt_x: Callable[[float, float], float]) -> float:
@@ -12,7 +12,7 @@ class ForwardEulerMethod:
 
 class ExplicitMidpointMethod:
     """
-    The explicit midpoint method, a second order Runge-Kutta procedure.
+    The explicit midpoint method, a second order Runge-Kutta method.
     """
 
     def __call__(self, y: float, x: float, d_x: float, d_y_wrt_x: Callable[[float, float], float]) -> float:
@@ -21,7 +21,7 @@ class ExplicitMidpointMethod:
 
 class RK4:
     """
-    The RK4 method, an explicit fourth order Runge-Kutta procedure.
+    The RK4 method, an explicit fourth order Runge-Kutta method.
     """
 
     def __call__(self, y: float, x: float, d_x: float, d_y_wrt_x: Callable[[float, float], float]) -> float:
