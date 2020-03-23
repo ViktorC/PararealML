@@ -1,9 +1,10 @@
 import math
+from typing import Optional
 
 
-class TimeDependentDiffEq:
+class OrdinaryDiffEq:
     """
-    A representation of a time-dependent ordinary differential equation of the form y'(t) = f(t, y(t)).
+    A representation of an ordinary differential equation of the form y'(x) = f(x, y(x)).
     """
 
     """
@@ -13,41 +14,61 @@ class TimeDependentDiffEq:
         pass
 
     """
-    Returns the exact value of y(t) given t.
+    Returns the exact value of y(x) given x.
     """
-    def exact_y(self, t: float) -> float:
+    def exact_y(self, t: float) -> Optional[float]:
         pass
 
     """
-    Returns the value of y(0).
+    Returns the lower bound of the differential equation's solution's domain.
+    """
+    def x_0(self) -> float:
+        pass
+
+    """
+    Returns the upper bound of the differential equation's solution's domain.
+    """
+    def x_max(self) -> float:
+        pass
+
+    """
+    Returns the value of y(x_0).
     """
     def y_0(self) -> float:
         pass
 
     """
-    Returns the value of the derivative of y at t given t and y(t).
+    Returns the value of y'(x) given x and y(x).
     """
     def d_y(self, t: float, y: float) -> float:
         pass
 
 
-class RabbitPopulationDiffEq(TimeDependentDiffEq):
+class RabbitPopulationDiffEq(OrdinaryDiffEq):
     """
     A simple differential equation modelling the growth of a rabbit population over time.
     """
 
-    def __init__(self, n_0, r):
-        self.n_0 = n_0
-        self.r = r
+    def __init__(self, n_0, r, t_0, t_max):
+        self._n_0 = n_0
+        self._r = r
+        self._t_0 = t_0
+        self._t_max = t_max
 
     def has_exact_solution(self) -> bool:
         return True
 
     def exact_y(self, t: float) -> float:
-        return self.n_0 * math.exp(self.r * t)
+        return self._n_0 * math.exp(self._r * t)
+
+    def x_0(self) -> float:
+        return self._t_0
+
+    def x_max(self) -> float:
+        return self._t_max
 
     def y_0(self) -> float:
-        return self.n_0
+        return self._n_0
 
     def d_y(self, t: float, y: float) -> float:
-        return self.r * y
+        return self._r * y
