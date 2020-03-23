@@ -1,9 +1,9 @@
 import numpy as np
 import math
 
-import threading
+from mpi4py import MPI
 
-from src.runge_kutta import ForwardEulerMethod, RK4
+from runge_kutta import ForwardEulerMethod, RK4
 
 r = .01
 n_0 = 10000.
@@ -12,12 +12,15 @@ fine_d_t = .25
 coarse_d_t = 2 * fine_d_t
 k = 2
 
-duration = 8.
-n_threads = 8
-time_slices = np.arange(0., duration, duration / n_threads)
-
 g = ForwardEulerMethod()
 f = RK4()
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+duration = 8.
+time_slices = np.linspace(0., duration, size + 1)
 
 
 def operator(integration_method, y_0, t_0, t_max, d_t, d_y_wrt_t):
@@ -30,10 +33,10 @@ def operator(integration_method, y_0, t_0, t_max, d_t, d_y_wrt_t):
     return y[-1]
 
 
-def calculate_corrections(y_0, t_0, t_max, d_y_wrt_t, slice_ind, corr):
+def calculate_corrections(y_0, t_0, t_max, d_y_wrt_t):
     f_value = operator(f, y_0, t_0, t_max, fine_d_t, d_y_wrt_t)
     g_value = operator(g, y_0, t_0, t_max, coarse_d_t, d_y_wrt_t)
-    corr[slice_ind] = f_value - g_value
+    return f_value - g_value
 
 
 def d_rabbit_population_wrt_t(_, n): return r * n
@@ -61,16 +64,8 @@ for i, t in enumerate(time_slices[:-1]):
 n_coarse = np.copy(n)
 
 for i in range(k):
-    threads = []
-    for j, t in enumerate(time_slices[:-1]):
-        thread = threading.Thread(
-            target=calculate_corrections,
-            args=(n[j], t, time_slices[j + 1], d_rabbit_population_wrt_t, j, n_corr))
-        thread.start()
-        threads.append(thread)
-
-    for j in range(len(threads)):
-        threads[j].join()
+    n_corr_rank = calculate_corrections(n[rank], time_slices[rank], time_slices[rank + 1], d_rabbit_population_wrt_t)
+    comm.Allgather([n_corr_rank, MPI.DOUBLE],  [n_corr, MPI.DOUBLE])
 
     for j, t in enumerate(time_slices[:-1]):
         g_value = operator(
@@ -82,6 +77,7 @@ for i in range(k):
             d_rabbit_population_wrt_t)
         n[j + 1] = g_value + n_corr[j]
 
-print('Coarse solution\n', n_coarse)
-print('Fine solution\n', n)
-print('Analytic solution\n', n_exact)
+if rank == 0:
+    print('Coarse solution\n', n_coarse)
+    print('Fine solution\n', n)
+    print('Analytic solution\n', n_exact)
