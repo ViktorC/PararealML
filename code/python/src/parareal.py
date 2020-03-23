@@ -2,8 +2,8 @@ import numpy as np
 
 from mpi4py import MPI
 
-from diff_eq import TimeDependentDiffEq
-from runge_kutta import RungeKuttaMethod
+from src.diff_eq import TimeDependentDiffEq
+from src.runge_kutta import RungeKuttaMethod
 
 
 class Parareal:

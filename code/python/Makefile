@@ -6,7 +6,7 @@ lint:
 	flake8 src/
 
 test:
-	pytest -sv tests
+	pytest -sv tests/
 
 run:
-	mpiexec -n 4 python -m mpi4py src/main.py
+	mpiexec -n 4 python -m src.main

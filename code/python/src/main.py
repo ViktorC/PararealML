@@ -1,6 +1,6 @@
-from diff_eq import RabbitPopulationDiffEq
-from runge_kutta import ForwardEulerMethod, RK4
-from parareal import Parareal
+from src.diff_eq import RabbitPopulationDiffEq
+from src.runge_kutta import ForwardEulerMethod, RK4
+from src.parareal import Parareal
 
 
 diff_eq = RabbitPopulationDiffEq(10000., .01)

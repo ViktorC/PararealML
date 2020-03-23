@@ -1,6 +1,6 @@
 import pytest
 
-from runge_kutta import ForwardEulerMethod, ExplicitMidpointMethod, RK4
+from src.runge_kutta import ForwardEulerMethod, ExplicitMidpointMethod, RK4
 
 
 def test_forward_euler_method():
