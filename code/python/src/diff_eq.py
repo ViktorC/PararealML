@@ -50,6 +50,7 @@ class RabbitPopulationDiffEq(OrdinaryDiffEq):
     """
 
     def __init__(self, n_0, r, t_0, t_max):
+        assert t_max > t_0
         self._n_0 = n_0
         self._r = r
         self._t_0 = t_0

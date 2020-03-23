@@ -38,6 +38,7 @@ class ConventionalOperator(Operator):
     Returns a discretised approximation of y over (x_a, x_b].
     """
     def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
+        assert x_b > x_a
         x = np.arange(x_a, x_b, self._d_x)
         y = np.empty(len(x))
         y_i = y_a
