@@ -9,4 +9,4 @@ test:
 	pytest -sv tests
 
 run:
-	mpiexec -n 4 python -m mpi4py src/parareal.py
+	mpiexec -n 4 python -m mpi4py src/main.py
