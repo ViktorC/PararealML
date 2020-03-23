@@ -7,7 +7,7 @@ class RungeKuttaMethod:
     """
 
     """
-    Estimates the value of y at x^ = x + d_x.
+    Estimates the value of y(x + d_x).
     """
     def integrate(self, y: float, x: float, d_x: float, d_y_wrt_x: Callable[[float, float], float]) -> float:
         pass
