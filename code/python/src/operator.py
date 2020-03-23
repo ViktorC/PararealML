@@ -1,8 +1,9 @@
-from typing import Sequence, Callable
+from typing import Sequence
 
 import numpy as np
 
-from src.runge_kutta import RungeKuttaMethod
+from src.diff_eq import OrdinaryDiffEq
+from src.integrator import Integrator
 
 
 class Operator:
@@ -12,18 +13,18 @@ class Operator:
     """
 
     """
-    Returns an estimate of y(x_max).
+    Returns an estimate of y(x_b) given x_a and y(x_a) for an x_b > x_a.
     """
-    def integrate(self, y_0: float, x_0: float, x_max: float, d_y: Callable[[float, float], float]) -> float:
+    def integrate(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> float:
         pass
 
 
 class ConventionalOperator(Operator):
     """
-    An operator using conventional Runge-Kutta integration.
+    An operator that uses conventional differential equation integration.
     """
 
-    def __init__(self, integrator: RungeKuttaMethod, d_x: float):
+    def __init__(self, integrator: Integrator, d_x: float):
         self._integrator = integrator
         self._d_x = d_x
 
@@ -34,17 +35,17 @@ class ConventionalOperator(Operator):
         return self._d_x
 
     """
-    Returns a discretised approximation of y over (x_0, x_max].
+    Returns a discretised approximation of y over (x_a, x_b].
     """
-    def trace(self, y_0: float, x_0: float, x_max: float, d_y: Callable[[float, float], float]) -> Sequence[float]:
-        x = np.arange(x_0, x_max, self._d_x)
+    def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
+        x = np.arange(x_a, x_b, self._d_x)
         y = np.empty(len(x))
-        y_i = y_0
+        y_i = y_a
         for i, t in enumerate(x):
-            x_i = x_0 + i * self._d_x
-            y_i = self._integrator.integrate(y_i, x_i, self._d_x, d_y)
+            x_i = x_a + i * self._d_x
+            y_i = self._integrator.integrate(y_i, x_i, self._d_x, diff_eq.d_y)
             y[i] = y_i
         return y
 
-    def integrate(self, y_0: float, x_0: float, x_max: float, d_y: Callable[[float, float], float]) -> float:
-        return self.trace(y_0, x_0, x_max, d_y)[-1]
+    def integrate(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> float:
+        return self.trace(diff_eq, y_a, x_a, x_b)[-1]

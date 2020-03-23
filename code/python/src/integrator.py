@@ -1,9 +1,9 @@
 from typing import Callable
 
 
-class RungeKuttaMethod:
+class Integrator:
     """
-    A base class for Runge-Kutta methods
+    A base class for ordinary differential equation integrators.
     """
 
     """
@@ -13,7 +13,7 @@ class RungeKuttaMethod:
         pass
 
 
-class ForwardEulerMethod(RungeKuttaMethod):
+class ForwardEulerMethod(Integrator):
     """
     The forward Euler method, an explicit first order Runge-Kutta method.
     """
@@ -22,7 +22,7 @@ class ForwardEulerMethod(RungeKuttaMethod):
         return y + d_x * d_y_wrt_x(x, y)
 
 
-class ExplicitMidpointMethod(RungeKuttaMethod):
+class ExplicitMidpointMethod(Integrator):
     """
     The explicit midpoint method, a second order Runge-Kutta method.
     """
@@ -31,7 +31,7 @@ class ExplicitMidpointMethod(RungeKuttaMethod):
         return y + d_x * d_y_wrt_x(x + d_x / 2., y + d_y_wrt_x(x, y) * d_x / 2.)
 
 
-class RK4(RungeKuttaMethod):
+class RK4(Integrator):
     """
     The RK4 method, an explicit fourth order Runge-Kutta method.
     """

@@ -70,19 +70,19 @@ class Parareal:
         y[0] = diff_eq.y_0()
 
         for i, t in enumerate(time_slices[:-1]):
-            y[i + 1] = self.g.integrate(y[i], t, time_slices[i + 1], diff_eq.d_y)
+            y[i + 1] = self.g.integrate(diff_eq, y[i], t, time_slices[i + 1])
         y_coarse = np.copy(y) if rank == 0 else None
 
         for i in range(min(size, self.k)):
-            my_f_trajectory = self.f.trace(y[rank], time_slices[rank], time_slices[rank + 1], diff_eq.d_y)
+            my_f_trajectory = self.f.trace(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])
             for j in range(size):
                 y_trajectory[j] = comm.bcast(my_f_trajectory, root=j)
 
-            my_g_value = self.g.integrate(y[rank], time_slices[rank], time_slices[rank + 1], diff_eq.d_y)
+            my_g_value = self.g.integrate(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])
             g_values = comm.allgather(my_g_value)
 
             for j, t in enumerate(time_slices[:-1]):
-                updated_g_value = self.g.integrate(y[j], t, time_slices[j + 1], diff_eq.d_y)
+                updated_g_value = self.g.integrate(diff_eq, y[j], t, time_slices[j + 1])
                 y[j + 1] = updated_g_value + y_trajectory[j][-1] - g_values[j]
                 y_trajectory[j] += updated_g_value - g_values[j]
 

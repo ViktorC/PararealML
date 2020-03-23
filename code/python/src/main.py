@@ -1,6 +1,6 @@
 from src.diff_eq import RabbitPopulationDiffEq
 from src.operator import ConventionalOperator
-from src.runge_kutta import ForwardEulerMethod, RK4
+from src.integrator import ForwardEulerMethod, RK4
 from src.parareal import Parareal
 
 
