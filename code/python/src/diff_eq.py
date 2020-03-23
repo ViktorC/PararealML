@@ -1,16 +1,53 @@
+import math
 
 
-class DiffEq:
+class TimeDependentDiffEq:
     """
-    A representation of time dependent differential equations.
+    A representation of a time-dependent ordinary differential equation of the form y'(t) = f(t, y(t)).
     """
 
-    def __init__(self, independent_vars, conditions):
-        self.independent_vars = independent_vars
-        self.conditions = conditions
+    """
+    Returns whether the differential equation has an analytic solution
+    """
+    def has_exact_solution(self) -> bool:
+        pass
 
-    def get_independent_vars(self):
-        return self.independent_vars
+    """
+    Returns the exact value of y(t) given t.
+    """
+    def exact_y(self, t: float) -> float:
+        pass
 
-    def get_conditions(self):
-        return self.conditions
+    """
+    Returns the value of y(0).
+    """
+    def y_0(self) -> float:
+        pass
+
+    """
+    Returns the value of the derivative of y at t given t and y(t).
+    """
+    def d_y(self, t: float, y: float) -> float:
+        pass
+
+
+class RabbitPopulationDiffEq(TimeDependentDiffEq):
+    """
+    A simple differential equation modelling the growth of a rabbit population over time.
+    """
+
+    def __init__(self, n_0, r):
+        self.n_0 = n_0
+        self.r = r
+
+    def has_exact_solution(self) -> bool:
+        return True
+
+    def exact_y(self, t: float) -> float:
+        return self.n_0 * math.exp(self.r * t)
+
+    def y_0(self) -> float:
+        return self.n_0
+
+    def d_y(self, t: float, y: float) -> float:
+        return self.r * y
