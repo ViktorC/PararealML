@@ -61,7 +61,7 @@ class RabbitPopulationDiffEq(OrdinaryDiffEq):
     def exact_y(self, t: float) -> float:
         return self._n_0 * math.exp(self._r * t)
 
-    def x_0(self) -> float:
+    def x_0(self) -> Optional[float]:
         return self._t_0
 
     def x_max(self) -> float:
