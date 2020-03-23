@@ -40,7 +40,7 @@ def test_rk4():
     x1 = 1.
     d_x = 1.
 
-    def d_y_wrt_x(x, y): return 2 * y + 1
+    def d_y_wrt_x(_, y): return 2 * y + 1
 
     expected_y2 = 3.
     actual_y2 = rk4.integrate(y1, x1, d_x, d_y_wrt_x)
