@@ -99,7 +99,7 @@ class Parareal:
 
         y_coarse = np.copy(y) if rank == 0 else None
 
-        for i in range(self.k):
+        for i in range(min(size, self.k)):
             my_f_trajectory = self.f(y[rank], time_slices[rank], time_slices[rank + 1])
             my_g_trajectory = self.g(y[rank], time_slices[rank], time_slices[rank + 1])
 
