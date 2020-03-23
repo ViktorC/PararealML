@@ -74,6 +74,9 @@ class Parareal:
 
         y_coarse = np.copy(y)
 
+        comm.Barrier()
+        start_time = MPI.Wtime()
+
         for i in range(self.k):
             my_y_corr = self._calculate_corrections(y[rank], time_slices[rank], time_slices[rank + 1])
             comm.Allgather([my_y_corr, MPI.DOUBLE], [y_corr, MPI.DOUBLE])
@@ -81,6 +84,9 @@ class Parareal:
             for j, t in enumerate(time_slices[:-1]):
                 g_value = self.g(y[j], t, time_slices[j + 1])[-1]
                 y[j + 1] = g_value + y_corr[j]
+
+        comm.Barrier()
+        end_time = MPI.Wtime()
 
         if rank == 0:
             print('Coarse solution\n', y_coarse)
@@ -94,3 +100,5 @@ class Parareal:
                     y_exact[i + 1] = self.diff_eq.exact_y(t)
 
                 print('Analytic solution\n', y_exact)
+
+            print(f'Execution took {end_time - start_time}s')
