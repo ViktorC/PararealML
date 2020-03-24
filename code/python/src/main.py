@@ -22,7 +22,9 @@ ml_solver.solve(diff_eq)
 
 if MPI.COMM_WORLD.rank == 0:
     start_time = MPI.Wtime()
-    y_x_max = f.trace(diff_eq, diff_eq.y_0(), diff_eq.x_0(), diff_eq.x_max())[-1]
+    y_x_max = f.trace(
+        diff_eq, diff_eq.y_0(), diff_eq.x_0(), diff_eq.x_max())[-1]
     end_time = MPI.Wtime()
+
     print(f'Serial fine solution: {y_x_max}')
     print(f'Serial execution took {end_time - start_time}s')

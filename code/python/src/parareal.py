@@ -10,7 +10,8 @@ from src.operator import Operator
 
 class Parareal:
     """
-    A parallel-in-time differential equation solver framework based on the Parareal algorithm.
+    A parallel-in-time differential equation solver framework based on the
+    Parareal algorithm.
     """
 
     def __init__(
@@ -46,17 +47,25 @@ class Parareal:
                 y_exact_trajectory = np.empty(len(y_trajectory))
 
                 for i, t in enumerate(
-                        np.linspace(diff_eq.x_0() + self.f.d_x(), diff_eq.x_max(), len(y_exact_trajectory))):
+                        np.linspace(
+                            diff_eq.x_0() + self.f.d_x(),
+                            diff_eq.x_max(),
+                            len(y_exact_trajectory))):
                     y_exact_trajectory[i] = diff_eq.exact_y(t)
                 print('Analytic trajectory:\n', y_exact_trajectory)
 
         if print_trajectory:
             print('Fine trajectory:\n', y_trajectory)
 
-    """
-    Runs the Parareal solver and returns the discretised solution of the differential equation.
-    """
     def solve(self, diff_eq: OrdinaryDiffEq) -> Sequence[float]:
+        """
+        Runs the Parareal solver and returns the discretised solution of the
+        differential equation.
+
+        :param diff_eq: the differential equation to solve
+        :return: the discretised trajectory of the differential equation's
+        solution
+        """
         comm = MPI.COMM_WORLD
         comm.barrier()
         start_time = MPI.Wtime()
@@ -66,7 +75,8 @@ class Parareal:
         time_slices = np.linspace(diff_eq.x_0(), diff_eq.x_max(), size + 1)
 
         y = np.empty(len(time_slices))
-        y_trajectory = np.empty((size, int(time_slices[-1] / (size * self.f.d_x()))))
+        y_trajectory = np.empty(
+            (size, int(time_slices[-1] / (size * self.f.d_x()))))
         y[0] = diff_eq.y_0()
 
         for i, t in enumerate(time_slices[:-1]):
@@ -74,15 +84,18 @@ class Parareal:
         y_coarse = np.copy(y) if rank == 0 else None
 
         for i in range(min(size, self.k)):
-            my_f_trajectory = self.f.trace(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])
+            my_f_trajectory = self.f.trace(
+                diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])
             for j in range(size):
                 y_trajectory[j] = comm.bcast(my_f_trajectory, root=j)
 
-            my_g_value = self.g.trace(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])[-1]
+            my_g_value = self.g.trace(
+                diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])[-1]
             g_values = comm.allgather(my_g_value)
 
             for j, t in enumerate(time_slices[:-1]):
-                updated_g_value = self.g.trace(diff_eq, y[j], t, time_slices[j + 1])[-1]
+                updated_g_value = self.g.trace(
+                    diff_eq, y[j], t, time_slices[j + 1])[-1]
                 y[j + 1] = updated_g_value + y_trajectory[j][-1] - g_values[j]
                 y_trajectory[j] += updated_g_value - g_values[j]
 
@@ -92,7 +105,8 @@ class Parareal:
         end_time = MPI.Wtime()
 
         if rank == 0:
-            self._print_results(diff_eq, time_slices, y_coarse, y, y_trajectory)
+            self._print_results(
+                diff_eq, time_slices, y_coarse, y, y_trajectory)
             print(f'Execution took {end_time - start_time}s')
 
         return y_trajectory

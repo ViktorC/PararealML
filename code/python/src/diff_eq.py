@@ -4,49 +4,53 @@ from typing import Optional
 
 class OrdinaryDiffEq:
     """
-    A representation of an ordinary differential equation of the form y'(x) = f(x, y(x)).
+    A representation of an ordinary differential equation of the form
+    y'(x) = f(x, y(x)).
     """
 
-    """
-    Returns whether the differential equation has an analytic solution
-    """
     def has_exact_solution(self) -> bool:
+        """
+        Returns whether the differential equation has an analytic solution
+        """
         pass
 
-    """
-    Returns the exact value of y(x) given x.
-    """
     def exact_y(self, x: float) -> Optional[float]:
+        """
+        Returns the exact value of y(x) given x.
+        """
         pass
 
-    """
-    Returns the lower bound of the differential equation's solution's domain.
-    """
     def x_0(self) -> float:
+        """
+        Returns the lower bound of the differential equation's solution's
+        domain.
+        """
         pass
 
-    """
-    Returns the upper bound of the differential equation's solution's domain.
-    """
     def x_max(self) -> float:
+        """
+        Returns the upper bound of the differential equation's solution's
+        domain.
+        """
         pass
 
-    """
-    Returns the value of y(x_0).
-    """
     def y_0(self) -> float:
+        """
+        Returns the value of y(x_0).
+        """
         pass
 
-    """
-    Returns the value of y'(x) given x and y(x).
-    """
     def d_y(self, x: float, y: float) -> float:
+        """
+        Returns the value of y'(x) given x and y(x).
+        """
         pass
 
 
 class RabbitPopulationDiffEq(OrdinaryDiffEq):
     """
-    A simple differential equation modelling the growth of a rabbit population over time.
+    A simple differential equation modelling the growth of a rabbit population
+    over time.
     """
 
     def __init__(self, n_0, r, t_0, t_max):

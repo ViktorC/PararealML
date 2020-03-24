@@ -8,20 +8,36 @@ from src.integrator import Integrator
 
 class Operator:
     """
-    A base class for an operator to estimate the solution of a differential equation over a specific domain interval
-    given an initial value.
+    A base class for an operator to estimate the solution of a differential
+    equation over a specific domain interval given an initial value.
     """
 
-    """
-    Returns the step size of the operator.
-    """
     def d_x(self) -> float:
+        """
+        Returns the step size of the operator.
+        """
         pass
 
-    """
-    Returns a discretised approximation of y over (x_a, x_b].
-    """
-    def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
+    def trace(
+            self,
+            diff_eq: OrdinaryDiffEq,
+            y_a: float,
+            x_a: float,
+            x_b: float) -> Sequence[float]:
+        """
+        Returns a discretised approximation of y over (x_a, x_b].
+
+        :param diff_eq: the differential equation whose solution's trajectory
+        is to be traced
+        :param y_a: y(x_a), that is the value of the differential equation's
+        solution at the lower bound of the interval it is to be traced over
+        :param x_a: the lower bound of the interval over which the differential
+        equation's solution is to be traced (exclusive)
+        :param x_b: the upper bound of the interval over which the differential
+        equation's solution is to be traced (inclusive)
+        :return: a sequence of floating points number representing the
+        discretised solution of the differential equation y over (x_a, x_b]
+        """
         pass
 
 
@@ -37,7 +53,12 @@ class ConventionalOperator(Operator):
     def d_x(self) -> float:
         return self._d_x
 
-    def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
+    def trace(
+            self,
+            diff_eq: OrdinaryDiffEq,
+            y_a: float,
+            x_a: float,
+            x_b: float) -> Sequence[float]:
         x = np.arange(x_a, x_b, self._d_x)
         y = np.empty(len(x))
         y_i = y_a
@@ -51,21 +72,25 @@ class ConventionalOperator(Operator):
 
 class MLOperator(Operator):
     """
-    A machine learning accelerated operator that uses a regression model to integrate differential equations.
+    A machine learning accelerated operator that uses a regression model to
+    integrate differential equations.
     """
 
-    def __init__(self, model: Any, trainer: Operator, d_x: float, data_epochs: int):
+    def __init__(
+            self, model: Any, trainer: Operator, d_x: float, data_epochs: int):
         self._model = model
         self._trainer = trainer
         self._d_x = d_x
         self._data_epochs = data_epochs
         self._diff_eq_trained_on = None
 
-    """
-    Trains the regression model behind the operator on the provided differential equation.
-    """
     def train_model(self, diff_eq: OrdinaryDiffEq):
-        x = np.arange(diff_eq.x_0(), diff_eq.x_max() + self._d_x / 2, self._d_x)
+        """
+        Trains the regression model behind the operator on the provided
+        differential equation.
+        """
+        x = np.arange(
+            diff_eq.x_0(), diff_eq.x_max() + self._d_x / 2, self._d_x)
         obs = np.empty((self._data_epochs * (len(x) - 1), 3))
         y = np.empty(len(obs))
 
@@ -87,7 +112,12 @@ class MLOperator(Operator):
     def d_x(self) -> float:
         return self._d_x
 
-    def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
+    def trace(
+            self,
+            diff_eq: OrdinaryDiffEq,
+            y_a: float,
+            x_a: float,
+            x_b: float) -> Sequence[float]:
         if diff_eq != self._diff_eq_trained_on:
             self.train_model(diff_eq)
 
