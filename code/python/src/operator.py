@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Sequence
 
 import numpy as np
 
@@ -13,14 +13,13 @@ class Operator:
     """
 
     """
-    Returns the step size of the operator. It may return None if the concept of step size does not make sense in the 
-    context of the operator.
+    Returns the step size of the operator.
     """
-    def d_x(self) -> Optional[float]:
+    def d_x(self) -> float:
         pass
 
     """
-    Returns a discretised approximation of y over (x_a, x_b]. It may return a sequence containing only y(x_b).
+    Returns a discretised approximation of y over (x_a, x_b].
     """
     def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
         pass
@@ -35,17 +34,18 @@ class ConventionalOperator(Operator):
         self._integrator = integrator
         self._d_x = d_x
 
-    def d_x(self) -> Optional[float]:
+    def d_x(self) -> float:
         return self._d_x
 
     def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
-        assert x_b > x_a
         x = np.arange(x_a, x_b, self._d_x)
         y = np.empty(len(x))
         y_i = y_a
+
         for i, x_i in enumerate(x):
             y_i = self._integrator.integrate(y_i, x_i, self._d_x, diff_eq.d_y)
             y[i] = y_i
+
         return y
 
 
@@ -68,25 +68,29 @@ class MLOperator(Operator):
         obs = np.empty((len(x) - 1, 2))
         y = np.empty(len(obs))
         y_i = diff_eq.y_0()
+
         for i, x_i in enumerate(x[:-1]):
             obs[i][0] = y_i
             obs[i][1] = diff_eq.d_y(x_i, y_i)
             y_i = self._trainer.trace(diff_eq, y_i, x_i, x[i + 1])[-1]
             y[i] = y_i
+
         self._model.fit(obs, y)
         self._diff_eq_trained_on = diff_eq
 
-    def d_x(self) -> Optional[float]:
+    def d_x(self) -> float:
         return self._d_x
 
     def trace(self, diff_eq: OrdinaryDiffEq, y_a: float, x_a: float, x_b: float) -> Sequence[float]:
-        assert x_b > x_a
         if diff_eq != self._diff_eq_trained_on:
             self.train_model(diff_eq)
+
         x = np.arange(x_a, x_b, self._d_x)
         y = np.empty(len(x))
         y_i = y_a
+
         for i, x_i in enumerate(x):
             y_i = self._model.predict([[y_i, diff_eq.d_y(x_i, y_i)]])[0]
             y[i] = y_i
+
         return y
