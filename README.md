@@ -30,5 +30,7 @@ The repository contains the following:
             * The parallel solution of the rabbit population differential equation in a parareal framework built on top of POSIX threads using the Euler method as _G_ and RK4 as _F_
         * Python:
             * A port of the C code to Python using `mpi4py` allowing for different time step sizes across the two operators _G_ and _F_
+            * A simple machine learning accelerated operator as _G_
 * Project presentation
+* Report
 * Minutes from supervisor meetings and other notes (in the Wiki)
