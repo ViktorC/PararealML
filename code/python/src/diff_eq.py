@@ -16,7 +16,7 @@ class OrdinaryDiffEq:
     """
     Returns the exact value of y(x) given x.
     """
-    def exact_y(self, t: float) -> Optional[float]:
+    def exact_y(self, x: float) -> Optional[float]:
         pass
 
     """
@@ -40,7 +40,7 @@ class OrdinaryDiffEq:
     """
     Returns the value of y'(x) given x and y(x).
     """
-    def d_y(self, t: float, y: float) -> float:
+    def d_y(self, x: float, y: float) -> float:
         pass
 
 
@@ -59,8 +59,8 @@ class RabbitPopulationDiffEq(OrdinaryDiffEq):
     def has_exact_solution(self) -> bool:
         return True
 
-    def exact_y(self, t: float) -> float:
-        return self._n_0 * math.exp(self._r * t)
+    def exact_y(self, x: float) -> float:
+        return self._n_0 * math.exp(self._r * x)
 
     def x_0(self) -> Optional[float]:
         return self._t_0
