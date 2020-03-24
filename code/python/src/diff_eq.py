@@ -59,10 +59,10 @@ class RabbitPopulationDiffEq(OrdinaryDiffEq):
     def has_exact_solution(self) -> bool:
         return True
 
-    def exact_y(self, x: float) -> float:
+    def exact_y(self, x: float) -> Optional[float]:
         return self._n_0 * math.exp(self._r * x)
 
-    def x_0(self) -> Optional[float]:
+    def x_0(self) -> float:
         return self._t_0
 
     def x_max(self) -> float:
