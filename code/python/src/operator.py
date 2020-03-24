@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Any
 
 import numpy as np
 
@@ -54,10 +54,11 @@ class MLOperator(Operator):
     A machine learning accelerated operator that uses a regression model to integrate differential equations.
     """
 
-    def __init__(self, model, trainer: ConventionalOperator, d_x: float):
+    def __init__(self, model: Any, trainer: Operator, d_x: float, data_epochs: int):
         self._model = model
         self._trainer = trainer
         self._d_x = d_x
+        self._data_epochs = data_epochs
         self._diff_eq_trained_on = None
 
     """
@@ -65,15 +66,20 @@ class MLOperator(Operator):
     """
     def train_model(self, diff_eq: OrdinaryDiffEq):
         x = np.arange(diff_eq.x_0(), diff_eq.x_max() + self._d_x / 2, self._d_x)
-        obs = np.empty((len(x) - 1, 2))
+        obs = np.empty((self._data_epochs * (len(x) - 1), 3))
         y = np.empty(len(obs))
-        y_i = diff_eq.y_0()
 
-        for i, x_i in enumerate(x[:-1]):
-            obs[i][0] = y_i
-            obs[i][1] = diff_eq.d_y(x_i, y_i)
-            y_i = self._trainer.trace(diff_eq, y_i, x_i, x[i + 1])[-1]
-            y[i] = y_i
+        for k in range(self._data_epochs):
+            offset = k * (len(x) - 1)
+            y_i = diff_eq.y_0()
+            for i, x_i in enumerate(x[:-1]):
+                ind = offset + i
+                d_y_i = diff_eq.d_y(x_i, y_i)
+                obs[ind][0] = x_i
+                obs[ind][1] = y_i
+                obs[ind][2] = d_y_i
+                y[ind] = self._trainer.trace(diff_eq, y_i, x_i, x[i + 1])[-1]
+                y_i = y[ind] + np.random.normal(0., d_y_i * self._d_x)
 
         self._model.fit(obs, y)
         self._diff_eq_trained_on = diff_eq
@@ -90,7 +96,7 @@ class MLOperator(Operator):
         y_i = y_a
 
         for i, x_i in enumerate(x):
-            y_i = self._model.predict([[y_i, diff_eq.d_y(x_i, y_i)]])[0]
+            y_i = self._model.predict([[x_i, y_i, diff_eq.d_y(x_i, y_i)]])[0]
             y[i] = y_i
 
         return y
