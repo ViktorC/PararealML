@@ -5,7 +5,7 @@ import numpy as np
 from mpi4py import MPI
 
 from src.diff_eq import OrdinaryDiffEq
-from src.operator import Operator, ConventionalOperator
+from src.operator import Operator
 
 
 class Parareal:
@@ -15,7 +15,7 @@ class Parareal:
 
     def __init__(
             self,
-            f: ConventionalOperator,
+            f: Operator,
             g: Operator,
             k: int):
         self.f = f
@@ -70,7 +70,7 @@ class Parareal:
         y[0] = diff_eq.y_0()
 
         for i, t in enumerate(time_slices[:-1]):
-            y[i + 1] = self.g.integrate(diff_eq, y[i], t, time_slices[i + 1])
+            y[i + 1] = self.g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
         y_coarse = np.copy(y) if rank == 0 else None
 
         for i in range(min(size, self.k)):
@@ -78,11 +78,11 @@ class Parareal:
             for j in range(size):
                 y_trajectory[j] = comm.bcast(my_f_trajectory, root=j)
 
-            my_g_value = self.g.integrate(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])
+            my_g_value = self.g.trace(diff_eq, y[rank], time_slices[rank], time_slices[rank + 1])[-1]
             g_values = comm.allgather(my_g_value)
 
             for j, t in enumerate(time_slices[:-1]):
-                updated_g_value = self.g.integrate(diff_eq, y[j], t, time_slices[j + 1])
+                updated_g_value = self.g.trace(diff_eq, y[j], t, time_slices[j + 1])[-1]
                 y[j + 1] = updated_g_value + y_trajectory[j][-1] - g_values[j]
                 y_trajectory[j] += updated_g_value - g_values[j]
 
