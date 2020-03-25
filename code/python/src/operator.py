@@ -1,4 +1,4 @@
-from typing import Sequence, Any
+from typing import Sequence, Any, Optional
 
 import numpy as np
 
@@ -12,7 +12,10 @@ class Operator:
     equation over a specific domain interval given an initial value.
     """
 
-    def _discretise_sub_domain(self, x_a: float, x_b: float):
+    def _discretise_sub_domain(
+            self,
+            x_a: float,
+            x_b: float) -> Sequence[float]:
         """
         Returns a discretisation of the the interval [x_a, x_b^) using the
         operator's step size, d_x, where x_b^ is x_b rounded to the nearest
@@ -109,7 +112,7 @@ class MLOperator(Operator):
         self._trainer = trainer
         self._d_x = d_x
         self._data_epochs = data_epochs
-        self._diff_eq_trained_on = None
+        self._diff_eq_trained_on: Optional[OrdinaryDiffEq] = None
 
     def train_model(self, diff_eq: OrdinaryDiffEq):
         """
