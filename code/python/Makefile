@@ -5,6 +5,9 @@ install:
 lint:
 	flake8 src/
 
+type-check:
+	mypy --ignore-missing-imports src/
+
 test:
 	pytest -sv tests/
 
