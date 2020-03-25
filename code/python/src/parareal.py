@@ -25,9 +25,9 @@ class Parareal:
         :param k: the number of corrective iterations to perform using the fine
         operator. It is capped at the number of processes running the solver.
         """
-        self.f = f
-        self.g = g
-        self.k = k
+        self._f = f
+        self._g = g
+        self._k = k
 
     def solve(self, diff_eq: OrdinaryDiffEq) -> Sequence[float]:
         """
@@ -43,16 +43,16 @@ class Parareal:
         time_slices = np.linspace(
             diff_eq.x_0(), diff_eq.x_max(), comm.size + 1)
         y_trajectory = np.empty(
-            (comm.size, int(time_slices[-1] / (comm.size * self.f.d_x()))))
+            (comm.size, int(time_slices[-1] / (comm.size * self._f.d_x()))))
         g_values = np.empty(comm.size)
         y = np.empty(len(time_slices))
         y[0] = diff_eq.y_0()
 
         for i, t in enumerate(time_slices[:-1]):
-            y[i + 1] = self.g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
+            y[i + 1] = self._g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
 
-        for i in range(min(comm.size, self.k)):
-            my_y_trajectory = self.f.trace(
+        for i in range(min(comm.size, self._k)):
+            my_y_trajectory = self._f.trace(
                 diff_eq,
                 y[comm.rank],
                 time_slices[comm.rank],
@@ -60,7 +60,7 @@ class Parareal:
             comm.Allgather(
                 [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 
-            my_g_value = self.g.trace(
+            my_g_value = self._g.trace(
                 diff_eq,
                 y[comm.rank],
                 time_slices[comm.rank],
@@ -69,7 +69,7 @@ class Parareal:
 
             for j, t in enumerate(time_slices[:-1]):
                 g_value = g_values[j]
-                new_g_value = self.g.trace(
+                new_g_value = self._g.trace(
                     diff_eq,
                     y[j],
                     t,
