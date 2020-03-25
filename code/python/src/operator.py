@@ -12,6 +12,15 @@ class Operator:
     equation over a specific domain interval given an initial value.
     """
 
+    def _discretise_sub_domain(self, x_a: float, x_b: float):
+        """
+        Returns a discretisation of the the interval [x_a, x_b^) using the
+        operator's step size, d_x, where x_b^ is x_b rounded to the nearest
+        multiple of d_x.
+        """
+        adjusted_x_b = self.d_x() * round(x_b / self.d_x())
+        return np.arange(x_a, adjusted_x_b, self.d_x())
+
     def d_x(self) -> float:
         """
         Returns the step size of the operator.
@@ -63,7 +72,7 @@ class ConventionalOperator(Operator):
             y_a: float,
             x_a: float,
             x_b: float) -> Sequence[float]:
-        x = np.arange(x_a, x_b, self._d_x)
+        x = self._discretise_sub_domain(x_a, x_b)
         y = np.empty(len(x))
         y_i = y_a
 
@@ -120,21 +129,21 @@ class MLOperator(Operator):
 
         :param diff_eq: the differential equation to train the model on
         """
-        x = np.arange(
-            diff_eq.x_0(), diff_eq.x_max() + self._d_x / 2, self._d_x)
-        obs = np.empty((self._data_epochs * (len(x) - 1), 3))
+        x = self._discretise_sub_domain(diff_eq.x_0(), diff_eq.x_max())
+        obs = np.empty((self._data_epochs * len(x), 3))
         y = np.empty(len(obs))
 
         for k in range(self._data_epochs):
-            offset = k * (len(x) - 1)
+            offset = k * len(x)
             y_i = diff_eq.y_0()
-            for i, x_i in enumerate(x[:-1]):
+            for i, x_i in enumerate(x):
                 ind = offset + i
                 d_y_i = diff_eq.d_y(x_i, y_i)
                 obs[ind][0] = x_i
                 obs[ind][1] = y_i
                 obs[ind][2] = d_y_i
-                y[ind] = self._trainer.trace(diff_eq, y_i, x_i, x[i + 1])[-1]
+                y[ind] = self._trainer.trace(
+                    diff_eq, y_i, x_i, x_i + self._d_x)[-1]
                 y_i = y[ind] + np.random.normal(0., d_y_i * self._d_x)
 
         self._model.fit(obs, y)
@@ -152,7 +161,7 @@ class MLOperator(Operator):
         if diff_eq != self._diff_eq_trained_on:
             self.train_model(diff_eq)
 
-        x = np.arange(x_a, x_b, self._d_x)
+        x = self._discretise_sub_domain(x_a, x_b)
         y = np.empty(len(x))
         y_i = y_a
 
