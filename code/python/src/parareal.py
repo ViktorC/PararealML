@@ -42,14 +42,17 @@ class Parareal:
 
         time_slices = np.linspace(
             diff_eq.x_0(), diff_eq.x_max(), comm.size + 1)
-        y_trajectory = np.empty(
-            (comm.size, int(time_slices[-1] / (comm.size * self._f.d_x()))))
-        g_values = np.empty(comm.size)
         y = np.empty(len(time_slices))
         y[0] = diff_eq.y_0()
 
+        f_values = np.empty(comm.size)
+        g_values = np.empty(comm.size)
+        new_g_values = np.empty(comm.size)
+
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self._g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
+
+        my_y_trajectory = None
 
         for i in range(min(comm.size, self._k)):
             my_y_trajectory = self._f.trace(
@@ -57,8 +60,9 @@ class Parareal:
                 y[comm.rank],
                 time_slices[comm.rank],
                 time_slices[comm.rank + 1])
+            my_f_value = my_y_trajectory[-1]
             comm.Allgather(
-                [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
+                [my_f_value, MPI.DOUBLE], [f_values, MPI.DOUBLE])
 
             my_g_value = self._g.trace(
                 diff_eq,
@@ -68,14 +72,23 @@ class Parareal:
             comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
 
             for j, t in enumerate(time_slices[:-1]):
+                f_value = f_values[j]
                 g_value = g_values[j]
+                correction = f_value - g_value
+
                 new_g_value = self._g.trace(
                     diff_eq,
                     y[j],
                     t,
                     time_slices[j + 1])[-1]
+                new_g_values[j] = new_g_value
 
-                y_trajectory[j] += new_g_value - g_value
-                y[j + 1] = y_trajectory[j][-1]
+                y[j + 1] = new_g_value + correction
 
-        return y_trajectory.flatten()
+        my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
+        y_trajectory = np.empty(
+            comm.size * int(time_slices[-1] / (comm.size * self._f.d_x())))
+        comm.Allgather(
+            [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
+
+        return y_trajectory
