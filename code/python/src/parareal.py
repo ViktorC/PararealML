@@ -19,6 +19,12 @@ class Parareal:
             f: Operator,
             g: Operator,
             k: int):
+        """
+        :param f: the fine operator
+        :param g: the coarse operator
+        :param k: the number of corrective iterations to perform using the fine
+        operator. It is capped at the number of processes running the solver.
+        """
         self.f = f
         self.g = g
         self.k = k
@@ -57,12 +63,17 @@ class Parareal:
         if print_trajectory:
             print('Fine trajectory:\n', y_trajectory)
 
-    def solve(self, diff_eq: OrdinaryDiffEq) -> Sequence[float]:
+    def solve(
+            self,
+            diff_eq: OrdinaryDiffEq,
+            verbose: bool = True) -> Sequence[float]:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
 
         :param diff_eq: the differential equation to solve
+        :param verbose: whether information about the solution and the
+        execution time should be printed
         :return: the discretised trajectory of the differential equation's
         solution
         """
@@ -104,7 +115,7 @@ class Parareal:
         comm.barrier()
         end_time = MPI.Wtime()
 
-        if rank == 0:
+        if verbose and rank == 0:
             self._print_results(
                 diff_eq, time_slices, y_coarse, y, y_trajectory)
             print(f'Execution took {end_time - start_time}s')

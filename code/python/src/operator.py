@@ -47,6 +47,10 @@ class ConventionalOperator(Operator):
     """
 
     def __init__(self, integrator: Integrator, d_x: float):
+        """
+        :param integrator: the differential equation integrator to use
+        :param d_x: the step size to use with the integrator
+        """
         self._integrator = integrator
         self._d_x = d_x
 
@@ -78,6 +82,20 @@ class MLOperator(Operator):
 
     def __init__(
             self, model: Any, trainer: Operator, d_x: float, data_epochs: int):
+        """
+        :param model: the regression model to use as the integrator; its input
+        are the values of x, y(x), and y'(x) and its output is y(x + d_x) where
+        d_x is the step size of this operator defined by the corresponding
+        constructor argument
+        :param trainer: the operator for generating the labels for the data
+        to train the regression model on
+        :param d_x: the step size of the operator; it determines the lengths of
+        the domain slices over which the training operator is used to trace the
+        differential equation's solution and provide the labels for the
+        training data
+        :param data_epochs: the number of iterations to perform over the domain
+        of the differential equation to generate the training data
+        """
         self._model = model
         self._trainer = trainer
         self._d_x = d_x
@@ -88,6 +106,19 @@ class MLOperator(Operator):
         """
         Trains the regression model behind the operator on the provided
         differential equation.
+
+        It generates the training data by repeatedly iterating over the domain
+        of the differential equation in steps of size d_x and tracing the
+        solution using the training operator. At every step i, a new training
+        data point is created out of the values of x_i, y(x_i), and y'(x_i)
+        labelled by y(x_i+1) = y(x_i + d_x) as estimated by the training
+        operator. Once the data point is created, a 0-mean Gaussian noise is
+        added to the value of y(x_i+1) to perturbate the trajectory of y.
+        This introduces some variance to the training data and helps better
+        approximate the function represented by the training operator. The
+        standard deviation of this Gaussian is y'(x_i) * d_x.
+
+        :param diff_eq: the differential equation to train the model on
         """
         x = np.arange(
             diff_eq.x_0(), diff_eq.x_max() + self._d_x / 2, self._d_x)
