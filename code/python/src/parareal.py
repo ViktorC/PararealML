@@ -42,31 +42,30 @@ class Parareal:
 
         time_slices = np.linspace(
             diff_eq.x_0(), diff_eq.x_max(), comm.size + 1)
-        y = np.empty(len(time_slices))
         y_trajectory = np.empty(
             (comm.size, int(time_slices[-1] / (comm.size * self.f.d_x()))))
+        g_values = np.empty(comm.size)
+        y = np.empty(len(time_slices))
         y[0] = diff_eq.y_0()
 
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self.g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
 
         for i in range(min(comm.size, self.k)):
-            my_f_trajectory = self.f.trace(
+            my_y_trajectory = self.f.trace(
                 diff_eq,
                 y[comm.rank],
                 time_slices[comm.rank],
                 time_slices[comm.rank + 1])
-
-            for j in range(comm.size):
-                y_trajectory[j] = comm.bcast(my_f_trajectory, root=j)
+            comm.Allgather(
+                [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 
             my_g_value = self.g.trace(
                 diff_eq,
                 y[comm.rank],
                 time_slices[comm.rank],
                 time_slices[comm.rank + 1])[-1]
-
-            g_values = comm.allgather(my_g_value)
+            comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
 
             for j, t in enumerate(time_slices[:-1]):
                 g_value = g_values[j]
