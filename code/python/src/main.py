@@ -45,7 +45,7 @@ time_parallel_solver_and_print_result(parareal_ml, 'Parareal ML w/o training')
 time_parallel_solver_and_print_result(parareal, 'Parareal')
 
 if comm.rank == 0:
-    print(f'Analytic solution: {diff_eq.exact_y(diff_eq.x_max())}')
-    time_operator_and_print_result(f, 'Fine')
     time_operator_and_print_result(g, 'Coarse')
     time_operator_and_print_result(g_ml, 'Coarse ML')
+    time_operator_and_print_result(f, 'Fine')
+    print(f'Analytic solution: {diff_eq.exact_y(diff_eq.x_max())}')

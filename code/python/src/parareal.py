@@ -69,9 +69,14 @@ class Parareal:
             g_values = comm.allgather(my_g_value)
 
             for j, t in enumerate(time_slices[:-1]):
-                updated_g_value = self.g.trace(
-                    diff_eq, y[j], t, time_slices[j + 1])[-1]
-                y[j + 1] = updated_g_value + y_trajectory[j][-1] - g_values[j]
-                y_trajectory[j] += updated_g_value - g_values[j]
+                g_value = g_values[j]
+                new_g_value = self.g.trace(
+                    diff_eq,
+                    y[j],
+                    t,
+                    time_slices[j + 1])[-1]
+
+                y_trajectory[j] += new_g_value - g_value
+                y[j + 1] = y_trajectory[j][-1]
 
         return y_trajectory.flatten()
