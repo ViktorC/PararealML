@@ -2,7 +2,7 @@ from mpi4py import MPI
 from sklearn.linear_model import LinearRegression
 
 from src.diff_eq import RabbitPopulationDiffEq
-from src.integrator import ForwardEulerMethod, RK4
+from src.integrator import ExplicitMidpointMethod, RK4
 from src.operator import ConventionalOperator, MLOperator
 from src.parareal import Parareal
 
@@ -10,7 +10,7 @@ from src.parareal import Parareal
 def time_parallel_solver_and_print_result(parallel_solver, solver_name):
     comm.barrier()
     start_time = MPI.Wtime()
-    y_max = parallel_solver.solve(diff_eq)[-1]
+    y_max = parallel_solver.solve(diff_eq, threshold)[-1]
     comm.barrier()
     end_time = MPI.Wtime()
     if comm.rank == 0:
@@ -32,13 +32,13 @@ comm = MPI.COMM_WORLD
 diff_eq = RabbitPopulationDiffEq(1000., 1e-4, 0., 50000.)
 
 f = ConventionalOperator(RK4(), .01)
-g = ConventionalOperator(ForwardEulerMethod(), .1)
+g = ConventionalOperator(ExplicitMidpointMethod(), .25)
 g_ml = MLOperator(LinearRegression(), g, 100., 10)
 
-k = 1
+parareal = Parareal(f, g)
+parareal_ml = Parareal(f, g_ml)
 
-parareal_ml = Parareal(f, g_ml, k)
-parareal = Parareal(f, g, k)
+threshold = 1e-3
 
 time_parallel_solver_and_print_result(parareal_ml, 'Parareal ML w/ training')
 time_parallel_solver_and_print_result(parareal_ml, 'Parareal ML w/o training')

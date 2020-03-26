@@ -17,24 +17,27 @@ class Parareal:
     def __init__(
             self,
             f: Operator,
-            g: Operator,
-            k: int):
+            g: Operator):
         """
         :param f: the fine operator
         :param g: the coarse operator
-        :param k: the number of corrective iterations to perform using the fine
-        operator. It is capped at the number of processes running the solver.
         """
         self._f = f
         self._g = g
-        self._k = k
 
-    def solve(self, diff_eq: OrdinaryDiffEq) -> Sequence[float]:
+    def solve(
+            self,
+            diff_eq: OrdinaryDiffEq,
+            threshold: float) -> Sequence[float]:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
 
         :param diff_eq: the differential equation to solve
+        :param threshold: the minimum absolute value of the largest update to
+        the solution required to perform another corrective iteration; if all
+        updates are smaller than the threshold, the solution is considered
+        accurate enough
         :return: the discretised trajectory of the differential equation's
         solution
         """
@@ -54,7 +57,7 @@ class Parareal:
 
         my_y_trajectory = None
 
-        for i in range(min(comm.size, self._k)):
+        for i in range(comm.size):
             my_y_trajectory = self._f.trace(
                 diff_eq,
                 y[comm.rank],
@@ -71,6 +74,8 @@ class Parareal:
                 time_slices[comm.rank + 1])[-1]
             comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
 
+            max_update = 0.
+
             for j, t in enumerate(time_slices[:-1]):
                 f_value = f_values[j]
                 g_value = g_values[j]
@@ -83,7 +88,13 @@ class Parareal:
                     time_slices[j + 1])[-1]
                 new_g_values[j] = new_g_value
 
-                y[j + 1] = new_g_value + correction
+                new_y_next = new_g_value + correction
+                max_update = max(max_update, abs(new_y_next - y[j + 1]))
+
+                y[j + 1] = new_y_next
+
+            if max_update < threshold:
+                break
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         y_trajectory = np.empty(
