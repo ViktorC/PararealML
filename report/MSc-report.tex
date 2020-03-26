@@ -3,6 +3,7 @@
 \usepackage{epcc}
 \usepackage{graphics}
 \usepackage{booktabs}
+\usepackage{pgfgantt}
 
 \renewcommand{\labelenumii}{\theenumii}
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
@@ -27,7 +28,9 @@
 
 \section{Introduction}
 
-Differential equations can model a wide array of dynamical systems that play important roles in science, engineering, and finance. Examples of these include population growth, the motion of fluids, and changes in stock prices. While some simple differential equations can be solved analytically, most of them require a numerical approach \cite[p.~310]{suli2003}. Due to the importance of these models, their accurate and efficient numerical solution is a well researched area of numerical analysis. A lot of this research is focused on the parallelisation of numerical solvers to achieve better accuracy or reduce execution times. Traditionally, this parallelisation is applied either across the system or across time \cite{gear1988}.
+Differential equations can model a wide array of dynamical systems that play important roles in science, engineering, and finance. Examples of these include population growth, the motion of fluids, and stock market dynamics. While some simple differential equations can be solved analytically, most of them require a numerical approach \cite[p.~310]{suli2003}. Due to the importance of these models, their accurate and efficient numerical solution is a well researched area of numerical analysis. A lot of this research is focused on the parallelisation of numerical solvers to achieve higher accuracy or reduce execution times. Usually, this parallelisation is applied either across the system or across time \cite{gear1988}. The former generally means exploiting parallelism for the evaluation or integration of the right-hand side of a differential equation at a single point \cite[p.~1-2]{solodushkin2016}. While it is a straightforward approach, it works well only for high dimensional differential equations. On the other hand, parallel-in-time methods allow for the utilisation of high levels of parallelism regardless the dimensionality of the problem.
+
+Our project focuses on the Parareal algorithm \cite{parareal} from the family of parallel-in-time methods. This algorithm divides the time domain up into $P$ slices where $P$ is the number of executing processes or threads.
 
 \section{Background and Literature Review}
 
@@ -46,21 +49,62 @@ To do...
 \begin{enumerate}
     \item Implement framework
         \begin{enumerate}
-        	\item Add support for systems of ODEs
-        	\item Add support for PDEs
-        	\item Add all the ML operators
+        	\item Support systems of ODEs
+        	\item Support PDEs
+        	\item Add ML operators
         	\item Optimise
         \end{enumerate}
     \item Benchmark
         \begin{enumerate}
-        	\item Compare the ML operator to conventional ones
-        	\item Compare the Parareal framework with and without ML
-        	\item Measure the execution time of the Parareal (ML) framework against a traditional parallel solver
+        	\item ML operators
+        	\item Framework with and without ML
+        	\item Against another parallel solver
         \end{enumerate}
     \item Write dissertation
+        \begin{enumerate}
+        	\item Background
+        	\item Problem formulation
+        	\item Design and implementation
+        	\item Results
+        	\item Proof read
+        \end{enumerate}
 \end{enumerate}
 
+\begin{figure}[!htb]
+\begin{center}
+\ganttset{calendar week text={W\currentweek}}
+\begin{ganttchart}[
+        hgrid,
+        vgrid,
+        x unit=1mm,
+        y unit chart=5mm,
+        time slot format=isodate,
+        time slot unit=day]{2020-05-25}{2020-08-23}
+    \gantttitlecalendar{month=name, week=1} \\
+    \ganttgroup{Implement framework}{2020-05-25}{2020-07-18} \\
+    \ganttbar[bar/.style={fill=red!50}]{Support systems of ODEs}{2020-05-25}{2020-06-07} \\
+    \ganttbar[bar/.style={fill=red!50}]{Support PDEs}{2020-05-31}{2020-06-14} \\
+    \ganttbar[bar/.style={fill=red!50}]{Add ML operators}{2020-06-14}{2020-06-28} \\
+    \ganttbar[bar/.style={fill=red!50}]{Optimise}{2020-06-28}{2020-07-18} \\
+    \ganttgroup{Benchmark}{2020-07-04}{2020-07-17} \\
+    \ganttbar[bar/.style={fill=green!50}]{ML operators}{2020-07-04}{2020-07-10} \\
+    \ganttbar[bar/.style={fill=green!50}]{Framework with and without ML}{2020-07-08}{2020-07-13} \\
+    \ganttbar[bar/.style={fill=green!50}]{Against another parallel solver}{2020-07-10}{2020-07-17} \\
+    \ganttgroup{Write dissertation}{2020-05-25}{2020-08-21} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Background}{2020-05-25}{2020-06-11} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Problem formulation}{2020-06-12}{2020-06-28} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Design and implementation}{2020-06-29}{2020-07-24} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Results}{2020-07-25}{2020-08-15} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Proof read}{2020-08-16}{2020-08-21}
+\end{ganttchart}
+\end{center}
+\caption{Gantt chart of the dissertation work plan}
+\label{fig:gantt}
+\end{figure}
+
 \section{Risk Analysis}
+
+We identify the main risks as:
 
 \begin{itemize}
     \item Failure to implement a single framework to handle both ODEs and PDEs
@@ -101,7 +145,7 @@ To do...
         \begin{enumerate}
     		\item Machine learning operator performance
     		\item Parareal performance with and without machine learning
-    		\item Parareal performance against conventional parallel solver
+    		\item Framework performance against conventional parallel solvers
     	\end{enumerate}
 	\item Conclusions
 \end{enumerate}
