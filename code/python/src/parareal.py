@@ -28,15 +28,15 @@ class Parareal:
     def solve(
             self,
             diff_eq: OrdinaryDiffEq,
-            threshold: float) -> Sequence[float]:
+            tol: float) -> Sequence[float]:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
 
         :param diff_eq: the differential equation to solve
-        :param threshold: the minimum absolute value of the largest update to
+        :param tol: the minimum absolute value of the largest update to
         the solution required to perform another corrective iteration; if all
-        updates are smaller than the threshold, the solution is considered
+        updates are smaller than this threshold, the solution is considered
         accurate enough
         :return: the discretised trajectory of the differential equation's
         solution
@@ -93,7 +93,7 @@ class Parareal:
 
                 y[j + 1] = new_y_next
 
-            if max_update < threshold:
+            if max_update < tol:
                 break
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
