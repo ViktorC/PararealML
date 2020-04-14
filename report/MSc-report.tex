@@ -4,6 +4,7 @@
 \usepackage{graphics}
 \usepackage{booktabs}
 \usepackage{pgfgantt}
+\usepackage{url}
 
 \renewcommand{\labelenumii}{\theenumii}
 \renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
@@ -28,47 +29,97 @@
 
 \section{Introduction}
 
-Differential equations can model a wide array of dynamical systems that play important roles in science, engineering, and finance. Examples of these include population growth, the motion of fluids, and stock market dynamics. While some simple differential equations can be solved analytically, most of them require a numerical approach \cite[p.~310]{suli2003}. Due to the importance of these models, their accurate and efficient numerical solution is a well researched area of numerical analysis. A lot of this research is focused on the parallelisation of numerical solvers to achieve higher accuracy or reduce execution times. Usually, this parallelisation is applied either across the system or across time \cite{gear1988}. The former generally means exploiting parallelism for the evaluation or integration of the right-hand side of a differential equation at a single point \cite[p.~1-2]{solodushkin2016}. While it is a straightforward approach, it works well only for high dimensional differential equations. On the other hand, parallel-in-time methods allow for the utilisation of high levels of parallelism regardless the dimensionality of the problem.
+Differential equations can model a wide array of dynamical systems that play important roles in science, engineering, and finance. Examples of these include population growth, the motion of fluids, and stock market dynamics. While some simple differential equations can be solved analytically, most of them require a numerical approach \cite[p.~310]{suli2003}. Due to the importance of these models, their accurate and efficient solution is a well researched area of numerical analysis. A lot of this research is focused on the parallelisation of numerical solvers to achieve higher accuracy or to reduce execution times. Usually, this parallelisation is applied either across the system or across time \cite{gear1988}. The former generally means exploiting parallelism for the evaluation or integration of the right-hand side of a differential equation at a single time point \cite[p.~1-2]{solodushkin2016}. While this is a straightforward approach, it only works well for high dimensional differential equations. In contrast, parallel-in-time methods allow for the utilisation of high levels of parallelism regardless of the dimensionality of the problem.
 
-Our project focuses on the Parareal algorithm \cite{parareal} from the family of parallel-in-time methods. This algorithm divides the time domain up into $P$ slices where $P$ is the number of executing processes or threads.
+Our project focuses on the Parareal algorithm \cite{Parareal} from the family of parallel-in-time methods. Given the necessary computational resources, this algorithm can solve problems faster, in terms of wall clock time, than traditional parallel solvers which can usually only take advantage of limited levels of parallelism tightly bounded by the problem size. This property of the algorithm makes it ideal for problems requiring real-time solutions which is why it is called "Parareal" \cite[p.~3]{staff2003}.
+
+The algorithm works by dividing the time domain up into $P$ slices where $P$ is the number of executing processes or threads. Each one of these $P$ time slices then represents an initial value problem (IVP) that can be solved in parallel. To calculate the initial values, the Parareal algorithm relies on a coarse operator $G$ that is run serially. Once the initial value estimates are computed, the fine operator $F$ is run in parallel across the time slices to solve the individual IVPs and provide correction terms for the subsequent initial values. This is an iterative process where each iteration refines the solution and the total number of iterations necessary is determined by the solution's accuracy requirements.
+
+As $G$ is executed serially, it needs to be as fast as possible to avoid creating a bottleneck that restricts parallel speed-up. However, it also needs to be accurate enough to keep the number of corrective iterations required at the minimum. Conventional coarse operators, such as those relying on numerical integration, usually trace the approximate solution using a significantly finer temporal discretisation than the extents of the $P$ time slices. The finer this step size is, the more accurate the initial value estimates are \cite[p.~319-320]{suli2003}. However, a finer step size also means more evaluations to calculate the initial values. Moreover, there is an additional trade-off between the sophistication of the operator and the step size. Higher order numerical integrators, for example, are more accurate but they are also more computationally expensive \cite[p.~325]{suli2003}.
+
+This brings us to the primary hypothesis of our project which is that a machine learning (ML) model can be trained and used as the coarse operator $G$ in a Parareal framework and it can achieve better performance, in terms of accuracy and execution time, than conventional operators. As there is a substantial body-of-work on using ML to solve differential equations, we begin this report by briefly introducing the most relevant and most notable pieces of research. We then present some of the results of our preliminary investigations into the dissertation project. Following that, we elaborate on our final project proposal, introduce our work plan, present our risk analysis, and outline the contents of the dissertation report. Lastly, we finish with a review of Nestor Sanchez' dissertation from 2018 "Fitting Large-Scale Gaussian Mixtures With Accelerated Gradient Descent" \cite{sanchez2018}.
 
 \section{Background and Literature Review}
 
-To do...
+Parallel-in-time methods, and the Parareal algorithm in particular, have been attracting a lot of interest due to their suitability for long-time simulations and problems requiring fast solutions \cite{gurrala2015}. A lot of this interest has been directed to the analysis of the algorithm itself \cite{staff2003} \cite{gander2007}. An important property of the Parareal algorithm is that it converges to the serial solution as computed by $F$ in a maximum of $P$ iterations \cite[p.~6-7]{staff2003}. However, for optimal speedup, the algorithm needs to converge in much fewer iterations than $P$. In fact, if the computational cost of integrating over the entire domain using the operator $G$ matches the cost of integrating over a single time slice using $F$, the algorithm has to converge in fewer than $P / 2$ iterations to achieve any speedup \cite[p.~7]{staff2003}.
+
+This trade-off between the number of iterations to convergence and the computational cost of $G$ is a crucial element of the Parareal algorithm's performance characteristics. Operators that are faster at the same level of accuracy result in better parallel speedup due to a reduced serial bottleneck. Likewise, operators that are more accurate at the same speed yield better parallel speedup due to faster convergence. This leads us to another important property of the algorithm which is that as long as both $G$ and $F$ are convergent and stable, they can be of completely different classes of solvers and they may even solve slightly different versions of the differential equation \cite[p.~8]{staff2003}. Therefore, the Parareal algorithm is indifferent to how its operators work as long as they meet the above requirements and conform to the same interface.
+
+This property of the algorithm has been the focal point of most research into maximizing its speedup. Some of this research has tried to address the speed-accuracy dilemma of the coarse operator by relaxing its speed requirements through more efficient implementations of the Parareal algorithm using improved scheduling. In these event based frameworks, instead of waiting for the entire previous iteration to complete, the tasks associated with the time slices are run as soon as the necessary data is available \cite{aubanel2011} \cite{berry2012}.
+
+In contrast, others have attempted to tackle the issue directly by experimenting with different coarse operators. Generally, a simple Runge-Kutta method \cite{runge1895} such as Euler's method is used as $G$ and a higher order method, potentially with finer temporal discretisation, such as the Runge-Kutta 4th order (RK4) method is used as $F$ \cite[p.~1822]{gurrala2015} \cite[p.~2]{duan2016}. However, it has been shown that there is more to consider than just the integration method and its step size. In some cases, it is possible to improve the speed of the coarse operator without a significant detriment to accuracy by simplifying the differential equation (only for $G$) and thus reducing the complexity of the model it operates on \cite{duan2016}. Consequently, selecting and fine tuning the coarse operator is a challenging task that boils down to finding or building a differential equation solver with optimal speed and accuracy characteristics for the problem at hand.
+
+Given the success of ML in a wide range of computational fields, it is unsurprising that their application to the solution of differential equations is a popular field of research. Due to their prowess as universal function approximators \cite{hornik1991}, most efforts are targeted towards using artificial neural networks (ANN) to approximate the solutions of differential equations \cite{lagaris1998} \cite{lagaris2000} \cite{han2018}. While the majority of these works take advantage of the differentiability of neural networks and use training processes tailored explicitly to them, it has been shown that it is possible to use ML models to approximate differential equations in a strictly supervised, black-box setting as well \cite{regazzoni2019}.
+
+Perhaps the most successful approach so far to solve complex differential equations with ML is based on so called physics informed neural networks (PINN) \cite{raissi2017} \cite{tartakovsky2018} \cite{sirignano2018}. PINNs are architecturally standard neural networks with the values of the differential equation's independent variables ($t$ and $x$) as their input and the value of the solution at the point defined by the independent variables as their output. The most important feature of PINNs is their specialised loss function that penalises violations of the initial conditions, the boundary conditions, and the differential equation itself in the form of L2 terms. This loss function allows the network to be trained through gradient descent in a largely unsupervised fashion on collocation points sampled from the differential equation's spatiotemporal domain according to a multivariate distribution (with an additional set of points sampled from the boundaries of the spatial domain according to a different distribution). While PINNs are highly efficient for certain types of high dimensional partial differential equations (PDE), for many problems they are still slower than conventional solvers such as the finite element method (FEM) \cite{lu2019}.
+
+One of the main issues with PINNs is that their training can easily become prohibitively expensive for long-time simulations as the amount of data required to train them is proportional to the extent of the temporal domain. This is what parallel-in-time PINNs (PPINN) \cite{meng2019} address by essentially replacing the fine operator $F$ in a Parareal framework with a PINN. We note that while PPINNs involve both the Parareal algorithm and an ML operator, they are merely a time-parallel implementation of PINNs rather than a solution to the speed-accuracy dilemma of coarse operators. Therefore, PPINNs are vulnerable to the same speedup limitations imposed by potentially poor convergence or serial bottlenecks.
 
 \section{Preliminary Investigations}
 
+In order to complement our literature review and crystallise our understanding of the dissertation project, we have taken a practical approach to our initial investigations. As part of these investigations, we have accomplished three milestones which we briefly present below.
 
+The first one of these milestones has been the implementation of a basic 1D diffusion simulation in C. This simulation uses simple Dirichlet boundary conditions and Gaussian initial values. The spatial discretisation is done via the finite difference method and the integrator used is Euler's method.
+
+The second, somewhat more ambitious milestone has been the implementation of a simple shared-memory Parareal framework in C using POSIX threads to solve an ordinary differential equation (ODE) describing the population growth of rabbits. This framework employs Euler's method as $G$, RK4 as $F$, and can only handle matching coarse and fine operator step sizes. Although the algorithm runs for a predefined number of corrective iterations, the implementation demonstrates a significant speedup at reasonable levels of accuracy even when running on only 4 threads. Moreover, it showcases how the parallel solution converges to the serial fine solution as the number of iterations approaches $P$.
+
+Finally, our third and most substantial milestone has been the development of a distributed Parareal framework in Python using mpi4py \cite{dalcin2005}. This framework is fairly flexible in that it can handle any operator and any ODE that conform to the respective interface definitions. The algorithm also supports early stopping based on the absolute value of the largest update to the solution at any time step. In addition, the framework provides a number of Runge-Kutta method implementations and a conventional operator that takes an integrator instance and a step size value as its parameters. Furthermore, the framework also includes an ML accelerated operator implementation that is parameterised by a regression model, a target operator, and a step size. The ML operator trains the model on every new differential equation by generating a set of input-output pairs through a stochastic process using the target operator and fitting the regression model to the generated data. Using this approach, we have successfully trained and utilised an ML operator backed by a linear regression model as the coarse operator $G$ in our Parareal framework to solve a simple ODE.
+
+Through these milestones, we have improved our understanding of the Parareal algorithm and gained a bit of experience in applied numerical analysis. Moreover, we have also managed to confirm the project's feasibility on a highly simplified problem by showing that an ML accelerated coarse operator can outperform a conventional one. Finally, we have created a strong foundation and starting point for our dissertation project.
 
 \section{Final Proposal}
 
-
-
-\section{Workplan}
+Our final project proposal is based closely on the key steps outlined in the original proposal and it introduces only minor changes. The focus remains implementing a Parareal framework using an ML model as the coarse operator and solving differential equations of increasing complexity. Similarly, the primary metrics are still the wall time, computational cost, and accuracy of the coarse operator and the framework as a whole. Consequently, we formulate our research questions as
 
 \begin{enumerate}
-    \item Implement framework
+    \item how does an ML accelerated coarse operator compare to traditional coarse operators in terms of wall time and accuracy
+    \item is an ML accelerated Parareal framework faster than a conventional Parareal framework given the same accuracy requirements
+    \item is an ML accelerated Parareal framework faster than other conventional parallel solvers given the same accuracy requirements and using the same number of parallel processes
+\end{enumerate}
+
+To answer our first research question, we propose training and evaluating a number of different regression models to replace the coarse operator. The models we are interested in trying include linear regression, decision tree ensembles such as boosted trees and random forests, and ANNs. All of these models can be treated as black boxes in terms of both training and evaluation. Their output is the estimate of the solution of the differential equation at the next time step (as determined by the step size of the operator) while their inputs are some combination or subset of the values of the independent variables, the derivatives of the solution, and the estimate of the solution at the provided values of the independent variables. These target outputs are supplied by a conventional operator which may be the intended fine operator of the framework or an entirely unrelated one.
+
+In addition, we also intend to try sequence models such as recurrent neural networks (RNN) to capture temporal patterns in the differential equations' solutions. We hypothesize that this increases the robustness of the learned models and aids the approximation of periodic solutions. However, this requires the capturing of inputs from possibly multiple previous time steps. Therefore, we propose a more general training and evaluation scheme where the input is a sequence. The training of the non-recurrent models would be, thus, merely a special case of this scheme where the input sequence contains only one element. This allows for the implementation of a single ML accelerated operator that is agnostic of the model.
+
+Finally, we also intend to train and evaluate a separate class of ML accelerated operators backed by PINNs. As the training process of PINNs is significantly different, they are not interchangeable with other models. However, due to the fact that this training process is largely unsupervised and mesh-free, PINNs are likely the best option for higher dimensional PDEs. Therefore, we propose implementing an additional, PINN based ML accelerated operator to be used as the coarse operator of our Parareal framework. This differs from \cite{meng2019} in that employing a PINN as the coarse operator, instead of the fine one, allows us to increase the step size and thus minimise the number of inferences without compromising the fine trajectory of our solution (as the coarse operator only needs to provide the estimates of the initial conditions of the time slices and not the fine solution). Consequently, this enables us to experiment with more complex network architectures in favour of higher accuracy at a lower cost to wall time.
+
+We propose implementing our operators in Python using sklearn \cite{pedregosa2011} for linear regression and the decision tree based models and either Tensorflow \cite{mart2015} and Keras \cite{chollet2015} or PyTorch \cite{paszke2019} for the neural network models. As for our benchmarks, we plan to compare the execution time and accuracy of the ML accelerated operators to conventional solvers provided by scipy \cite{scipy2020}, FEniCS \cite{fenics2015}, and FiPy \cite{fipy2009} (depending on the type of the differential equation). Additionally, we are also interested in the training times of the ML operators using different models. For differential equations without an analytic solution, we base our accuracy comparisons on the solutions of higher order, small step-size solvers.
+
+To answer our second question, we propose extending the Python Parareal framework implemented as part of our preliminary investigations. As most of the computationally expensive operations are delegated to third party libraries with C bindings, we expect the performance cost of using Python to be minimal. In case the overhead proves to be more significant than expected, we can further optimize our Parareal implementation using static typing with Cython \cite{behnel2010}.
+
+For the comparison between the ML accelerated and the normal versions of our Parareal framework, we are interested in the wall time of the solution using the same number of processes and the same accuracy requirements. To ensure our analysis is comprehensive enough, we propose performing comparisons across different combinations of process counts and accuracy levels. We intend to time the ML accelerated version both including and excluding the training of the models. Furthermore, we also aim to consider the amortized cost of model training through transfer learning. We plan to do so by quantifying how well a model trained on one IVP performs on a different IVP expressed by the same differential equation. We propose using the same approach to answer the third research question as well where we compare our ML accelerated Parareal framework to conventional parallel ODE and PDE solvers provided by FEniCS.
+
+Finally, as for the differential equations to benchmark our operators and framework on, we set forth three different problems of increasing complexity. The first one is the Lotka-Volterra model \cite{lotka1926} \cite{volterra1927} which is a system of two ODEs expressing the dynamics of the populations of predators and their preys. This requires the extension of our initial framework to handle systems of differential equations which is the same as handling differential equations with vector valued solutions. The second differential equation we propose solving is the two dimensional heat equation. This requires the extension of the framework to handle PDEs, that is differential equations of multiple independent variables. Lastly, the third problem we consider is the Black-Scholes equation \cite{black1973} which is a high dimensional PDE that can be computationally challenging to solve using traditional mesh-based approaches.
+
+\section{Work Plan}
+
+In this section, we outline our work plan for the dissertation period beginning on 25th May and ending on 21st August. The units of work listed below are based on our final project proposal.
+
+\begin{enumerate}
+    \item Implementation
         \begin{enumerate}
-        	\item Support systems of ODEs
-        	\item Support PDEs
-        	\item Add ML operators
-        	\item Optimise
-        \end{enumerate}
-    \item Benchmark
-        \begin{enumerate}
+        	\item Testing
+        	\item Systems of ODEs
+        	\item PDEs
         	\item ML operators
+        	\item Optimisation
+        \end{enumerate}
+    \item Benchmarking
+        \begin{enumerate}
+        	\item Only ML operators
         	\item Framework with and without ML
         	\item Against another parallel solver
         \end{enumerate}
-    \item Write dissertation
+    \item Writing
         \begin{enumerate}
-        	\item Background
-        	\item Problem formulation
-        	\item Design and implementation
-        	\item Results
-        	\item Proof read
+            \item Engineering log
+            \item Phase 1
+            \item Phase 2
+        	\item Proof reading
         \end{enumerate}
 \end{enumerate}
+
+The three main tasks of the dissertation we identify are the implementation of the software framework, the benchmarking of its performance, and the write up of the dissertation report. Each one of these high level tasks are divided up into smaller sub-tasks. For the implementation task, these sub-tasks are software testing, the extension of the Parareal framework to handle systems of ODEs and individual PDEs, the implementation of the two final ML accelerated operators discussed in the project proposal (one for PINNs and one for all the other models), and code optimisation. As for the benchmarking task, the sub-tasks are the comparison of the ML accelerated operator to conventional operators, the comparison of the Parareal framework using an ML accelerated coarse operator to the same framework using a conventional coarse operator, and the comparison of the ML accelerated Parareal framework to other parallel solvers. Finally, the last main task, the writing of the dissertation consists of four smaller units of work. These are the engineering log to keep during the initial development period, the first phase for writing up the problem formulation and the design and implementation sections of the dissertation, the second phase for writing up the rest of the dissertation such as the literature review and the benchmark results, and lastly, the proof reading of the report.
 
 \begin{figure}[!htb]
 \begin{center}
@@ -81,20 +132,20 @@ To do...
         time slot format=isodate,
         time slot unit=day]{2020-05-25}{2020-08-23}
     \gantttitlecalendar{month=name, week=1} \\
-    \ganttgroup{Implement framework}{2020-05-25}{2020-07-18} \\
-    \ganttbar[bar/.style={fill=red!50}]{Support systems of ODEs}{2020-05-25}{2020-06-07} \\
-    \ganttbar[bar/.style={fill=red!50}]{Support PDEs}{2020-05-31}{2020-06-14} \\
-    \ganttbar[bar/.style={fill=red!50}]{Add ML operators}{2020-06-14}{2020-06-28} \\
-    \ganttbar[bar/.style={fill=red!50}]{Optimise}{2020-06-28}{2020-07-18} \\
-    \ganttgroup{Benchmark}{2020-07-04}{2020-07-17} \\
-    \ganttbar[bar/.style={fill=green!50}]{ML operators}{2020-07-04}{2020-07-10} \\
+    \ganttgroup{Implementation}{2020-05-25}{2020-07-18} \\
+    \ganttbar[bar/.style={fill=red!50}]{Testing}{2020-05-25}{2020-06-28} \\
+    \ganttbar[bar/.style={fill=red!50}]{Systems of ODEs}{2020-05-25}{2020-06-07} \\
+    \ganttbar[bar/.style={fill=red!50}]{PDEs}{2020-05-31}{2020-06-14} \\
+    \ganttbar[bar/.style={fill=red!50}]{ML operators}{2020-06-15}{2020-06-28} \\
+    \ganttbar[bar/.style={fill=red!50}]{Optimisation}{2020-06-29}{2020-07-18} \\
+    \ganttgroup{Benchmarking}{2020-07-04}{2020-07-17} \\
+    \ganttbar[bar/.style={fill=green!50}]{Only ML operators}{2020-07-04}{2020-07-10} \\
     \ganttbar[bar/.style={fill=green!50}]{Framework with and without ML}{2020-07-08}{2020-07-13} \\
     \ganttbar[bar/.style={fill=green!50}]{Against another parallel solver}{2020-07-10}{2020-07-17} \\
-    \ganttgroup{Write dissertation}{2020-05-25}{2020-08-21} \\
-    \ganttbar[bar/.style={fill=blue!50}]{Background}{2020-05-25}{2020-06-11} \\
-    \ganttbar[bar/.style={fill=blue!50}]{Problem formulation}{2020-06-12}{2020-06-28} \\
-    \ganttbar[bar/.style={fill=blue!50}]{Design and implementation}{2020-06-29}{2020-07-24} \\
-    \ganttbar[bar/.style={fill=blue!50}]{Results}{2020-07-25}{2020-08-15} \\
+    \ganttgroup{Writing}{2020-05-25}{2020-08-21} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Engineering log}{2020-05-25}{2020-06-28} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Phase 1}{2020-06-29}{2020-08-02} \\
+    \ganttbar[bar/.style={fill=blue!50}]{Phase 2}{2020-08-03}{2020-08-20} \\
     \ganttbar[bar/.style={fill=blue!50}]{Proof read}{2020-08-16}{2020-08-21}
 \end{ganttchart}
 \end{center}
@@ -102,9 +153,11 @@ To do...
 \label{fig:gantt}
 \end{figure}
 
+Figure \ref{fig:gantt} contains a Gantt chart displaying the timeline of the dissertation project and the different tasks it encompasses. Although the times are just rough and somewhat optimistic estimates, the chart sufficiently visualises the overlaps between certain tasks. For example, it clearly captures the non-linear nature of optimisation and benchmarking as they feed into each other.
+
 \section{Risk Analysis}
 
-We identify the main risks as:
+We identify the main risks of the dissertation project as
 
 \begin{itemize}
     \item Failure to implement a single framework to handle both ODEs and PDEs
@@ -115,6 +168,8 @@ We identify the main risks as:
 \end{itemize}
 
 \section{Outline of the Dissertation Report}
+
+Based on our final project proposal and work plan, we set forth the following structure of contents for the dissertation report.
 
 \begin{enumerate}
 	\item Introduction
