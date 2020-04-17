@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage[thinc]{esdiff}
 \usepackage{tabularx}
+\usepackage{amsmath}
 
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 
@@ -66,21 +67,22 @@ One of the main issues with PINNs is that their training can easily become prohi
 
 In order to complement our literature review and crystallise our understanding of the dissertation project, we have taken a practical approach to our initial investigations. As part of these investigations, we have accomplished three milestones which we briefly present below.
 
-\begin{equation}
+The first one of these milestones has been the implementation of a basic one dimensional diffusion simulation in C defined by the model
+\begin{equation*}
     \diffp{u}{t} = d \diffp{u}{{x^2}}
-\label{equation:1d_diff}
-\end{equation}
+\end{equation*}
+where $u$ is the unknown function, $x$ is the spatial coordinate, $t$ is time, and $d$ is the diffusion coefficient. This simulation uses simple Dirichlet boundary conditions and Gaussian initial values. The spatial discretisation is done via the finite difference method and the integrator used is the forward Euler method. The implementation can be found at \href{https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/c/src/main.c}{\texttt{code/c/src/main.c}} in the project repository.
 
-The first one of these milestones has been the implementation of a basic one dimensional diffusion simulation in C defined by the model in Equation \ref{equation:1d_diff} where $u$ is the unknown function, $x$ is the spatial coordinate, $t$ is time, and $d$ is the diffusion coefficient. This simulation uses simple Dirichlet boundary conditions and Gaussian initial values. The spatial discretisation is done via the finite difference method and the integrator used is the forward Euler method. The implementation can be found at \href{https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/c/src/main.c}{\texttt{code/c/src/main.c}} in the project repository.
-
+The second, somewhat more ambitious milestone has been the implementation of a simple shared-memory Parareal framework in C using POSIX threads to solve an ordinary differential equation (ODE) describing the population growth of rabbits. This ODE is expressed by
 \begin{equation}
     \diff{R}{t} = \alpha R
 \label{equation:rabbit_pop}
 \end{equation}
+where $R$ is the number of rabbits and $\alpha$ is the population growth rate. The framework employs the forward Euler method as $G$ and RK4 as $F$ but it can only handle matching coarse and fine operator step sizes. Although the algorithm runs for a predefined number of corrective iterations, the implementation demonstrates a significant speedup at reasonable levels of accuracy even when running on only four threads. Moreover, it showcases how the parallel solution converges to the serial fine solution as the number of iterations approaches $P$. This implementation can be found in the same file as the diffusion simulation.
 
-The second, somewhat more ambitious milestone has been the implementation of a simple shared-memory Parareal framework in C using POSIX threads to solve an ordinary differential equation (ODE) describing the population growth of rabbits. This ODE is expressed by Equation \ref{equation:rabbit_pop} where $R$ is the number of rabbits and $\alpha$ is the population growth rate. The framework employs the forward Euler method as $G$ and RK4 as $F$ but it can only handle matching coarse and fine operator step sizes. Although the algorithm runs for a predefined number of corrective iterations, the implementation demonstrates a significant speedup at reasonable levels of accuracy even when running on only 4 threads. Moreover, it showcases how the parallel solution converges to the serial fine solution as the number of iterations approaches $P$. This implementation can be found in the same file as the diffusion simulation.
+Finally, our third and most substantial milestone has been the development of a distributed Parareal framework in Python using mpi4py \cite{dalcin2005}. This framework is fairly flexible in that it can handle any operator and any ODE that conform to the respective interface definitions. The algorithm also supports early stopping based on the absolute value of the largest update to the solution at any time step. In addition, the framework provides a number of Runge-Kutta method implementations and a conventional operator that takes an integrator instance and a step size value as its parameters. Furthermore, the framework also includes an ML accelerated operator implementation that is parameterised by a regression model, a target operator, and a step size. The ML operator trains the model on every new differential equation by generating a set of input-output pairs through a stochastic process using the target operator and fitting the regression model to the generated data. The data generation involves repeatedly integrating over the differential equation by the target operator and adding a zero-mean Gaussian noise to the estimate at every time step to use as the initial value for the next step and thus perturbate the trajectory of the target operator's solution. Using this approach, we have successfully trained and utilised an ML operator backed by a linear regression model as the coarse operator $G$ in our Parareal framework to solve a simple ODE. The implementation of this framework and our experiment can be found in the \href{https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/python/}{\texttt{code/python}} directory of the project repository.
 
-Finally, our third and most substantial milestone has been the development of a distributed Parareal framework in Python using mpi4py \cite{dalcin2005}. This framework is fairly flexible in that it can handle any operator and any ODE that conform to the respective interface definitions. The algorithm also supports early stopping based on the absolute value of the largest update to the solution at any time step. In addition, the framework provides a number of Runge-Kutta method implementations and a conventional operator that takes an integrator instance and a step size value as its parameters. Furthermore, the framework also includes an ML accelerated operator implementation that is parameterised by a regression model, a target operator, and a step size. The ML operator trains the model on every new differential equation by generating a set of input-output pairs through a stochastic process using the target operator and fitting the regression model to the generated data. The data generation involves repeatedly integrating over the differential equation by the target operator and adding a $0$-mean Gaussian noise to the estimate at every time step to use as the initial value for the next step and thus perturbate the trajectory of the target operator's solution. Using this approach, we have successfully trained and utilised an ML operator backed by a linear regression model as the coarse operator $G$ in our Parareal framework to solve a simple ODE. The implementation of this framework and our experiment can be found in the \href{https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/python/}{\texttt{code/python}} directory of the project repository
+Table \ref{tab:coarse_times} shows the average execution times, based on ten runs, of two different coarse operators as they integrate over the entire time domain of the rabbit population problem defined by Equation \ref{equation:rabbit_pop} using the values $R_0 = 1000$, $\alpha = 0.0001$, and $t \in [0, 50000]$. The first operator is a conventional one using the explicit midpoint integration method and a step size of $0.25$ while the second operator is an ML accelerated one with a step size of $100$ backed by an sklearn \cite{pedregosa2011} linear regression model trained on data labelled by the first operator. As seen in the table, the ML accelerated operator solves the differential equation almost fourteen times faster with an average deviation of less than $10^{-6}$ from the conventional operator's solution. This performance difference is due to the fact that the ML operator's step size is $400$ times greater and therefore the solution is evaluated $400$ times fewer while still maintaining the same level of accuracy.
 
 \begin{table}[!htb]
 \begin{center}
@@ -89,7 +91,7 @@ Finally, our third and most substantial milestone has been the development of a 
 \cmidrule(l){2-3}
 & Explicit midpoint & Linear regression\\
 \midrule
-Run time (s) & 0.233 & \textbf{0.017}\\
+Run time / s & 0.233 & 0.017\\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -97,7 +99,7 @@ Run time (s) & 0.233 & \textbf{0.017}\\
 \label{tab:coarse_times}
 \end{table}
 
-Table \ref{tab:coarse_times} shows the average execution times, based on $10$ runs, of two different coarse operators as they integrate over the entire time domain of the rabbit population problem defined by Equation \ref{equation:rabbit_pop} using the values $R_0 = 1000$, $\alpha = 0.0001$, and $t \in [0, 50000]$. The first operator is a conventional one using the explicit midpoint integration method and a step size of $0.25$ while the second operator is an ML accelerated one with a step size of $100$ backed by an sklearn \cite{pedregosa2011} linear regression model trained on data labelled by the first operator. As seen in the table, the ML accelerated operator solves the differential equation almost $14$ times faster with an average deviation of less than $10^{-6}$ from the conventional operator's solution. This performance difference is due to the fact that the ML operator's step size is $400$ times greater and therefore the solution is evaluated $400$ times fewer while still maintaining the same level of accuracy.
+Table \ref{tab:parareal_times} shows the average execution times, again across ten runs, of different solvers on the same rabbit population problem. The first, serial solver is a conventional operator using the RK4 integration method and a step size of $0.01$. The others are all Parareal solvers running on four processes using the first solver as their fine operator and $0.001$ as their update threshold (which means that the algorithm finishes once the absolute value of the largest update to the solution at any point of the fine operator's temporal discretisation is below this threshold). The first Parareal solver uses the explicit midpoint operator from Table \ref{tab:coarse_times} as its coarse operator while the second and third Parareal solvers use the linear regression operator. Both the conventional and the ML accelerated Parareal solvers converge after just one corrective iteration and thus are able to achieve a significant speedup compared to the serial solver while producing a solution identical to the serial one to six and five significant figures respectively. While the ML accelerated operator is slightly less accurate, it still converges within the same number of iterations given our accuracy threshold and it actually solves the differential equation a whole second faster. In contrast, when taking the model training into account, the ML accelerated Parareal solver is barely  faster than the serial solver. However, the training time could potentially be significantly reduced for the given accuracy requirements by decreasing the volume of training data generated.
 
 \begin{table}[!htb]
 \begin{center}
@@ -106,15 +108,13 @@ Table \ref{tab:coarse_times} shows the average execution times, based on $10$ ru
 \cmidrule(l){2-5}
 & Serial & Parareal & ML Parareal & ML Parareal with training\\
 \midrule
-Run time (s) & 8.387 & 6.082 & \textbf{5.080} & 8.020\\
+Run time / s & 8.387 & 6.082 & 5.080 & 8.020\\
 \bottomrule
 \end{tabularx}
 \end{center}
 \caption{The average execution times of different solvers on the rabbit population problem}
 \label{tab:parareal_times}
 \end{table}
-
-Table \ref{tab:parareal_times} shows the average execution times, again across $10$ runs, of different solvers on the same rabbit population problem. The first, serial solver is a conventional operator using the RK4 integration method and a step size of $0.01$. The others are all Parareal solvers running on $4$ processes using the first solver as their fine operator and $0.001$ as their update threshold (which means that the algorithm finishes once the absolute value of the largest update to the solution at any point of the fine operator's temporal discretisation is below this threshold). The first Parareal solver uses the explicit midpoint operator from Table \ref{tab:coarse_times} as its coarse operator while the second and third Parareal solvers use the linear regression operator. Both the conventional and the ML accelerated Parareal solvers converge after just one corrective iteration and thus are able to achieve a significant speedup compared to the serial solver while producing a solution identical to the serial one to $6$ and $5$ significant figures respectively. While the ML accelerated operator is slightly less accurate, it still converges within the same number of iterations given our accuracy threshold and it actually solves the differential equation a whole second faster. In contrast, when taking the model training into account, the ML accelerated Parareal solver is barely  faster than the serial solver. However, the training time could potentially be significantly reduced for the given accuracy requirements by decreasing the volume of training data generated.
 
 Through these investigations and experiments presented above, we have improved our understanding of the Parareal algorithm and gained a little experience in applied numerical analysis. Moreover, we have also managed to confirm the project's feasibility on a highly simplified problem by showing that an ML accelerated coarse operator can outperform a conventional one. Finally, we have created a strong foundation and starting point for our dissertation project.
 
@@ -149,30 +149,30 @@ Finally, as for the differential equations to benchmark our operators and framew
 In this section, we outline our work plan for the dissertation period beginning on 25th May and ending on 21st August. The three main tasks of the dissertation we identify, based on our final project proposal, are the implementation of the software framework, the benchmarking of its performance, and the write up of the dissertation report. Each one of these high level tasks are divided up into smaller sub-tasks.
 
 \begin{enumerate}
-    \item Implementation
+    \item \textbf{Implementation}:
         \begin{enumerate}
-        	\item Testing
-        	\item Systems of ODEs
-        	\item PDEs
-        	\item ML operators
-        	\item Performance optimisation
+        	\item \textbf{Testing}: This includes general software testing in the form of regression tests and unit tests of the components of our framework where possible.
+        	\item \textbf{Systems of ODEs}: The extension of our Parareal framework to handle systems of ODEs. This is synonymous with enabling differential equations to have vector valued unknown functions. As the first problem we intend to test our framework on, the Lotka-Volterra model, is a system of two ODEs, it is imperative that we complete this sub-task as early as possible.
+        	\item \textbf{PDEs}: The extension of our existing framework to handle PDEs. This requires differential equations to be able to specify boundary conditions and have multiple independent variables. The remaining two problems we plan to test our framework on are PDEs, therefore this is a high priority sub-task as well.
+        	\item \textbf{ML operators}: The implementation of the ML accelerated operators for the different model types and training processes (one for PINNs and one for all the other models).
+        	\item \textbf{Performance optimisation}: This includes hyperparameter tuning and any code optimisations to improve the performance of the operators and the Parareal framework.
         \end{enumerate}
-    \item Benchmarking
+    \item \textbf{Benchmarking}:
         \begin{enumerate}
-        	\item Only ML operators
-        	\item Framework with and without ML
-        	\item Against another parallel solver
+        	\item \textbf{Only ML operators}: The benchmarking of the different ML accelerated operators against conventional solvers on the three problems outlined in our project proposal. This includes the measurement of accuracy and training time as well.
+        	\item \textbf{Framework with and without ML}: The benchmarking of the framework using different ML accelerated coarse operators against the same framework using different conventional operators. As we intend to use fixed accuracy requirements, the primary metrics for this task are the wall time to solution and the model training time.
+        	\item \textbf{Against another parallel solver}: The comparison of the framework using different ML accelerated coarse operators against conventional parallel solvers using the same number of processes. The metrics for this task are the same as above with the addition of accuracy (as we most probably cannot specify accuracy requirements the same way between our Parareal implementation and other solvers).
         \end{enumerate}
-    \item Writing
+    \item \textbf{Writing}:
         \begin{enumerate}
-            \item Engineering log
-            \item Phase 1
-            \item Phase 2
-        	\item Proof reading
+            \item \textbf{Engineering log}: The maintenance of an engineering log during the implementation phase to keep track of design decisions and technical details.
+            \item \textbf{Phase 1}: The writing up of the problem formulation and the design and implementation sections of the dissertation.
+            \item \textbf{Phase 2}: The completion of the rest of the dissertation such as the introduction, background, results, and conclusions sections.
+        	\item \textbf{Proof reading}: The quality control of the dissertation report to make sure it is free of typos, grammar mistakes, and other errors.
         \end{enumerate}
 \end{enumerate}
 
-For the implementation task, these sub-tasks are software testing, the extension of the Parareal framework to handle systems of ODEs and individual PDEs, the implementation of the two final ML accelerated operators discussed in the project proposal (one for PINNs and one for all the other models), and code optimisation along with hyperparameter tuning. As for the benchmarking task, the sub-tasks are the comparison of the ML accelerated operator to conventional operators, the comparison of the Parareal framework using an ML accelerated coarse operator to the same framework using a conventional coarse operator, and the comparison of the ML accelerated Parareal framework to other parallel solvers. Finally, the last main task, the writing of the dissertation consists of four smaller units of work. These are the engineering log to keep during the initial development period, the first phase for writing up the problem formulation and the design and implementation sections of the dissertation, the second phase for writing up the rest of the dissertation such as the literature review and the benchmark results, and lastly, the proof reading of the report.
+Figure \ref{fig:gantt} contains a Gantt chart displaying the timeline of the dissertation project and the different tasks it encompasses. Although the times are just rough and somewhat optimistic estimates, the chart sufficiently visualises the overlaps between certain tasks. For example, it clearly captures the non-linear nature of performance optimisation and benchmarking as they feed back into each other.
 
 \begin{figure}[!htb]
 \begin{center}
@@ -206,24 +206,11 @@ For the implementation task, these sub-tasks are software testing, the extension
 \label{fig:gantt}
 \end{figure}
 
-Figure \ref{fig:gantt} contains a Gantt chart displaying the timeline of the dissertation project and the different tasks it encompasses. Although the times are just rough and somewhat optimistic estimates, the chart sufficiently visualises the overlaps between certain tasks. For example, it clearly captures the non-linear nature of optimisation and benchmarking as they feed back into each other.
-
-As for hardware requirements, our plan is to use the author's personal computer for most of the implementation phase. This computer has $6$ physical cores which is sufficient for development and testing purposes. However for optimisation and benchmarking, we plan to use high performance computing services. Due to the generally low number of processors needed for our benchmarks, we estimate our required budget to be about $2000$ to $3000$ CPU core hours on Cirrus. Additionally, if the new Cirrus GPUs are installed by late June, we also plan to take advantage of them for our neural network based models. For this, our required budget estimate is $50$ GPU hours.
+As for hardware requirements, our plan is to use the author's personal computer for most of the implementation phase. This computer has six physical cores which is sufficient for development and testing purposes. However for optimisation and benchmarking, we plan to use high performance computing services. Due to the generally low number of processors needed for our benchmarks, we estimate our required budget to be about $2000$ to $3000$ CPU core hours on Cirrus. Additionally, if the new Cirrus GPUs are installed by late June, we also plan to take advantage of them for our neural network based models. For this, our required budget estimate is $500$ GPU hours.
 
 \section{Risk Analysis}
 
-We identify the following as the main risks of the dissertation project.
-
-\begin{itemize}
-    \item Failure to implement a single framework to handle both ODEs and PDEs in time
-    \item Some of the model training approaches may not work on complex problems
-    \item Erratic model behaviour due to the stochastic nature of the training processes
-    \item Transfer learning may not work
-    \item Unavailability of computing resources
-    \item Disruptions due to Covid-19
-\end{itemize}
-
-The first risk we identify is the author's failure to implement a Parareal framework that can handle ODEs, systems of ODEs, and PDEs in time for our benchmarks that need to be performed early enough to leave sufficient time for writing up the results. Failure to do this would likely restrict our benchmarks to ODEs only which are not representative of more complex real life problems. However, this risk is mitigated by the fact that we already have a strong base in the form of our Parareal framework implementation that can handle any ODE. Moreover, we have a good idea of how to extend this framework to enable systems of ODEs and PDEs as well.
+The first risk of the dissertation project we identify is the author's failure to implement a Parareal framework that can handle ODEs, systems of ODEs, and PDEs in time for our benchmarks that need to be performed early enough to leave sufficient time for writing up the results. Failure to do this would likely restrict our benchmarks to ODEs only which are not representative of more complex real life problems. However, this risk is mitigated by the fact that we already have a strong base in the form of our Parareal framework implementation that can handle any ODE. Moreover, we have a good idea of how to extend this framework to enable systems of ODEs and PDEs as well.
 
 The second major risk is that some of the models or training processes we intend to try may simply not work. While this is a high probability risk, it is rather low impact due to the fact that we plan to try multiple approaches, some of which have already been shown to work on several problems (such as PINNs). Additionally, we have already succeeded in training an ML accelerated operator that can outperform some conventional solvers on a very simple ODE.
 
@@ -263,6 +250,7 @@ Based on our final project proposal and work plan, we set forth the following st
             		\item Operators
             	\end{enumerate}
     		\item Machine learning accelerated operators
+    		\item Usage
     	\end{enumerate}
     \item Results
         \begin{enumerate}
@@ -283,9 +271,9 @@ After explaining the theoretical foundations of the dissertation in the second a
 
 In the fifth section, Sanchez begins by introducing his automated test setup and describes how the synthetic test data is generated using the parameters read from a configuration file. He then presents the results of some qualitative behaviour tests according to which (Nesterov) momentum accelerated SGD with logarithmic barrier regularisation performs the best. This is followed by the results of some hyperparameter tuning of the optimisers and regularisers which confirm that the effect of logarithmic barrier regularisation is much less detrimental to model quality than that of conjugate prior regularisation. Finally, the dissertation is concluded with the general performance and data streaming test results. The serial performance test results again confirm (Nesterov) momentum accelerated SGD as the best optimiser substantially outperforming EM on large data sets. However, due to an incompatibility between Spark's programming paradigm and Sanchez' distributed SGD implementation, the performance of his program when using mini-batch optimisation in a distributed setting fails to meet expectations.
 
-Sanchez explains the context in which the dissertation is set very well in an iterative fashion. He first gives a high level overview of the dissertation and its topic in the introduction section. This includes a short description of the current state of affairs concerning mainstream GMM implementations, the problem statement, and the motivation of the dissertation project. He then goes on to elaborate on the technical background of the project in a dedicated section which constitutes a wider overview of related works. Finally, he presents the results of the previous work that the dissertation is directly based on in yet another dedicated section.
+Sanchez explains the context in which the dissertation is set very well in an iterative fashion. He first gives a high level overview of the dissertation and its topic in the introduction section. This includes a short description of the current state of affairs concerning mainstream GMM implementations, the problem statement, and the motivation of the dissertation project. He then goes on to elaborate on the technical background of the project in a dedicated section which constitutes a wider overview of related works. Finally, he presents the results of the previous work that his dissertation directly builds upon in yet another dedicated section. His approach is a good example for us to follow and is indeed what we base the outline of our dissertation report on.
 
-The dissertation is fairly clear about the scope of the problem. It is explicitly stated in the introduction section and also explained in the results section. The approaches taken for the implementation of the program and its testing are also carefully described in the program design and results sections. The testing methods, featuring an automated framework and parameterised synthetic data generation, are remarkably sophisticated and comprehensive. The program is compared against a good standard in the form of the GMM implementation of Spark's ML library. Due to the fixed random seeds, the results are reproducible as well. However, Sanchez is not entirely clear about the metrics of success. Although the serial benchmarks show promising results, the distributed tests can probably be considered unsuccessful. Moreover, the data streaming performance test results are hard to interpret without additional context or a reference to compare against.
+Sanchez' dissertation is fairly clear about the scope of the problem. It is explicitly stated in the introduction section and also explained in the results section. The approaches taken for the implementation of the program and its testing are also carefully described in the program design and results sections. The testing methods, featuring an automated framework and parameterised synthetic data generation, are remarkably sophisticated and comprehensive. The program is compared against a good standard in the form of the GMM implementation of Spark's ML library. Due to the fixed random seeds, the results are reproducible as well. These are all good practices that we intend to utilise for our dissertation, too. However, Sanchez is not entirely clear about the metrics of success. Although the serial benchmarks show promising results, the distributed tests can probably be considered unsuccessful. Moreover, the data streaming performance test results are hard to interpret without additional context or a reference to compare against.
 
 The overall structure of the dissertation is well organised and intuitive. Sanchez does an excellent job explaining the technicalities in an easily understandable, straightforward manner. He manages this by using simple and concise sentences that build on top of each other and thus allow him to progressively convey complex information. Generally, the language he uses is objective and appropriate for a scientific report. With the exception of a few typos and grammar mistakes, his writing, punctuation, and overall quality of presentation are excellent.
 
