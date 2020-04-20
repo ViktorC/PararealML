@@ -4,7 +4,7 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.diff_eq import OrdinaryDiffEq
+from src.diff_eq import DiffEq
 from src.operator import Operator
 
 
@@ -27,7 +27,7 @@ class Parareal:
 
     def solve(
             self,
-            diff_eq: OrdinaryDiffEq,
+            diff_eq: DiffEq,
             tol: float) -> Sequence[float]:
         """
         Runs the Parareal solver and returns the discretised solution of the
@@ -44,9 +44,13 @@ class Parareal:
         comm = MPI.COMM_WORLD
 
         time_slices = np.linspace(
-            diff_eq.x_0(), diff_eq.x_max(), comm.size + 1)
-        y = np.empty(len(time_slices))
-        y[0] = diff_eq.y_0()
+            diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
+        y_0 = diff_eq.y_0()
+        if isinstance(y_0, float):
+            y = np.empty(len(time_slices))
+        else:
+            y = np.empty((len(time_slices), len(y_0)))
+        y[0] = y_0
 
         f_values = np.empty(comm.size)
         g_values = np.empty(comm.size)
@@ -98,7 +102,7 @@ class Parareal:
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         y_trajectory = np.empty(
-            comm.size * int(time_slices[-1] / (comm.size * self._f.d_x())))
+            comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())))
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 

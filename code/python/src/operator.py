@@ -1,30 +1,30 @@
-from typing import Sequence, Any, Optional
+from typing import Any, Optional
 
 import numpy as np
 
-from src.diff_eq import OrdinaryDiffEq
+from src.diff_eq import DiffEq, ImageType
 from src.integrator import Integrator
 
 
 class Operator:
     """
     A base class for an operator to estimate the solution of a differential
-    equation over a specific domain interval given an initial value.
+    equation over a specific time domain interval given an initial value.
     """
 
-    def _discretise_sub_domain(
+    def _discretise_time_domain(
             self,
-            x_a: float,
-            x_b: float) -> Sequence[float]:
+            t_a: float,
+            t_b: float) -> np.ndarray:
         """
-        Returns a discretisation of the the interval [x_a, x_b^) using the
-        operator's step size, d_x, where x_b^ is x_b rounded to the nearest
-        multiple of d_x.
+        Returns a discretisation of the the interval [t_a, t_b^) using the
+        operator's step size, d_t, where t_b^ is t_b rounded to the nearest
+        multiple of d_t.
         """
-        adjusted_x_b = self.d_x() * round(x_b / self.d_x())
-        return np.arange(x_a, adjusted_x_b, self.d_x())
+        adjusted_t_b = self.d_t() * round(t_b / self.d_t())
+        return np.arange(t_a, adjusted_t_b, self.d_t())
 
-    def d_x(self) -> float:
+    def d_t(self) -> float:
         """
         Returns the step size of the operator.
         """
@@ -32,23 +32,23 @@ class Operator:
 
     def trace(
             self,
-            diff_eq: OrdinaryDiffEq,
-            y_a: float,
-            x_a: float,
-            x_b: float) -> Sequence[float]:
+            diff_eq: DiffEq,
+            y_a: ImageType,
+            t_a: float,
+            t_b: float) -> ImageType:
         """
-        Returns a discretised approximation of y over (x_a, x_b].
+        Returns a discretised approximation of y over (t_a, t_b].
 
         :param diff_eq: the differential equation whose solution's trajectory
         is to be traced
-        :param y_a: y(x_a), that is the value of the differential equation's
+        :param y_a: y(t_a), that is the value of the differential equation's
         solution at the lower bound of the interval it is to be traced over
-        :param x_a: the lower bound of the interval over which the differential
+        :param t_a: the lower bound of the interval over which the differential
         equation's solution is to be traced (exclusive)
-        :param x_b: the upper bound of the interval over which the differential
+        :param t_b: the upper bound of the interval over which the differential
         equation's solution is to be traced (inclusive)
         :return: a sequence of floating points number representing the
-        discretised solution of the differential equation y over (x_a, x_b]
+        discretised solution of the differential equation y over (t_a, t_b]
         """
         pass
 
@@ -58,29 +58,32 @@ class ConventionalOperator(Operator):
     An operator that uses conventional differential equation integration.
     """
 
-    def __init__(self, integrator: Integrator, d_x: float):
+    def __init__(self, integrator: Integrator, d_t: float):
         """
         :param integrator: the differential equation integrator to use
-        :param d_x: the step size to use with the integrator
+        :param d_t: the step size to use with the integrator
         """
         self._integrator = integrator
-        self._d_x = d_x
+        self._d_t = d_t
 
-    def d_x(self) -> float:
-        return self._d_x
+    def d_t(self) -> float:
+        return self._d_t
 
     def trace(
             self,
-            diff_eq: OrdinaryDiffEq,
-            y_a: float,
-            x_a: float,
-            x_b: float) -> Sequence[float]:
-        x = self._discretise_sub_domain(x_a, x_b)
-        y = np.empty(len(x))
+            diff_eq: DiffEq,
+            y_a: ImageType,
+            t_a: float,
+            t_b: float) -> ImageType:
+        t = self._discretise_time_domain(t_a, t_b)
+        if isinstance(y_a, float):
+            y = np.empty(len(t))
+        else:
+            y = np.empty((len(t), len(y_a)))
         y_i = y_a
 
-        for i, x_i in enumerate(x):
-            y_i = self._integrator.integrate(y_i, x_i, self._d_x, diff_eq.d_y)
+        for i, t_i in enumerate(t):
+            y_i = self._integrator.integrate(y_i, t_i, self._d_t, diff_eq.d_y)
             y[i] = y_i
 
         return y
@@ -93,15 +96,15 @@ class MLOperator(Operator):
     """
 
     def __init__(
-            self, model: Any, trainer: Operator, d_x: float, data_epochs: int):
+            self, model: Any, trainer: Operator, d_t: float, data_epochs: int):
         """
         :param model: the regression model to use as the integrator; its input
-        are the values of x, y(x), and y'(x) and its output is y(x + d_x) where
-        d_x is the step size of this operator defined by the corresponding
+        are the values of t, y(t), and y'(t) and its output is y(t + d_t) where
+        d_t is the step size of this operator defined by the corresponding
         constructor argument
         :param trainer: the operator for generating the labels for the data
         to train the regression model on
-        :param d_x: the step size of the operator; it determines the lengths of
+        :param d_t: the step size of the operator; it determines the lengths of
         the domain slices over which the training operator is used to trace the
         differential equation's solution and provide the labels for the
         training data
@@ -110,66 +113,82 @@ class MLOperator(Operator):
         """
         self._model = model
         self._trainer = trainer
-        self._d_x = d_x
+        self._d_t = d_t
         self._data_epochs = data_epochs
-        self._diff_eq_trained_on: Optional[OrdinaryDiffEq] = None
+        self._diff_eq_trained_on: Optional[DiffEq] = None
 
-    def train_model(self, diff_eq: OrdinaryDiffEq):
+    def train_model(self, diff_eq: DiffEq):
         """
         Trains the regression model behind the operator on the provided
         differential equation.
 
         It generates the training data by repeatedly iterating over the domain
-        of the differential equation in steps of size d_x and tracing the
+        of the differential equation in steps of size d_t and tracing the
         solution using the training operator. At every step i, a new training
-        data point is created out of the values of x_i, y(x_i), and y'(x_i)
-        labelled by y(x_i+1) = y(x_i + d_x) as estimated by the training
+        data point is created out of the values of t_i, y(t_i), and y'(t_i)
+        labelled by y(t_i+1) = y(t_i + d_t) as estimated by the training
         operator. Once the data point is created, a 0-mean Gaussian noise is
-        added to the value of y(x_i+1) to perturbate the trajectory of y.
+        added to the value of y(t_i+1) to perturbate the trajectory of y.
         This introduces some variance to the training data and helps better
         approximate the function represented by the training operator. The
-        standard deviation of this Gaussian is y'(x_i) * d_x.
+        standard deviation of this Gaussian is y'(t_i) * d_t.
 
         :param diff_eq: the differential equation to train the model on
         """
-        x = self._discretise_sub_domain(diff_eq.x_0(), diff_eq.x_max())
-        obs = np.empty((self._data_epochs * len(x), 3))
-        y = np.empty(len(obs))
+        t = self._discretise_time_domain(diff_eq.t_0(), diff_eq.t_max())
+
+        y_0 = diff_eq.y_0()
+        if isinstance(y_0, float):
+            obs = np.empty((self._data_epochs * len(t), 3))
+            y = np.empty(len(obs))
+        else:
+            obs = np.empty((self._data_epochs * len(t), 1 + 2 * len(y_0)))
+            y = np.empty((len(obs), len(y_0)))
 
         for k in range(self._data_epochs):
-            offset = k * len(x)
-            y_i = diff_eq.y_0()
-            for i, x_i in enumerate(x):
+            offset = k * len(t)
+            y_i = y_0
+            for i, t_i in enumerate(t):
                 ind = offset + i
-                d_y_i = diff_eq.d_y(x_i, y_i)
-                obs[ind][0] = x_i
-                obs[ind][1] = y_i
-                obs[ind][2] = d_y_i
                 y[ind] = self._trainer.trace(
-                    diff_eq, y_i, x_i, x_i + self._d_x)[-1]
-                y_i = y[ind] + np.random.normal(0., d_y_i * self._d_x)
+                    diff_eq, y_i, t_i, t_i + self._d_t)[-1]
+                d_y_i = diff_eq.d_y(t_i, y_i)
+                obs[ind][0] = t_i
+
+                if isinstance(y_0, float):
+                    obs[ind][1] = y_i
+                    obs[ind][2] = d_y_i
+                    y_i = y[ind] + np.random.normal(0., d_y_i * self._d_t)
+                else:
+                    obs[ind][1:1 + len(y_0)] = y_i
+                    obs[ind][1 + len(y_0):] = d_y_i
+                    y_i = y[ind] + np.random.multivariate_normal(
+                        np.zeros(len(y_0)), np.diag(d_y_i * self._d_t))
 
         self._model.fit(obs, y)
         self._diff_eq_trained_on = diff_eq
 
-    def d_x(self) -> float:
-        return self._d_x
+    def d_t(self) -> float:
+        return self._d_t
 
     def trace(
             self,
-            diff_eq: OrdinaryDiffEq,
-            y_a: float,
-            x_a: float,
-            x_b: float) -> Sequence[float]:
+            diff_eq: DiffEq,
+            y_a: ImageType,
+            t_a: float,
+            t_b: float) -> ImageType:
         if diff_eq != self._diff_eq_trained_on:
             self.train_model(diff_eq)
 
-        x = self._discretise_sub_domain(x_a, x_b)
-        y = np.empty(len(x))
+        t = self._discretise_time_domain(t_a, t_b)
+        if isinstance(y_a, float):
+            y = np.empty(len(t))
+        else:
+            y = np.empty((len(t), len(y_a)))
         y_i = y_a
 
-        for i, x_i in enumerate(x):
-            y_i = self._model.predict([[x_i, y_i, diff_eq.d_y(x_i, y_i)]])[0]
+        for i, t_i in enumerate(t):
+            y_i = self._model.predict([[t_i, y_i, diff_eq.d_y(t_i, y_i)]])[0]
             y[i] = y_i
 
         return y

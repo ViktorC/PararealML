@@ -1,5 +1,9 @@
 from typing import Callable
 
+import numpy as np
+
+from src.diff_eq import ImageType
+
 
 class Integrator:
     """
@@ -8,10 +12,11 @@ class Integrator:
 
     def integrate(
             self,
-            y: float,
+            y: ImageType,
             x: float,
             d_x: float,
-            d_y_wrt_x: Callable[[float, float], float]) -> float:
+            d_y_wrt_x: Callable[[float, ImageType], ImageType]
+    ) -> ImageType:
         """
         Estimates the value of y(x + d_x).
 
@@ -31,10 +36,11 @@ class ForwardEulerMethod(Integrator):
 
     def integrate(
             self,
-            y: float,
+            y: ImageType,
             x: float,
             d_x: float,
-            d_y_wrt_x: Callable[[float, float], float]) -> float:
+            d_y_wrt_x: Callable[[float, ImageType], ImageType]
+    ) -> ImageType:
         return y + d_x * d_y_wrt_x(x, y)
 
 
@@ -45,10 +51,11 @@ class ExplicitMidpointMethod(Integrator):
 
     def integrate(
             self,
-            y: float,
+            y: ImageType,
             x: float,
             d_x: float,
-            d_y_wrt_x: Callable[[float, float], float]) -> float:
+            d_y_wrt_x: Callable[[float, ImageType], ImageType]
+    ) -> ImageType:
         return y + d_x * d_y_wrt_x(
             x + d_x / 2.,
             y + d_y_wrt_x(x, y) * d_x / 2.)
@@ -61,10 +68,11 @@ class RK4(Integrator):
 
     def integrate(
             self,
-            y: float,
+            y: ImageType,
             x: float,
             d_x: float,
-            d_y_wrt_x: Callable[[float, float], float]) -> float:
+            d_y_wrt_x: Callable[[float, ImageType], ImageType]
+    ) -> ImageType:
         k1 = d_x * d_y_wrt_x(x, y)
         k2 = d_x * d_y_wrt_x(x + d_x / 2., y + k1 / 2.)
         k3 = d_x * d_y_wrt_x(x + d_x / 2., y + k2 / 2.)
