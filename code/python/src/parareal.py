@@ -44,21 +44,18 @@ class Parareal:
 
         time_slices = np.linspace(
             diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
-
-        y_0 = diff_eq.y_0()
         if diff_eq.solution_dimension() == 1:
             y = np.empty(len(time_slices))
             f_values = np.empty(comm.size)
             g_values = np.empty(comm.size)
             new_g_values = np.empty(comm.size)
         else:
-            y_0 = diff_eq.y_0()
-            y = np.empty((len(time_slices), len(y_0)))
-            f_values = np.empty((comm.size, len(y_0)))
-            g_values = np.empty((comm.size, len(y_0)))
-            new_g_values = np.empty((comm.size, len(y_0)))
-        y[0] = y_0
+            y = np.empty((len(time_slices), diff_eq.solution_dimension()))
+            f_values = np.empty((comm.size, diff_eq.solution_dimension()))
+            g_values = np.empty((comm.size, diff_eq.solution_dimension()))
+            new_g_values = np.empty((comm.size, diff_eq.solution_dimension()))
 
+        y[0] = diff_eq.y_0()
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self._g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
 
@@ -110,15 +107,13 @@ class Parareal:
                 break
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
-
         if diff_eq.solution_dimension() == 1:
             y_trajectory = np.empty(
                 comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())))
         else:
             y_trajectory = np.empty((
                 comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())),
-                len(y_0)))
-
+                diff_eq.solution_dimension()))
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 

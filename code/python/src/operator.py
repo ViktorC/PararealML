@@ -77,11 +77,10 @@ class ConventionalOperator(Operator):
             t_a: float,
             t_b: float) -> ImageType:
         t = self._discretise_time_domain(t_a, t_b)
-
         if diff_eq.solution_dimension() == 1:
             y = np.empty(len(t))
         else:
-            y = np.empty((len(t), len(y_a)))
+            y = np.empty((len(t), diff_eq.solution_dimension()))
 
         y_i = y_a
 
@@ -119,7 +118,7 @@ class MLOperator(Operator):
             diff_eq: DiffEq,
             trainer: Operator,
             data_epochs: int,
-            y_noise_var_coeff: float=1.):
+            y_noise_var_coeff: float = 1.):
         """
         Trains the regression model behind the operator on the provided
         differential equation.
@@ -146,18 +145,18 @@ class MLOperator(Operator):
         the trainer operator's solution
         """
         t = self._discretise_time_domain(diff_eq.t_0(), diff_eq.t_max())
-
-        y_0 = diff_eq.y_0()
         if diff_eq.solution_dimension() == 1:
             obs = np.empty((data_epochs * len(t), 3))
             y = np.empty(len(obs))
         else:
-            obs = np.empty((data_epochs * len(t), 1 + 2 * len(y_0)))
-            y = np.empty((len(obs), len(y_0)))
+            obs = np.empty((
+                data_epochs * len(t),
+                1 + 2 * diff_eq.solution_dimension()))
+            y = np.empty((len(obs), diff_eq.solution_dimension()))
 
         for k in range(data_epochs):
             offset = k * len(t)
-            y_i = y_0
+            y_i = diff_eq.y_0()
             for i, t_i in enumerate(t):
                 ind = offset + i
                 y[ind] = trainer.trace(
@@ -172,10 +171,10 @@ class MLOperator(Operator):
                         0.,
                         math.sqrt(y_noise_var_coeff) * d_y_i * self._d_t)
                 else:
-                    obs[ind][1:1 + len(y_0)] = y_i
-                    obs[ind][1 + len(y_0):] = d_y_i
+                    obs[ind][1:1 + diff_eq.solution_dimension()] = y_i
+                    obs[ind][1 + diff_eq.solution_dimension():] = d_y_i
                     y_i = y[ind] + np.random.multivariate_normal(
-                        np.zeros(len(y_0)),
+                        np.zeros(diff_eq.solution_dimension()),
                         np.diag(d_y_i * (y_noise_var_coeff * self._d_t)))
 
         self._model.fit(obs, y)
@@ -193,20 +192,19 @@ class MLOperator(Operator):
         assert self._trained
 
         t = self._discretise_time_domain(t_a, t_b)
-
         if diff_eq.solution_dimension() == 1:
             x = np.empty((1, 3))
             y = np.empty(len(t))
         else:
-            x = np.empty((1, 1 + 2 * len(y_a)))
-            y = np.empty((len(t), len(y_a)))
+            x = np.empty((1, 1 + 2 * diff_eq.solution_dimension()))
+            y = np.empty((len(t), diff_eq.solution_dimension()))
 
         y_i = y_a
 
         for i, t_i in enumerate(t):
             x[0, 0] = t_i
-            x[0, 1:1 + len(y_a)] = y_i
-            x[0, 1 + len(y_a):] = diff_eq.d_y(t_i, y_i)
+            x[0, 1:1 + diff_eq.solution_dimension()] = y_i
+            x[0, 1 + diff_eq.solution_dimension():] = diff_eq.d_y(t_i, y_i)
             y_i = self._model.predict(x)[0]
             y[i] = y_i
 
