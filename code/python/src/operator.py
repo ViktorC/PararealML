@@ -1,4 +1,5 @@
-from typing import Any, Optional
+import math
+from typing import Any
 
 import numpy as np
 
@@ -96,28 +97,27 @@ class MLOperator(Operator):
     """
 
     def __init__(
-            self, model: Any, trainer: Operator, d_t: float, data_epochs: int):
+            self, model: Any, d_t: float):
         """
         :param model: the regression model to use as the integrator; its input
         are the values of t, y(t), and y'(t) and its output is y(t + d_t) where
         d_t is the step size of this operator defined by the corresponding
         constructor argument
-        :param trainer: the operator for generating the labels for the data
-        to train the regression model on
         :param d_t: the step size of the operator; it determines the lengths of
         the domain slices over which the training operator is used to trace the
         differential equation's solution and provide the labels for the
         training data
-        :param data_epochs: the number of iterations to perform over the domain
-        of the differential equation to generate the training data
         """
         self._model = model
-        self._trainer = trainer
         self._d_t = d_t
-        self._data_epochs = data_epochs
         self._trained: bool = False
 
-    def train_model(self, diff_eq: DiffEq):
+    def train_model(
+            self,
+            diff_eq: DiffEq,
+            trainer: Operator,
+            data_epochs: int,
+            y_noise_var_coeff: float=1.):
         """
         Trains the regression model behind the operator on the provided
         differential equation.
@@ -131,26 +131,34 @@ class MLOperator(Operator):
         added to the value of y(t_i+1) to perturbate the trajectory of y.
         This introduces some variance to the training data and helps better
         approximate the function represented by the training operator. The
-        standard deviation of this Gaussian is y'(t_i) * d_t.
+        standard deviation of this Gaussian is c^(1/2) * y'(t_i) * d_t where
+        c is the noise variance coefficient.
 
         :param diff_eq: the differential equation to train the model on
+        :param trainer: the operator for generating the labels for the training
+        data
+        :param data_epochs: the number of iterations to perform over the domain
+        of the differential equation to generate the training data
+        :param y_noise_var_coeff: the noise variance coefficient that
+        determines the amount of perturbation to apply to the trajectory of
+        the trainer operator's solution
         """
         t = self._discretise_time_domain(diff_eq.t_0(), diff_eq.t_max())
 
         y_0 = diff_eq.y_0()
         if isinstance(y_0, float):
-            obs = np.empty((self._data_epochs * len(t), 3))
+            obs = np.empty((data_epochs * len(t), 3))
             y = np.empty(len(obs))
         else:
-            obs = np.empty((self._data_epochs * len(t), 1 + 2 * len(y_0)))
+            obs = np.empty((data_epochs * len(t), 1 + 2 * len(y_0)))
             y = np.empty((len(obs), len(y_0)))
 
-        for k in range(self._data_epochs):
+        for k in range(data_epochs):
             offset = k * len(t)
             y_i = y_0
             for i, t_i in enumerate(t):
                 ind = offset + i
-                y[ind] = self._trainer.trace(
+                y[ind] = trainer.trace(
                     diff_eq, y_i, t_i, t_i + self._d_t)[-1]
                 d_y_i = diff_eq.d_y(t_i, y_i)
                 obs[ind][0] = t_i
@@ -158,12 +166,15 @@ class MLOperator(Operator):
                 if isinstance(y_0, float):
                     obs[ind][1] = y_i
                     obs[ind][2] = d_y_i
-                    y_i = y[ind] + np.random.normal(0., d_y_i * self._d_t)
+                    y_i = y[ind] + np.random.normal(
+                        0.,
+                        math.sqrt(y_noise_var_coeff) * d_y_i * self._d_t)
                 else:
                     obs[ind][1:1 + len(y_0)] = y_i
                     obs[ind][1 + len(y_0):] = d_y_i
                     y_i = y[ind] + np.random.multivariate_normal(
-                        np.zeros(len(y_0)), np.diag(d_y_i * self._d_t))
+                        np.zeros(len(y_0)),
+                        np.diag(d_y_i * (y_noise_var_coeff * self._d_t)))
 
         self._model.fit(obs, y)
         self._trained = True

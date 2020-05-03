@@ -1,5 +1,5 @@
 from mpi4py import MPI
-from sklearn.linear_model import LinearRegression
+from sklearn.neural_network.multilayer_perceptron import MLPRegressor
 
 from src.diff_eq import LotkaVolterraDiffEq
 from src.integrator import ExplicitMidpointMethod, RK4
@@ -8,12 +8,18 @@ from src.parareal import Parareal
 
 
 def time_parallel_solver_and_print_result(
-        fine_op, coarse_op, solver_name, train=False):
+        fine_op,
+        coarse_op,
+        solver_name,
+        train=False,
+        trainer=None,
+        data_epochs=100,
+        y_noise_var_coeff=1.):
     parallel_solver = Parareal(fine_op, coarse_op)
     comm.barrier()
     start_time = MPI.Wtime()
     if train:
-        coarse_op.train_model(diff_eq)
+        coarse_op.train_model(diff_eq, trainer, data_epochs, y_noise_var_coeff)
     y_max = parallel_solver.solve(diff_eq, threshold)[-1]
     comm.barrier()
     end_time = MPI.Wtime()
@@ -37,11 +43,12 @@ diff_eq = LotkaVolterraDiffEq(100., 15., 2., .04, .02, 1.06, 0., 10.)
 
 f = ConventionalOperator(RK4(), .01)
 g = ConventionalOperator(ExplicitMidpointMethod(), .02)
-g_ml = MLOperator(LinearRegression(), g, .1, 100)
+g_ml = MLOperator(MLPRegressor(), 1.)
 
 threshold = 1e-3
 
-time_parallel_solver_and_print_result(f, g_ml, 'Parareal ML w/ training', True)
+time_parallel_solver_and_print_result(
+    f, g_ml, 'Parareal ML w/ training', True, g, 200, .01)
 time_parallel_solver_and_print_result(f, g_ml, 'Parareal ML w/o training')
 time_parallel_solver_and_print_result(f, g, 'Parareal')
 
