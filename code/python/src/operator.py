@@ -182,13 +182,18 @@ class MLOperator(Operator):
 
         t = self._discretise_time_domain(t_a, t_b)
         if isinstance(y_a, float):
+            x = np.empty((1, 3))
             y = np.empty(len(t))
         else:
+            x = np.empty((1, 1 + 2 * len(y_a)))
             y = np.empty((len(t), len(y_a)))
         y_i = y_a
 
         for i, t_i in enumerate(t):
-            y_i = self._model.predict([[t_i, y_i, diff_eq.d_y(t_i, y_i)]])[0]
+            x[0, 0] = t_i
+            x[0, 1:1 + len(y_a)] = y_i
+            x[0, 1 + len(y_a):] = diff_eq.d_y(t_i, y_i)
+            y_i = self._model.predict(x)[0]
             y[i] = y_i
 
         return y
