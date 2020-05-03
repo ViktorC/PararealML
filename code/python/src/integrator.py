@@ -1,7 +1,5 @@
 from typing import Callable
 
-import numpy as np
-
 from src.diff_eq import ImageType
 
 

@@ -77,10 +77,12 @@ class ConventionalOperator(Operator):
             t_a: float,
             t_b: float) -> ImageType:
         t = self._discretise_time_domain(t_a, t_b)
-        if isinstance(y_a, float):
+
+        if diff_eq.solution_dimension() == 1:
             y = np.empty(len(t))
         else:
             y = np.empty((len(t), len(y_a)))
+
         y_i = y_a
 
         for i, t_i in enumerate(t):
@@ -146,7 +148,7 @@ class MLOperator(Operator):
         t = self._discretise_time_domain(diff_eq.t_0(), diff_eq.t_max())
 
         y_0 = diff_eq.y_0()
-        if isinstance(y_0, float):
+        if diff_eq.solution_dimension() == 1:
             obs = np.empty((data_epochs * len(t), 3))
             y = np.empty(len(obs))
         else:
@@ -163,7 +165,7 @@ class MLOperator(Operator):
                 d_y_i = diff_eq.d_y(t_i, y_i)
                 obs[ind][0] = t_i
 
-                if isinstance(y_0, float):
+                if diff_eq.solution_dimension() == 1:
                     obs[ind][1] = y_i
                     obs[ind][2] = d_y_i
                     y_i = y[ind] + np.random.normal(
@@ -191,12 +193,14 @@ class MLOperator(Operator):
         assert self._trained
 
         t = self._discretise_time_domain(t_a, t_b)
-        if isinstance(y_a, float):
+
+        if diff_eq.solution_dimension() == 1:
             x = np.empty((1, 3))
             y = np.empty(len(t))
         else:
             x = np.empty((1, 1 + 2 * len(y_a)))
             y = np.empty((len(t), len(y_a)))
+
         y_i = y_a
 
         for i, t_i in enumerate(t):

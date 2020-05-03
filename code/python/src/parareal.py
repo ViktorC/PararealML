@@ -1,7 +1,6 @@
 from typing import Sequence
 
 import numpy as np
-
 from mpi4py import MPI
 
 from src.diff_eq import DiffEq
@@ -45,13 +44,15 @@ class Parareal:
 
         time_slices = np.linspace(
             diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
+
         y_0 = diff_eq.y_0()
-        if isinstance(y_0, float):
+        if diff_eq.solution_dimension() == 1:
             y = np.empty(len(time_slices))
             f_values = np.empty(comm.size)
             g_values = np.empty(comm.size)
             new_g_values = np.empty(comm.size)
         else:
+            y_0 = diff_eq.y_0()
             y = np.empty((len(time_slices), len(y_0)))
             f_values = np.empty((comm.size, len(y_0)))
             g_values = np.empty((comm.size, len(y_0)))
@@ -96,7 +97,7 @@ class Parareal:
 
                 new_y_next = new_g_value + correction
 
-                if isinstance(y_0, float):
+                if diff_eq.solution_dimension() == 1:
                     max_update = max(max_update, abs(new_y_next - y[j + 1]))
                 else:
                     max_update = max(
@@ -109,13 +110,15 @@ class Parareal:
                 break
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
-        if isinstance(y_0, float):
+
+        if diff_eq.solution_dimension() == 1:
             y_trajectory = np.empty(
                 comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())))
         else:
             y_trajectory = np.empty((
                 comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())),
                 len(y_0)))
+
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 

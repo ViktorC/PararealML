@@ -13,6 +13,13 @@ class DiffEq:
     form y'(t) = f(t, y(t)).
     """
 
+    def solution_dimension(self) -> int:
+        """
+        Returns the dimension of the value of the differential equation's
+        solution. If the solution is not vector-valued, its dimension is 1.
+        """
+        pass
+
     def has_exact_solution(self) -> bool:
         """
         Returns whether the differential equation has an analytic solution
@@ -73,6 +80,9 @@ class RabbitPopulationDiffEq(DiffEq):
         self._t_0 = t_0
         self._t_max = t_max
 
+    def solution_dimension(self) -> int:
+        return 1
+
     def has_exact_solution(self) -> bool:
         return True
 
@@ -118,6 +128,9 @@ class LotkaVolterraDiffEq(DiffEq):
         self._delta = delta
         self._t_0 = t_0
         self._t_max = t_max
+
+    def solution_dimension(self) -> int:
+        return 2
 
     def has_exact_solution(self) -> bool:
         return False
