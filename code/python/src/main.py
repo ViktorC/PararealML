@@ -7,9 +7,13 @@ from src.operator import ConventionalOperator, MLOperator
 from src.parareal import Parareal
 
 
-def time_parallel_solver_and_print_result(parallel_solver, solver_name):
+def time_parallel_solver_and_print_result(
+        fine_op, coarse_op, solver_name, train=False):
+    parallel_solver = Parareal(fine_op, coarse_op)
     comm.barrier()
     start_time = MPI.Wtime()
+    if train:
+        coarse_op.train_model(diff_eq)
     y_max = parallel_solver.solve(diff_eq, threshold)[-1]
     comm.barrier()
     end_time = MPI.Wtime()
@@ -29,20 +33,17 @@ def time_operator_and_print_result(operator, operator_name):
 
 comm = MPI.COMM_WORLD
 
-diff_eq = LotkaVolterraDiffEq(100., 15., 2., .04, .02, 1.06, 0., 100.)
+diff_eq = LotkaVolterraDiffEq(100., 15., 2., .04, .02, 1.06, 0., 10.)
 
 f = ConventionalOperator(RK4(), .01)
 g = ConventionalOperator(ExplicitMidpointMethod(), .02)
-g_ml = MLOperator(LinearRegression(), g, 10., 100)
-
-parareal = Parareal(f, g)
-parareal_ml = Parareal(f, g_ml)
+g_ml = MLOperator(LinearRegression(), g, .1, 100)
 
 threshold = 1e-3
 
-time_parallel_solver_and_print_result(parareal_ml, 'Parareal ML w/ training')
-time_parallel_solver_and_print_result(parareal_ml, 'Parareal ML w/o training')
-time_parallel_solver_and_print_result(parareal, 'Parareal')
+time_parallel_solver_and_print_result(f, g_ml, 'Parareal ML w/ training', True)
+time_parallel_solver_and_print_result(f, g_ml, 'Parareal ML w/o training')
+time_parallel_solver_and_print_result(f, g, 'Parareal')
 
 if comm.rank == 0:
     time_operator_and_print_result(g, 'Coarse')

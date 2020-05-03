@@ -115,7 +115,7 @@ class MLOperator(Operator):
         self._trainer = trainer
         self._d_t = d_t
         self._data_epochs = data_epochs
-        self._diff_eq_trained_on: Optional[DiffEq] = None
+        self._trained: bool = False
 
     def train_model(self, diff_eq: DiffEq):
         """
@@ -166,7 +166,7 @@ class MLOperator(Operator):
                         np.zeros(len(y_0)), np.diag(d_y_i * self._d_t))
 
         self._model.fit(obs, y)
-        self._diff_eq_trained_on = diff_eq
+        self._trained = True
 
     def d_t(self) -> float:
         return self._d_t
@@ -177,8 +177,7 @@ class MLOperator(Operator):
             y_a: ImageType,
             t_a: float,
             t_b: float) -> ImageType:
-        if diff_eq != self._diff_eq_trained_on:
-            self.train_model(diff_eq)
+        assert self._trained
 
         t = self._discretise_time_domain(t_a, t_b)
         if isinstance(y_a, float):
