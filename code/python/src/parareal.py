@@ -27,7 +27,7 @@ class Parareal:
     def solve(
             self,
             diff_eq: DiffEq,
-            tol: float) -> Sequence[float]:
+            tol: float) -> np.ndarray:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
