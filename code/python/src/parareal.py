@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from mpi4py import MPI
 
@@ -25,7 +27,8 @@ class Parareal:
     def solve(
             self,
             diff_eq: DiffEq,
-            tol: float) -> np.ndarray:
+            tol: float,
+            max_iterations: int = sys.maxsize) -> np.ndarray:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
@@ -35,6 +38,9 @@ class Parareal:
         the solution required to perform another corrective iteration; if all
         updates are smaller than this threshold, the solution is considered
         accurate enough
+        :param max_iterations: the maximum number of iterations to perform
+        (effective only if it is less than the number of executing processes
+        and the accuracy requirements are not satisfied in fewer iterations)
         :return: the discretised trajectory of the differential equation's
         solution
         """
@@ -59,7 +65,7 @@ class Parareal:
 
         my_y_trajectory = None
 
-        for i in range(comm.size):
+        for i in range(min(comm.size, max_iterations)):
             my_y_trajectory = self._f.trace(
                 diff_eq,
                 y[comm.rank],
