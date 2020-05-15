@@ -120,6 +120,8 @@ class LotkaVolterraDiffEq(DiffEq):
         :param t_max: the end time
         """
         assert t_max > t_0
+        assert r_0 >= 0
+        assert p_0 >= 0
         self._r_0 = r_0
         self._p_0 = p_0
         self._alpha = alpha
@@ -153,4 +155,63 @@ class LotkaVolterraDiffEq(DiffEq):
         d_y_arr = np.empty(2)
         d_y_arr[0] = self._alpha * r - self._beta * r * p
         d_y_arr[1] = self._gamma * r * p - self._delta * p
+        return d_y_arr
+
+
+class LorenzDiffEq(DiffEq):
+    """
+    A system of three differential equations modelling atmospheric convection.
+    """
+
+    def __init__(self, c_0, h_0, v_0, sigma, rho, beta, t_0, t_max):
+        """
+        :param c_0: the initial rate of convection
+        :param h_0: the initial horizontal temperature variation
+        :param v_0: the initial vertical temperature variation
+        :param sigma: the first system coefficient
+        :param rho: the second system coefficient
+        :param beta: the third system coefficient
+        :param t_0: the start time
+        :param t_max: the end time
+        """
+        assert t_max > t_0
+        assert sigma >= .0
+        assert rho >= .0
+        assert beta >= .0
+        self._c_0 = c_0
+        self._h_0 = h_0
+        self._v_0 = v_0
+        self._sigma = sigma
+        self._rho = rho
+        self._beta = beta
+        self._t_0 = t_0
+        self._t_max = t_max
+
+    def solution_dimension(self) -> int:
+        return 3
+
+    def has_exact_solution(self) -> bool:
+        return False
+
+    def t_0(self) -> float:
+        return self._t_0
+
+    def t_max(self) -> float:
+        return self._t_max
+
+    def y_0(self) -> ImageType:
+        y_0_arr = np.empty(3)
+        y_0_arr[0] = self._c_0
+        y_0_arr[1] = self._h_0
+        y_0_arr[1] = self._v_0
+        return y_0_arr
+
+    def d_y(self, t: float, y: ImageType) -> ImageType:
+        c = y[0]
+        h = y[1]
+        v = y[2]
+        d_y_arr = np.empty(3)
+        d_y_arr[0] = self._sigma * (h - c)
+        d_y_arr[1] = c * (self._rho - v) - h
+        d_y_arr[1] = c * h - self._beta * v
         return d_y_arr
