@@ -1,10 +1,9 @@
 from typing import Sequence
 
 import numpy as np
-
 from mpi4py import MPI
 
-from src.diff_eq import OrdinaryDiffEq
+from src.diff_eq import DiffEq
 from src.operator import Operator
 
 
@@ -27,8 +26,8 @@ class Parareal:
 
     def solve(
             self,
-            diff_eq: OrdinaryDiffEq,
-            tol: float) -> Sequence[float]:
+            diff_eq: DiffEq,
+            tol: float) -> np.ndarray:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
@@ -44,14 +43,19 @@ class Parareal:
         comm = MPI.COMM_WORLD
 
         time_slices = np.linspace(
-            diff_eq.x_0(), diff_eq.x_max(), comm.size + 1)
-        y = np.empty(len(time_slices))
+            diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
+        if diff_eq.solution_dimension() == 1:
+            y = np.empty(len(time_slices))
+            f_values = np.empty(comm.size)
+            g_values = np.empty(comm.size)
+            new_g_values = np.empty(comm.size)
+        else:
+            y = np.empty((len(time_slices), diff_eq.solution_dimension()))
+            f_values = np.empty((comm.size, diff_eq.solution_dimension()))
+            g_values = np.empty((comm.size, diff_eq.solution_dimension()))
+            new_g_values = np.empty((comm.size, diff_eq.solution_dimension()))
+
         y[0] = diff_eq.y_0()
-
-        f_values = np.empty(comm.size)
-        g_values = np.empty(comm.size)
-        new_g_values = np.empty(comm.size)
-
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self._g.trace(diff_eq, y[i], t, time_slices[i + 1])[-1]
 
@@ -89,7 +93,13 @@ class Parareal:
                 new_g_values[j] = new_g_value
 
                 new_y_next = new_g_value + correction
-                max_update = max(max_update, abs(new_y_next - y[j + 1]))
+
+                if diff_eq.solution_dimension() == 1:
+                    max_update = max(max_update, abs(new_y_next - y[j + 1]))
+                else:
+                    max_update = max(
+                        max_update,
+                        np.linalg.norm(new_y_next - y[j + 1]))
 
                 y[j + 1] = new_y_next
 
@@ -97,8 +107,13 @@ class Parareal:
                 break
 
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
-        y_trajectory = np.empty(
-            comm.size * int(time_slices[-1] / (comm.size * self._f.d_x())))
+        if diff_eq.solution_dimension() == 1:
+            y_trajectory = np.empty(
+                comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())))
+        else:
+            y_trajectory = np.empty((
+                comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())),
+                diff_eq.solution_dimension()))
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 
