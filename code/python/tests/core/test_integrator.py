@@ -1,6 +1,6 @@
 import pytest
 
-from src.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
+from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
 
 
 def test_forward_euler_method():

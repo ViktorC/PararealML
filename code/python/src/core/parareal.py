@@ -3,8 +3,8 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
-from src.diff_eq import DiffEq
-from src.operator import Operator
+from src.core.diff_eq import DiffEq
+from src.core.operator import Operator
 
 
 class Parareal:

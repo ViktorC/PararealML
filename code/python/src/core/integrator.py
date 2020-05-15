@@ -1,6 +1,6 @@
 from typing import Callable
 
-from src.diff_eq import ImageType
+from src.core.diff_eq import ImageType
 
 
 class Integrator:

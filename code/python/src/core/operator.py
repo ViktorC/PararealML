@@ -3,8 +3,8 @@ from typing import Any
 
 import numpy as np
 
-from src.diff_eq import DiffEq, ImageType
-from src.integrator import Integrator
+from src.core.diff_eq import DiffEq, ImageType
+from src.core.integrator import Integrator
 
 
 class Operator:
