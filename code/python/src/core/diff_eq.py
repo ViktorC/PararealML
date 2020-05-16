@@ -67,18 +67,18 @@ class RabbitPopulationDiffEq(DiffEq):
     over time.
     """
 
-    def __init__(self, n_0, r, t_0, t_max):
+    def __init__(self, t_0, t_max, n_0=100., r=.01):
         """
-        :param n_0: the initial population size
-        :param r: the population growth rate
         :param t_0: the start time
         :param t_max: the end time
+        :param n_0: the initial population size
+        :param r: the population growth rate
         """
         assert t_max > t_0
-        self._n_0 = n_0
-        self._r = r
         self._t_0 = t_0
         self._t_max = t_max
+        self._n_0 = n_0
+        self._r = r
 
     def solution_dimension(self) -> int:
         return 1
@@ -108,28 +108,41 @@ class LotkaVolterraDiffEq(DiffEq):
     populations of preys and predators.
     """
 
-    def __init__(self, r_0, p_0, alpha, beta, gamma, delta, t_0, t_max):
+    def __init__(
+            self,
+            t_0,
+            t_max,
+            r_0=100.,
+            p_0=15.,
+            alpha=2.,
+            beta=.04,
+            gamma=.02,
+            delta=1.06):
         """
-        :param r_0: the initial prey population size
-        :param p_0: the initial predator population size
-        :param alpha:
-        :param beta:
-        :param gamma:
-        :param delta:
         :param t_0: the start time
         :param t_max: the end time
+        :param r_0: the initial prey population size
+        :param p_0: the initial predator population size
+        :param alpha: the preys' birthrate
+        :param beta: a coefficient of the decrease of the prey population
+        :param gamma: a coefficient of the increase of the predator population
+        :param delta: the predators' mortality rate
         """
         assert t_max > t_0
         assert r_0 >= 0
         assert p_0 >= 0
+        assert alpha >= 0
+        assert beta >= 0
+        assert gamma >= 0
+        assert delta >= 0
+        self._t_0 = t_0
+        self._t_max = t_max
         self._r_0 = r_0
         self._p_0 = p_0
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
         self._delta = delta
-        self._t_0 = t_0
-        self._t_max = t_max
 
     def solution_dimension(self) -> int:
         return 2
@@ -163,29 +176,38 @@ class LorenzDiffEq(DiffEq):
     A system of three differential equations modelling atmospheric convection.
     """
 
-    def __init__(self, c_0, h_0, v_0, sigma, rho, beta, t_0, t_max):
+    def __init__(
+            self,
+            t_0,
+            t_max,
+            c_0=1.,
+            h_0=1.,
+            v_0=1.,
+            sigma=10.,
+            rho=28.,
+            beta=8. / 3.):
         """
+        :param t_0: the start time
+        :param t_max: the end time
         :param c_0: the initial rate of convection
         :param h_0: the initial horizontal temperature variation
         :param v_0: the initial vertical temperature variation
         :param sigma: the first system coefficient
         :param rho: the second system coefficient
         :param beta: the third system coefficient
-        :param t_0: the start time
-        :param t_max: the end time
         """
         assert t_max > t_0
         assert sigma >= .0
         assert rho >= .0
         assert beta >= .0
+        self._t_0 = t_0
+        self._t_max = t_max
         self._c_0 = c_0
         self._h_0 = h_0
         self._v_0 = v_0
         self._sigma = sigma
         self._rho = rho
         self._beta = beta
-        self._t_0 = t_0
-        self._t_max = t_max
 
     def solution_dimension(self) -> int:
         return 3

@@ -8,16 +8,16 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space
 from src.utils.time import time
 
-diff_eq = LorenzDiffEq(1., 1., 1., 10., 28., 8. / 3., 0., 40.)
+diff_eq = LorenzDiffEq(0., 40.)
 
 f = ConventionalOperator(RK4(), .01)
-g = ConventionalOperator(ExplicitMidpointMethod(), .02)
+g = ConventionalOperator(ExplicitMidpointMethod(), .05)
 g_ml = MLOperator(MLPRegressor(), 1.)
 
 parareal = Parareal(f, g)
 parareal_ml = Parareal(f, g_ml)
 
-threshold = 1e-3
+threshold = 1e-1
 
 
 @time
@@ -37,17 +37,17 @@ def solve_parallel_ml():
 
 @time
 def solve_serial_fine():
-    return f.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+    return f.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
 
 
 @time
 def solve_serial_coarse():
-    return g.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+    return g.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
 
 
 @time
 def solve_serial_coarse_ml():
-    return g_ml.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+    return g_ml.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
 
 
 def plot_solution(solve_func):
