@@ -203,7 +203,7 @@ class LorenzDiffEq(DiffEq):
         y_0_arr = np.empty(3)
         y_0_arr[0] = self._c_0
         y_0_arr[1] = self._h_0
-        y_0_arr[1] = self._v_0
+        y_0_arr[2] = self._v_0
         return y_0_arr
 
     def d_y(self, t: float, y: ImageType) -> ImageType:
@@ -213,5 +213,5 @@ class LorenzDiffEq(DiffEq):
         d_y_arr = np.empty(3)
         d_y_arr[0] = self._sigma * (h - c)
         d_y_arr[1] = c * (self._rho - v) - h
-        d_y_arr[1] = c * h - self._beta * v
+        d_y_arr[2] = c * h - self._beta * v
         return d_y_arr
