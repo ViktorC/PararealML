@@ -1,14 +1,14 @@
 from mpi4py import MPI
 from sklearn.neural_network.multilayer_perceptron import MLPRegressor
 
-from src.core.diff_eq import LotkaVolterraDiffEq
+from src.core.diff_eq import LorenzDiffEq
 from src.core.integrator import ExplicitMidpointMethod, RK4
 from src.core.operator import ConventionalOperator, MLOperator
 from src.core.parareal import Parareal
-from src.utils.plot import plot_y_against_t
+from src.utils.plot import plot_y_against_t, plot_phase_space
 from src.utils.time import time
 
-diff_eq = LotkaVolterraDiffEq(100., 15., 2., .04, .02, 1.06, 0., 10.)
+diff_eq = LorenzDiffEq(1., 1., 1., 10., 28., 8. / 3., 0., 40.)
 
 f = ConventionalOperator(RK4(), .01)
 g = ConventionalOperator(ExplicitMidpointMethod(), .02)
@@ -56,11 +56,13 @@ def plot_solution(solve_func):
         print(f'According to {solve_func.__name__!r}, '
               f'y({diff_eq.t_max()})={y[-1]}')
         plot_y_against_t(diff_eq, y, solve_func.__name__)
+        if diff_eq.solution_dimension() > 1:
+            plot_phase_space(y, f'phase_space_{solve_func.__name__}')
 
 
-train_ml_operator()
-plot_solution(solve_parallel_ml)
+# train_ml_operator()
+# plot_solution(solve_parallel_ml)
 plot_solution(solve_parallel)
 plot_solution(solve_serial_fine)
 plot_solution(solve_serial_coarse)
-plot_solution(solve_serial_coarse_ml)
+# plot_solution(solve_serial_coarse_ml)
