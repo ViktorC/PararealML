@@ -1,62 +1,12 @@
-import re
-
-import matplotlib.pyplot as plt
-import numpy as np
 from mpi4py import MPI
 from sklearn.neural_network.multilayer_perceptron import MLPRegressor
 
-from src.diff_eq import LotkaVolterraDiffEq
-from src.integrator import ExplicitMidpointMethod, RK4
-from src.operator import ConventionalOperator, MLOperator
-from src.parareal import Parareal
-
-
-def plot_y(y, solver_name):
-    t = np.linspace(diff_eq.t_0(), diff_eq.t_max(), len(y))
-    if len(y.shape) == 1:
-        plt.plot(t, y)
-    elif len(y.shape) == 2:
-        for i in range(y.shape[1]):
-            plt.plot(t, y[:, i])
-    plt.xlabel('t')
-    plt.ylabel('y')
-    file_name = re.sub('[^0-9a-zA-Z]+', '_', solver_name.lower())
-    plt.savefig(f'{file_name}.pdf')
-    plt.clf()
-
-
-def time_parallel_solver_and_print_result(
-        fine_op,
-        coarse_op,
-        solver_name,
-        train=False,
-        trainer=None,
-        data_epochs=100,
-        y_noise_var_coeff=1.):
-    parallel_solver = Parareal(fine_op, coarse_op)
-    comm.barrier()
-    start_time = MPI.Wtime()
-    if train:
-        coarse_op.train_model(diff_eq, trainer, data_epochs, y_noise_var_coeff)
-    y = parallel_solver.solve(diff_eq, threshold)
-    comm.barrier()
-    end_time = MPI.Wtime()
-    if comm.rank == 0:
-        print(f'{solver_name} solution: {y[-1]}; '
-              f'execution took {end_time - start_time}s')
-        plot_y(y, solver_name)
-
-
-def time_operator_and_print_result(operator, operator_name):
-    start_time = MPI.Wtime()
-    y_max = operator.trace(
-        diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())[-1]
-    end_time = MPI.Wtime()
-    print(f'{operator_name} solution: {y_max}; '
-          f'execution took {end_time - start_time}s')
-
-
-comm = MPI.COMM_WORLD
+from src.core.diff_eq import LotkaVolterraDiffEq
+from src.core.integrator import ExplicitMidpointMethod, RK4
+from src.core.operator import ConventionalOperator, MLOperator
+from src.core.parareal import Parareal
+from src.utils.plot import plot_y_against_t
+from src.utils.time import time
 
 diff_eq = LotkaVolterraDiffEq(100., 15., 2., .04, .02, 1.06, 0., 10.)
 
@@ -64,15 +14,53 @@ f = ConventionalOperator(RK4(), .01)
 g = ConventionalOperator(ExplicitMidpointMethod(), .02)
 g_ml = MLOperator(MLPRegressor(), 1.)
 
+parareal = Parareal(f, g)
+parareal_ml = Parareal(f, g_ml)
+
 threshold = 1e-3
 
-time_parallel_solver_and_print_result(
-    f, g_ml, 'Parareal ML w/ training', True, g, 200, .01)
-time_parallel_solver_and_print_result(f, g_ml, 'Parareal ML w/o training')
-time_parallel_solver_and_print_result(f, g, 'Parareal')
 
-if comm.rank == 0:
-    time_operator_and_print_result(g, 'Coarse')
-    time_operator_and_print_result(g_ml, 'Coarse ML')
-    time_operator_and_print_result(f, 'Fine')
-    print(f'Analytic solution: {diff_eq.exact_y(diff_eq.t_max())}')
+@time
+def train_ml_operator():
+    g_ml.train_model(diff_eq, g, 200, .001)
+
+
+@time
+def solve_parallel():
+    return parareal.solve(diff_eq, threshold)
+
+
+@time
+def solve_parallel_ml():
+    return parareal_ml.solve(diff_eq, threshold)
+
+
+@time
+def solve_serial_fine():
+    return f.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+
+
+@time
+def solve_serial_coarse():
+    return g.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+
+
+@time
+def solve_serial_coarse_ml():
+    return g_ml.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
+
+
+def plot_solution(solve_func):
+    y = solve_func()
+    if MPI.COMM_WORLD.rank == 0:
+        print(f'According to {solve_func.__name__!r}, '
+              f'y({diff_eq.t_max()})={y[-1]}')
+        plot_y_against_t(diff_eq, y, solve_func.__name__)
+
+
+train_ml_operator()
+plot_solution(solve_parallel_ml)
+plot_solution(solve_parallel)
+plot_solution(solve_serial_fine)
+plot_solution(solve_serial_coarse)
+plot_solution(solve_serial_coarse_ml)
