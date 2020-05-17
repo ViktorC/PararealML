@@ -110,14 +110,14 @@ class Parareal:
             if max_update < tol:
                 break
 
-        my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
+        y_length = comm.size * int(
+            (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t()))
         if diff_eq.solution_dimension() == 1:
-            y_trajectory = np.empty(
-                comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())))
+            y_trajectory = np.empty(y_length)
         else:
-            y_trajectory = np.empty((
-                comm.size * int(time_slices[-1] / (comm.size * self._f.d_t())),
-                diff_eq.solution_dimension()))
+            y_trajectory = np.empty((y_length, diff_eq.solution_dimension()))
+
+        my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
 
