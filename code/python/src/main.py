@@ -37,17 +37,17 @@ def solve_parallel_ml():
 
 @time
 def solve_serial_fine():
-    return f.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
+    return f.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
 
 
 @time
 def solve_serial_coarse():
-    return g.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
+    return g.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
 
 
 @time
 def solve_serial_coarse_ml():
-    return g_ml.trace(diff_eq, diff_eq.y_0(), 0., diff_eq.t_max())
+    return g_ml.trace(diff_eq, diff_eq.y_0(), diff_eq.t_0(), diff_eq.t_max())
 
 
 def plot_solution(solve_func):

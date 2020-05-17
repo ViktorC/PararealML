@@ -7,7 +7,7 @@ from src.core.diff_eq import DiffEq
 
 
 def plot_y_against_t(diff_eq: DiffEq, y: np.ndarray, file_name: str):
-    t = np.linspace(diff_eq.t_0(), diff_eq.t_max(), len(y))
+    t = np.linspace(0., diff_eq.t_max(), len(y))
 
     if diff_eq.solution_dimension() == 1:
         plt.plot(t, y)
