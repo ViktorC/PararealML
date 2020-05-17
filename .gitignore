@@ -2,3 +2,4 @@ code/c/simulate
 code/python/*.pdf
 *.o
 *.pytest_cache
+*.mypy_cache
