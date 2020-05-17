@@ -144,7 +144,7 @@ class MLOperator(Operator):
         determines the amount of perturbation to apply to the trajectory of
         the trainer operator's solution
         """
-        t = self._discretise_time_domain(0., diff_eq.t_max())
+        t = self._discretise_time_domain(diff_eq.t_0(), diff_eq.t_max())
         if diff_eq.solution_dimension() == 1:
             obs = np.empty((data_epochs * len(t), 3))
             y = np.empty(len(obs))

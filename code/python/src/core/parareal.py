@@ -46,7 +46,8 @@ class Parareal:
         """
         comm = MPI.COMM_WORLD
 
-        time_slices = np.linspace(0., diff_eq.t_max(), comm.size + 1)
+        time_slices = np.linspace(
+            diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
         if diff_eq.solution_dimension() == 1:
             y = np.empty(len(time_slices))
             f_values = np.empty(comm.size)
