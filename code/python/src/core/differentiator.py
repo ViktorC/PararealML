@@ -130,7 +130,7 @@ class SimpleFiniteDifferenceMethod(Differentiator):
         assert len(y.shape) - 1 == y.shape[-1]
 
         diagonal_grad = self._gradient(y, d_x, skip_off_diagonal=True)
-        div = np.diagonal(diagonal_grad.T).sum(axis=-1).T
+        div = diagonal_grad.diagonal(axis1=-2, axis2=-1).sum(axis=-1)
 
         return div
 
