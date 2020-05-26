@@ -226,7 +226,6 @@ def test_sfdm_3d_curl():
         ]
     ])
     actual_curl = sfdm.curl(y, d_x)
-    print(actual_curl)
 
     assert np.isclose(actual_curl, expected_curl).all()
 
