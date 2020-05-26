@@ -3,7 +3,7 @@ install:
 	pip3 install -r requirements.txt
 
 lint:
-	flake8 src/
+	flake8 src/ tests/
 
 type-check:
 	mypy --ignore-missing-imports src/
