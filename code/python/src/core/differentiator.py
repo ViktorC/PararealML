@@ -60,7 +60,7 @@ class Differentiator:
         first_derivative = self.derivative(y, d_x1, x_ind1, y_ind)
         first_derivative_shape = list(first_derivative.shape)
         first_derivative_shape.append(1)
-        first_derivative.reshape(first_derivative_shape)
+        first_derivative = first_derivative.reshape(first_derivative_shape)
         second_derivative = self.derivative(first_derivative, d_x2, x_ind2)
         return second_derivative
 
@@ -256,8 +256,10 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
             y_prev = y[tuple(y_slicer)]
             y_slicer[x_ind] = i + 1
             y_next = y[tuple(y_slicer)]
-            derivative_slicer[x_ind] = i
+
             y_diff = (y_next - y_prev) / (2 * d_x)
+
+            derivative_slicer[x_ind] = i
             derivative[tuple(derivative_slicer)] = y_diff
 
         # Backward difference
