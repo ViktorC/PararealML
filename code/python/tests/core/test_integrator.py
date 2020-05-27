@@ -1,4 +1,4 @@
-import pytest
+import numpy as np
 
 from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
 
@@ -6,43 +6,43 @@ from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
 def test_forward_euler_method():
     euler = ForwardEulerMethod()
 
-    y1 = 1.
-    x1 = 1.
-    d_x = .5
+    y1 = np.array([1.])
+    t1 = 1.
+    d_t = .5
 
-    def d_y_wrt_x(x, y): return 5 * y + x ** 2
+    def d_y_wrt_t(t, y): return 5 * y + t ** 2
 
-    expected_y2 = 4.
-    actual_y2 = euler.integrate(y1, x1, d_x, d_y_wrt_x)
+    expected_y2 = np.array([4.])
+    actual_y2 = euler.integral(y1, t1, d_t, d_y_wrt_t)
 
-    assert actual_y2 == pytest.approx(expected_y2)
+    assert np.isclose(actual_y2, expected_y2).all()
 
 
-def test_explicit_midpoint_method():
+def test_etplicit_midpoint_method():
     midpoint = ExplicitMidpointMethod()
 
-    y1 = 2.
-    x1 = 0.
-    d_x = .5
+    y1 = np.array([2.])
+    t1 = 0.
+    d_t = .5
 
-    def d_y_wrt_x(x, y): return 2 * y - 4 * x
+    def d_y_wrt_t(t, y): return 2 * y - 4 * t
 
-    expected_y2 = 4.5
-    actual_y2 = midpoint.integrate(y1, x1, d_x, d_y_wrt_x)
+    expected_y2 = np.array([4.5])
+    actual_y2 = midpoint.integral(y1, t1, d_t, d_y_wrt_t)
 
-    assert actual_y2 == pytest.approx(expected_y2)
+    assert np.isclose(actual_y2, expected_y2).all()
 
 
 def test_rk4():
     rk4 = RK4()
 
-    y1 = 0.
-    x1 = 1.
-    d_x = 1.
+    y1 = np.array([0.])
+    t1 = 1.
+    d_t = 1.
 
-    def d_y_wrt_x(_, y): return 2 * y + 1
+    def d_y_wrt_t(_, y): return 2 * y + 1
 
-    expected_y2 = 3.
-    actual_y2 = rk4.integrate(y1, x1, d_x, d_y_wrt_x)
+    expected_y2 = np.array([3.])
+    actual_y2 = rk4.integral(y1, t1, d_t, d_y_wrt_t)
 
-    assert actual_y2 == pytest.approx(expected_y2)
+    assert np.isclose(actual_y2, expected_y2).all()
