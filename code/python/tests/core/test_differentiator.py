@@ -1,30 +1,257 @@
 import numpy as np
 import pytest
 
-from src.core.differentiator import SimpleFiniteDifferenceMethod
+from src.core.differentiator import Differentiator, \
+    TwoPointFiniteDifferenceMethod, ThreePointFiniteDifferenceMethod
 
 
-def test_sfdm_gradient_with_insufficient_dimensions():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.arange(1, 5)
+def test_differentiator_second_derivative_with_insufficient_dimensions():
+    diff = Differentiator()
+    d_x = 1.
+    y = np.arange(1., 5.)
 
     with pytest.raises(AssertionError):
-        sfdm.gradient(y, d_x)
+        diff.second_derivative(y, d_x, d_x, 0, 0)
 
 
-def test_sfdm_gradient_with_insufficient_dimension_extent():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
+def test_differentiator_second_derivative_with_out_of_bounds_x_ind():
+    diff = Differentiator()
+    d_x = 1.
+    x_ind1 = 0
+    x_ind2 = 1
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        diff.second_derivative(y, d_x, d_x, x_ind1, x_ind2)
+
+
+def test_differentiator_second_derivative_with_out_of_bounds_y_ind():
+    diff = Differentiator()
+    d_x = 1.
+    x_ind = 0
+    y_ind = 2
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        diff.second_derivative(y, d_x, d_x, x_ind, x_ind, y_ind)
+
+
+def test_differentiator_gradient_with_insufficient_dimensions():
+    diff = Differentiator()
+    d_x = [1.]
+    y = np.arange(1., 5.)
+
+    with pytest.raises(AssertionError):
+        diff.gradient(y, d_x)
+
+
+def test_differentiator_gradient_with_wrong_d_x_size():
+    diff = Differentiator()
+    d_x = [1.] * 3
     y = np.array([[[0.] * 3] * 2])
 
     with pytest.raises(AssertionError):
-        sfdm.gradient(y, d_x)
+        diff.gradient(y, d_x)
 
 
-def test_sfdm_gradient():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 2
+def test_differentiator_divergence_with_insufficient_dimensions():
+    diff = Differentiator()
+    d_x = [1.]
+    y = np.arange(1., 5.)
+
+    with pytest.raises(AssertionError):
+        diff.divergence(y, d_x)
+
+
+def test_differentiator_divergence_with_non_matching_vector_field_dimension():
+    diff = Differentiator()
+    d_x = [1.] * 2
+    y = np.array([[[0.] * 3] * 2] * 2)
+
+    with pytest.raises(AssertionError):
+        diff.divergence(y, d_x)
+
+
+def test_differentiator_divergence_with_wrong_d_x_size():
+    diff = Differentiator()
+    d_x = [1.] * 3
+    y = np.array([[[0.] * 2] * 2] * 2)
+
+    with pytest.raises(AssertionError):
+        diff.divergence(y, d_x)
+
+
+def test_differentiator_1d_curl():
+    diff = Differentiator()
+    d_x = [1.]
+    y = np.array([[0.]])
+
+    with pytest.raises(AssertionError):
+        diff.curl(y, d_x)
+
+
+def test_differentiator_more_than_3d_curl():
+    diff = Differentiator()
+    d_x = [1.] * 4
+    y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
+
+    with pytest.raises(AssertionError):
+        diff.curl(y, d_x)
+
+
+def test_differentiator_curl_with_wrong_d_x_size():
+    diff = Differentiator()
+    d_x = [1.] * 3
+    y = np.array([[[0.] * 2] * 2] * 2)
+
+    with pytest.raises(AssertionError):
+        diff.curl(y, d_x)
+
+
+def test_differentiator_laplacian_with_insufficient_dimensions():
+    diff = Differentiator()
+    d_x = [1.]
+    y = np.arange(1., 5.)
+
+    with pytest.raises(AssertionError):
+        diff.laplacian(y, d_x)
+
+
+def test_differentiator_laplacian_with_wrong_d_x_size():
+    diff = Differentiator()
+    d_x = [1.] * 3
+    y = np.array([[[0.] * 2] * 2] * 2)
+
+    with pytest.raises(AssertionError):
+        diff.laplacian(y, d_x)
+
+
+def test_tpfdm_derivative_with_insufficient_dimensions():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 1.
+    y = np.arange(1., 5.)
+
+    with pytest.raises(AssertionError):
+        tpfdm.derivative(y, d_x, 0)
+
+
+def test_tpfdm_derivative_with_out_of_bounds_x_ind():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 1
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        tpfdm.derivative(y, d_x, x_ind)
+
+
+def test_tpfdm_derivative_with_out_of_bounds_y_ind():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 0
+    y_ind = 2
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        tpfdm.derivative(y, d_x, x_ind, y_ind)
+
+
+def test_tpfdm_derivative_with_insufficient_dimension_extent():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 0
+    y = np.arange(0., 6.).reshape((1, 2, 3))
+
+    with pytest.raises(AssertionError):
+        tpfdm.derivative(y, d_x, x_ind)
+
+
+def test_tpfdm_derivative():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.]
+        ],
+        [
+            [6., 4.], [4., 4.]
+        ],
+        [
+            [2., 6.], [8., 2.]
+        ]
+    ])
+    expected_derivative = np.array([
+        [0., -2.],
+        [1., -1.],
+        [1., -1.]
+    ])
+    actual_derivative = tpfdm.derivative(y, d_x, x_ind, y_ind)
+
+    assert np.isclose(actual_derivative, expected_derivative).all()
+
+
+def test_tpfdm_second_derivative():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.]
+        ],
+        [
+            [6., 4.], [4., 4.]
+        ],
+        [
+            [2., 6.], [8., 2.]
+        ]
+    ])
+    expected_second_derivative = np.array([
+        [.5, .5],
+        [0., 0.],
+        [0., 0.]
+    ])
+    actual_second_derivative = tpfdm.second_derivative(
+        y, d_x, d_x, x_ind, x_ind, y_ind)
+
+    assert np.isclose(
+        actual_second_derivative, expected_second_derivative).all()
+
+
+def test_tpfdm_mixed_second_derivative():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x1 = 1.
+    d_x2 = .5
+    x_ind1 = 0
+    x_ind2 = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_second_derivative = np.array([
+        [-8., 16., 16.],
+        [16., -32., -32],
+        [16., -32., -32]
+    ])
+    actual_second_derivative = tpfdm.second_derivative(
+        y, d_x1, d_x2, x_ind1, x_ind2)
+
+    assert np.isclose(
+        actual_second_derivative, expected_second_derivative).all()
+
+
+def test_tpfdm_gradient():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [2., 1.]
     y = np.array([
         [
             [2., 4.], [4., 8.]
@@ -38,41 +265,23 @@ def test_sfdm_gradient():
     ])
     expected_grad = np.array([
         [
-            [[2., 1.], [0., 2.]], [[0., 1.], [-2., 2.]]
+            [[2., 2.], [0., 4.]], [[0., 2.], [-2., 4.]]
         ],
         [
-            [[0., -1.], [.5, 0.]], [[1., -1.], [-1.5, 0.]]
+            [[-2., -2.], [1., 0.]], [[2., -2.], [-1, 0.]]
         ],
         [
-            [[-2., 3.], [1., -2.]], [[2., 3.], [-1., -2.]]
+            [[-2., 6.], [1., -4.]], [[2., 6.], [-1., -4.]]
         ]
     ])
-    actual_grad = sfdm.gradient(y, d_x)
+    actual_grad = tpfdm.gradient(y, d_x)
 
     assert np.isclose(actual_grad, expected_grad).all()
 
 
-def test_sfdm_divergence_with_insufficient_dimension_extent():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.array([[[0.] * 2] * 2])
-
-    with pytest.raises(AssertionError):
-        sfdm.divergence(y, d_x)
-
-
-def test_sfdm_divergence_with_non_matching_vector_field_dimension():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 2
-    y = np.array([[[0.] * 3] * 2] * 2)
-
-    with pytest.raises(AssertionError):
-        sfdm.divergence(y, d_x)
-
-
-def test_sfdm_2d_divergence():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
+def test_tpfdm_2d_divergence():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [1., 2.]
     y = np.array([
         [
             [2., 4.], [4., 8.]
@@ -82,17 +291,17 @@ def test_sfdm_2d_divergence():
         ]
     ])
     expected_div = np.array([
-        [8., 4.],
+        [6., 2.],
         [4., 0.]
     ])
-    actual_div = sfdm.divergence(y, d_x)
+    actual_div = tpfdm.divergence(y, d_x)
 
     assert np.isclose(actual_div, expected_div).all()
 
 
-def test_sfdm_3d_divergence():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = .5
+def test_tpfdm_3d_divergence():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [.5] * 3
     y = np.array([
         [
             [
@@ -121,41 +330,14 @@ def test_sfdm_3d_divergence():
             [68., 36.]
         ]
     ])
-    actual_div = sfdm.divergence(y, d_x)
+    actual_div = tpfdm.divergence(y, d_x)
 
     assert np.isclose(actual_div, expected_div).all()
 
 
-def test_sfdm_curl_with_insufficient_dimension_extent():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.array([[[0.] * 3] * 2])
-
-    with pytest.raises(AssertionError):
-        sfdm.curl(y, d_x)
-
-
-def test_sfdm_1d_curl():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.array([[0.]])
-
-    with pytest.raises(AssertionError):
-        sfdm.curl(y, d_x)
-
-
-def test_sfdm_more_than_3d_curl():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
-
-    with pytest.raises(AssertionError):
-        sfdm.curl(y, d_x)
-
-
-def test_sfdm_2d_curl():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = .5
+def test_tpfdm_2d_curl():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [.5] * 2
     y = np.array([
         [
             [1., 3.], [5., 2.]
@@ -168,14 +350,14 @@ def test_sfdm_2d_curl():
         [0., -24.],
         [8., -16.]
     ])
-    actual_curl = sfdm.curl(y, d_x)
+    actual_curl = tpfdm.curl(y, d_x)
 
     assert np.isclose(actual_curl, expected_curl).all()
 
 
-def test_sfdm_3d_curl():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
+def test_tpfdm_3d_curl():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [1., 2., .5]
     y = np.array([
         [
             [
@@ -203,54 +385,35 @@ def test_sfdm_3d_curl():
     expected_curl = np.array([
         [
             [
-                [-18., 8., -10.], [-13.5, 6., 1.], [6., -5., 1.]
-            ],
-
-            [
-                [-13., -3., -3.], [7.5, -17., -9.], [11., 11., 12.5]
+                [-15., 10., -8.], [-4., 5., 1.], [4.5, -5., 1.]
             ],
             [
-                [-1., -18., -6.], [17., 5.5, 6.], [-14., -1., -1.]
+                [-8., -5., -1.], [31., -16., -9.], [19.5, 11., 12.5]
+            ],
+            [
+                [10., -24., -5.], [-9., 7., 5.], [-20.5, -2., -2.5]
             ]
         ],
         [
             [
-                [-18., 10., -17.], [4., 7., 3.], [-10., -5., 4.]
+                [-25.5, 14., -11.5], [6.5, 5., 2.], [-3.5, -5., 2.5]
             ],
             [
-                [6., -10., 2.], [0., -21., -11.], [-12.5, 10., 11.]
+                [17.5, -19., 7.5], [-23.5, -18., -12.], [-17., 9., 9.5]
             ],
             [
-                [2., -2., 11.], [-8., 13., 0.], [5., -2., -7.]
+                [-0.5, 8., 3.5], [-5.5, 5., 2.], [1., -4., -5.5]
             ]
         ]
     ])
-    actual_curl = sfdm.curl(y, d_x)
+    actual_curl = tpfdm.curl(y, d_x)
 
     assert np.isclose(actual_curl, expected_curl).all()
 
 
-def test_sfdm_laplacian_with_insufficient_dimensions():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.arange(1, 5)
-
-    with pytest.raises(AssertionError):
-        sfdm.laplacian(y, d_x)
-
-
-def test_sfdm_laplacian_with_insufficient_dimension_extent():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 1
-    y = np.array([[[0.] * 3] * 2])
-
-    with pytest.raises(AssertionError):
-        sfdm.laplacian(y, d_x)
-
-
-def test_sfdm_laplacian():
-    sfdm = SimpleFiniteDifferenceMethod()
-    d_x = 2
+def test_tpfdm_laplacian():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = [2., 1.]
     y = np.array([
         [
             [2., 4.], [4., 8.], [2., 4.]
@@ -264,15 +427,138 @@ def test_sfdm_laplacian():
     ])
     expected_lapl = np.array([
         [
-            [-3., -1.5], [0., -1.5], [-6., 2.]
+            [-6., -7.5], [1., .5], [-5., 4.]
         ],
         [
-            [0., -1.5], [3., -1.5], [-3., 2.]
+            [8., -8.], [0., 0.], [0., 0.]
         ],
         [
-            [-6., 2.], [-3., 2.], [-9., 5.5]
+            [-16., 6.], [0., 0.], [0., 0.]
         ]
     ])
-    actual_lapl = sfdm.laplacian(y, d_x)
+    actual_lapl = tpfdm.laplacian(y, d_x)
 
     assert np.isclose(actual_lapl, expected_lapl).all()
+
+
+def test_fpfdm_derivative_with_insufficient_dimensions():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 1.
+    y = np.arange(1., 5.)
+
+    with pytest.raises(AssertionError):
+        fpfdm.derivative(y, d_x, 0)
+
+
+def test_fpfdm_derivative_with_out_of_bounds_x_ind():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 1
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        fpfdm.derivative(y, d_x, x_ind)
+
+
+def test_fpfdm_derivative_with_out_of_bounds_y_ind():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 0
+    y_ind = 2
+    y = np.arange(0., 6.).reshape((3, 2))
+
+    with pytest.raises(AssertionError):
+        fpfdm.derivative(y, d_x, x_ind, y_ind)
+
+
+def test_fpfdm_derivative_with_insufficient_dimension_extent():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 1.
+    x_ind = 0
+    y = np.arange(0., 12.).reshape((2, 3, 2))
+
+    with pytest.raises(AssertionError):
+        fpfdm.derivative(y, d_x, x_ind)
+
+
+def test_fpfdm_derivative():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_derivative = np.array([
+        [-.5, -2.5, -4.25],
+        [0.5, -1.5, 1.25],
+        [1.5, -.5, 6.75]
+    ])
+    actual_derivative = fpfdm.derivative(y, d_x, x_ind, y_ind)
+
+    assert np.isclose(actual_derivative, expected_derivative).all()
+
+
+def test_fpfdm_second_derivative():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_second_derivative = np.array([
+        [.5, .5, 2.75],
+        [.5, .5, 2.75],
+        [.5, .5, 2.75]
+    ])
+    actual_second_derivative = fpfdm.second_derivative(
+        y, d_x, d_x, x_ind, x_ind, y_ind)
+
+    assert np.isclose(
+        actual_second_derivative, expected_second_derivative).all()
+
+
+def test_fpfdm_mixed_second_derivative():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x1 = 1.
+    d_x2 = .5
+    x_ind1 = 0
+    x_ind2 = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_second_derivative = np.array([
+        [-50., 10., 70.],
+        [10., -2., -14],
+        [70., -14., -98.]
+    ])
+    actual_second_derivative = fpfdm.second_derivative(
+        y, d_x1, d_x2, x_ind1, x_ind2)
+
+    assert np.isclose(
+        actual_second_derivative, expected_second_derivative).all()
