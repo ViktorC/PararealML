@@ -17,9 +17,9 @@ class SymbolName(Enum):
     d_y_wrt_x = 'd_y{1}_wrt_x{0}'
     d2_y_wrt_x = 'd2_y{2}_wrt_x{0}_x{1}'
     grad_y = 'grad_y{0}'
-    div_y = 'div_y{0}'
-    curl_y = 'curl_y{0}'
     del2_y = 'del2_y{0}'
+    div_y = 'div_y'
+    curl_y = 'curl_y'
 
 
 class DiffEq:
