@@ -1,6 +1,8 @@
-from typing import Sequence, Callable
+from typing import Sequence, Callable, Union, List
 
 import numpy as np
+
+Slicer = List[Union[int, slice]]
 
 
 class Differentiator:
@@ -98,7 +100,7 @@ class Differentiator:
         grad_shape.append(len(y.shape) - 1)
         grad = np.empty(tuple(grad_shape))
 
-        grad_slicer = [slice(None)] * len(grad.shape)
+        grad_slicer: Slicer = [slice(None)] * len(grad.shape)
 
         for y_ind in range(y.shape[-1]):
             grad_slicer[-2] = y_ind
@@ -204,7 +206,7 @@ class Differentiator:
 
         lapl = np.zeros(y.shape)
 
-        slicer = [slice(None)] * len(y.shape)
+        slicer: Slicer = [slice(None)] * len(y.shape)
 
         for y_ind in range(y.shape[-1]):
             slicer[-1] = y_ind
@@ -242,8 +244,8 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
 
         derivative = np.empty(y.shape[:-1])
 
-        y_slicer = [slice(None)] * len(y.shape)
-        derivative_slicer = [slice(None)] * len(derivative.shape)
+        y_slicer: Slicer = [slice(None)] * len(y.shape)
+        derivative_slicer: Slicer = [slice(None)] * len(derivative.shape)
 
         y_slicer[-1] = y_ind
 
@@ -295,8 +297,8 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
 
         derivative = np.empty(y.shape[:-1])
 
-        y_slicer = [slice(None)] * len(y.shape)
-        derivative_slicer = [slice(None)] * len(derivative.shape)
+        y_slicer: Slicer = [slice(None)] * len(y.shape)
+        derivative_slicer: Slicer = [slice(None)] * len(derivative.shape)
 
         y_slicer[-1] = y_ind
 
