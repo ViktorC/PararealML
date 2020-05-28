@@ -192,6 +192,36 @@ def test_tpfdm_derivative():
     assert np.isclose(actual_derivative, expected_derivative).all()
 
 
+def test_tpfdm_constrained_derivative():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.]
+        ],
+        [
+            [6., 4.], [4., 4.]
+        ],
+        [
+            [2., 6.], [8., 2.]
+        ]
+    ])
+
+    def derivative_constraints_func(derivative): derivative[0, 0] = 100
+
+    expected_derivative = np.array([
+        [100., -2.],
+        [1., -1.],
+        [1., -1.]
+    ])
+    actual_derivative = tpfdm.derivative(
+        y, d_x, x_ind, y_ind, derivative_constraints_func)
+
+    assert np.isclose(actual_derivative, expected_derivative).all()
+
+
 def test_tpfdm_second_derivative():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 2.
@@ -503,6 +533,36 @@ def test_fpfdm_derivative():
         [1.5, -.5, 6.75]
     ])
     actual_derivative = fpfdm.derivative(y, d_x, x_ind, y_ind)
+
+    assert np.isclose(actual_derivative, expected_derivative).all()
+
+
+def test_fpfdm_constrained_derivative():
+    fpfdm = ThreePointFiniteDifferenceMethod()
+    d_x = 2.
+    x_ind = 0
+    y_ind = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+
+    def derivative_constraints_func(derivative): derivative[1, 1] = 9999.
+
+    expected_derivative = np.array([
+        [-.5, -2.5, -4.25],
+        [0.5, 9999., 1.25],
+        [1.5, -.5, 6.75]
+    ])
+    actual_derivative = fpfdm.derivative(
+        y, d_x, x_ind, y_ind, derivative_constraints_func)
 
     assert np.isclose(actual_derivative, expected_derivative).all()
 
