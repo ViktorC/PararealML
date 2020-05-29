@@ -46,18 +46,16 @@ class Parareal:
         """
         comm = MPI.COMM_WORLD
 
+        t_range = diff_eq.t_range()
         time_slices = np.linspace(
-            diff_eq.t_0(), diff_eq.t_max(), comm.size + 1)
-        if diff_eq.solution_dimension() == 1:
-            y = np.empty(len(time_slices))
-            f_values = np.empty(comm.size)
-            g_values = np.empty(comm.size)
-            new_g_values = np.empty(comm.size)
-        else:
-            y = np.empty((len(time_slices), diff_eq.solution_dimension()))
-            f_values = np.empty((comm.size, diff_eq.solution_dimension()))
-            g_values = np.empty((comm.size, diff_eq.solution_dimension()))
-            new_g_values = np.empty((comm.size, diff_eq.solution_dimension()))
+            t_range[0],
+            t_range[1],
+            comm.size + 1)
+
+        y = np.empty((len(time_slices), diff_eq.y_dimension()))
+        f_values = np.empty((comm.size, diff_eq.y_dimension()))
+        g_values = np.empty((comm.size, diff_eq.y_dimension()))
+        new_g_values = np.empty((comm.size, diff_eq.y_dimension()))
 
         y[0] = diff_eq.y_0()
         for i, t in enumerate(time_slices[:-1]):
@@ -98,12 +96,9 @@ class Parareal:
 
                 new_y_next = new_g_value + correction
 
-                if diff_eq.solution_dimension() == 1:
-                    max_update = max(max_update, abs(new_y_next - y[j + 1]))
-                else:
-                    max_update = max(
-                        max_update,
-                        np.linalg.norm(new_y_next - y[j + 1]))
+                max_update = max(
+                    max_update,
+                    np.linalg.norm(new_y_next - y[j + 1]))
 
                 y[j + 1] = new_y_next
 
@@ -112,13 +107,10 @@ class Parareal:
 
         y_length = comm.size * int(
             (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t()))
-        if diff_eq.solution_dimension() == 1:
-            y_trajectory = np.empty(y_length)
-        else:
-            y_trajectory = np.empty((y_length, diff_eq.solution_dimension()))
-
+        y_trajectory = np.empty((y_length, diff_eq.y_dimension()))
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         comm.Allgather(
-            [my_y_trajectory, MPI.DOUBLE], [y_trajectory, MPI.DOUBLE])
+            [my_y_trajectory, MPI.DOUBLE],
+            [y_trajectory, MPI.DOUBLE])
 
         return y_trajectory
