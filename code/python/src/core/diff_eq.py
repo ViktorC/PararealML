@@ -1,6 +1,5 @@
 import math
-from copy import deepcopy
-from enum import Enum
+from copy import deepcopy, copy
 from typing import Optional, Sequence, Tuple, Callable
 
 import numpy as np
@@ -10,7 +9,7 @@ DomainRange = Tuple[float, float]
 BoundaryConditions = Tuple[Expr, Expr]
 
 
-class SymbolName(Enum):
+class SymbolName:
     t = 't'
     x = 'x{0}'
     y = 'y{0}'
@@ -120,7 +119,7 @@ class RabbitPopulationDiffEq(DiffEq):
         :param r: the population growth rate
         """
         assert t_range[1] > t_range[0]
-        self._t_range = deepcopy(t_range)
+        self._t_range = copy(t_range)
         self._n_0 = n_0
         self._r = r
 
@@ -131,7 +130,7 @@ class RabbitPopulationDiffEq(DiffEq):
         return True
 
     def t_range(self) -> DomainRange:
-        return deepcopy(self._t_range)
+        return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
         y0 = np.empty(1)
@@ -141,8 +140,8 @@ class RabbitPopulationDiffEq(DiffEq):
     def d_y(self) -> Sequence[Expr]:
         return [self._r * Symbol(SymbolName.y.format(''))]
 
-    def exact_y(self, t: float, _: Optional[np.ndarray] = None) \
-            -> Optional[np.ndarray:]:
+    def exact_y(self, t: float, x: Optional[np.ndarray] = None) \
+            -> Optional[np.ndarray]:
         y = np.empty(1)
         y[0] = self._n_0 * math.exp(self._r * t)
         return y
@@ -179,7 +178,7 @@ class LotkaVolterraDiffEq(DiffEq):
         assert beta >= 0
         assert gamma >= 0
         assert delta >= 0
-        self._t_range = deepcopy(t_range)
+        self._t_range = copy(t_range)
         self._r_0 = r_0
         self._p_0 = p_0
         self._alpha = alpha
@@ -194,7 +193,7 @@ class LotkaVolterraDiffEq(DiffEq):
         return False
 
     def t_range(self) -> DomainRange:
-        return deepcopy(self._t_range)
+        return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
         y_0_arr = np.empty(2)
@@ -238,7 +237,7 @@ class LorenzDiffEq(DiffEq):
         assert sigma >= .0
         assert rho >= .0
         assert beta >= .0
-        self._t_range = deepcopy(t_range)
+        self._t_range = copy(t_range)
         self._c_0 = c_0
         self._h_0 = h_0
         self._v_0 = v_0
@@ -253,7 +252,7 @@ class LorenzDiffEq(DiffEq):
         return False
 
     def t_range(self) -> DomainRange:
-        return deepcopy(self._t_range)
+        return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
         y_0_arr = np.empty(3)
@@ -277,7 +276,7 @@ class DiffusionDiffEq(DiffEq):
     """
     A partial differential equation modelling the diffusion of particles.
     """
-    
+
     def __init__(
             self,
             t_range: DomainRange,
@@ -298,7 +297,7 @@ class DiffusionDiffEq(DiffEq):
         assert t_range[1] > t_range[0]
         for x_range in x_ranges:
             assert x_range[1] > x_range[0]
-        self._t_range = deepcopy(t_range)
+        self._t_range = copy(t_range)
         self._x_ranges = deepcopy(x_ranges)
         self._y_0 = y_0
         self._boundary_conditions = boundary_conditions
@@ -314,7 +313,7 @@ class DiffusionDiffEq(DiffEq):
         return False
 
     def t_range(self) -> DomainRange:
-        return deepcopy(self._t_range)
+        return copy(self._t_range)
 
     def x_ranges(self) -> Optional[Sequence[DomainRange]]:
         return deepcopy(self._x_ranges)
