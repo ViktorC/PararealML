@@ -1,4 +1,5 @@
 from mpl_toolkits import mplot3d
+from matplotlib.animation import FuncAnimation
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,9 +8,10 @@ from src.core.diff_eq import DiffEq
 
 
 def plot_y_against_t(diff_eq: DiffEq, y: np.ndarray, file_name: str):
-    t = np.linspace(diff_eq.t_0(), diff_eq.t_max(), len(y))
+    t_range = diff_eq.t_range()
+    t = np.linspace(t_range[0], t_range[1], len(y))
 
-    if diff_eq.solution_dimension() == 1:
+    if diff_eq.y_dimension() == 1:
         plt.plot(t, y)
     else:
         for i in range(y.shape[1]):
@@ -39,3 +41,11 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 
     plt.savefig(f'{file_name}.pdf')
     plt.clf()
+
+
+def plot_evolution_of_y(
+        diff_eq: DiffEq,
+        y: np.ndarray,
+        interval: int,
+        file_name: str):
+    pass
