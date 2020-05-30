@@ -8,7 +8,7 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space
 from src.utils.time import time
 
-diff_eq = LorenzDiffEq((0., 10.))
+diff_eq = LorenzDiffEq((0., 40.))
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(
@@ -18,7 +18,7 @@ g = MethodOfLinesOperator(
 parareal = Parareal(f, g)
 # parareal_ml = Parareal(f, g_ml)
 
-threshold = 1e-1
+threshold = 1.
 
 
 # @time
