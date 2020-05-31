@@ -3,25 +3,15 @@ from copy import deepcopy, copy
 from typing import Optional, Sequence, Tuple, Callable
 
 import numpy as np
-from sympy import Expr, Symbol
+
+from src.core.boundary_condition import BoundaryCondition
+from src.core.differentiator import Differentiator
 
 DomainRange = Tuple[float, float]
-BoundaryConditions = Tuple[Expr, Expr]
+BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
 
 
-class SymbolName:
-    t = 't'
-    x = 'x{0}'
-    y = 'y{0}'
-    d_y_wrt_x = 'd_y{1}_wrt_x{0}'
-    d2_y_wrt_x = 'd2_y{2}_wrt_x{0}_x{1}'
-    grad_y = 'grad_y{0}'
-    del2_y = 'del2_y{0}'
-    div_y = 'div_y'
-    curl_y = 'curl_y'
-
-
-class DiffEq:
+class DifferentialEquation:
     """
     A representation of a time-dependent differential equation.
     """
@@ -36,7 +26,7 @@ class DiffEq:
     def x_dimension(self) -> Optional[int]:
         """
         Returns the dimension of the non-temporal domain of y. If the
-        differential equation is an ODE, it returns None.
+        differential equation is an ODE, it returns 0 or None.
         """
         pass
 
@@ -60,6 +50,13 @@ class DiffEq:
         """
         pass
 
+    def boundary_conditions(self) -> Optional[Sequence[BoundaryConditionPair]]:
+        """
+        Returns the boundary conditions of the differential equation. In case
+        the differential equation is an ODE, it returns None.
+        """
+        pass
+
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Returns the value of y(t_min, x).
@@ -71,26 +68,34 @@ class DiffEq:
         """
         pass
 
-    def boundary_conditions(self) -> Optional[Sequence[BoundaryConditions]]:
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None) -> np.ndarray:
         """
-        Returns a pair of expressions defining the boundary conditions
-        corresponding to the lower and upper boundaries of each axis of the
-        differential equation's non-temporal domain. For ordinary differential
-        equations, the return value is expected to be None.
+        Returns the time derivative of the differential equation's solution,
+        y'(t), given t, and y(t). In case of a partial differential equation,
+        the step sizes of the mesh and a differentiator instance are provided
+        as well.
+
+        :param t: the time step at which the time derivative is to be
+        calculated
+        :param y: the estimate of y at t
+        :param d_x: a sequence of step sizes corresponding to each spatial
+        dimension
+        :param differentiator: a differentiator instance that allows for
+        calculating various differential terms of y with resptect to x given
+        an estimate of y over the spatial mesh, y(t)
+        :return: an array representing y'(t)
         """
         pass
 
-    def d_y(self) -> Sequence[Expr]:
-        """
-        Returns a sequence of expressions representing the differential
-        equation in terms of the derivative of each element of y with respect
-        to t. In case y is scalar-valued, it returns a sequence containing a
-        single element.
-        """
-        pass
-
-    def exact_y(self, t: float, x: Optional[np.ndarray] = None) \
-            -> Optional[np.ndarray]:
+    def exact_y(
+            self,
+            t: float,
+            x: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
         """
         Returns the exact value of y(t, x).
 
@@ -102,7 +107,7 @@ class DiffEq:
         pass
 
 
-class RabbitPopulationDiffEq(DiffEq):
+class RabbitPopulationEquation(DifferentialEquation):
     """
     A simple differential equation modelling the growth of a rabbit population
     over time.
@@ -137,17 +142,26 @@ class RabbitPopulationDiffEq(DiffEq):
         y0[0] = self._n_0
         return y0
 
-    def d_y(self) -> Sequence[Expr]:
-        return [self._r * Symbol(SymbolName.y.format(''))]
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+        d_y = np.empty(1)
+        d_y[0] = self._r * y
+        return d_y
 
-    def exact_y(self, t: float, x: Optional[np.ndarray] = None) \
-            -> Optional[np.ndarray]:
+    def exact_y(
+            self,
+            t: float,
+            x: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
         y = np.empty(1)
         y[0] = self._n_0 * math.exp(self._r * t)
         return y
 
 
-class LotkaVolterraDiffEq(DiffEq):
+class LotkaVolterraEquation(DifferentialEquation):
     """
     A system of two differential equations modelling the dynamics of
     populations of preys and predators.
@@ -196,21 +210,26 @@ class LotkaVolterraDiffEq(DiffEq):
         return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
-        y_0_arr = np.empty(2)
-        y_0_arr[0] = self._r_0
-        y_0_arr[1] = self._p_0
-        return y_0_arr
+        y_0 = np.empty(2)
+        y_0[0] = self._r_0
+        y_0[1] = self._p_0
+        return y_0
 
-    def d_y(self) -> Sequence[Expr]:
-        r = Symbol(SymbolName.y.format(0))
-        p = Symbol(SymbolName.y.format(1))
-        return [
-            self._alpha * r - self._beta * r * p,
-            self._gamma * r * p - self._delta * p
-        ]
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+        r = y[0]
+        p = y[1]
+        d_y = np.empty(2)
+        d_y[0] = self._alpha * r - self._beta * r * p
+        d_y[1] = self._gamma * r * p - self._delta * p
+        return d_y
 
 
-class LorenzDiffEq(DiffEq):
+class LorenzEquation(DifferentialEquation):
     """
     A system of three differential equations modelling atmospheric convection.
     """
@@ -255,24 +274,29 @@ class LorenzDiffEq(DiffEq):
         return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
-        y_0_arr = np.empty(3)
-        y_0_arr[0] = self._c_0
-        y_0_arr[1] = self._h_0
-        y_0_arr[2] = self._v_0
-        return y_0_arr
+        y_0 = np.empty(3)
+        y_0[0] = self._c_0
+        y_0[1] = self._h_0
+        y_0[2] = self._v_0
+        return y_0
 
-    def d_y(self) -> Sequence[Expr]:
-        c = Symbol(SymbolName.y.format(0))
-        h = Symbol(SymbolName.y.format(1))
-        v = Symbol(SymbolName.y.format(2))
-        return [
-            self._sigma * (h - c),
-            c * (self._rho - v) - h,
-            c * h - self._beta * v
-        ]
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+        c = y[0]
+        h = y[1]
+        v = y[2]
+        d_y = np.empty(3)
+        d_y[0] = self._sigma * (h - c)
+        d_y[1] = c * (self._rho - v) - h
+        d_y[2] = c * h - self._beta * v
+        return d_y
 
 
-class DiffusionDiffEq(DiffEq):
+class DiffusionEquation(DifferentialEquation):
     """
     A partial differential equation modelling the diffusion of particles.
     """
@@ -282,8 +306,8 @@ class DiffusionDiffEq(DiffEq):
             t_range: DomainRange,
             x_ranges: Sequence[DomainRange],
             y_0: Callable[[np.ndarray], float],
-            boundary_conditions: Sequence[BoundaryConditions],
-            d: float):
+            boundary_conditions: Sequence[BoundaryConditionPair],
+            d: float = 1.):
         """
         :param t_range: the boundaries of the time domain
         :param x_ranges: the boundaries of each axis of the spatial domain. The
@@ -295,12 +319,14 @@ class DiffusionDiffEq(DiffEq):
         :param d: the diffusion coefficient
         """
         assert t_range[1] > t_range[0]
+        assert len(x_ranges) > 0
+        assert len(x_ranges) == len(boundary_conditions)
         for x_range in x_ranges:
             assert x_range[1] > x_range[0]
         self._t_range = copy(t_range)
         self._x_ranges = deepcopy(x_ranges)
         self._y_0 = y_0
-        self._boundary_conditions = boundary_conditions
+        self._boundary_conditions = deepcopy(boundary_conditions)
         self._d = d
 
     def y_dimension(self) -> int:
@@ -318,14 +344,18 @@ class DiffusionDiffEq(DiffEq):
     def x_ranges(self) -> Optional[Sequence[DomainRange]]:
         return deepcopy(self._x_ranges)
 
+    def boundary_conditions(self) -> Optional[Sequence[BoundaryConditionPair]]:
+        return deepcopy(self._boundary_conditions)
+
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
         y0 = np.empty(1)
         y0[0] = self._y_0(x)
         return y0
 
-    def boundary_conditions(self) -> Optional[Sequence[BoundaryConditions]]:
-        return deepcopy(self._boundary_conditions)
-
-    def d_y(self) -> Sequence[Expr]:
-        laplacian = Symbol(SymbolName.del2_y.format(''))
-        return [self._d * laplacian]
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+        return self._d * differentiator.laplacian(y, d_x)

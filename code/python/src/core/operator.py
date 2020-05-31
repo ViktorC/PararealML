@@ -1,9 +1,8 @@
-from typing import List, Sequence, Dict, Optional, Callable
+from typing import Sequence, Optional
 
 import numpy as np
-from sympy import Expr
 
-from src.core.diff_eq import DiffEq, SymbolName
+from src.core.differential_equation import DifferentialEquation
 from src.core.differentiator import Differentiator
 from src.core.integrator import Integrator
 
@@ -16,7 +15,7 @@ class Operator:
 
     @staticmethod
     def _calculate_d_x(
-            diff_eq: DiffEq,
+            diff_eq: DifferentialEquation,
             y_shape: Sequence[int]) -> Optional[Sequence[float]]:
         """
         Returns a sequence of numbers denoting the step size used to discretise
@@ -60,7 +59,7 @@ class Operator:
 
     def trace(
             self,
-            diff_eq: DiffEq,
+            diff_eq: DifferentialEquation,
             y_a: np.ndarray,
             t_a: float,
             t_b: float) -> np.ndarray:
@@ -101,259 +100,31 @@ class MethodOfLinesOperator(Operator):
         self._differentiator = differentiator
         self._d_t = d_t
 
-    @staticmethod
-    def _substitute_x_terms(
-            diff_eq: DiffEq,
-            y_shape: Sequence[int],
-            exprs: List[Expr]):
-        """
-        Substitutes all x symbols (e.g. x, x0, x1, etc.) in the provided list
-        of expression.
-
-        :param diff_eq: the differential equation being solved
-        :param y_shape: the shape of the mesh
-        :param exprs: the list of expressions
-        """
-        for i, expr in enumerate(diff_eq.d_y()):
-            for j in [-1] + list(range(diff_eq.x_dimension())):
-                x_ind, x_suffix = (j, j) if j >= 0 else (0, '')
-                x_symbol = SymbolName.x.format(x_suffix)
-
-                if expr.has(x_symbol):
-                    x_range = diff_eq.x_ranges()[x_ind]
-                    expr = expr.subs(
-                        x_symbol,
-                        np.linspace(x_range[0], x_range[1], y_shape[x_ind]))
-
-            exprs[i] = expr
-
-    def _add_derivative_term_mappings(
-            self,
-            y_ind: int,
-            y_suffix: str,
-            d_x: Sequence[float],
-            symbol_map: Dict[str, Callable[[Expr, float, np.ndarray], Expr]]):
-        """
-        Maps all valid derivative symbols to functions for substituting those
-        symbols.
-
-        :param y_ind: the index of the element in y
-        :param y_suffix: the suffix of the y element
-        :param d_x: a list of the step sizes corresponding to each spatial
-        dimension
-        :param symbol_map: the dictionary mapping symbol names to symbol
-        substitution functions
-        """
-        for j in [None] + list(range(len(d_x))):
-            x_j_ind, x_k_suffix = (j, j) if j is not None else (0, '')
-            d_x_j = d_x[x_j_ind]
-
-            # First derivative of y with respect to x.
-            d_y_i_wrt_x_j_symbol = SymbolName.d_y_wrt_x.format(
-                x_k_suffix, y_suffix)
-
-            def subs_derivative(
-                    expr, _, y, _d_x=d_x_j, _x_ind=x_j_ind,
-                    _y_ind=y_ind, _symbol=d_y_i_wrt_x_j_symbol):
-                return expr.subs(
-                    _symbol,
-                    self._differentiator.derivative(
-                        y, _d_x, _x_ind, _y_ind))
-
-            symbol_map[d_y_i_wrt_x_j_symbol] = subs_derivative
-
-            if j is None:
-                # Second derivative of y with respect to the same x.
-                d2_y_i_wrt_x_j_symbol = SymbolName.d2_y_wrt_x.format(
-                    x_k_suffix, x_k_suffix, y_suffix)
-
-                def subs_second_derivative(
-                        expr, _, y, _d_x=d_x_j, _x_ind=x_j_ind,
-                        _y_ind=y_ind, _symbol=d2_y_i_wrt_x_j_symbol):
-                    return expr.subs(
-                        _symbol,
-                        self._differentiator.second_derivative(
-                            y, _d_x, _d_x, _x_ind, _x_ind, _y_ind))
-
-                symbol_map[d2_y_i_wrt_x_j_symbol] = \
-                    subs_second_derivative
-            else:
-                # Mixed second derivative of y with respect to x.
-                for k in range(len(d_x)):
-                    d_x_k = d_x[k]
-
-                    d2_y_i_wrt_x_j_x_k_symbol = SymbolName.d2_y_wrt_x \
-                        .format(x_k_suffix, k, y_suffix)
-
-                    def subs_mixed_second_derivative(
-                            expr, _, y, _d_x1=d_x_j, _d_x2=d_x_k,
-                            _x_ind1=x_j_ind, _x_ind2=k, _y_ind=y_ind,
-                            _symbol=d2_y_i_wrt_x_j_x_k_symbol):
-                        return expr.subs(
-                            _symbol,
-                            self._differentiator.second_derivative(
-                                y, _d_x1, _d_x2, _x_ind1, _x_ind2,
-                                _y_ind))
-
-                    symbol_map[d2_y_i_wrt_x_j_x_k_symbol] = \
-                        subs_mixed_second_derivative
-
-    def _add_differential_term_mappings(
-            self,
-            diff_eq: DiffEq,
-            y_shape: Sequence[int],
-            symbol_map: Dict[str, Callable[[Expr, float, np.ndarray], Expr]]):
-        """
-        Maps all valid differential symbols to functions for substituting those
-        symbols.
-
-        :param diff_eq: the differential equation being solved
-        :param y_shape: the shape of the mesh
-        :param symbol_map: the dictionary mapping symbol names to symbol
-        substitution functions
-        """
-        d_x = self._calculate_d_x(diff_eq, y_shape)
-
-        # Divergence and curl.
-        symbol_map[SymbolName.div_y] = lambda expr, t, y: expr.subs(
-            SymbolName.div_y, self._differentiator.divergence(y, d_x))
-        symbol_map[SymbolName.curl_y] = lambda expr, t, y: expr.subs(
-            SymbolName.curl_y, self._differentiator.curl(y, d_x))
-
-        # Simple gradient.
-        grad_y_symbol = SymbolName.grad_y.format('')
-        symbol_map[grad_y_symbol] = lambda expr, t, y: expr.subs(
-            grad_y_symbol, self._differentiator.gradient(y, d_x))
-
-        # Simple Laplacian.
-        del2_y_symbol = SymbolName.del2_y.format('')
-        symbol_map[del2_y_symbol] = lambda expr, t, y: expr.subs(
-            del2_y_symbol, self._differentiator.laplacian(y, d_x))
-
-        for i in [None] + list(range(diff_eq.y_dimension())):
-            if i is not None:
-                y_ind, y_suffix = (i, i)
-
-                # Numbered gradient (e.g. the gradient of y1).
-                grad_y_i_symbol = SymbolName.grad_y.format(y_suffix)
-
-                def subs_gradient(
-                        expr, _, y, _y_ind=y_ind, _symbol=grad_y_i_symbol):
-                    return expr.subs(
-                        _symbol,
-                        self._differentiator.gradient(y[..., _y_ind], d_x))
-
-                symbol_map[grad_y_i_symbol] = subs_gradient
-
-                # Numbered Laplacian (e.g. the Laplacian of y1).
-                del2_y_i_symbol = SymbolName.del2_y.format(y_suffix)
-
-                def subs_del2(
-                        expr, _, y, _y_ind=y_ind, _symbol=del2_y_i_symbol):
-                    return expr.subs(
-                        _symbol,
-                        self._differentiator.laplacian(
-                            y[..., _y_ind], d_x))
-
-                symbol_map[del2_y_i_symbol] = subs_del2
-            else:
-                y_ind, y_suffix = (0, '')
-
-            self._add_derivative_term_mappings(
-                y_ind, y_suffix, d_x, symbol_map)
-
-    def _create_dynamic_term_substitution_map(
-            self,
-            diff_eq: DiffEq,
-            y_shape: Sequence[int]) \
-            -> Dict[str, Callable[[Expr, float, np.ndarray], Expr]]:
-        """
-        Creates a dictionary that maps symbol names to functions that
-        substitute the corresponding symbols in an expression with the
-        appropriate values given y and t.
-
-        :param diff_eq: the differential equation being solved
-        :param y_shape: the shape of the mesh
-        :return: a dictionary mapping symbol names to symbol substitution
-        functions
-        """
-        # The t term.
-        symbol_map = {
-            SymbolName.t: lambda expr, t, y: expr.subs(SymbolName.t, t)
-        }
-
-        # Simple y.
-        y_symbol = SymbolName.y.format('')
-        symbol_map[y_symbol] = lambda expr, t, y: expr.subs(y_symbol, y)
-
-        # Numbered y (e.g. y0, y1, etc.).
-        for i in range(diff_eq.y_dimension()):
-            y_i_symbol = SymbolName.y.format(i)
-            symbol_map[y_i_symbol] = \
-                lambda expr, t, y, _y_ind=i, _symbol=y_i_symbol: expr.subs(
-                    _symbol, y[..., _y_ind])
-
-        # Differential terms in PDEs.
-        if diff_eq.x_dimension():
-            self._add_differential_term_mappings(diff_eq, y_shape, symbol_map)
-
-        return symbol_map
-
-    def _create_d_y_wrt_t(self, diff_eq: DiffEq, y_shape: Sequence[int]) \
-            -> Callable[[float, np.ndarray], np.ndarray]:
-        """
-        Creates the function for calculating the time derivative of y at the
-        time step t.
-
-        :param diff_eq: the differential equation being solved
-        :param y_shape: the shape of the mesh
-        :return: the function calculating the time derivative of y given y and
-        t
-        """
-        subs_map = self._create_dynamic_term_substitution_map(diff_eq, y_shape)
-
-        exprs: List[Expr] = list(diff_eq.d_y())
-        if diff_eq.x_dimension():
-            self._substitute_x_terms(diff_eq, y_shape, exprs)
-
-        subs_funcs: List[List[Callable]] = [None] * diff_eq.y_dimension()
-        for i, expr in enumerate(exprs):
-            subs_funcs_i = []
-            for symbol in expr.free_symbols:
-                subs_func = subs_map[str(symbol)]
-                subs_funcs_i.append(subs_func)
-            subs_funcs[i] = subs_funcs_i
-
-        def d_y_wrt_t(t: float, y: np.ndarray) -> np.ndarray:
-            d_y = np.empty(len(exprs))
-
-            for j, expr_j in enumerate(exprs):
-                for func in subs_funcs[i]:
-                    expr_j = func(expr_j, t, y)
-                d_y[j] = expr_j
-
-            return d_y
-
-        return d_y_wrt_t
-
     def d_t(self) -> float:
         return self._d_t
 
     def trace(
             self,
-            diff_eq: DiffEq,
+            diff_eq: DifferentialEquation,
             y_a: np.ndarray,
             t_a: float,
             t_b: float) -> np.ndarray:
         t = self._discretise_time_domain(t_a, t_b)
-
-        d_y_wrt_t = self._create_d_y_wrt_t(diff_eq, y_a.shape)
 
         y_shape = list(y_a.shape)
         y_shape.insert(0, len(t))
         y = np.empty(tuple(y_shape))
 
         y_i = y_a
+
+        if diff_eq.x_dimension():
+            d_x = self._calculate_d_x(diff_eq, y_shape)
+        else:
+            d_x = None
+
+        def d_y_wrt_t(_t: float, _y: np.ndarray, _d_x: Sequence[float]=d_x) \
+                -> np.ndarray:
+            return diff_eq.d_y(_t, _y, _d_x, self._differentiator)
 
         for i, t_i in enumerate(t):
             y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_wrt_t)
