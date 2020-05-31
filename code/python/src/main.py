@@ -1,6 +1,6 @@
 from mpi4py import MPI
 
-from src.core.diff_eq import LorenzDiffEq
+from src.core.differential_equation import LorenzEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
 from src.core.integrator import ExplicitMidpointMethod, RK4
 from src.core.operator import MethodOfLinesOperator
@@ -8,7 +8,7 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space
 from src.utils.time import time
 
-diff_eq = LorenzDiffEq((0., 40.))
+diff_eq = LorenzEquation((0., 40.))
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(

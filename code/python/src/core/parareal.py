@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
-from src.core.diff_eq import DiffEq
+from src.core.differential_equation import DifferentialEquation
 from src.core.operator import Operator
 
 
@@ -26,7 +26,7 @@ class Parareal:
 
     def solve(
             self,
-            diff_eq: DiffEq,
+            diff_eq: DifferentialEquation,
             tol: float,
             max_iterations: int = sys.maxsize) -> np.ndarray:
         """
