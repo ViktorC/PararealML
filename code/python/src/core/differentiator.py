@@ -250,19 +250,19 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         y_slicer[-1] = y_ind
 
         # Forward difference
-        y_slicer[x_ind] = 0
+        y_slicer[x_ind] = slice(0, y.shape[x_ind] - 1)
         y_curr = y[tuple(y_slicer)]
-        for i in range(y.shape[x_ind] - 1):
-            y_slicer[x_ind] = i + 1
-            y_next = y[tuple(y_slicer)]
+        y_slicer[x_ind] = slice(1, y.shape[x_ind])
+        y_next = y[tuple(y_slicer)]
 
-            y_diff = (y_next - y_curr) / d_x
-            y_curr = y_next
+        y_diff = (y_next - y_curr) / d_x
 
-            derivative_slicer[x_ind] = i
-            derivative[tuple(derivative_slicer)] = y_diff
+        derivative_slicer[x_ind] = slice(0, y.shape[x_ind] - 1)
+        derivative[tuple(derivative_slicer)] = y_diff
 
         # Backward difference
+        y_slicer[x_ind] = y.shape[x_ind] - 1
+        y_curr = y[tuple(y_slicer)]
         y_slicer[x_ind] = y.shape[x_ind] - 2
         y_prev = y[tuple(y_slicer)]
 
@@ -316,16 +316,15 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         derivative[tuple(derivative_slicer)] = y_diff
 
         # Central difference
-        for i in range(1, y.shape[x_ind] - 1):
-            y_slicer[x_ind] = i - 1
-            y_prev = y[tuple(y_slicer)]
-            y_slicer[x_ind] = i + 1
-            y_next = y[tuple(y_slicer)]
+        y_slicer[x_ind] = slice(0, y.shape[x_ind] - 2)
+        y_prev = y[tuple(y_slicer)]
+        y_slicer[x_ind] = slice(2, y.shape[x_ind])
+        y_next = y[tuple(y_slicer)]
 
-            y_diff = (y_next - y_prev) / (2 * d_x)
+        y_diff = (y_next - y_prev) / (2 * d_x)
 
-            derivative_slicer[x_ind] = i
-            derivative[tuple(derivative_slicer)] = y_diff
+        derivative_slicer[x_ind] = slice(1, y.shape[x_ind] - 1)
+        derivative[tuple(derivative_slicer)] = y_diff
 
         # Backward difference
         y_slicer[x_ind] = y.shape[x_ind] - 3
