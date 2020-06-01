@@ -16,7 +16,7 @@ class Differentiator:
             d_x: float,
             x_ind: int,
             y_ind: int = 0,
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the derivative of y_ind with respect to x_ind at every point of
@@ -28,7 +28,7 @@ class Differentiator:
         y_ind is to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
         is vector-valued)
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives
         :return: the derivative of y_ind with respect to x_ind
         """
@@ -42,7 +42,7 @@ class Differentiator:
             x_ind1: int,
             x_ind2: int,
             y_ind: int = 0,
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the second derivative of y_ind with respect to x_ind1 and
@@ -57,7 +57,7 @@ class Differentiator:
         x that y_ind is to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
         is vector-valued)
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives before using
         them to compute the second derivatives
         :return: the second derivative of y_ind with respect to x_ind1 and
@@ -69,7 +69,7 @@ class Differentiator:
         assert 0 <= y_ind < y.shape[-1]
 
         first_derivative = self.derivative(
-            y, d_x1, x_ind1, y_ind, derivative_constraints_func)
+            y, d_x1, x_ind1, y_ind, derivative_constraint_func)
         first_derivative_shape = list(first_derivative.shape)
         first_derivative_shape.append(1)
         first_derivative = first_derivative.reshape(first_derivative_shape)
@@ -80,7 +80,7 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Sequence[float],
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the gradient of y with respect to x at every point of the
@@ -89,7 +89,7 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives
         :return: the gradient of y
         """
@@ -108,7 +108,7 @@ class Differentiator:
             for axis in range(len(y.shape) - 1):
                 grad_slicer[-1] = axis
                 grad[tuple(grad_slicer)] = self.derivative(
-                    y, d_x[axis], axis, y_ind, derivative_constraints_func)
+                    y, d_x[axis], axis, y_ind, derivative_constraint_func)
 
         return grad
 
@@ -116,7 +116,7 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Sequence[float],
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the divergence of y with respect to x at every point of the
@@ -124,7 +124,7 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives before using
         them to compute the divergence
         :return: the divergence of y
@@ -137,7 +137,7 @@ class Differentiator:
 
         for i in range(y.shape[-1]):
             div += self.derivative(
-                y, d_x[i], i, i, derivative_constraints_func)
+                y, d_x[i], i, i, derivative_constraint_func)
 
         return div
 
@@ -145,7 +145,7 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Sequence[float],
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the curl of y with respect to x at every point of the
@@ -153,7 +153,7 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives before using
         them to compute the curl
         :return: the curl of y
@@ -164,23 +164,23 @@ class Differentiator:
 
         if y.shape[-1] == 2:
             curl = self.derivative(
-                y, d_x[0], 0, 1, derivative_constraints_func) - \
+                y, d_x[0], 0, 1, derivative_constraint_func) - \
                 self.derivative(
-                    y, d_x[1], 1, 0, derivative_constraints_func)
+                    y, d_x[1], 1, 0, derivative_constraint_func)
         else:
             curl = np.empty(y.shape)
             curl[..., 0] = self.derivative(
-                y, d_x[1], 1, 2, derivative_constraints_func) - \
+                y, d_x[1], 1, 2, derivative_constraint_func) - \
                 self.derivative(
-                    y, d_x[2], 2, 1, derivative_constraints_func)
+                    y, d_x[2], 2, 1, derivative_constraint_func)
             curl[..., 1] = self.derivative(
-                y, d_x[2], 2, 0, derivative_constraints_func) - \
+                y, d_x[2], 2, 0, derivative_constraint_func) - \
                 self.derivative(
-                    y, d_x[0], 0, 2, derivative_constraints_func)
+                    y, d_x[0], 0, 2, derivative_constraint_func)
             curl[..., 2] = self.derivative(
-                y, d_x[0], 0, 1, derivative_constraints_func) - \
+                y, d_x[0], 0, 1, derivative_constraint_func) - \
                 self.derivative(
-                    y, d_x[1], 1, 0, derivative_constraints_func)
+                    y, d_x[1], 1, 0, derivative_constraint_func)
 
         return curl
 
@@ -188,7 +188,7 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Sequence[float],
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         """
         Returns the Laplacian of y with respect to x at every point of the
@@ -196,7 +196,7 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraints_func: a callback function that allows for
+        :param derivative_constraint_func: a callback function that allows for
         applying constraints to the calculated first derivatives before using
         them to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
@@ -219,7 +219,7 @@ class Differentiator:
                     axis,
                     axis,
                     y_ind,
-                    derivative_constraints_func)
+                    derivative_constraint_func)
 
         return lapl
 
@@ -236,7 +236,7 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
             d_x: float,
             x_ind: int,
             y_ind: int = 0,
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         assert y.shape[x_ind] > 1
         assert 0 <= x_ind < len(y.shape) - 1
@@ -271,8 +271,8 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         derivative_slicer[x_ind] = y.shape[x_ind] - 1
         derivative[tuple(derivative_slicer)] = y_diff
 
-        if derivative_constraints_func:
-            derivative_constraints_func(derivative)
+        if derivative_constraint_func:
+            derivative_constraint_func(derivative)
 
         return derivative
 
@@ -289,7 +289,7 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
             d_x: float,
             x_ind: int,
             y_ind: int = 0,
-            derivative_constraints_func: Callable[[np.ndarray], None] = None) \
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
             -> np.ndarray:
         assert y.shape[x_ind] > 2
         assert 0 <= x_ind < len(y.shape) - 1
@@ -339,7 +339,7 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         derivative_slicer[x_ind] = y.shape[x_ind] - 1
         derivative[tuple(derivative_slicer)] = y_diff
 
-        if derivative_constraints_func:
-            derivative_constraints_func(derivative)
+        if derivative_constraint_func:
+            derivative_constraint_func(derivative)
 
         return derivative
