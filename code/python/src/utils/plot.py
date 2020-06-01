@@ -4,10 +4,13 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.core.diff_eq import DiffEq
+from src.core.differential_equation import DifferentialEquation
 
 
-def plot_y_against_t(diff_eq: DiffEq, y: np.ndarray, file_name: str):
+def plot_y_against_t(
+        diff_eq: DifferentialEquation,
+        y: np.ndarray,
+        file_name: str):
     t_range = diff_eq.t_range()
     t = np.linspace(t_range[0], t_range[1], len(y))
 
@@ -44,7 +47,7 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 
 
 def plot_evolution_of_y(
-        diff_eq: DiffEq,
+        diff_eq: DifferentialEquation,
         y: np.ndarray,
         interval: int,
         file_name: str):
