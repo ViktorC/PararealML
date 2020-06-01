@@ -73,7 +73,9 @@ class DifferentialEquation:
             t: float,
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
-            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
         y'(t), given t, and y(t). In case of a partial differential equation,
@@ -88,6 +90,8 @@ class DifferentialEquation:
         :param differentiator: a differentiator instance that allows for
         calculating various differential terms of y with resptect to x given
         an estimate of y over the spatial mesh, y(t)
+        :param derivative_constraint_func: a callback function that allows for
+        applying boundary constraints to the calculated first derivatives
         :return: an array representing y'(t)
         """
         pass
@@ -147,7 +151,9 @@ class RabbitPopulationEquation(DifferentialEquation):
             t: float,
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
-            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
         return d_y
@@ -220,7 +226,9 @@ class LotkaVolterraEquation(DifferentialEquation):
             t: float,
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
-            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
         r = y[0]
         p = y[1]
         d_y = np.empty(2)
@@ -285,7 +293,9 @@ class LorenzEquation(DifferentialEquation):
             t: float,
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
-            differentiator: Optional[Differentiator] = None) -> np.ndarray:
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
         c = y[0]
         h = y[1]
         v = y[2]
@@ -357,5 +367,8 @@ class DiffusionEquation(DifferentialEquation):
             t: float,
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
-            differentiator: Optional[Differentiator] = None) -> np.ndarray:
-        return self._d * differentiator.laplacian(y, d_x)
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
+        return self._d * differentiator.laplacian(
+            y, d_x, derivative_constraint_func)
