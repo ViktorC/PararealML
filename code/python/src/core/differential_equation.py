@@ -142,9 +142,9 @@ class RabbitPopulationEquation(DifferentialEquation):
         return copy(self._t_range)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
-        y0 = np.empty(1)
-        y0[0] = self._n_0
-        return y0
+        y_0 = np.empty(1)
+        y_0[0] = self._n_0
+        return y_0
 
     def d_y(
             self,
@@ -358,9 +358,9 @@ class DiffusionEquation(DifferentialEquation):
         return deepcopy(self._boundary_conditions)
 
     def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
-        y0 = np.empty(1)
-        y0[0] = self._y_0(x)
-        return y0
+        y_0 = np.empty(1)
+        y_0[0] = self._y_0(x)
+        return y_0
 
     def d_y(
             self,
