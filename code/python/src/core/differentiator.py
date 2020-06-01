@@ -70,11 +70,7 @@ class Differentiator:
 
         first_derivative = self.derivative(
             y, d_x1, x_ind1, y_ind, derivative_constraint_func)
-        first_derivative_shape = list(first_derivative.shape)
-        first_derivative_shape.append(1)
-        first_derivative = first_derivative.reshape(first_derivative_shape)
-        second_derivative = self.derivative(first_derivative, d_x2, x_ind2)
-        return second_derivative
+        return self.derivative(first_derivative, d_x2, x_ind2)
 
     def gradient(
             self,
@@ -98,18 +94,23 @@ class Differentiator:
 
         grad_shape = list(y.shape)
         grad_shape.append(len(y.shape) - 1)
-        grad = np.empty(tuple(grad_shape))
+        grad = np.empty(grad_shape + [1])
 
         grad_slicer: Slicer = [slice(None)] * len(grad.shape)
 
         for y_ind in range(y.shape[-1]):
-            grad_slicer[-2] = y_ind
+            grad_slicer[-3] = y_ind
 
             for axis in range(len(y.shape) - 1):
-                grad_slicer[-1] = axis
+                grad_slicer[-2] = axis
                 grad[tuple(grad_slicer)] = self.derivative(
-                    y, d_x[axis], axis, y_ind, derivative_constraint_func)
+                    y,
+                    d_x[axis],
+                    axis,
+                    y_ind,
+                    derivative_constraint_func)
 
+        grad = grad.reshape(grad_shape)
         return grad
 
     def divergence(
@@ -133,7 +134,7 @@ class Differentiator:
         assert len(y.shape) - 1 == y.shape[-1]
         assert len(d_x) == len(y.shape) - 1
 
-        div = np.zeros(y.shape[:-1])
+        div = np.zeros(list(y.shape[:-1]) + [1])
 
         for i in range(y.shape[-1]):
             div += self.derivative(
@@ -168,19 +169,20 @@ class Differentiator:
                 self.derivative(
                     y, d_x[1], 1, 0, derivative_constraint_func)
         else:
-            curl = np.empty(y.shape)
-            curl[..., 0] = self.derivative(
+            curl = np.empty(list(y.shape) + [1])
+            curl[..., 0, :] = self.derivative(
                 y, d_x[1], 1, 2, derivative_constraint_func) - \
                 self.derivative(
                     y, d_x[2], 2, 1, derivative_constraint_func)
-            curl[..., 1] = self.derivative(
+            curl[..., 1, :] = self.derivative(
                 y, d_x[2], 2, 0, derivative_constraint_func) - \
                 self.derivative(
                     y, d_x[0], 0, 2, derivative_constraint_func)
-            curl[..., 2] = self.derivative(
+            curl[..., 2, :] = self.derivative(
                 y, d_x[0], 0, 1, derivative_constraint_func) - \
                 self.derivative(
                     y, d_x[1], 1, 0, derivative_constraint_func)
+            curl = curl.reshape(y.shape)
 
         return curl
 
@@ -204,12 +206,12 @@ class Differentiator:
         assert len(y.shape) > 1
         assert len(d_x) == len(y.shape) - 1
 
-        lapl = np.zeros(y.shape)
+        lapl = np.zeros(list(y.shape) + [1])
 
-        slicer: Slicer = [slice(None)] * len(y.shape)
+        slicer: Slicer = [slice(None)] * len(lapl.shape)
 
         for y_ind in range(y.shape[-1]):
-            slicer[-1] = y_ind
+            slicer[-2] = y_ind
 
             for axis in range(len(y.shape) - 1):
                 lapl[tuple(slicer)] += self.second_derivative(
@@ -221,6 +223,7 @@ class Differentiator:
                     y_ind,
                     derivative_constraint_func)
 
+        lapl = lapl.reshape(y.shape)
         return lapl
 
 
@@ -242,12 +245,14 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         assert 0 <= x_ind < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]
 
-        derivative = np.empty(y.shape[:-1])
+        derivative_shape = list(y.shape[:-1]) + [1]
+        derivative = np.empty(derivative_shape)
 
         y_slicer: Slicer = [slice(None)] * len(y.shape)
-        derivative_slicer: Slicer = [slice(None)] * len(derivative.shape)
+        derivative_slicer: Slicer = [slice(None)] * len(derivative_shape)
 
         y_slicer[-1] = y_ind
+        derivative_slicer[-1] = 0
 
         # Forward difference
         y_slicer[x_ind] = slice(0, y.shape[x_ind] - 1)
@@ -295,12 +300,14 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         assert 0 <= x_ind < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]
 
-        derivative = np.empty(y.shape[:-1])
+        derivative_shape = list(y.shape[:-1]) + [1]
+        derivative = np.empty(derivative_shape)
 
         y_slicer: Slicer = [slice(None)] * len(y.shape)
-        derivative_slicer: Slicer = [slice(None)] * len(derivative.shape)
+        derivative_slicer: Slicer = [slice(None)] * len(derivative_shape)
 
         y_slicer[-1] = y_ind
+        derivative_slicer[-1] = 0
 
         # Forward difference
         y_slicer[x_ind] = 0

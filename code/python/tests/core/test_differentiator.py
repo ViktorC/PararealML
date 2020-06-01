@@ -183,9 +183,15 @@ def test_tpfdm_derivative():
         ]
     ])
     expected_derivative = np.array([
-        [0., -2.],
-        [1., -1.],
-        [1., -1.]
+        [
+            [0.], [-2.]
+        ],
+        [
+            [1.], [-1.]
+        ],
+        [
+            [1.], [-1.]
+        ]
     ])
     actual_derivative = tpfdm.derivative(y, d_x, x_ind, y_ind)
 
@@ -209,12 +215,18 @@ def test_tpfdm_constrained_derivative():
         ]
     ])
 
-    def derivative_constraints_func(derivative): derivative[0, 0] = 100
+    def derivative_constraints_func(derivative): derivative[0, 0, 0] = 100
 
     expected_derivative = np.array([
-        [100., -2.],
-        [1., -1.],
-        [1., -1.]
+        [
+            [100.], [-2.]
+        ],
+        [
+            [1.], [-1.]
+        ],
+        [
+            [1.], [-1.]
+        ]
     ])
     actual_derivative = tpfdm.derivative(
         y, d_x, x_ind, y_ind, derivative_constraints_func)
@@ -239,9 +251,15 @@ def test_tpfdm_second_derivative():
         ]
     ])
     expected_second_derivative = np.array([
-        [.5, .5],
-        [0., 0.],
-        [0., 0.]
+        [
+            [.5], [.5]
+        ],
+        [
+            [0.], [0.]
+        ],
+        [
+            [0.], [0.]
+        ]
     ])
     actual_second_derivative = tpfdm.second_derivative(
         y, d_x, d_x, x_ind, x_ind, y_ind)
@@ -268,9 +286,15 @@ def test_tpfdm_mixed_second_derivative():
         ]
     ])
     expected_second_derivative = np.array([
-        [-8., 16., 16.],
-        [16., -32., -32],
-        [16., -32., -32]
+        [
+            [-8.], [16.], [16.]
+        ],
+        [
+            [16.], [-32.], [-32]
+        ],
+        [
+            [16.], [-32.], [-32]
+        ]
     ])
     actual_second_derivative = tpfdm.second_derivative(
         y, d_x1, d_x2, x_ind1, x_ind2)
@@ -321,8 +345,12 @@ def test_tpfdm_2d_divergence():
         ]
     ])
     expected_div = np.array([
-        [6., 2.],
-        [4., 0.]
+        [
+            [6.], [2.]
+        ],
+        [
+            [4.], [0.]
+        ]
     ])
     actual_div = tpfdm.divergence(y, d_x)
 
@@ -352,12 +380,20 @@ def test_tpfdm_3d_divergence():
     ])
     expected_div = np.array([
         [
-            [-12., -16.],
-            [0., -16.]
+            [
+                [-12.], [-16.]
+            ],
+            [
+                [0.], [-16.]
+            ]
         ],
         [
-            [4., -16.],
-            [68., 36.]
+            [
+                [4.], [-16.]
+            ],
+            [
+                [68.], [36.]
+            ]
         ]
     ])
     actual_div = tpfdm.divergence(y, d_x)
@@ -377,8 +413,12 @@ def test_tpfdm_2d_curl():
         ]
     ])
     expected_curl = np.array([
-        [0., -24.],
-        [8., -16.]
+        [
+            [0.], [-24.]
+        ],
+        [
+            [8.], [-16.]
+        ]
     ])
     actual_curl = tpfdm.curl(y, d_x)
 
@@ -528,9 +568,15 @@ def test_fpfdm_derivative():
         ]
     ])
     expected_derivative = np.array([
-        [-.5, -2.5, -4.25],
-        [0.5, -1.5, 1.25],
-        [1.5, -.5, 6.75]
+        [
+            [-.5], [-2.5], [-4.25]
+        ],
+        [
+            [0.5], [-1.5], [1.25]
+        ],
+        [
+            [1.5], [-.5], [6.75]
+        ]
     ])
     actual_derivative = fpfdm.derivative(y, d_x, x_ind, y_ind)
 
@@ -557,9 +603,15 @@ def test_fpfdm_constrained_derivative():
     def derivative_constraints_func(derivative): derivative[1, 1] = 9999.
 
     expected_derivative = np.array([
-        [-.5, -2.5, -4.25],
-        [0.5, 9999., 1.25],
-        [1.5, -.5, 6.75]
+        [
+            [-.5], [-2.5], [-4.25]
+        ],
+        [
+            [0.5], [9999.], [1.25]
+        ],
+        [
+            [1.5], [-.5], [6.75]
+        ]
     ])
     actual_derivative = fpfdm.derivative(
         y, d_x, x_ind, y_ind, derivative_constraints_func)
@@ -584,9 +636,15 @@ def test_fpfdm_second_derivative():
         ]
     ])
     expected_second_derivative = np.array([
-        [.5, .5, 2.75],
-        [.5, .5, 2.75],
-        [.5, .5, 2.75]
+        [
+            [.5], [.5], [2.75]
+        ],
+        [
+            [.5], [.5], [2.75]
+        ],
+        [
+            [.5], [.5], [2.75]
+        ]
     ])
     actual_second_derivative = fpfdm.second_derivative(
         y, d_x, d_x, x_ind, x_ind, y_ind)
@@ -613,9 +671,15 @@ def test_fpfdm_mixed_second_derivative():
         ]
     ])
     expected_second_derivative = np.array([
-        [-50., 10., 70.],
-        [10., -2., -14],
-        [70., -14., -98.]
+        [
+            [-50.], [10.], [70.]
+        ],
+        [
+            [10.], [-2.], [-14.]
+        ],
+        [
+            [70.], [-14.], [-98.]
+        ]
     ])
     actual_second_derivative = fpfdm.second_derivative(
         y, d_x1, d_x2, x_ind1, x_ind2)
