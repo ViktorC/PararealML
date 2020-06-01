@@ -2,9 +2,10 @@ from typing import Sequence, Optional
 
 import numpy as np
 
-from src.core.differential_equation import DifferentialEquation
+from src.core.differential_equation import DifferentialEquation, DomainRange
 from src.core.differentiator import Differentiator
 from src.core.integrator import Integrator
+from src.core.mesh import Mesh
 
 
 class Operator:
@@ -13,43 +14,17 @@ class Operator:
     equation over a specific time domain interval given an initial value.
     """
 
-    @staticmethod
-    def _calculate_d_x(
-            diff_eq: DifferentialEquation,
-            y_shape: Sequence[int]) -> Optional[Sequence[float]]:
-        """
-        Returns a sequence of numbers denoting the step size used to discretise
-        the non-temporal domain of the differential equation along each axis.
-
-        :param diff_eq: the differential equation
-        :param y_shape: the shape of the solution estimate at any point in time
-        :return: the non-temporal step sizes used by the mesh
-        """
-        d_x = None
-
-        if diff_eq.x_dimension():
-            d_x = []
-            for i, x_range in enumerate(diff_eq.x_ranges()):
-                d_x_i = (x_range[1] - x_range[0]) / (y_shape[i] - 1)
-                d_x.append(d_x_i)
-
-        return d_x
-
-    def _discretise_time_domain(
-            self,
-            t_a: float,
-            t_b: float) -> np.ndarray:
+    def _discretise_time_domain(self, t: DomainRange) -> np.ndarray:
         """
         Returns a discretisation of the the interval [t_a, t_b^) using the
         temporal step size of the operator d_t, where t_b^ is t_b rounded to
         the nearest multiple of d_t.
 
-        :param t_a: the beginning of the time interval
-        :param t_b: the end of the time interval
+        :param t: the time interval to discretise
         :return: the array containing the discretised temporal domain
         """
-        adjusted_t_b = self.d_t() * round(t_b / self.d_t())
-        return np.arange(t_a, adjusted_t_b, self.d_t())
+        adjusted_t_1 = self.d_t() * round(t[1] / self.d_t())
+        return np.arange(t[0], adjusted_t_1, self.d_t())
 
     def d_t(self) -> float:
         """
@@ -60,20 +35,20 @@ class Operator:
     def trace(
             self,
             diff_eq: DifferentialEquation,
+            mesh: Optional[Mesh],
             y_a: np.ndarray,
-            t_a: float,
-            t_b: float) -> np.ndarray:
+            t: DomainRange) -> np.ndarray:
         """
         Returns a discretised approximation of y over (t_a, t_b].
 
         :param diff_eq: the differential equation whose solution's trajectory
         is to be traced
+        :param mesh: the spatial discretisation of the differential equation.
+        In case of an ODE, it is None.
         :param y_a: y(t_a), that is the value of the differential equation's
         solution at the lower bound of the interval it is to be traced over
-        :param t_a: the lower bound of the interval over which the differential
-        equation's solution is to be traced (exclusive)
-        :param t_b: the upper bound of the interval over which the differential
-        equation's solution is to be traced (inclusive)
+        :param t: the time interval over which the differential equation's
+        solution is to be traced
         :return: a sequence of floating points number representing the
         discretised solution of the differential equation y over (t_a, t_b]
         """
@@ -106,10 +81,10 @@ class MethodOfLinesOperator(Operator):
     def trace(
             self,
             diff_eq: DifferentialEquation,
+            mesh: Optional[Mesh],
             y_a: np.ndarray,
-            t_a: float,
-            t_b: float) -> np.ndarray:
-        t = self._discretise_time_domain(t_a, t_b)
+            t: DomainRange) -> np.ndarray:
+        t = self._discretise_time_domain(t)
 
         y_shape = list(y_a.shape)
         y_shape.insert(0, len(t))
@@ -118,16 +93,23 @@ class MethodOfLinesOperator(Operator):
         y_i = y_a
 
         if diff_eq.x_dimension():
-            d_x = self._calculate_d_x(diff_eq, y_shape)
+            d_x = mesh.d_x()
+            d_y_constraint_func = mesh.d_y_constraint_func()
+            y_constraint_func = mesh.y_constraint_func()
         else:
             d_x = None
+            d_y_constraint_func = None
 
-        def d_y_wrt_t(_t: float, _y: np.ndarray, _d_x: Sequence[float]=d_x) \
+            def y_constraint_func(_: np.ndarray): pass
+
+        def d_y_wrt_t(_t: float, _y: np.ndarray, _d_x: Sequence[float] = d_x) \
                 -> np.ndarray:
-            return diff_eq.d_y(_t, _y, _d_x, self._differentiator)
+            return diff_eq.d_y(
+                _t, _y, _d_x, self._differentiator, d_y_constraint_func)
 
         for i, t_i in enumerate(t):
             y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_wrt_t)
+            y_constraint_func(y_i)
             y[i] = y_i
 
         return y

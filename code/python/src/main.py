@@ -9,6 +9,7 @@ from src.utils.plot import plot_y_against_t, plot_phase_space
 from src.utils.time import time
 
 diff_eq = LorenzEquation((0., 40.))
+mesh = None
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(
@@ -28,7 +29,7 @@ threshold = 1.
 
 @time
 def solve_parallel():
-    return parareal.solve(diff_eq, threshold)
+    return parareal.solve(diff_eq, mesh, threshold)
 
 
 # @time
@@ -39,19 +40,19 @@ def solve_parallel():
 @time
 def solve_serial_fine():
     return f.trace(
-        diff_eq, diff_eq.y_0(), diff_eq.t_range()[0], diff_eq.t_range()[1])
+        diff_eq, mesh, diff_eq.y_0(), diff_eq.t_range())
 
 
 @time
 def solve_serial_coarse():
     return g.trace(
-        diff_eq, diff_eq.y_0(), diff_eq.t_range()[0], diff_eq.t_range()[1])
+        diff_eq, mesh, diff_eq.y_0(), diff_eq.t_range())
 
 
 # @time
 # def solve_serial_coarse_ml():
 #     return g_ml.trace(
-#         diff_eq, diff_eq.y_0(), diff_eq.t_range()[0], diff_eq.t_range()[1])
+#         diff_eq, mesh, diff_eq.y_0(), diff_eq.t_range())
 
 
 def plot_solution(solve_func):
