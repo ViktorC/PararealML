@@ -1,5 +1,6 @@
 code/c/simulate
 code/python/*.pdf
+code/python/*.gif
 *.o
 *.pytest_cache
 *.mypy_cache
