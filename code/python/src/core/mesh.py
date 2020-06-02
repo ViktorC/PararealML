@@ -5,6 +5,8 @@ import numpy as np
 
 from src.core.differential_equation import DifferentialEquation
 
+Slicer = List[Union[int, slice]]
+
 
 class Mesh:
     """
@@ -61,8 +63,7 @@ class Mesh:
             def set_boundary_and_mask_values(
                     _bc_condition_func, _boundary, _mask):
                 _mask[tuple(slicer)] = True
-                boundary_slicer: List[Union[int, slice]] = \
-                    [slice(None)] * len(_boundary.shape)
+                boundary_slicer: Slicer = [slice(None)] * len(_boundary.shape)
                 for index in np.ndindex(_boundary.shape[:-1]):
                     x = index * flexible_d_x
                     y = _bc_condition_func(x)
@@ -77,7 +78,7 @@ class Mesh:
 
             d_x_np = np.array(self._d_x)
 
-            slicer: List[Union[int, slice]] = [slice(None)] * len(self._y_shape)
+            slicer: Slicer = [slice(None)] * len(self._y_shape)
 
             boundary_conditions = self._diff_eq.boundary_conditions()
             for fixed_axis in range(len(self._y_shape) - 1):
@@ -135,9 +136,12 @@ class Mesh:
             y_0 = np.empty(self._y_shape)
             d_x_np = np.array(self._d_x)
 
+            slicer: Slicer = [slice(None)] * len(self._y_shape)
+
             for index in np.ndindex(self._y_shape[:-1]):
                 x = d_x_np * index
-                y_0[index, :] = self._diff_eq.y_0(x)
+                slicer[:-1] = index
+                y_0[tuple(slicer)] = self._diff_eq.y_0(x)
 
             self._y_constraint_func(y_0)
         else:
