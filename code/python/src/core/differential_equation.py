@@ -212,6 +212,8 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         conditions on y and the spatial derivative of y respectively.
         """
         if self._diff_eq.x_dimension():
+            assert len(self.boundary_conditions()) == self.x_dimension()
+
             constrained_y_values = np.empty(self._y_shape)
             constrained_d_y_values = np.empty(self._y_shape)
 
