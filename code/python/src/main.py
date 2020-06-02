@@ -2,7 +2,7 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition
+from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.differential_equation import DiffusionEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
 from src.core.integrator import ExplicitMidpointMethod, RK4
@@ -13,13 +13,18 @@ from src.utils.plot import plot_y_against_t, plot_phase_space, \
     plot_evolution_of_y
 from src.utils.time import time
 
+
 diff_eq = DiffusionEquation(
-    (0., 10.),
-    [(0., 20.)],
-    lambda x: np.exp(-np.power(x - 10., 2.) / (2 * np.power(5., 2.))),
+    (0., 20.),
+    [(0., 20.),
+     (0., 20.)],
+    lambda x: (2. - np.square(x - 10.).sum() / 100.),
     [(DirichletCondition(0, lambda x: np.full(1, .5)),
-      DirichletCondition(0, lambda x: np.full(1, 1.5)))])
-mesh = Mesh(diff_eq, [.1])
+      DirichletCondition(0, lambda x: np.full(1, 1.5))),
+     (NeumannCondition(0, lambda x: np.full(1, .0)),
+      NeumannCondition(0, lambda x: np.full(1, .0)))
+     ])
+mesh = Mesh(diff_eq, [.1, .1])
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(
@@ -69,7 +74,8 @@ def plot_solution(solve_func):
     y = solve_func()
     if MPI.COMM_WORLD.rank == 0:
         if diff_eq.x_dimension():
-            plot_evolution_of_y(diff_eq, y, f'evolution_{solve_func.__name__}')
+            plot_evolution_of_y(
+                diff_eq, y, 50, 100, f'evolution_{solve_func.__name__}')
         else:
             print(f'According to {solve_func.__name__!r}, '
                   f'y({diff_eq.t_range()[1]})={y[-1]}')
