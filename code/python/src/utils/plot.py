@@ -72,9 +72,12 @@ def plot_evolution_of_y(
     else:
         fig = plt.figure()
         ax = Axes3D(fig)
-        ax.set_xlabel('x 0')
-        ax.set_ylabel('x 1')
-        ax.set_zlabel('y')
+        x0_label = 'x 0'
+        x1_label = 'x 1'
+        y_label = 'y'
+        ax.set_xlabel(x0_label)
+        ax.set_ylabel(x1_label)
+        ax.set_zlabel(y_label)
 
         x_0 = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
         x_1 = np.linspace(*diff_eq.x_ranges()[1], y.shape[2])
@@ -91,8 +94,12 @@ def plot_evolution_of_y(
 
         def update_plot(time_step: int):
             ax.clear()
+            ax.set_xlabel(x0_label)
+            ax.set_ylabel(x1_label)
+            ax.set_zlabel(y_label)
+
             _plot = ax.plot_surface(
-                x_0, x_1, y[time_step, ..., 0],**plot_args)
+                x_0, x_1, y[time_step, ..., 0], **plot_args)
             ax.set_zlim(z_lim)
             return _plot,
 
