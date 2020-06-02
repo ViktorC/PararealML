@@ -8,13 +8,6 @@ class BoundaryCondition:
     A base class for boundary conditions.
     """
 
-    def boundary_dimension(self) -> int:
-        """
-        Returns the dimensionality of the boundary to which the conditions are
-        applicable.
-        """
-        pass
-
     def has_y_condition(self) -> bool:
         """
         Returns whether the boundary conditions restrict the value of y.
@@ -56,21 +49,12 @@ class DirichletCondition(BoundaryCondition):
     boundary.
     """
 
-    def __init__(
-            self,
-            dims: int,
-            y_condition: Callable[[np.ndarray], np.ndarray]):
+    def __init__(self, y_condition: Callable[[np.ndarray], np.ndarray]):
         """
-        :param dims: the dimensionality of the boundary to which the conditions
-        are applicable
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
         """
-        self._dims = dims
         self._y_condition = y_condition
-
-    def boundary_dimension(self) -> int:
-        return self._dims
 
     def has_y_condition(self) -> bool:
         return True
@@ -88,23 +72,14 @@ class NeumannCondition(BoundaryCondition):
     with respect to the normal of the boundary.
     """
 
-    def __init__(
-            self,
-            dims: int,
-            d_y_condition: Callable[[np.ndarray], np.ndarray]):
+    def __init__(self, d_y_condition: Callable[[np.ndarray], np.ndarray]):
         """
-        :param dims: the dimensionality of the boundary to which the conditions
-        are applicable
         :param d_y_condition: the function that determines the value of the
         derivative of y at the coordinates along the boundary specified by x
         with respect to the normal vector to the boundary passing through the
         same point
         """
-        self._dims = dims
         self._d_y_condition = d_y_condition
-
-    def boundary_dimension(self) -> int:
-        return self._dims
 
     def has_y_condition(self) -> bool:
         return False
@@ -123,12 +98,9 @@ class CauchyCondition(BoundaryCondition):
 
     def __init__(
             self,
-            dims: int,
             y_condition: Callable[[np.ndarray], np.ndarray],
             d_y_condition: Callable[[np.ndarray], np.ndarray]):
         """
-        :param dims: the dimensionality of the boundary to which the conditions
-        are applicable
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
         :param d_y_condition: the function that determines the value of the
@@ -136,12 +108,8 @@ class CauchyCondition(BoundaryCondition):
         with respect to the normal vector to the boundary passing through the
         same point
         """
-        self._dims = dims
         self._y_condition = y_condition
         self._d_y_condition = d_y_condition
-
-    def boundary_dimension(self) -> int:
-        return self._dims
 
     def has_y_condition(self) -> bool:
         return True
