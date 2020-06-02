@@ -158,8 +158,9 @@ class DiscreteDifferentialEquation(DifferentialEquation):
     @staticmethod
     def _set_boundary_and_mask_values(
             bc: BoundaryCondition,
-            slicer: List[Union[int, slice]],
             d_x_arr: np.ndarray,
+            y_slicer: List[Union[int, slice]],
+            d_y_slicer: List[Union[int, slice]],
             constrained_y_values: np.ndarray,
             constrained_d_y_values: np.ndarray,
             y_mask: np.ndarray,
@@ -170,9 +171,12 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         and masks accordingly.
 
         :param bc: the boundary condition
-        :param slicer: the slice of the discretised spatial domain
-        corresponding to the boundary
         :param d_x_arr: the step sizes of the other axes of the spatial domain
+        :param y_slicer: the slice of the discretised spatial domain of y
+        corresponding to the boundary
+        :param y_slicer: the slice of the discretised spatial domain of the
+        spatial derivative of the appropriate element of y corresponding to the
+        boundary
         :param constrained_y_values: the array for the evaluated y value
         boundary constraints
         :param constrained_d_y_values: the array for the evaluated dy / dn
@@ -183,8 +187,8 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         of the dy / dn constraint array are set
         """
         if bc.has_y_condition():
-            y_mask[tuple(slicer)] = True
-            y_boundary = constrained_y_values[tuple(slicer)]
+            y_mask[tuple(y_slicer)] = True
+            y_boundary = constrained_y_values[tuple(y_slicer)]
             y_boundary_slicer: List[Union[int, slice]] = \
                 [slice(None)] * len(y_boundary.shape)
             for index in np.ndindex(y_boundary.shape[:-1]):
@@ -194,8 +198,8 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                 y_boundary[tuple(y_boundary_slicer)] = y
 
         if bc.has_d_y_condition():
-            d_y_mask[tuple(slicer)] = True
-            d_y_boundary = constrained_d_y_values[tuple(slicer)]
+            d_y_mask[tuple(d_y_slicer)] = True
+            d_y_boundary = constrained_d_y_values[tuple(d_y_slicer)]
             d_y_boundary_slicer: List[Union[int, slice]] = \
                 [slice(None)] * len(d_y_boundary.shape)
             for index in np.ndindex(d_y_boundary.shape[:-1]):
@@ -214,44 +218,54 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         if self._diff_eq.x_dimension():
             assert len(self.boundary_conditions()) == self.x_dimension()
 
-            constrained_y_values = np.empty(self._y_shape)
-            constrained_d_y_values = np.empty(self._y_shape)
+            y_values_shape = self._y_shape
+            d_y_values_shape = list(self._y_shape)[:-1] + [1]
 
-            y_mask = np.zeros(self._y_shape, dtype=bool)
-            d_y_mask = np.zeros(self._y_shape, dtype=bool)
+            constrained_y_values = np.empty(y_values_shape)
+            constrained_d_y_values = np.empty(d_y_values_shape)
+
+            y_mask = np.zeros(y_values_shape, dtype=bool)
+            d_y_mask = np.zeros(d_y_values_shape, dtype=bool)
 
             d_x_arr = np.array(self._d_x)
 
-            slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(self._y_shape)
+            y_slicer: List[Union[int, slice]] = \
+                [slice(None)] * len(y_values_shape)
+            d_y_slicer: List[Union[int, slice]] = \
+                [slice(None)] * len(d_y_values_shape)
 
             boundary_conditions = self.boundary_conditions()
-            for fixed_axis in range(len(self._y_shape) - 1):
+            for fixed_axis in range(len(y_values_shape) - 1):
                 bc = boundary_conditions[fixed_axis]
                 non_fixed_d_x_arr = d_x_arr[
                     np.arange(len(self._d_x)) != fixed_axis]
 
-                slicer[fixed_axis] = 0
+                y_slicer[fixed_axis] = 0
+                d_y_slicer[fixed_axis] = 0
                 self._set_boundary_and_mask_values(
                     bc[0],
-                    slicer,
                     non_fixed_d_x_arr,
+                    y_slicer,
+                    d_y_slicer,
                     constrained_y_values,
                     constrained_d_y_values,
                     y_mask,
                     d_y_mask)
 
-                slicer[fixed_axis] = self._y_shape[fixed_axis] - 1
+                y_slicer[fixed_axis] = y_values_shape[fixed_axis] - 1
+                d_y_slicer[fixed_axis] = d_y_values_shape[fixed_axis] - 1
                 self._set_boundary_and_mask_values(
                     bc[1],
-                    slicer,
                     non_fixed_d_x_arr,
+                    y_slicer,
+                    d_y_slicer,
                     constrained_y_values,
                     constrained_d_y_values,
                     y_mask,
                     d_y_mask)
 
-                slicer[fixed_axis] = slice(None)
+                y_slicer[fixed_axis] = slice(None)
+                d_y_slicer[fixed_axis] = slice(None)
 
             def y_constraint_function(y: np.ndarray):
                 y[y_mask] = constrained_y_values[y_mask]
@@ -625,3 +639,72 @@ class DiffusionEquation(DifferentialEquation):
             -> np.ndarray:
         return self._d * differentiator.laplacian(
             y, d_x, derivative_constraint_func)
+
+
+class WaveEquation(DifferentialEquation):
+    """
+    A partial differential equation modelling the propagation of waves.
+    """
+
+    def __init__(
+            self,
+            t_range: DomainRange,
+            x_ranges: Sequence[DomainRange],
+            y_0: Callable[[np.ndarray], np.ndarray],
+            boundary_conditions: Sequence[BoundaryConditionPair],
+            c: float = 1.):
+        """
+        :param t_range: the boundaries of the time domain
+        :param x_ranges: the boundaries of each axis of the spatial domain. The
+        number of elements (tuples) in this sequence defines the dimensionality
+        of the spatial domain.
+        :param y_0: a function that returns the initial values of y given a set
+        of spatial coordinates
+        :param boundary_conditions: the boundary conditions of the equation
+        :param c: the propagation speed coefficient
+        """
+        assert t_range[1] > t_range[0]
+        assert len(x_ranges) > 0
+        assert len(x_ranges) == len(boundary_conditions)
+        for x_range in x_ranges:
+            assert x_range[1] > x_range[0]
+        self._t_range = copy(t_range)
+        self._x_ranges = deepcopy(x_ranges)
+        self._y_0 = y_0
+        self._boundary_conditions = deepcopy(boundary_conditions)
+        self._c = c
+
+    def y_dimension(self) -> int:
+        return 2
+
+    def x_dimension(self) -> Optional[int]:
+        return len(self._x_ranges)
+
+    def has_exact_solution(self) -> bool:
+        return False
+
+    def t_range(self) -> DomainRange:
+        return copy(self._t_range)
+
+    def x_ranges(self) -> Optional[Sequence[DomainRange]]:
+        return deepcopy(self._x_ranges)
+
+    def boundary_conditions(self) -> Optional[Sequence[BoundaryConditionPair]]:
+        return deepcopy(self._boundary_conditions)
+
+    def y_0(self, x: Optional[np.ndarray] = None) -> np.ndarray:
+        return self._y_0(x)
+
+    def d_y(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Sequence[float]] = None,
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
+            -> np.ndarray:
+        d_y = np.empty(y.shape)
+        d_y[..., 0] = y[..., 1]
+        d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
+            y[..., [0]], d_x, derivative_constraint_func)
+        return d_y
