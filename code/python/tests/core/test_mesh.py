@@ -1,8 +1,29 @@
 import numpy as np
 
 from src.core.boundary_condition import DirichletCondition
-from src.core.differential_equation import DiffusionEquation
+from src.core.differential_equation import DiffusionEquation, \
+    LotkaVolterraEquation
 from src.core.mesh import Mesh
+
+
+def test_mesh_with_ode():
+    diff_eq = LotkaVolterraEquation((0., 100.))
+    mesh = Mesh(diff_eq)
+
+    assert mesh.d_x() is None
+    assert mesh.y_shape() == (diff_eq.y_dimension(),)
+    assert np.all(mesh.y_0() == diff_eq.y_0())
+
+    y = np.ones(5)
+    y_copy = np.copy(y)
+
+    mesh.y_constraint_func()(y)
+
+    assert np.all(y_copy == y)
+
+    mesh.d_y_constraint_func()(y)
+
+    assert np.all(y_copy == y)
 
 
 def test_1d_mesh():
