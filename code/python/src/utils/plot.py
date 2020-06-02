@@ -1,8 +1,8 @@
-from mpl_toolkits import mplot3d
-from matplotlib.animation import FuncAnimation
-
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
+from matplotlib.animation import FuncAnimation
+from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import DifferentialEquation
 
@@ -14,14 +14,15 @@ def plot_y_against_t(
     t_range = diff_eq.t_range()
     t = np.linspace(t_range[0], t_range[1], len(y))
 
+    plt.xlabel('t')
+    plt.ylabel('y')
+
     if diff_eq.y_dimension() == 1:
         plt.plot(t, y)
     else:
         for i in range(y.shape[1]):
             plt.plot(t, y[:, i])
 
-    plt.xlabel('t')
-    plt.ylabel('y')
     plt.savefig(f'{file_name}.pdf')
     plt.clf()
 
@@ -31,16 +32,18 @@ def plot_phase_space(y: np.ndarray, file_name: str):
     assert 2 <= y.shape[1] <= 3
 
     if y.shape[1] == 2:
-        plt.plot(y[:, 0], y[:, 1])
         plt.xlabel('y 0')
         plt.ylabel('y 1')
+
+        plt.plot(y[:, 0], y[:, 1])
     elif y.shape[1] == 3:
-        plt.figure()
-        ax = plt.axes(projection=mplot3d.Axes3D.name)
-        ax.plot3D(y[:, 0], y[:, 1], y[:, 1])
+        fig = plt.figure()
+        ax = Axes3D(fig)
         ax.set_xlabel('y 0')
         ax.set_ylabel('y 1')
         ax.set_zlabel('y 2')
+
+        ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
 
     plt.savefig(f'{file_name}.pdf')
     plt.clf()
@@ -49,22 +52,54 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 def plot_evolution_of_y(
         diff_eq: DifferentialEquation,
         y: np.ndarray,
+        time_steps_between_updates: int,
+        interval: int,
         file_name: str):
     assert 1 <= diff_eq.x_dimension() <= 2
-
-    fig, ax = plt.subplots()
-    fig.set_tight_layout(True)
+    assert len(y.shape) == diff_eq.x_dimension() + 2
 
     if diff_eq.x_dimension() == 1:
+        fig, ax = plt.subplots()
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+
         x = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
-        line, = ax.plot(x, y[0, ..., 0])
+        plot, = ax.plot(x, y[0, ..., 0])
 
-        def update(time_step: int):
-            line.set_ydata(y[time_step, ..., 0])
-            return line, ax
-
-        anim = FuncAnimation(
-            fig, update, frames=range(0, y.shape[0], 20), interval=100)
-        anim.save(f'{file_name}.gif', dpi=80, writer='imagemagick')
+        def update_plot(time_step: int):
+            plot.set_ydata(y[time_step, ..., 0])
+            return plot, ax
     else:
-        pass
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.set_xlabel('x 0')
+        ax.set_ylabel('x 1')
+        ax.set_zlabel('y')
+
+        x_0 = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
+        x_1 = np.linspace(*diff_eq.x_ranges()[1], y.shape[2])
+        x_0, x_1 = np.meshgrid(x_0, x_1)
+
+        plot_args = {
+            'rstride': 1,
+            'cstride': 1,
+            'linewidth': 0,
+            'antialiased': False,
+            'cmap': cm.coolwarm}
+        plot = ax.plot_surface(x_0, x_1, y[0, ..., 0], **plot_args)
+        z_lim = ax.get_zlim()
+
+        def update_plot(time_step: int):
+            ax.clear()
+            _plot = ax.plot_surface(
+                x_0, x_1, y[time_step, ..., 0],**plot_args)
+            ax.set_zlim(z_lim)
+            return _plot,
+
+    animation = FuncAnimation(
+        fig,
+        update_plot,
+        frames=range(0, y.shape[0], time_steps_between_updates),
+        interval=interval)
+    animation.save(f'{file_name}.gif', writer='imagemagick')
+    plt.clf()
