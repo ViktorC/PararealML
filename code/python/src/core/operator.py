@@ -35,7 +35,7 @@ class Operator:
     def trace(
             self,
             diff_eq: DifferentialEquation,
-            mesh: Optional[Mesh],
+            mesh: Mesh,
             y_a: np.ndarray,
             t: DomainRange) -> np.ndarray:
         """
@@ -43,8 +43,7 @@ class Operator:
 
         :param diff_eq: the differential equation whose solution's trajectory
         is to be traced
-        :param mesh: the spatial discretisation of the differential equation.
-        In case of an ODE, it is None.
+        :param mesh: the spatial discretisation of the differential equation
         :param y_a: y(t_a), that is the value of the differential equation's
         solution at the lower bound of the interval it is to be traced over
         :param t: the time interval over which the differential equation's
@@ -81,7 +80,7 @@ class MethodOfLinesOperator(Operator):
     def trace(
             self,
             diff_eq: DifferentialEquation,
-            mesh: Optional[Mesh],
+            mesh: Mesh,
             y_a: np.ndarray,
             t: DomainRange) -> np.ndarray:
         t = self._discretise_time_domain(t)
@@ -92,15 +91,9 @@ class MethodOfLinesOperator(Operator):
 
         y_i = y_a
 
-        if diff_eq.x_dimension():
-            d_x = mesh.d_x()
-            d_y_constraint_func = mesh.d_y_constraint_func()
-            y_constraint_func = mesh.y_constraint_func()
-        else:
-            d_x = None
-            d_y_constraint_func = None
-
-            def y_constraint_func(_: np.ndarray): pass
+        d_x = mesh.d_x()
+        d_y_constraint_func = mesh.d_y_constraint_func()
+        y_constraint_func = mesh.y_constraint_func()
 
         def d_y_wrt_t(_t: float, _y: np.ndarray, _d_x: Sequence[float] = d_x) \
                 -> np.ndarray:

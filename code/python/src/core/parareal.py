@@ -29,7 +29,7 @@ class Parareal:
     def solve(
             self,
             diff_eq: DifferentialEquation,
-            mesh: Optional[Mesh],
+            mesh: Mesh,
             tol: float,
             max_iterations: int = sys.maxsize) -> np.ndarray:
         """
@@ -38,7 +38,7 @@ class Parareal:
 
         :param diff_eq: the differential equation to solve
         :param mesh: the mesh over which the differential equation is to be
-        solved. If the differential equation is an ODE, it is ignored.
+        solved.
         :param tol: the minimum absolute value of the largest update to
         the solution required to perform another corrective iteration; if all
         updates are smaller than this threshold, the solution is considered
@@ -57,12 +57,14 @@ class Parareal:
             t_range[1],
             comm.size + 1)
 
-        y = np.empty((len(time_slices), diff_eq.y_dimension()))
-        f_values = np.empty((comm.size, diff_eq.y_dimension()))
-        g_values = np.empty((comm.size, diff_eq.y_dimension()))
-        new_g_values = np.empty((comm.size, diff_eq.y_dimension()))
+        y_shape = mesh.y_shape()
 
-        y[0] = mesh.y_0() if diff_eq.x_dimension() else diff_eq.y_0()
+        y = np.empty((len(time_slices), *y_shape))
+        f_values = np.empty((comm.size, *y_shape))
+        g_values = np.empty((comm.size, *y_shape))
+        new_g_values = np.empty((comm.size, *y_shape))
+
+        y[0] = mesh.y_0()
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self._g.trace(
                 diff_eq, mesh, y[i], (t, time_slices[i + 1]))[-1]
@@ -113,7 +115,7 @@ class Parareal:
 
         y_length = comm.size * int(
             (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t()))
-        y_trajectory = np.empty((y_length, diff_eq.y_dimension()))
+        y_trajectory = np.empty((y_length, *y_shape))
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE],
