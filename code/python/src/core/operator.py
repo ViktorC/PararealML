@@ -85,10 +85,7 @@ class MethodOfLinesOperator(Operator):
             t: DomainRange) -> np.ndarray:
         t = self._discretise_time_domain(t)
 
-        y_shape = list(y_a.shape)
-        y_shape.insert(0, len(t))
-        y = np.empty(tuple(y_shape))
-
+        y = np.empty([len(t)] + list(mesh.y_shape()))
         y_i = y_a
 
         d_x = mesh.d_x()
