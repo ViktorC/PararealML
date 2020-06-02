@@ -3,8 +3,7 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
-from src.core.differential_equation import DifferentialEquation
-from src.core.mesh import Mesh
+from src.core.differential_equation import DiscreteDifferentialEquation
 from src.core.operator import Operator
 
 
@@ -27,17 +26,14 @@ class Parareal:
 
     def solve(
             self,
-            diff_eq: DifferentialEquation,
-            mesh: Mesh,
+            diff_eq: DiscreteDifferentialEquation,
             tol: float,
             max_iterations: int = sys.maxsize) -> np.ndarray:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.
 
-        :param diff_eq: the differential equation to solve
-        :param mesh: the mesh over which the differential equation is to be
-        solved.
+        :param diff_eq: the discretised differential equation to solve
         :param tol: the minimum absolute value of the largest update to
         the solution required to perform another corrective iteration; if all
         updates are smaller than this threshold, the solution is considered
@@ -56,24 +52,23 @@ class Parareal:
             t_range[1],
             comm.size + 1)
 
-        y_shape = mesh.y_shape()
+        y_shape = diff_eq.y_shape()
 
         y = np.empty((len(time_slices), *y_shape))
         f_values = np.empty((comm.size, *y_shape))
         g_values = np.empty((comm.size, *y_shape))
         new_g_values = np.empty((comm.size, *y_shape))
 
-        y[0] = mesh.y_0()
+        y[0] = diff_eq.discrete_y_0()
         for i, t in enumerate(time_slices[:-1]):
             y[i + 1] = self._g.trace(
-                diff_eq, mesh, y[i], (t, time_slices[i + 1]))[-1]
+                diff_eq, y[i], (t, time_slices[i + 1]))[-1]
 
         my_y_trajectory = None
 
         for i in range(min(comm.size, max_iterations)):
             my_y_trajectory = self._f.trace(
                 diff_eq,
-                mesh,
                 y[comm.rank],
                 (time_slices[comm.rank], time_slices[comm.rank + 1]))
             my_f_value = my_y_trajectory[-1]
@@ -82,7 +77,6 @@ class Parareal:
 
             my_g_value = self._g.trace(
                 diff_eq,
-                mesh,
                 y[comm.rank],
                 (time_slices[comm.rank], time_slices[comm.rank + 1]))[-1]
             comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
@@ -96,7 +90,6 @@ class Parareal:
 
                 new_g_value = self._g.trace(
                     diff_eq,
-                    mesh,
                     y[j],
                     (t, time_slices[j + 1]))[-1]
                 new_g_values[j] = new_g_value

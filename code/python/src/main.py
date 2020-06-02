@@ -3,10 +3,10 @@ import numpy as np
 from mpi4py import MPI
 
 from src.core.boundary_condition import DirichletCondition, NeumannCondition
-from src.core.differential_equation import DiffusionEquation
+from src.core.differential_equation import DiffusionEquation, \
+    DiscreteDifferentialEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
 from src.core.integrator import ExplicitMidpointMethod, RK4
-from src.core.mesh import Mesh
 from src.core.operator import MethodOfLinesOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
@@ -19,12 +19,12 @@ diff_eq = DiffusionEquation(
     [(0., 20.),
      (0., 20.)],
     lambda x: (2. - np.square(x - 10.).sum() / 100.),
-    [(DirichletCondition(0, lambda x: np.full(1, .5)),
-      DirichletCondition(0, lambda x: np.full(1, 1.5))),
-     (NeumannCondition(0, lambda x: np.full(1, .0)),
-      NeumannCondition(0, lambda x: np.full(1, .0)))
+    [(DirichletCondition(lambda x: np.full(1, .5)),
+      DirichletCondition(lambda x: np.full(1, 1.5))),
+     (NeumannCondition(lambda x: np.full(1, .0)),
+      NeumannCondition(lambda x: np.full(1, .0)))
      ])
-mesh = Mesh(diff_eq, [.1, .1])
+discrete_diff_eq = DiscreteDifferentialEquation(diff_eq, [.1, .1])
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(
@@ -44,24 +44,28 @@ threshold = .1
 
 @time
 def solve_parallel():
-    return parareal.solve(diff_eq, mesh, threshold)
+    return parareal.solve(discrete_diff_eq, threshold)
 
 
 # @time
 # def solve_parallel_ml():
-#     return parareal_ml.solve(diff_eq, threshold)
+#     return parareal_ml.solve(discrete_diff_eq, threshold)
 
 
 @time
 def solve_serial_fine():
     return f.trace(
-        diff_eq, mesh, mesh.y_0(), diff_eq.t_range())
+        discrete_diff_eq,
+        discrete_diff_eq.discrete_y_0(),
+        discrete_diff_eq.t_range())
 
 
 @time
 def solve_serial_coarse():
     return g.trace(
-        diff_eq, mesh, mesh.y_0(), diff_eq.t_range())
+        discrete_diff_eq,
+        discrete_diff_eq.discrete_y_0(),
+        discrete_diff_eq.t_range())
 
 
 # @time
@@ -73,14 +77,18 @@ def solve_serial_coarse():
 def plot_solution(solve_func):
     y = solve_func()
     if MPI.COMM_WORLD.rank == 0:
-        if diff_eq.x_dimension():
+        if discrete_diff_eq.x_dimension():
             plot_evolution_of_y(
-                diff_eq, y, 50, 100, f'evolution_{solve_func.__name__}')
+                discrete_diff_eq,
+                y,
+                50,
+                100,
+                f'evolution_{solve_func.__name__}')
         else:
             print(f'According to {solve_func.__name__!r}, '
-                  f'y({diff_eq.t_range()[1]})={y[-1]}')
-            plot_y_against_t(diff_eq, y, solve_func.__name__)
-            if diff_eq.y_dimension() > 1:
+                  f'y({discrete_diff_eq.t_range()[1]})={y[-1]}')
+            plot_y_against_t(discrete_diff_eq, y, solve_func.__name__)
+            if discrete_diff_eq.y_dimension() > 1:
                 plot_phase_space(y, f'phase_space_{solve_func.__name__}')
 
 

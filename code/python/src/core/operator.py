@@ -2,10 +2,10 @@ from typing import Sequence, Optional
 
 import numpy as np
 
-from src.core.differential_equation import DifferentialEquation, DomainRange
+from src.core.differential_equation import DiscreteDifferentialEquation, \
+    DomainRange
 from src.core.differentiator import Differentiator
 from src.core.integrator import Integrator
-from src.core.mesh import Mesh
 
 
 class Operator:
@@ -34,16 +34,14 @@ class Operator:
 
     def trace(
             self,
-            diff_eq: DifferentialEquation,
-            mesh: Mesh,
+            diff_eq: DiscreteDifferentialEquation,
             y_a: np.ndarray,
             t: DomainRange) -> np.ndarray:
         """
         Returns a discretised approximation of y over (t_a, t_b].
 
-        :param diff_eq: the differential equation whose solution's trajectory
-        is to be traced
-        :param mesh: the spatial discretisation of the differential equation
+        :param diff_eq: the discretised differential equation whose solution's
+        trajectory is to be traced
         :param y_a: y(t_a), that is the value of the differential equation's
         solution at the lower bound of the interval it is to be traced over
         :param t: the time interval over which the differential equation's
@@ -79,18 +77,17 @@ class MethodOfLinesOperator(Operator):
 
     def trace(
             self,
-            diff_eq: DifferentialEquation,
-            mesh: Mesh,
+            diff_eq: DiscreteDifferentialEquation,
             y_a: np.ndarray,
             t: DomainRange) -> np.ndarray:
         time_steps = self._discretise_time_domain(t)
 
-        y = np.empty([len(time_steps)] + list(mesh.y_shape()))
+        y = np.empty([len(time_steps)] + list(diff_eq.y_shape()))
         y_i = y_a
 
-        d_x = mesh.d_x()
-        d_y_constraint_func = mesh.d_y_constraint_func()
-        y_constraint_func = mesh.y_constraint_func()
+        d_x = diff_eq.d_x()
+        d_y_constraint_func = diff_eq.d_y_constraint_func()
+        y_constraint_func = diff_eq.y_constraint_func()
 
         def d_y_wrt_t(_t: float, _y: np.ndarray, _d_x: Sequence[float] = d_x) \
                 -> np.ndarray:
