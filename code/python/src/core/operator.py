@@ -83,9 +83,9 @@ class MethodOfLinesOperator(Operator):
             mesh: Mesh,
             y_a: np.ndarray,
             t: DomainRange) -> np.ndarray:
-        t = self._discretise_time_domain(t)
+        time_steps = self._discretise_time_domain(t)
 
-        y = np.empty([len(t)] + list(mesh.y_shape()))
+        y = np.empty([len(time_steps)] + list(mesh.y_shape()))
         y_i = y_a
 
         d_x = mesh.d_x()
@@ -97,7 +97,7 @@ class MethodOfLinesOperator(Operator):
             return diff_eq.d_y(
                 _t, _y, _d_x, self._differentiator, d_y_constraint_func)
 
-        for i, t_i in enumerate(t):
+        for i, t_i in enumerate(time_steps):
             y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_wrt_t)
             y_constraint_func(y_i)
             y[i] = y_i
