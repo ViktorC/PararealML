@@ -60,7 +60,7 @@ class Mesh:
         if self._diff_eq.x_dimension():
             def set_boundary_and_mask_values(
                     _bc_condition_func, _boundary, _mask):
-                _mask[slicer] = True
+                _mask[tuple(slicer)] = True
                 boundary_slicer: List[Union[int, slice]] = \
                     [slice(None)] * len(_boundary.shape)
                 for index in np.ndindex(_boundary.shape[:-1]):
