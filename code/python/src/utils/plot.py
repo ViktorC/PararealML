@@ -49,6 +49,22 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 def plot_evolution_of_y(
         diff_eq: DifferentialEquation,
         y: np.ndarray,
-        interval: int,
         file_name: str):
-    pass
+    assert 1 <= diff_eq.x_dimension() <= 2
+
+    fig, ax = plt.subplots()
+    fig.set_tight_layout(True)
+
+    if diff_eq.x_dimension() == 1:
+        x = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
+        line, = ax.plot(x, y[0, ..., 0])
+
+        def update(time_step: int):
+            line.set_ydata(y[time_step, ..., 0])
+            return line, ax
+
+        anim = FuncAnimation(
+            fig, update, frames=range(0, y.shape[0], 20), interval=100)
+        anim.save(f'{file_name}.gif', dpi=80, writer='imagemagick')
+    else:
+        pass
