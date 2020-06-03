@@ -5,10 +5,12 @@ from typing import Optional, Sequence, Tuple, Callable, List, Union
 import numpy as np
 
 from src.core.boundary_condition import BoundaryCondition
-from src.core.differentiator import Differentiator
+from src.core.differentiator import Differentiator, \
+    DerivativeConstraintFunction
 
 DomainRange = Tuple[float, float]
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
+SolutionConstraintFunction = Callable[[np.ndarray], None]
 
 
 class DifferentialEquation:
@@ -74,8 +76,8 @@ class DifferentialEquation:
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
         y'(t), given t, and y(t). In case of a partial differential equation,
@@ -90,8 +92,9 @@ class DifferentialEquation:
         :param differentiator: a differentiator instance that allows for
         calculating various differential terms of y with resptect to x given
         an estimate of y over the spatial mesh, y(t)
-        :param derivative_constraint_func: a callback function that allows for
-        applying boundary constraints to the calculated first derivatives
+        :param derivative_constraint_function: a callback function that allows 
+        for applying boundary constraints to the calculated first spatial 
+        derivatives
         :return: an array representing y'(t)
         """
         pass
@@ -133,8 +136,10 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         self._diff_eq = diff_eq
         self._d_x = copy(d_x)
         self._y_shape = self._calculate_y_shape()
-        self._y_constraint_func, self._d_y_constraint_func = \
-            self._create_boundary_constraint_functions()
+        self._y_constraint_function = \
+            self._create_y_boundary_constraint_function()
+        self._d_y_constraint_function = \
+            self._create_d_y_boundary_constraint_function()
 
     def _calculate_y_shape(self) -> Tuple[int, ...]:
         """
@@ -157,130 +162,158 @@ class DiscreteDifferentialEquation(DifferentialEquation):
 
     @staticmethod
     def _set_boundary_and_mask_values(
-            bc: BoundaryCondition,
-            d_x_arr: np.ndarray,
-            y_slicer: List[Union[int, slice]],
-            d_y_slicer: List[Union[int, slice]],
-            constrained_y_values: np.ndarray,
-            constrained_d_y_values: np.ndarray,
-            y_mask: np.ndarray,
-            d_y_mask: np.ndarray):
+            condition_function: Callable[[np.ndarray], np.ndarray],
+            boundary: np.ndarray,
+            mask: np.ndarray,
+            d_x_arr: np.ndarray):
         """
-        Evaluates the boundary conditions on the boundary defined by the slicer
-        instance and sets the corresponding slices of the constraint arrays
-        and masks accordingly.
-
-        :param bc: the boundary condition
-        :param d_x_arr: the step sizes of the other axes of the spatial domain
-        :param y_slicer: the slice of the discretised spatial domain of y
-        corresponding to the boundary
-        :param y_slicer: the slice of the discretised spatial domain of the
-        spatial derivative of the appropriate element of y corresponding to the
-        boundary
-        :param constrained_y_values: the array for the evaluated y value
-        boundary constraints
-        :param constrained_d_y_values: the array for the evaluated dy / dn
-        value boundary constraints
-        :param y_mask: the boolean array denoting which elements (boundaries)
-        of the y constraint array are set
-        :param d_y_mask: the boolean array denoting which elements (boundaries)
-        of the dy / dn constraint array are set
+        Evaluates the boundary conditions and sets the corresponding elements
+        of the boundary and mask arrays accordingly.
         """
-        if bc.has_y_condition():
-            y_mask[tuple(y_slicer)] = True
-            y_boundary = constrained_y_values[tuple(y_slicer)]
-            y_boundary_slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(y_boundary.shape)
-            for index in np.ndindex(y_boundary.shape[:-1]):
-                x = index * d_x_arr
-                y = bc.y_condition(x)
-                y_boundary_slicer[:-1] = index
-                y_boundary[tuple(y_boundary_slicer)] = y
+        boundary_slicer: List[Union[int, slice]] = \
+            [slice(None)] * len(boundary.shape)
+        for index in np.ndindex(boundary.shape[:-1]):
+            x = index * d_x_arr
+            constrained_value = condition_function(x)
+            boundary_slicer[:-1] = index
+            boundary[tuple(boundary_slicer)] = constrained_value
+        mask[~np.isnan(boundary)] = True
 
-        if bc.has_d_y_condition():
-            d_y_mask[tuple(d_y_slicer)] = True
-            d_y_boundary = constrained_d_y_values[tuple(d_y_slicer)]
-            d_y_boundary_slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(d_y_boundary.shape)
-            for index in np.ndindex(d_y_boundary.shape[:-1]):
-                x = index * d_x_arr
-                d_y = bc.d_y_condition(x)
-                d_y_boundary_slicer[:-1] = index
-                d_y_boundary[tuple(d_y_boundary_slicer)] = d_y
-
-    def _create_boundary_constraint_functions(self) \
-            -> Tuple[Callable[[np.ndarray], None],
-                     Callable[[np.ndarray], None]]:
+    def _create_y_boundary_constraint_function(self) \
+            -> SolutionConstraintFunction:
         """
-        Creates the constraint functions used to enforce the boundary
-        conditions on y and the spatial derivative of y respectively.
+        Creates the constraint function used to enforce the boundary conditions
+        on y.
         """
         if self._diff_eq.x_dimension():
             assert len(self.boundary_conditions()) == self.x_dimension()
 
-            y_values_shape = self._y_shape
-            d_y_values_shape = list(self._y_shape)[:-1] + [1]
+            constrained_y_values = np.empty(self._y_shape)
+            y_mask = np.zeros(self._y_shape, dtype=bool)
 
-            constrained_y_values = np.empty(y_values_shape)
-            constrained_d_y_values = np.empty(d_y_values_shape)
-
-            y_mask = np.zeros(y_values_shape, dtype=bool)
-            d_y_mask = np.zeros(d_y_values_shape, dtype=bool)
-
-            d_x_arr = np.array(self._d_x)
-
-            y_slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(y_values_shape)
-            d_y_slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(d_y_values_shape)
+            slicer: List[Union[int, slice]] = \
+                [slice(None)] * len(self._y_shape)
 
             boundary_conditions = self.boundary_conditions()
-            for fixed_axis in range(len(y_values_shape) - 1):
+            for fixed_axis in range(self.x_dimension()):
                 bc = boundary_conditions[fixed_axis]
-                non_fixed_d_x_arr = d_x_arr[
-                    np.arange(len(self._d_x)) != fixed_axis]
+                non_fixed_d_x_arr = np.array([self._d_x[:fixed_axis] +
+                                              self._d_x[fixed_axis + 1:]])
 
-                y_slicer[fixed_axis] = 0
-                d_y_slicer[fixed_axis] = 0
-                self._set_boundary_and_mask_values(
-                    bc[0],
-                    non_fixed_d_x_arr,
-                    y_slicer,
-                    d_y_slicer,
-                    constrained_y_values,
-                    constrained_d_y_values,
-                    y_mask,
-                    d_y_mask)
+                lower_bc = bc[0]
+                if lower_bc.has_y_condition():
+                    slicer[fixed_axis] = 0
+                    self._set_boundary_and_mask_values(
+                        lower_bc.y_condition,
+                        constrained_y_values[tuple(slicer)],
+                        y_mask[tuple(slicer)],
+                        non_fixed_d_x_arr)
 
-                y_slicer[fixed_axis] = y_values_shape[fixed_axis] - 1
-                d_y_slicer[fixed_axis] = d_y_values_shape[fixed_axis] - 1
-                self._set_boundary_and_mask_values(
-                    bc[1],
-                    non_fixed_d_x_arr,
-                    y_slicer,
-                    d_y_slicer,
-                    constrained_y_values,
-                    constrained_d_y_values,
-                    y_mask,
-                    d_y_mask)
+                upper_bc = bc[0]
+                if upper_bc.has_y_condition():
+                    slicer[fixed_axis] = self._y_shape[fixed_axis] - 1
+                    self._set_boundary_and_mask_values(
+                        upper_bc.y_condition,
+                        constrained_y_values[tuple(slicer)],
+                        y_mask[tuple(slicer)],
+                        non_fixed_d_x_arr)
 
-                y_slicer[fixed_axis] = slice(None)
-                d_y_slicer[fixed_axis] = slice(None)
+                slicer[fixed_axis] = slice(None)
+
+            y_mask[np.isnan(constrained_y_values)] = False
 
             def y_constraint_function(y: np.ndarray):
                 y[y_mask] = constrained_y_values[y_mask]
-
-            def d_y_constraint_function(d_y: np.ndarray):
-                d_y[d_y_mask] = constrained_d_y_values[d_y_mask]
         else:
 
             def y_constraint_function(_: np.ndarray):
                 pass
 
-            def d_y_constraint_function(_: np.ndarray):
+        return y_constraint_function
+
+    def _create_d_y_boundary_constraint_function(self) \
+            -> DerivativeConstraintFunction:
+        """
+        Creates the constraint function used to enforce the boundary conditions
+        on the spatial derivative of y.
+        """
+        if self._diff_eq.x_dimension():
+            assert len(self.boundary_conditions()) == self.x_dimension()
+
+            d_y_boundaries: List[Tuple[np.ndarray, np.ndarray]] = \
+                [None] * self.x_dimension()
+            d_y_masks: List[Tuple[np.ndarray, np.ndarray]] = \
+                [None] * self.x_dimension()
+
+            boundary_conditions = self.boundary_conditions()
+            for fixed_axis in range(self.x_dimension()):
+                bc = boundary_conditions[fixed_axis]
+                boundary_shape = self._y_shape[:fixed_axis] + \
+                    self._y_shape[fixed_axis + 1:]
+                non_fixed_d_x_arr = np.array([self._d_x[:fixed_axis] +
+                                              self._d_x[fixed_axis + 1:]])
+
+                lower_bc = bc[0]
+                if lower_bc.has_d_y_condition():
+                    lower_d_y_boundary = np.empty(boundary_shape)
+                    lower_d_y_boundary_mask = np.zeros(
+                        boundary_shape, dtype=bool)
+                    self._set_boundary_and_mask_values(
+                        lower_bc.y_condition,
+                        lower_d_y_boundary,
+                        lower_d_y_boundary_mask,
+                        non_fixed_d_x_arr)
+                else:
+                    lower_d_y_boundary = None
+                    lower_d_y_boundary_mask = None
+
+                upper_bc = bc[0]
+                if upper_bc.has_d_y_condition():
+                    upper_d_y_boundary = np.empty(boundary_shape)
+                    upper_d_y_boundary_mask = np.zeros(
+                        boundary_shape, dtype=bool)
+                    self._set_boundary_and_mask_values(
+                        upper_bc.y_condition,
+                        upper_d_y_boundary,
+                        upper_d_y_boundary_mask,
+                        non_fixed_d_x_arr)
+                else:
+                    upper_d_y_boundary = None
+                    upper_d_y_boundary_mask = None
+
+                d_y_boundaries[fixed_axis] = \
+                    (lower_d_y_boundary, upper_d_y_boundary)
+                d_y_masks[fixed_axis] = \
+                    (lower_d_y_boundary_mask, upper_d_y_boundary_mask)
+
+            def d_y_constraint_function(
+                    d_y: np.ndarray, x_ind: int, y_ind: int):
+                boundaries = d_y_boundaries[x_ind]
+                masks = d_y_masks[x_ind]
+
+                slicer: List[Union[int, slice]] = \
+                    [slice(None)] * len(self._y_shape)
+                slicer[-1] = y_ind
+
+                lower_boundary = boundaries[0]
+                if lower_boundary is not None:
+                    lower_boundary = lower_boundary[..., y_ind]
+                    lower_mask = masks[0][..., y_ind]
+                    slicer[x_ind] = 0
+                    d_y[tuple(slicer)] = lower_boundary[lower_mask]
+
+                upper_boundary = boundaries[1]
+                if upper_boundary is not None:
+                    upper_boundary = upper_boundary[..., y_ind]
+                    upper_mask = masks[1][..., y_ind]
+                    slicer[x_ind] = self._y_shape[x_ind] - 1
+                    d_y[tuple(slicer)] = upper_boundary[upper_mask]
+        else:
+
+            def d_y_constraint_function(_: np.ndarray, __: int, ___: int):
                 pass
 
-        return y_constraint_function, d_y_constraint_function
+        return d_y_constraint_function
 
     def _evaluate_initial_conditions(self) -> np.ndarray:
         """
@@ -298,7 +331,7 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                 slicer[:-1] = index
                 y_0[tuple(slicer)] = self.y_0(x)
 
-            self._y_constraint_func(y_0)
+            self._y_constraint_function(y_0)
         else:
             y_0 = self.y_0()
 
@@ -317,21 +350,21 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         """
         return copy(self._y_shape)
 
-    def y_constraint_func(self) -> Callable[[np.ndarray], None]:
+    def y_constraint_function(self) -> SolutionConstraintFunction:
         """
         Returns a function that enforces the boundary conditions of y evaluated
         on the mesh. If the differential equation is an ODE, it returns a no-op
         function.
         """
-        return self._y_constraint_func
+        return self._y_constraint_function
 
-    def d_y_constraint_func(self) -> Callable[[np.ndarray], None]:
+    def d_y_constraint_function(self) -> DerivativeConstraintFunction:
         """
         Returns a function that enforces the boundary conditions of the spatial
         derivative of y evaluated on the mesh. If the differential equation is
         an ODE, it returns a no-op function.
         """
-        return self._d_y_constraint_func
+        return self._d_y_constraint_function
 
     def discrete_y_0(self) -> np.ndarray:
         """
@@ -366,10 +399,10 @@ class DiscreteDifferentialEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         return self._diff_eq.d_y(
-            t, y, d_x, differentiator, derivative_constraint_func)
+            t, y, d_x, differentiator, derivative_constraint_function)
 
     def exact_y(
             self,
@@ -419,8 +452,8 @@ class RabbitPopulationEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
         return d_y
@@ -494,8 +527,8 @@ class LotkaVolterraEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         r = y[0]
         p = y[1]
         d_y = np.empty(2)
@@ -561,8 +594,8 @@ class LorenzEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         c = y[0]
         h = y[1]
         v = y[2]
@@ -635,10 +668,10 @@ class DiffusionEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         return self._d * differentiator.laplacian(
-            y, d_x, derivative_constraint_func)
+            y, d_x, derivative_constraint_function)
 
 
 class WaveEquation(DifferentialEquation):
@@ -701,10 +734,10 @@ class WaveEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Sequence[float]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_func: Callable[[np.ndarray], None] = None) \
-            -> np.ndarray:
+            derivative_constraint_function:
+            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         d_y = np.empty(y.shape)
         d_y[..., 0] = y[..., 1]
         d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
-            y[..., [0]], d_x, derivative_constraint_func)
+            y[..., [0]], d_x, derivative_constraint_function)
         return d_y

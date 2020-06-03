@@ -86,16 +86,16 @@ class MethodOfLinesOperator(Operator):
         y_i = y_a
 
         d_x = diff_eq.d_x()
-        d_y_constraint_func = diff_eq.d_y_constraint_func()
-        y_constraint_func = diff_eq.y_constraint_func()
+        y_constraint_function = diff_eq.y_constraint_function()
+        d_y_constraint_function = diff_eq.d_y_constraint_function()
 
         def d_y_wrt_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return diff_eq.d_y(
-                _t, _y, d_x, self._differentiator, d_y_constraint_func)
+                _t, _y, d_x, self._differentiator, d_y_constraint_function)
 
         for i, t_i in enumerate(time_steps):
             y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_wrt_t)
-            y_constraint_func(y_i)
+            y_constraint_function(y_i)
             y[i] = y_i
 
         return y

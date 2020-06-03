@@ -24,7 +24,8 @@ class BoundaryCondition:
     def y_condition(self, x: np.ndarray) -> np.ndarray:
         """
         Returns the value of y at the coordinates along the boundary specified
-        by x.
+        by x. To avoid imposing a condition on elements of y, the corresponding
+        elements of the returned array may be NaNs.
 
         :param x: the coordinates in the hyperplane of the boundary
         :return: the value of y(x)
@@ -35,7 +36,9 @@ class BoundaryCondition:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the
-        boundary passing through the same point.
+        boundary passing through the same point. To avoid imposing a condition
+        on elements of the spatial derivative of elements of y, the
+        corresponding elements of the returned array may be NaNs.
 
         :param x: the coordinates in the hyperplane of the boundary
         :return: the constrained value of dy(x) / dn
