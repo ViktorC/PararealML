@@ -215,7 +215,11 @@ def test_tpfdm_constrained_derivative():
         ]
     ])
 
-    def derivative_constraints_func(derivative): derivative[0, 0, 0] = 100
+    def derivative_constraints_func(derivative, _x_ind, _y_ind):
+        assert x_ind == 0
+        assert y_ind == 1
+
+        derivative[0, 0, 0] = 100
 
     expected_derivative = np.array([
         [
@@ -600,7 +604,11 @@ def test_fpfdm_constrained_derivative():
         ]
     ])
 
-    def derivative_constraints_func(derivative): derivative[1, 1] = 9999.
+    def derivative_constraints_func(derivative, _x_ind, _y_ind):
+        assert x_ind == 0
+        assert y_ind == 1
+
+        derivative[1, 1] = 9999.
 
     expected_derivative = np.array([
         [
