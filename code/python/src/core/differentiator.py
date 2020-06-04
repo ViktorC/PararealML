@@ -29,7 +29,7 @@ class Differentiator:
         y_ind is to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
         is vector-valued)
-        :param derivative_constraint_function: a callback function that allows 
+        :param derivative_constraint_function: a callback function that allows
         for applying constraints to the calculated first derivatives
         :return: the derivative of y_ind with respect to x_ind
         """
@@ -58,8 +58,8 @@ class Differentiator:
         x that y_ind is to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
         is vector-valued)
-        :param derivative_constraint_function: a callback function that allows 
-        for applying constraints to the calculated first derivatives before 
+        :param derivative_constraint_function: a callback function that allows
+        for applying constraints to the calculated first derivatives before
         using them to compute the second derivatives
         :return: the second derivative of y_ind with respect to x_ind1 and
         x_ind2
@@ -86,7 +86,7 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraint_function: a callback function that allows 
+        :param derivative_constraint_function: a callback function that allows
         for applying constraints to the calculated first derivatives
         :return: the gradient of y
         """
@@ -126,8 +126,8 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraint_function: a callback function that allows 
-        for applying constraints to the calculated first derivatives before 
+        :param derivative_constraint_function: a callback function that allows
+        for applying constraints to the calculated first derivatives before
         using them to compute the divergence
         :return: the divergence of y
         """
@@ -155,8 +155,8 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraint_function: a callback function that allows 
-        for applying constraints to the calculated first derivatives before 
+        :param derivative_constraint_function: a callback function that allows
+        for applying constraints to the calculated first derivatives before
         using them to compute the curl
         :return: the curl of y
         """
@@ -199,8 +199,8 @@ class Differentiator:
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param derivative_constraint_function: a callback function that allows 
-        for applying constraints to the calculated first derivatives before 
+        :param derivative_constraint_function: a callback function that allows
+        for applying constraints to the calculated first derivatives before
         using them to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
