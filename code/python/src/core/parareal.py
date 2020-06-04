@@ -46,10 +46,10 @@ class Parareal:
         """
         comm = MPI.COMM_WORLD
 
-        t_range = diff_eq.t_range()
+        t_interval = diff_eq.t_interval()
         time_slices = np.linspace(
-            t_range[0],
-            t_range[1],
+            t_interval[0],
+            t_interval[1],
             comm.size + 1)
 
         y_shape = diff_eq.y_shape()

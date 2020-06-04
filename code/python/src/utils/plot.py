@@ -11,8 +11,8 @@ def plot_y_against_t(
         diff_eq: DifferentialEquation,
         y: np.ndarray,
         file_name: str):
-    t_range = diff_eq.t_range()
-    t = np.linspace(t_range[0], t_range[1], len(y))
+    t_interval = diff_eq.t_interval()
+    t = np.linspace(t_interval[0], t_interval[1], len(y))
 
     plt.xlabel('t')
     plt.ylabel('y')
@@ -63,7 +63,7 @@ def plot_evolution_of_y(
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
-        x = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
+        x = np.linspace(*diff_eq.x_intervals()[0], y.shape[1])
         plot, = ax.plot(x, y[0, ..., 0])
 
         def update_plot(time_step: int):
@@ -79,8 +79,8 @@ def plot_evolution_of_y(
         ax.set_ylabel(x1_label)
         ax.set_zlabel(y_label)
 
-        x_0 = np.linspace(*diff_eq.x_ranges()[0], y.shape[1])
-        x_1 = np.linspace(*diff_eq.x_ranges()[1], y.shape[2])
+        x_0 = np.linspace(*diff_eq.x_intervals()[0], y.shape[1])
+        x_1 = np.linspace(*diff_eq.x_intervals()[1], y.shape[2])
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
         plot_args = {

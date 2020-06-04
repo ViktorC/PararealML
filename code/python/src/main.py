@@ -65,7 +65,7 @@ def solve_serial_fine():
     return f.trace(
         discrete_diff_eq,
         discrete_diff_eq.discrete_y_0(),
-        discrete_diff_eq.t_range())
+        discrete_diff_eq.t_interval())
 
 
 @time
@@ -73,13 +73,13 @@ def solve_serial_coarse():
     return g.trace(
         discrete_diff_eq,
         discrete_diff_eq.discrete_y_0(),
-        discrete_diff_eq.t_range())
+        discrete_diff_eq.t_interval())
 
 
 # @time
 # def solve_serial_coarse_ml():
 #     return g_ml.trace(
-#         diff_eq, mesh, diff_eq.y_0(), diff_eq.t_range())
+#         diff_eq, mesh, diff_eq.y_0(), diff_eq.t_interval())
 
 
 def plot_solution(solve_func):
@@ -94,7 +94,7 @@ def plot_solution(solve_func):
                 f'evolution_{solve_func.__name__}')
         else:
             print(f'According to {solve_func.__name__!r}, '
-                  f'y({discrete_diff_eq.t_range()[1]})={y[-1]}')
+                  f'y({discrete_diff_eq.t_interval()[1]})={y[-1]}')
             plot_y_against_t(discrete_diff_eq, y, solve_func.__name__)
             if discrete_diff_eq.y_dimension() > 1:
                 plot_phase_space(y, f'phase_space_{solve_func.__name__}')

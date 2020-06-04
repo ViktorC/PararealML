@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.core.differential_equation import DiscreteDifferentialEquation, \
-    DomainRange
+    DomainInterval
 from src.core.differentiator import Differentiator
 from src.core.integrator import Integrator
 
@@ -12,7 +12,7 @@ class Operator:
     equation over a specific time domain interval given an initial value.
     """
 
-    def _discretise_time_domain(self, t: DomainRange) -> np.ndarray:
+    def _discretise_time_domain(self, t: DomainInterval) -> np.ndarray:
         """
         Returns a discretisation of the the interval [t_a, t_b^) using the
         temporal step size of the operator d_t, where t_b^ is t_b rounded to
@@ -34,7 +34,7 @@ class Operator:
             self,
             diff_eq: DiscreteDifferentialEquation,
             y_a: np.ndarray,
-            t: DomainRange) -> np.ndarray:
+            t: DomainInterval) -> np.ndarray:
         """
         Returns a discretised approximation of y over (t_a, t_b].
 
@@ -77,7 +77,7 @@ class MethodOfLinesOperator(Operator):
             self,
             diff_eq: DiscreteDifferentialEquation,
             y_a: np.ndarray,
-            t: DomainRange) -> np.ndarray:
+            t: DomainInterval) -> np.ndarray:
         time_steps = self._discretise_time_domain(t)
 
         y = np.empty([len(time_steps)] + list(diff_eq.y_shape()))
