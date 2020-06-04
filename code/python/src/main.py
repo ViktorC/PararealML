@@ -2,9 +2,9 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition, NeumannCondition
-from src.core.differential_equation import DiffusionEquation, \
-    DiscreteDifferentialEquation
+from src.core.boundary_condition import DirichletCondition
+from src.core.differential_equation import DiscreteDifferentialEquation, \
+    WaveEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
 from src.core.integrator import ExplicitMidpointMethod, RK4
 from src.core.operator import MethodOfLinesOperator
@@ -14,15 +14,23 @@ from src.utils.plot import plot_y_against_t, plot_phase_space, \
 from src.utils.time import time
 
 
-diff_eq = DiffusionEquation(
+def bivariate_gaussian(x):
+    mean = [5.] * 2
+    cov = [[.05, 0.], [0., .05]]
+    centered_x = x - mean
+    return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
+        np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
+
+
+diff_eq = WaveEquation(
     (0., 20.),
-    [(0., 20.),
-     (0., 20.)],
-    lambda x: (2. - np.square(x - 10.).sum() / 100.),
-    [(DirichletCondition(lambda x: np.full(1, .5)),
-      DirichletCondition(lambda x: np.full(1, 1.5))),
-     (NeumannCondition(lambda x: np.full(1, .0)),
-      NeumannCondition(lambda x: np.full(1, .0)))
+    [(0., 10.),
+     (0., 10.)],
+    lambda x: np.array([bivariate_gaussian(x) / 5, .0]),
+    [(DirichletCondition(lambda x: np.array([.0, .0])),
+      DirichletCondition(lambda x: np.array([.0, .0]))),
+     (DirichletCondition(lambda x: np.array([.0, .0])),
+      DirichletCondition(lambda x: np.array([.0, .0])))
      ])
 discrete_diff_eq = DiscreteDifferentialEquation(diff_eq, [.1, .1])
 
@@ -80,8 +88,8 @@ def plot_solution(solve_func):
         if discrete_diff_eq.x_dimension():
             plot_evolution_of_y(
                 discrete_diff_eq,
-                y,
-                50,
+                y[..., [0]],
+                25,
                 100,
                 f'evolution_{solve_func.__name__}')
         else:
@@ -95,6 +103,6 @@ def plot_solution(solve_func):
 # train_ml_operator()
 # plot_solution(solve_parallel_ml)
 plot_solution(solve_parallel)
-plot_solution(solve_serial_fine)
-plot_solution(solve_serial_coarse)
+# plot_solution(solve_serial_fine)
+# plot_solution(solve_serial_coarse)
 # plot_solution(solve_serial_coarse_ml)
