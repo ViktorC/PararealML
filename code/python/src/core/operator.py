@@ -1,5 +1,3 @@
-from typing import Sequence
-
 import numpy as np
 
 from src.core.differential_equation import DiscreteDifferentialEquation, \
