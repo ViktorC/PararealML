@@ -141,6 +141,45 @@ class DiscreteDifferentialEquation(DifferentialEquation):
         self._d_y_constraint_function = \
             self._create_d_y_boundary_constraint_function()
 
+    @staticmethod
+    def _evaluate_function_and_set_mesh(
+            function: Callable[[np.ndarray], np.ndarray],
+            mesh: np.ndarray,
+            x_offset_arr: np.ndarray,
+            d_x_arr: np.ndarray):
+        """
+        Evaluates the function over the coordinates of each point of the mesh
+        and sets the corresponding elements of the array accordingly.
+
+        :param function: the function to evaluate over the mesh
+        :param mesh: the array representing the mesh whose elements are to be
+        set to the function's outputs
+        :param x_offset_arr: an array representing the coordinates of the first
+        point of the mesh
+        :param d_x_arr: an array holding the step size of the mesh along each
+        axis
+        """
+        slicer: List[Union[int, slice]] = [slice(None)] * len(mesh.shape)
+        for index in np.ndindex(mesh.shape[:-1]):
+            x = x_offset_arr + index * d_x_arr
+            slicer[:-1] = index
+            mesh[tuple(slicer)] = function(x)
+
+    @staticmethod
+    def _set_boundary_and_mask_values(
+            condition_function: Callable[[np.ndarray], np.ndarray],
+            boundary: np.ndarray,
+            mask: np.ndarray,
+            x_offset_arr: np.ndarray,
+            d_x_arr: np.ndarray):
+        """
+        Evaluates the boundary conditions and sets the corresponding elements
+        of the boundary and mask arrays accordingly.
+        """
+        DiscreteDifferentialEquation._evaluate_function_and_set_mesh(
+            condition_function, boundary, x_offset_arr, d_x_arr)
+        mask[~np.isnan(boundary)] = True
+
     def _calculate_y_shape(self) -> Tuple[int, ...]:
         """
         Calculates the shape of the spatially discretised y.
@@ -161,24 +200,22 @@ class DiscreteDifferentialEquation(DifferentialEquation):
 
         return y_shape
 
-    @staticmethod
-    def _set_boundary_and_mask_values(
-            condition_function: Callable[[np.ndarray], np.ndarray],
-            boundary: np.ndarray,
-            mask: np.ndarray,
-            d_x_arr: np.ndarray):
+    def _calculate_x_offset_and_d_x_arrays(self, fixed_axis: int = -1) \
+            -> Tuple[np.ndarray, np.ndarray]:
         """
-        Evaluates the boundary conditions and sets the corresponding elements
-        of the boundary and mask arrays accordingly.
+        Creates the arrays representing the offset and step size of the spatial
+        mesh across each non-fixed axis.
+
+        :param fixed_axis: the axis to exclude. By default, its value is -1
+        which means that no axis is excluded.
+        :return: the offset and step size arrays
         """
-        boundary_slicer: List[Union[int, slice]] = \
-            [slice(None)] * len(boundary.shape)
-        for index in np.ndindex(boundary.shape[:-1]):
-            x = index * d_x_arr
-            constrained_value = condition_function(x)
-            boundary_slicer[:-1] = index
-            boundary[tuple(boundary_slicer)] = constrained_value
-        mask[~np.isnan(boundary)] = True
+        x_offset_arr = np.array(
+            [interval[0] for i, interval in enumerate(self.x_intervals())
+             if i != fixed_axis])
+        d_x_arr = np.array(
+            [d_x for i, d_x in enumerate(self._d_x) if i != fixed_axis])
+        return x_offset_arr, d_x_arr
 
     def _create_y_boundary_constraint_function(self) \
             -> SolutionConstraintFunction:
@@ -198,8 +235,8 @@ class DiscreteDifferentialEquation(DifferentialEquation):
             boundary_conditions = self.boundary_conditions()
             for fixed_axis in range(self.x_dimension()):
                 bc = boundary_conditions[fixed_axis]
-                non_fixed_d_x_arr = np.array([self._d_x[:fixed_axis] +
-                                              self._d_x[fixed_axis + 1:]])
+                non_fixed_x_offset_arr, non_fixed_d_x_arr = \
+                    self._calculate_x_offset_and_d_x_arrays(fixed_axis)
 
                 lower_bc = bc[0]
                 if lower_bc.has_y_condition():
@@ -208,6 +245,7 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                         lower_bc.y_condition,
                         constrained_y_values[tuple(slicer)],
                         y_mask[tuple(slicer)],
+                        non_fixed_x_offset_arr,
                         non_fixed_d_x_arr)
 
                 upper_bc = bc[1]
@@ -217,6 +255,7 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                         upper_bc.y_condition,
                         constrained_y_values[tuple(slicer)],
                         y_mask[tuple(slicer)],
+                        non_fixed_x_offset_arr,
                         non_fixed_d_x_arr)
 
                 slicer[fixed_axis] = slice(None)
@@ -251,8 +290,8 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                 bc = boundary_conditions[fixed_axis]
                 boundary_shape = self._y_shape[:fixed_axis] + \
                     self._y_shape[fixed_axis + 1:]
-                non_fixed_d_x_arr = np.array([self._d_x[:fixed_axis] +
-                                              self._d_x[fixed_axis + 1:]])
+                non_fixed_x_offset_arr, non_fixed_d_x_arr = \
+                    self._calculate_x_offset_and_d_x_arrays(fixed_axis)
 
                 lower_bc = bc[0]
                 if lower_bc.has_d_y_condition():
@@ -263,6 +302,7 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                         lower_bc.d_y_condition,
                         lower_d_y_boundary,
                         lower_d_y_boundary_mask,
+                        non_fixed_x_offset_arr,
                         non_fixed_d_x_arr)
                 else:
                     lower_d_y_boundary = None
@@ -277,6 +317,7 @@ class DiscreteDifferentialEquation(DifferentialEquation):
                         upper_bc.d_y_condition,
                         upper_d_y_boundary,
                         upper_d_y_boundary_mask,
+                        non_fixed_x_offset_arr,
                         non_fixed_d_x_arr)
                 else:
                     upper_d_y_boundary = None
@@ -318,20 +359,15 @@ class DiscreteDifferentialEquation(DifferentialEquation):
 
     def _evaluate_initial_conditions(self) -> np.ndarray:
         """
-        Calculates the value of y_0.
+        Calculates and returns the value of y_0 over the discretised spatial
+        domain.
         """
         if self._diff_eq.x_dimension():
             y_0 = np.empty(self._y_shape)
-            d_x_np = np.array(self._d_x)
+            x_offset_arr, d_x_arr = self._calculate_x_offset_and_d_x_arrays()
 
-            slicer: List[Union[int, slice]] = \
-                [slice(None)] * len(self._y_shape)
-
-            for index in np.ndindex(self._y_shape[:-1]):
-                x = d_x_np * index
-                slicer[:-1] = index
-                y_0[tuple(slicer)] = self.y_0(x)
-
+            self._evaluate_function_and_set_mesh(
+                self.y_0, y_0, x_offset_arr, d_x_arr)
             self._y_constraint_function(y_0)
         else:
             y_0 = self.y_0()

@@ -44,8 +44,8 @@ def test_1d_discrete_diff_eq():
 def test_2d_discrete_diff_eq_system():
     diff_eq = WaveEquation(
         (0., 10.),
-        [(0., 4.),
-         (0., 6.)],
+        [(2., 6.),
+         (-3., 3.)],
         lambda x: np.exp(-np.power(x - 10., 2.) / (2 * np.power(5., 2.))),
         [(DirichletCondition(lambda x: np.array([999., None])),
           NeumannCondition(lambda x: np.array([100., -100.]))),
@@ -73,7 +73,8 @@ def test_2d_discrete_diff_eq_system():
     assert np.isclose(
         y[:, y.shape[1] - 1, 0],
         np.linspace(
-            0.,
+            discrete_diff_eq.x_intervals()[0][0],
+            discrete_diff_eq.x_intervals()[0][0] +
             (y.shape[0] - 1) * discrete_diff_eq.d_x()[0],
             y.shape[0])).all()
     assert np.all(y[:, y.shape[1] - 1, 1] == -999.)
@@ -94,8 +95,9 @@ def test_2d_discrete_diff_eq_system():
     assert np.isclose(
         d_y_0_d_x_1[:, 0, 0],
         np.linspace(
-            0.,
-            -(y.shape[0] - 1) * discrete_diff_eq.d_x()[0],
+            -discrete_diff_eq.x_intervals()[0][0],
+            -(discrete_diff_eq.x_intervals()[0][0] +
+              (y.shape[0] - 1) * discrete_diff_eq.d_x()[0]),
             y.shape[0])).all()
     assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
 

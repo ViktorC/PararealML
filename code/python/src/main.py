@@ -15,7 +15,7 @@ from src.utils.time import time
 
 
 def bivariate_gaussian(x):
-    mean = [5.] * 2
+    mean = [0., 15.]
     cov = [[.05, 0.], [0., .05]]
     centered_x = x - mean
     return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
@@ -23,16 +23,16 @@ def bivariate_gaussian(x):
 
 
 diff_eq = WaveEquation(
-    (0., 20.),
-    [(0., 10.),
-     (0., 10.)],
+    (10., 40.),
+    [(-2.5, 2.5),
+     (10., 20)],
     lambda x: np.array([bivariate_gaussian(x) / 5, .0]),
     [(DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0]))),
      (DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0])))
      ])
-discrete_diff_eq = DiscreteDifferentialEquation(diff_eq, [.1, .1])
+discrete_diff_eq = DiscreteDifferentialEquation(diff_eq, [.05, .1])
 
 f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = MethodOfLinesOperator(

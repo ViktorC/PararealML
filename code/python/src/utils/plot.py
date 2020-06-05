@@ -11,8 +11,7 @@ def plot_y_against_t(
         diff_eq: DifferentialEquation,
         y: np.ndarray,
         file_name: str):
-    t_interval = diff_eq.t_interval()
-    t = np.linspace(t_interval[0], t_interval[1], len(y))
+    t = np.linspace(*diff_eq.t_interval(), len(y))
 
     plt.xlabel('t')
     plt.ylabel('y')
