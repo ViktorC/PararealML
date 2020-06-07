@@ -1,4 +1,4 @@
-from typing import Sequence, Callable, Union, List, Optional
+from typing import Callable, Union, List, Optional, Tuple
 
 import numpy as np
 
@@ -76,7 +76,7 @@ class Differentiator:
     def gradient(
             self,
             y: np.ndarray,
-            d_x: Sequence[float],
+            d_x: Tuple[float, ...],
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         """
@@ -117,7 +117,7 @@ class Differentiator:
     def divergence(
             self,
             y: np.ndarray,
-            d_x: Sequence[float],
+            d_x: Tuple[float, ...],
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         """
@@ -146,7 +146,7 @@ class Differentiator:
     def curl(
             self,
             y: np.ndarray,
-            d_x: Sequence[float],
+            d_x: Tuple[float, ...],
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         """
@@ -190,7 +190,7 @@ class Differentiator:
     def laplacian(
             self,
             y: np.ndarray,
-            d_x: Sequence[float],
+            d_x: Tuple[float, ...],
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
         """

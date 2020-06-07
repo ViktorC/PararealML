@@ -38,7 +38,7 @@ def test_differentiator_second_derivative_with_out_of_bounds_y_ind():
 
 def test_differentiator_gradient_with_insufficient_dimensions():
     diff = Differentiator()
-    d_x = [1.]
+    d_x = 1.,
     y = np.arange(1., 5.)
 
     with pytest.raises(AssertionError):
@@ -47,7 +47,7 @@ def test_differentiator_gradient_with_insufficient_dimensions():
 
 def test_differentiator_gradient_with_wrong_d_x_size():
     diff = Differentiator()
-    d_x = [1.] * 3
+    d_x = (1.,) * 3
     y = np.array([[[0.] * 3] * 2])
 
     with pytest.raises(AssertionError):
@@ -56,7 +56,7 @@ def test_differentiator_gradient_with_wrong_d_x_size():
 
 def test_differentiator_divergence_with_insufficient_dimensions():
     diff = Differentiator()
-    d_x = [1.]
+    d_x = 1.,
     y = np.arange(1., 5.)
 
     with pytest.raises(AssertionError):
@@ -65,7 +65,7 @@ def test_differentiator_divergence_with_insufficient_dimensions():
 
 def test_differentiator_divergence_with_non_matching_vector_field_dimension():
     diff = Differentiator()
-    d_x = [1.] * 2
+    d_x = (1.,) * 2
     y = np.array([[[0.] * 3] * 2] * 2)
 
     with pytest.raises(AssertionError):
@@ -74,7 +74,7 @@ def test_differentiator_divergence_with_non_matching_vector_field_dimension():
 
 def test_differentiator_divergence_with_wrong_d_x_size():
     diff = Differentiator()
-    d_x = [1.] * 3
+    d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
     with pytest.raises(AssertionError):
@@ -83,7 +83,7 @@ def test_differentiator_divergence_with_wrong_d_x_size():
 
 def test_differentiator_1d_curl():
     diff = Differentiator()
-    d_x = [1.]
+    d_x = 1.,
     y = np.array([[0.]])
 
     with pytest.raises(AssertionError):
@@ -92,7 +92,7 @@ def test_differentiator_1d_curl():
 
 def test_differentiator_more_than_3d_curl():
     diff = Differentiator()
-    d_x = [1.] * 4
+    d_x = (1.,) * 4
     y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
 
     with pytest.raises(AssertionError):
@@ -101,7 +101,7 @@ def test_differentiator_more_than_3d_curl():
 
 def test_differentiator_curl_with_wrong_d_x_size():
     diff = Differentiator()
-    d_x = [1.] * 3
+    d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
     with pytest.raises(AssertionError):
@@ -110,7 +110,7 @@ def test_differentiator_curl_with_wrong_d_x_size():
 
 def test_differentiator_laplacian_with_insufficient_dimensions():
     diff = Differentiator()
-    d_x = [1.]
+    d_x = 1.,
     y = np.arange(1., 5.)
 
     with pytest.raises(AssertionError):
@@ -119,7 +119,7 @@ def test_differentiator_laplacian_with_insufficient_dimensions():
 
 def test_differentiator_laplacian_with_wrong_d_x_size():
     diff = Differentiator()
-    d_x = [1.] * 3
+    d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
     with pytest.raises(AssertionError):
@@ -309,7 +309,7 @@ def test_tpfdm_mixed_second_derivative():
 
 def test_tpfdm_gradient():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [2., 1.]
+    d_x = 2., 1.
     y = np.array([
         [
             [2., 4.], [4., 8.]
@@ -339,7 +339,7 @@ def test_tpfdm_gradient():
 
 def test_tpfdm_2d_divergence():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [1., 2.]
+    d_x = 1., 2.
     y = np.array([
         [
             [2., 4.], [4., 8.]
@@ -363,7 +363,7 @@ def test_tpfdm_2d_divergence():
 
 def test_tpfdm_3d_divergence():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [.5] * 3
+    d_x = (.5,) * 3
     y = np.array([
         [
             [
@@ -407,7 +407,7 @@ def test_tpfdm_3d_divergence():
 
 def test_tpfdm_2d_curl():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [.5] * 2
+    d_x = (.5,) * 2
     y = np.array([
         [
             [1., 3.], [5., 2.]
@@ -431,7 +431,7 @@ def test_tpfdm_2d_curl():
 
 def test_tpfdm_3d_curl():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [1., 2., .5]
+    d_x = 1., 2., .5
     y = np.array([
         [
             [
@@ -487,7 +487,7 @@ def test_tpfdm_3d_curl():
 
 def test_tpfdm_laplacian():
     tpfdm = TwoPointFiniteDifferenceMethod()
-    d_x = [2., 1.]
+    d_x = 2., 1.
     y = np.array([
         [
             [2., 4.], [4., 8.], [2., 4.]
