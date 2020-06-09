@@ -28,11 +28,15 @@ class BoundaryValueProblem:
         :param diff_eq: the differential equation of the boundary value problem
         :param mesh: the mesh over which the boundary value problem is to be
         solved
-        :param boundary_conditions: the boundary conditions on the boundary 
+        :param boundary_conditions: the boundary conditions on the boundary
         value problem's non-temporal domain
         """
         assert diff_eq is not None
         self._diff_eq = diff_eq
+
+        self._mesh: Optional[Mesh]
+        self._boundary_conditions: \
+            Optional[Tuple[BoundaryConditionPair, ...]]
 
         if diff_eq.x_dimension():
             assert mesh is not None
@@ -44,15 +48,12 @@ class BoundaryValueProblem:
                 boundary_condition_pair = boundary_conditions[i]
                 assert len(boundary_condition_pair) == 2
 
-            self._mesh: Optional[Mesh] = mesh
-            self._boundary_conditions: \
-                Optional[Tuple[BoundaryConditionPair, ...]] = \
-                deepcopy(boundary_conditions)
+            self._mesh = mesh
+            self._boundary_conditions = deepcopy(boundary_conditions)
             self._y_shape = tuple(list(mesh.shape()) + [diff_eq.y_dimension()])
         else:
-            self._mesh: Optional[Mesh] = None
-            self._boundary_conditions: \
-                Optional[Tuple[BoundaryConditionPair, ...]] = None
+            self._mesh = None
+            self._boundary_conditions = None
             self._y_shape = diff_eq.y_dimension(),
 
         self._y_constraint_function = \
@@ -124,7 +125,7 @@ class BoundaryValueProblem:
                 y[y_mask] = constrained_y_values[y_mask]
         else:
 
-            def y_constraint_function(_: np.ndarray):
+            def y_constraint_function(y: np.ndarray):
                 pass
 
         return y_constraint_function
@@ -136,10 +137,8 @@ class BoundaryValueProblem:
         on the spatial derivative of y.
         """
         if self._diff_eq.x_dimension():
-            d_y_boundaries: List[Tuple[np.ndarray, np.ndarray]] = \
-                [None] * self._diff_eq.x_dimension()
-            d_y_masks: List[Tuple[np.ndarray, np.ndarray]] = \
-                [None] * self._diff_eq.x_dimension()
+            d_y_boundaries = []
+            d_y_masks = []
 
             boundary_conditions = self.boundary_conditions()
             for fixed_axis in range(self._diff_eq.x_dimension()):
@@ -175,10 +174,9 @@ class BoundaryValueProblem:
                     upper_d_y_boundary = None
                     upper_d_y_boundary_mask = None
 
-                d_y_boundaries[fixed_axis] = \
-                    (lower_d_y_boundary, upper_d_y_boundary)
-                d_y_masks[fixed_axis] = \
-                    (lower_d_y_boundary_mask, upper_d_y_boundary_mask)
+                d_y_boundaries.append((lower_d_y_boundary, upper_d_y_boundary))
+                d_y_masks.append(
+                    (lower_d_y_boundary_mask, upper_d_y_boundary_mask))
 
             def d_y_constraint_function(
                     d_y: np.ndarray, x_ind: int, y_ind: int):
@@ -204,7 +202,8 @@ class BoundaryValueProblem:
                     d_y[tuple(slicer)][upper_mask] = upper_boundary[upper_mask]
         else:
 
-            def d_y_constraint_function(_: np.ndarray, __: int, ___: int):
+            def d_y_constraint_function(
+                    d_y: np.ndarray, x_ind: int, y_ind: int):
                 pass
 
         return d_y_constraint_function
@@ -251,4 +250,3 @@ class BoundaryValueProblem:
         an ODE, it returns a no-op function.
         """
         return self._d_y_constraint_function
-

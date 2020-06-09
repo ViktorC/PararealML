@@ -216,7 +216,7 @@ class DiffusionEquation(DifferentialEquation):
         self._x_dimension = x_dimension
         self._d = d
 
-    def x_dimension(self) -> Optional[int]:
+    def x_dimension(self) -> int:
         return self._x_dimension
 
     def y_dimension(self) -> int:
@@ -230,6 +230,7 @@ class DiffusionEquation(DifferentialEquation):
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+        assert d_x and differentiator
         return self._d * differentiator.laplacian(
             y, d_x, derivative_constraint_function)
 
@@ -251,7 +252,7 @@ class WaveEquation(DifferentialEquation):
         self._x_dimension = x_dimension
         self._c = c
 
-    def x_dimension(self) -> Optional[int]:
+    def x_dimension(self) -> int:
         return self._x_dimension
 
     def y_dimension(self) -> int:
@@ -265,6 +266,7 @@ class WaveEquation(DifferentialEquation):
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_function:
             Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+        assert d_x and differentiator
         d_y = np.empty(y.shape)
         d_y[..., 0] = y[..., 1]
         d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(

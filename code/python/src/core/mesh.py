@@ -79,7 +79,7 @@ class NonUniformGrid(Mesh):
         shape = []
         for i in range(len(x_intervals)):
             x_interval = x_intervals[i]
-            shape.append(round((x_interval[1] - x_interval[0]) /d_x[i]))
+            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i]))
 
         return tuple(shape)
 
