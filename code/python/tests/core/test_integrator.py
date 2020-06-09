@@ -18,7 +18,7 @@ def test_forward_euler_method():
     assert np.isclose(actual_y2, expected_y2).all()
 
 
-def test_etplicit_midpoint_method():
+def test_explicit_midpoint_method():
     midpoint = ExplicitMidpointMethod()
 
     y1 = np.array([2.])
