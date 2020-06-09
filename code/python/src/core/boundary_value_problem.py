@@ -63,7 +63,7 @@ class BoundaryValueProblem:
 
     def _set_boundary_and_mask_values(
             self,
-            condition_function: Callable[[np.ndarray], np.ndarray],
+            condition_function: Callable[[Tuple[float, ...]], np.ndarray],
             boundary: np.ndarray,
             mask: np.ndarray,
             fixed_axis: int):
@@ -78,7 +78,7 @@ class BoundaryValueProblem:
         non_fixed_d_x_arr = np.array(
             list(d_x[:fixed_axis]) + list(d_x[fixed_axis + 1:]))
         for index in np.ndindex(boundary.shape[:-1]):
-            x = non_fixed_x_offset_arr + index * non_fixed_d_x_arr
+            x = tuple(non_fixed_x_offset_arr + index * non_fixed_d_x_arr)
             boundary[(*index, slice(None))] = condition_function(x)
         mask[~np.isnan(boundary)] = True
 

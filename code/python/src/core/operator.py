@@ -84,7 +84,7 @@ class FDMOperator(Operator):
         time_steps = self._discretise_time_domain(ivp.t_interval())
 
         y = np.empty([len(time_steps)] + list(bvp.y_shape()))
-        y_i = ivp.y_0()
+        y_i = ivp.initial_condition().discrete_y_0()
 
         for i, t_i in enumerate(time_steps):
             y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_over_d_t)

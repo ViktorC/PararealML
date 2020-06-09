@@ -6,6 +6,7 @@ from src.core.boundary_condition import DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import WaveEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
+from src.core.initial_condition import GaussianInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
 from src.core.mesh import NonUniformGrid
@@ -14,14 +15,6 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
     plot_evolution_of_y
 from src.utils.time import time
-
-
-def bivariate_gaussian(x):
-    mean = [0., 15.]
-    cov = [[.05, 0.], [0., .05]]
-    centered_x = x - mean
-    return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
-        np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
 
 
 diff_eq = WaveEquation(2)
@@ -34,7 +27,12 @@ bvp = BoundaryValueProblem(
      (DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0])))))
 ivp = InitialValueProblem(
-    bvp, (10., 40.), lambda x: np.array([bivariate_gaussian(x) / 5, .0]))
+    bvp,
+    (10., 40.),
+    GaussianInitialCondition(
+        bvp,
+        ((np.array([0., 15.]), np.array([[.05, 0.], [0., .05]])),) * 2,
+        np.array([.2, .0])))
 
 f = FDMOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = FDMOperator(

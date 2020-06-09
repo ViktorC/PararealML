@@ -3,6 +3,7 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
+from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import Operator
 
@@ -60,10 +61,12 @@ class Parareal:
         g_values = np.empty((comm.size, *y_shape))
         new_g_values = np.empty((comm.size, *y_shape))
 
-        y[0] = ivp.y_0()
+        y[0] = ivp.initial_condition().discrete_y_0()
         for i, t in enumerate(time_slices[:-1]):
             coarse_ivp = InitialValueProblem(
-                bvp, (t, time_slices[i + 1]), y[i])
+                bvp,
+                (t, time_slices[i + 1]),
+                DiscreteInitialCondition(y[i]))
             y[i + 1] = self._g.trace(coarse_ivp)[-1]
 
         my_y_trajectory = None
@@ -72,7 +75,7 @@ class Parareal:
             my_ivp = InitialValueProblem(
                 bvp,
                 (time_slices[comm.rank], time_slices[comm.rank + 1]),
-                y[comm.rank])
+                DiscreteInitialCondition(y[comm.rank]))
 
             my_y_trajectory = self._f.trace(my_ivp)
             my_f_value = my_y_trajectory[-1]
@@ -90,7 +93,9 @@ class Parareal:
                 correction = f_value - g_value
 
                 coarse_ivp = InitialValueProblem(
-                    bvp, (t, time_slices[j + 1]), y[j])
+                    bvp,
+                    (t, time_slices[j + 1]),
+                    DiscreteInitialCondition(y[j]))
                 new_g_value = self._g.trace(coarse_ivp)[-1]
                 new_g_values[j] = new_g_value
 

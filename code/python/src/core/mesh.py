@@ -29,7 +29,7 @@ class Mesh:
         """
         pass
 
-    def x(self, index: Tuple[int, ...]) -> np.ndarray:
+    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         """
         Returns the coordinates of the point in the domain corresponding to the
         vertex of the mesh specified by the provided index.
@@ -92,6 +92,6 @@ class NonUniformGrid(Mesh):
     def shape(self) -> Tuple[int, ...]:
         return copy(self._shape)
 
-    def x(self, index: Tuple[int, ...]) -> np.ndarray:
+    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         assert len(index) == len(self._shape)
-        return self._x_offset + self._d_x * index
+        return tuple(self._x_offset + self._d_x * index)

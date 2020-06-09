@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple
 
 import numpy as np
 
@@ -21,7 +21,7 @@ class BoundaryCondition:
         """
         pass
 
-    def y_condition(self, x: np.ndarray) -> np.ndarray:
+    def y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
@@ -32,7 +32,7 @@ class BoundaryCondition:
         """
         pass
 
-    def d_y_condition(self, x: np.ndarray) -> np.ndarray:
+    def d_y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the
@@ -52,7 +52,7 @@ class DirichletCondition(BoundaryCondition):
     boundary.
     """
 
-    def __init__(self, y_condition: Callable[[np.ndarray], np.ndarray]):
+    def __init__(self, y_condition: Callable[[Tuple[float, ...]], np.ndarray]):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
@@ -65,7 +65,7 @@ class DirichletCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return False
 
-    def y_condition(self, x: np.ndarray) -> np.ndarray:
+    def y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         return self._y_condition(x)
 
 
@@ -75,7 +75,9 @@ class NeumannCondition(BoundaryCondition):
     with respect to the normal of the boundary.
     """
 
-    def __init__(self, d_y_condition: Callable[[np.ndarray], np.ndarray]):
+    def __init__(
+            self,
+            d_y_condition: Callable[[Tuple[float, ...]], np.ndarray]):
         """
         :param d_y_condition: the function that determines the value of the
         derivative of y at the coordinates along the boundary specified by x
@@ -90,7 +92,7 @@ class NeumannCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def d_y_condition(self, x: np.ndarray) -> np.ndarray:
+    def d_y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         return self._d_y_condition(x)
 
 
@@ -101,8 +103,8 @@ class CauchyCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: Callable[[np.ndarray], np.ndarray],
-            d_y_condition: Callable[[np.ndarray], np.ndarray]):
+            y_condition: Callable[[Tuple[float, ...]], np.ndarray],
+            d_y_condition: Callable[[Tuple[float, ...]], np.ndarray]):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
@@ -120,8 +122,8 @@ class CauchyCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def y_condition(self, x: np.ndarray) -> np.ndarray:
+    def y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         return self._y_condition(x)
 
-    def d_y_condition(self, x: np.ndarray) -> np.ndarray:
+    def d_y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
         return self._d_y_condition(x)
