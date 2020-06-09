@@ -13,7 +13,7 @@ class Integrator:
             y: np.ndarray,
             t: float,
             d_t: float,
-            d_y_wrt_t: Callable[[float, np.ndarray], np.ndarray]
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray]
     ) -> np.ndarray:
         """
         Estimates the value of y(t + d_t).
@@ -21,7 +21,7 @@ class Integrator:
         :param y: the value of y(t)
         :param t: the value of t
         :param d_t: the amount of increase in t
-        :param d_y_wrt_t: the value of y'(t)
+        :param d_y_over_d_t: the value of y'(t)
         :return: the value of y(t + d_t).
         """
         pass
@@ -37,9 +37,9 @@ class ForwardEulerMethod(Integrator):
             y: np.ndarray,
             t: float,
             d_t: float,
-            d_y_wrt_t: Callable[[float, np.ndarray], np.ndarray]
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray]
     ) -> np.ndarray:
-        return y + d_t * d_y_wrt_t(t, y)
+        return y + d_t * d_y_over_d_t(t, y)
 
 
 class ExplicitMidpointMethod(Integrator):
@@ -52,11 +52,11 @@ class ExplicitMidpointMethod(Integrator):
             y: np.ndarray,
             t: float,
             d_t: float,
-            d_y_wrt_t: Callable[[float, np.ndarray], np.ndarray]
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray]
     ) -> np.ndarray:
-        return y + d_t * d_y_wrt_t(
+        return y + d_t * d_y_over_d_t(
             t + d_t / 2.,
-            y + d_y_wrt_t(t, y) * d_t / 2.)
+            y + d_y_over_d_t(t, y) * d_t / 2.)
 
 
 class RK4(Integrator):
@@ -69,10 +69,10 @@ class RK4(Integrator):
             y: np.ndarray,
             t: float,
             d_t: float,
-            d_y_wrt_t: Callable[[float, np.ndarray], np.ndarray]
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray]
     ) -> np.ndarray:
-        k1 = d_t * d_y_wrt_t(t, y)
-        k2 = d_t * d_y_wrt_t(t + d_t / 2., y + k1 / 2.)
-        k3 = d_t * d_y_wrt_t(t + d_t / 2., y + k2 / 2.)
-        k4 = d_t * d_y_wrt_t(t + d_t, y + k3)
+        k1 = d_t * d_y_over_d_t(t, y)
+        k2 = d_t * d_y_over_d_t(t + d_t / 2., y + k1 / 2.)
+        k3 = d_t * d_y_over_d_t(t + d_t / 2., y + k2 / 2.)
+        k4 = d_t * d_y_over_d_t(t + d_t, y + k3)
         return y + (k1 + 2 * k2 + 2 * k3 + k4) / 6

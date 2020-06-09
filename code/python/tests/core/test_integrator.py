@@ -10,10 +10,10 @@ def test_forward_euler_method():
     t1 = 1.
     d_t = .5
 
-    def d_y_wrt_t(t, y): return 5 * y + t ** 2
+    def d_y_over_d_t(t, y): return 5 * y + t ** 2
 
     expected_y2 = np.array([4.])
-    actual_y2 = euler.integral(y1, t1, d_t, d_y_wrt_t)
+    actual_y2 = euler.integral(y1, t1, d_t, d_y_over_d_t)
 
     assert np.isclose(actual_y2, expected_y2).all()
 
@@ -25,10 +25,10 @@ def test_etplicit_midpoint_method():
     t1 = 0.
     d_t = .5
 
-    def d_y_wrt_t(t, y): return 2 * y - 4 * t
+    def d_y_over_d_t(t, y): return 2 * y - 4 * t
 
     expected_y2 = np.array([4.5])
-    actual_y2 = midpoint.integral(y1, t1, d_t, d_y_wrt_t)
+    actual_y2 = midpoint.integral(y1, t1, d_t, d_y_over_d_t)
 
     assert np.isclose(actual_y2, expected_y2).all()
 
@@ -40,9 +40,9 @@ def test_rk4():
     t1 = 1.
     d_t = 1.
 
-    def d_y_wrt_t(_, y): return 2 * y + 1
+    def d_y_over_d_t(_, y): return 2 * y + 1
 
     expected_y2 = np.array([3.])
-    actual_y2 = rk4.integral(y1, t1, d_t, d_y_wrt_t)
+    actual_y2 = rk4.integral(y1, t1, d_t, d_y_over_d_t)
 
     assert np.isclose(actual_y2, expected_y2).all()
