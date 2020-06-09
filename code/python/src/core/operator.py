@@ -1,9 +1,13 @@
+from typing import Callable
+
 import numpy as np
 
-from src.core.differential_equation import DiscreteDifferentialEquation, \
-    DomainInterval
 from src.core.differentiator import Differentiator
+from src.core.initial_value_problem import TemporalDomainInterval, \
+    InitialValueProblem
 from src.core.integrator import Integrator
+
+SolutionConstraintFunction = Callable[[np.ndarray], None]
 
 
 class Operator:
@@ -12,7 +16,7 @@ class Operator:
     equation over a specific time domain interval given an initial value.
     """
 
-    def _discretise_time_domain(self, t: DomainInterval) -> np.ndarray:
+    def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
         """
         Returns a discretisation of the the interval [t_a, t_b^) using the
         temporal step size of the operator d_t, where t_b^ is t_b rounded to
@@ -30,30 +34,19 @@ class Operator:
         """
         pass
 
-    def trace(
-            self,
-            diff_eq: DiscreteDifferentialEquation,
-            y_a: np.ndarray,
-            t: DomainInterval) -> np.ndarray:
+    def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         """
-        Returns a discretised approximation of y over (t_a, t_b].
+        Returns a discretised approximation of the IVP's solution.
 
-        :param diff_eq: the discretised differential equation whose solution's
-        trajectory is to be traced
-        :param y_a: y(t_a), that is the value of the differential equation's
-        solution at the lower bound of the interval it is to be traced over
-        :param t: the time interval over which the differential equation's
-        solution is to be traced
-        :return: a sequence of floating points number representing the
-        discretised solution of the differential equation y over (t_a, t_b]
+        :param ivp: the initial value problem to solve
+        :return: the discretised solution of the IVP
         """
         pass
 
 
-class MethodOfLinesOperator(Operator):
+class FDMOperator(Operator):
     """
-    A method-of-lines operator that uses conventional differential equation
-    integration.
+    A finite difference method based conventional differential equation solver.
     """
 
     def __init__(
@@ -73,26 +66,28 @@ class MethodOfLinesOperator(Operator):
     def d_t(self) -> float:
         return self._d_t
 
-    def trace(
-            self,
-            diff_eq: DiscreteDifferentialEquation,
-            y_a: np.ndarray,
-            t: DomainInterval) -> np.ndarray:
-        time_steps = self._discretise_time_domain(t)
+    def trace(self, ivp: InitialValueProblem) -> np.ndarray:
+        bvp = ivp.boundary_value_problem()
+        diff_eq = bvp.differential_equation()
+        d_x = bvp.mesh().d_x()
+        y_constraint_function = bvp.y_constraint_function()
+        d_y_constraint_function = bvp.d_y_constraint_function()
 
-        y = np.empty([len(time_steps)] + list(diff_eq.y_shape()))
-        y_i = y_a
+        def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
+            return diff_eq.d_y_over_d_t(
+                _t,
+                _y,
+                d_x,
+                self._differentiator,
+                d_y_constraint_function)
 
-        d_x = diff_eq.d_x()
-        y_constraint_function = diff_eq.y_constraint_function()
-        d_y_constraint_function = diff_eq.d_y_constraint_function()
+        time_steps = self._discretise_time_domain(ivp.t_interval())
 
-        def d_y_wrt_t(_t: float, _y: np.ndarray) -> np.ndarray:
-            return diff_eq.d_y(
-                _t, _y, d_x, self._differentiator, d_y_constraint_function)
+        y = np.empty([len(time_steps)] + list(bvp.y_shape()))
+        y_i = ivp.y_0()
 
         for i, t_i in enumerate(time_steps):
-            y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_wrt_t)
+            y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_over_d_t)
             y_constraint_function(y_i)
             y[i] = y_i
 

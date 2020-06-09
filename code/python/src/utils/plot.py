@@ -4,19 +4,19 @@ from matplotlib import cm
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 
-from src.core.differential_equation import DifferentialEquation
+from src.core.initial_value_problem import InitialValueProblem
 
 
 def plot_y_against_t(
-        diff_eq: DifferentialEquation,
+        ivp: InitialValueProblem,
         y: np.ndarray,
         file_name: str):
-    t = np.linspace(*diff_eq.t_interval(), len(y))
+    t = np.linspace(*ivp.t_interval(), len(y))
 
     plt.xlabel('t')
     plt.ylabel('y')
 
-    if diff_eq.y_dimension() == 1:
+    if ivp.boundary_value_problem().differential_equation().y_dimension() == 1:
         plt.plot(t, y)
     else:
         for i in range(y.shape[1]):
@@ -49,20 +49,19 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 
 
 def plot_evolution_of_y(
-        diff_eq: DifferentialEquation,
+        ivp: InitialValueProblem,
         y: np.ndarray,
         time_steps_between_updates: int,
         interval: int,
         file_name: str):
-    assert 1 <= diff_eq.x_dimension() <= 2
-    assert len(y.shape) == diff_eq.x_dimension() + 2
+    x_intervals = ivp.boundary_value_problem().mesh().x_intervals()
 
-    if diff_eq.x_dimension() == 1:
+    if len(x_intervals) == 1:
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
-        x = np.linspace(*diff_eq.x_intervals()[0], y.shape[1])
+        x = np.linspace(*x_intervals[0], y.shape[1])
         plot, = ax.plot(x, y[0, ..., 0])
 
         def update_plot(time_step: int):
@@ -78,8 +77,8 @@ def plot_evolution_of_y(
         ax.set_ylabel(x1_label)
         ax.set_zlabel(y_label)
 
-        x_0 = np.linspace(*diff_eq.x_intervals()[0], y.shape[1])
-        x_1 = np.linspace(*diff_eq.x_intervals()[1], y.shape[2])
+        x_0 = np.linspace(*x_intervals[0], y.shape[1])
+        x_1 = np.linspace(*x_intervals[1], y.shape[2])
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
         plot_args = {

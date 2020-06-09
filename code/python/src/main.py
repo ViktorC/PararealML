@@ -3,11 +3,13 @@ import numpy as np
 from mpi4py import MPI
 
 from src.core.boundary_condition import DirichletCondition
-from src.core.differential_equation import DiscreteDifferentialEquation, \
-    WaveEquation
+from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.differential_equation import WaveEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
+from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
-from src.core.operator import MethodOfLinesOperator
+from src.core.mesh import NonUniformGrid
+from src.core.operator import FDMOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
     plot_evolution_of_y
@@ -22,20 +24,20 @@ def bivariate_gaussian(x):
         np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
 
 
-diff_eq = WaveEquation(
-    (10., 40.),
-    [(-2.5, 2.5),
-     (10., 20)],
-    lambda x: np.array([bivariate_gaussian(x) / 5, .0]),
-    [(DirichletCondition(lambda x: np.array([.0, .0])),
+diff_eq = WaveEquation(2)
+mesh = NonUniformGrid(((-2.5, 2.5), (10., 20)), (.05, .1))
+bvp = BoundaryValueProblem(
+    diff_eq,
+    mesh,
+    ((DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0]))),
      (DirichletCondition(lambda x: np.array([.0, .0])),
-      DirichletCondition(lambda x: np.array([.0, .0])))
-     ])
-discrete_diff_eq = DiscreteDifferentialEquation(diff_eq, [.05, .1])
+      DirichletCondition(lambda x: np.array([.0, .0])))))
+ivp = InitialValueProblem(
+    bvp, (10., 40.), lambda x: np.array([bivariate_gaussian(x) / 5, .0]))
 
-f = MethodOfLinesOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
-g = MethodOfLinesOperator(
+f = FDMOperator(RK4(), ThreePointFiniteDifferenceMethod(), .01)
+g = FDMOperator(
     ExplicitMidpointMethod(), ThreePointFiniteDifferenceMethod(), .01)
 # g_ml = MLOperator(MLPRegressor(), 1.)
 
@@ -52,7 +54,7 @@ threshold = .1
 
 @time
 def solve_parallel():
-    return parareal.solve(discrete_diff_eq, threshold)
+    return parareal.solve(ivp, threshold)
 
 
 # @time
@@ -62,18 +64,12 @@ def solve_parallel():
 
 @time
 def solve_serial_fine():
-    return f.trace(
-        discrete_diff_eq,
-        discrete_diff_eq.discrete_y_0(),
-        discrete_diff_eq.t_interval())
+    return f.trace(ivp)
 
 
 @time
 def solve_serial_coarse():
-    return g.trace(
-        discrete_diff_eq,
-        discrete_diff_eq.discrete_y_0(),
-        discrete_diff_eq.t_interval())
+    return g.trace(ivp)
 
 
 # @time
@@ -85,18 +81,18 @@ def solve_serial_coarse():
 def plot_solution(solve_func):
     y = solve_func()
     if MPI.COMM_WORLD.rank == 0:
-        if discrete_diff_eq.x_dimension():
+        if diff_eq.x_dimension():
             plot_evolution_of_y(
-                discrete_diff_eq,
+                ivp,
                 y[..., [0]],
                 25,
                 100,
                 f'evolution_{solve_func.__name__}')
         else:
             print(f'According to {solve_func.__name__!r}, '
-                  f'y({discrete_diff_eq.t_interval()[1]})={y[-1]}')
-            plot_y_against_t(discrete_diff_eq, y, solve_func.__name__)
-            if discrete_diff_eq.y_dimension() > 1:
+                  f'y({ivp.t_interval()[1]})={y[-1]}')
+            plot_y_against_t(ivp, y, solve_func.__name__)
+            if diff_eq.y_dimension() > 1:
                 plot_phase_space(y, f'phase_space_{solve_func.__name__}')
 
 
