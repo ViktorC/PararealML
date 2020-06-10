@@ -65,6 +65,19 @@ class NonUniformGrid(Mesh):
         self._x_offset = np.array([interval[0] for interval in x_intervals])
         self._d_x = np.array(copy(d_x))
 
+    def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
+        return deepcopy(self._x_intervals)
+
+    def d_x(self) -> Tuple[float, ...]:
+        return tuple(self._d_x)
+
+    def shape(self) -> Tuple[int, ...]:
+        return copy(self._shape)
+
+    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
+        assert len(index) == len(self._shape)
+        return tuple(self._x_offset + self._d_x * index)
+
     @staticmethod
     def _calculate_shape(
             x_intervals: Tuple[SpatialDomainInterval, ...],
@@ -82,16 +95,3 @@ class NonUniformGrid(Mesh):
             shape.append(round((x_interval[1] - x_interval[0]) / d_x[i]))
 
         return tuple(shape)
-
-    def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
-        return deepcopy(self._x_intervals)
-
-    def d_x(self) -> Tuple[float, ...]:
-        return tuple(self._d_x)
-
-    def shape(self) -> Tuple[int, ...]:
-        return copy(self._shape)
-
-    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
-        assert len(index) == len(self._shape)
-        return tuple(self._x_offset + self._d_x * index)

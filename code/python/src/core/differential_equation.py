@@ -70,21 +70,6 @@ class RabbitPopulationEquation(DifferentialEquation):
         """
         self._r = r
 
-    def exact_y(
-            self,
-            y_0: float,
-            t: float) -> np.ndarray:
-        """
-        Returns the exact solution to the ordinary differential equation given
-        the initial rabbit population at t=0 and a point in time t.
-
-        :param y_0: the rabbit population at t=0
-        :param t: the point in time at which the exact solution is to be
-        calculated
-        :return: y(t), the exact solution at time t
-        """
-        return np.array([y_0 * np.math.exp(self._r * t)])
-
     def x_dimension(self) -> int:
         return 0
 
@@ -102,6 +87,21 @@ class RabbitPopulationEquation(DifferentialEquation):
         d_y = np.empty(1)
         d_y[0] = self._r * y
         return d_y
+
+    def exact_y(
+            self,
+            y_0: float,
+            t: float) -> np.ndarray:
+        """
+        Returns the exact solution to the ordinary differential equation given
+        the initial rabbit population at t=0 and a point in time t.
+
+        :param y_0: the rabbit population at t=0
+        :param t: the point in time at which the exact solution is to be
+        calculated
+        :return: y(t), the exact solution at time t
+        """
+        return np.array([y_0 * np.math.exp(self._r * t)])
 
 
 class LotkaVolterraEquation(DifferentialEquation):

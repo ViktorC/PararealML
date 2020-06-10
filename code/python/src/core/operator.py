@@ -16,18 +16,6 @@ class Operator:
     equation over a specific time domain interval given an initial value.
     """
 
-    def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
-        """
-        Returns a discretisation of the the interval [t_a, t_b^) using the
-        temporal step size of the operator d_t, where t_b^ is t_b rounded to
-        the nearest multiple of d_t.
-
-        :param t: the time interval to discretise
-        :return: the array containing the discretised temporal domain
-        """
-        adjusted_t_1 = self.d_t() * round(t[1] / self.d_t())
-        return np.arange(t[0], adjusted_t_1, self.d_t())
-
     def d_t(self) -> float:
         """
         Returns the temporal step size of the operator.
@@ -42,6 +30,18 @@ class Operator:
         :return: the discretised solution of the IVP
         """
         pass
+
+    def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
+        """
+        Returns a discretisation of the the interval [t_a, t_b^) using the
+        temporal step size of the operator d_t, where t_b^ is t_b rounded to
+        the nearest multiple of d_t.
+
+        :param t: the time interval to discretise
+        :return: the array containing the discretised temporal domain
+        """
+        adjusted_t_1 = self.d_t() * round(t[1] / self.d_t())
+        return np.arange(t[0], adjusted_t_1, self.d_t())
 
 
 class FDMOperator(Operator):

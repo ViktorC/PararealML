@@ -61,6 +61,49 @@ class BoundaryValueProblem:
         self._d_y_constraint_function = \
             self._create_d_y_boundary_constraint_function()
 
+    def differential_equation(self) -> DifferentialEquation:
+        """
+        Returns the differential equation of the BVP.
+        """
+        return self._diff_eq
+
+    def mesh(self) -> Optional[Mesh]:
+        """
+        Returns the mesh over which the BVP is to be solved
+        """
+        return self._mesh
+
+    def boundary_conditions(self) \
+            -> Optional[Tuple[BoundaryConditionPair, ...]]:
+        """
+        Returns the boundary conditions of the BVP. In case the differential
+        equation is an ODE, it returns None.
+        """
+        return deepcopy(self._boundary_conditions)
+
+    def y_shape(self) -> Tuple[int, ...]:
+        """
+        Returns the shape of the array representing the discretised solution
+        to the BVP.
+        """
+        return copy(self._y_shape)
+
+    def y_constraint_function(self) -> SolutionConstraintFunction:
+        """
+        Returns a function that enforces the boundary conditions of y evaluated
+        on the mesh. If the differential equation is an ODE, it returns a no-op
+        function.
+        """
+        return self._y_constraint_function
+
+    def d_y_constraint_function(self) -> DerivativeConstraintFunction:
+        """
+        Returns a function that enforces the boundary conditions of the spatial
+        derivative of y evaluated on the mesh. If the differential equation is
+        an ODE, it returns a no-op function.
+        """
+        return self._d_y_constraint_function
+
     def _set_boundary_and_mask_values(
             self,
             condition_function: Callable[[Tuple[float, ...]], np.ndarray],
@@ -207,46 +250,3 @@ class BoundaryValueProblem:
                 pass
 
         return d_y_constraint_function
-
-    def differential_equation(self) -> DifferentialEquation:
-        """
-        Returns the differential equation of the BVP.
-        """
-        return self._diff_eq
-
-    def mesh(self) -> Optional[Mesh]:
-        """
-        Returns the mesh over which the BVP is to be solved
-        """
-        return self._mesh
-
-    def boundary_conditions(self) \
-            -> Optional[Tuple[BoundaryConditionPair, ...]]:
-        """
-        Returns the boundary conditions of the BVP. In case the differential
-        equation is an ODE, it returns None.
-        """
-        return deepcopy(self._boundary_conditions)
-
-    def y_shape(self) -> Tuple[int, ...]:
-        """
-        Returns the shape of the array representing the discretised solution
-        to the BVP.
-        """
-        return copy(self._y_shape)
-
-    def y_constraint_function(self) -> SolutionConstraintFunction:
-        """
-        Returns a function that enforces the boundary conditions of y evaluated
-        on the mesh. If the differential equation is an ODE, it returns a no-op
-        function.
-        """
-        return self._y_constraint_function
-
-    def d_y_constraint_function(self) -> DerivativeConstraintFunction:
-        """
-        Returns a function that enforces the boundary conditions of the spatial
-        derivative of y evaluated on the mesh. If the differential equation is
-        an ODE, it returns a no-op function.
-        """
-        return self._d_y_constraint_function
