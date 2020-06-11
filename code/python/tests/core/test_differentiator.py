@@ -14,26 +14,26 @@ def test_differentiator_second_derivative_with_insufficient_dimensions():
         diff.second_derivative(y, d_x, d_x, 0, 0)
 
 
-def test_differentiator_second_derivative_with_out_of_bounds_x_ind():
+def test_differentiator_second_derivative_with_out_of_bounds_x_axis():
     diff = Differentiator()
     d_x = 1.
-    x_ind1 = 0
-    x_ind2 = 1
+    x_axis1 = 0
+    x_axis2 = 1
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        diff.second_derivative(y, d_x, d_x, x_ind1, x_ind2)
+        diff.second_derivative(y, d_x, d_x, x_axis1, x_axis2)
 
 
 def test_differentiator_second_derivative_with_out_of_bounds_y_ind():
     diff = Differentiator()
     d_x = 1.
-    x_ind = 0
+    x_axis = 0
     y_ind = 2
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        diff.second_derivative(y, d_x, d_x, x_ind, x_ind, y_ind)
+        diff.second_derivative(y, d_x, d_x, x_axis, x_axis, y_ind)
 
 
 def test_differentiator_gradient_with_insufficient_dimensions():
@@ -135,41 +135,41 @@ def test_tpfdm_derivative_with_insufficient_dimensions():
         tpfdm.derivative(y, d_x, 0)
 
 
-def test_tpfdm_derivative_with_out_of_bounds_x_ind():
+def test_tpfdm_derivative_with_out_of_bounds_x_axis():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 1
+    x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        tpfdm.derivative(y, d_x, x_ind)
+        tpfdm.derivative(y, d_x, x_axis)
 
 
 def test_tpfdm_derivative_with_out_of_bounds_y_ind():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 0
+    x_axis = 0
     y_ind = 2
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        tpfdm.derivative(y, d_x, x_ind, y_ind)
+        tpfdm.derivative(y, d_x, x_axis, y_ind)
 
 
 def test_tpfdm_derivative_with_insufficient_dimension_extent():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 0
+    x_axis = 0
     y = np.arange(0., 6.).reshape((1, 2, 3))
 
     with pytest.raises(AssertionError):
-        tpfdm.derivative(y, d_x, x_ind)
+        tpfdm.derivative(y, d_x, x_axis)
 
 
 def test_tpfdm_derivative():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -193,7 +193,7 @@ def test_tpfdm_derivative():
             [1.], [-1.]
         ]
     ])
-    actual_derivative = tpfdm.derivative(y, d_x, x_ind, y_ind)
+    actual_derivative = tpfdm.derivative(y, d_x, x_axis, y_ind)
 
     assert np.isclose(actual_derivative, expected_derivative).all()
 
@@ -201,7 +201,7 @@ def test_tpfdm_derivative():
 def test_tpfdm_constrained_derivative():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -215,10 +215,7 @@ def test_tpfdm_constrained_derivative():
         ]
     ])
 
-    def derivative_constraints_func(derivative, _x_ind, _y_ind):
-        assert x_ind == 0
-        assert y_ind == 1
-
+    def derivative_constraints_func(derivative):
         derivative[0, 0, 0] = 100
 
     expected_derivative = np.array([
@@ -233,7 +230,7 @@ def test_tpfdm_constrained_derivative():
         ]
     ])
     actual_derivative = tpfdm.derivative(
-        y, d_x, x_ind, y_ind, derivative_constraints_func)
+        y, d_x, x_axis, y_ind, derivative_constraints_func)
 
     assert np.isclose(actual_derivative, expected_derivative).all()
 
@@ -241,7 +238,7 @@ def test_tpfdm_constrained_derivative():
 def test_tpfdm_second_derivative():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -266,7 +263,7 @@ def test_tpfdm_second_derivative():
         ]
     ])
     actual_second_derivative = tpfdm.second_derivative(
-        y, d_x, d_x, x_ind, x_ind, y_ind)
+        y, d_x, d_x, x_axis, x_axis, y_ind)
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()
@@ -276,8 +273,8 @@ def test_tpfdm_mixed_second_derivative():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x1 = 1.
     d_x2 = .5
-    x_ind1 = 0
-    x_ind2 = 1
+    x_axis1 = 0
+    x_axis2 = 1
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -301,7 +298,7 @@ def test_tpfdm_mixed_second_derivative():
         ]
     ])
     actual_second_derivative = tpfdm.second_derivative(
-        y, d_x1, d_x2, x_ind1, x_ind2)
+        y, d_x1, d_x2, x_axis1, x_axis2)
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()
@@ -524,41 +521,41 @@ def test_fpfdm_derivative_with_insufficient_dimensions():
         fpfdm.derivative(y, d_x, 0)
 
 
-def test_fpfdm_derivative_with_out_of_bounds_x_ind():
+def test_fpfdm_derivative_with_out_of_bounds_x_axis():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 1
+    x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        fpfdm.derivative(y, d_x, x_ind)
+        fpfdm.derivative(y, d_x, x_axis)
 
 
 def test_fpfdm_derivative_with_out_of_bounds_y_ind():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 0
+    x_axis = 0
     y_ind = 2
     y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(AssertionError):
-        fpfdm.derivative(y, d_x, x_ind, y_ind)
+        fpfdm.derivative(y, d_x, x_axis, y_ind)
 
 
 def test_fpfdm_derivative_with_insufficient_dimension_extent():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 1.
-    x_ind = 0
+    x_axis = 0
     y = np.arange(0., 12.).reshape((2, 3, 2))
 
     with pytest.raises(AssertionError):
-        fpfdm.derivative(y, d_x, x_ind)
+        fpfdm.derivative(y, d_x, x_axis)
 
 
 def test_fpfdm_derivative():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -582,7 +579,7 @@ def test_fpfdm_derivative():
             [1.5], [-.5], [6.75]
         ]
     ])
-    actual_derivative = fpfdm.derivative(y, d_x, x_ind, y_ind)
+    actual_derivative = fpfdm.derivative(y, d_x, x_axis, y_ind)
 
     assert np.isclose(actual_derivative, expected_derivative).all()
 
@@ -590,7 +587,7 @@ def test_fpfdm_derivative():
 def test_fpfdm_constrained_derivative():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -604,10 +601,7 @@ def test_fpfdm_constrained_derivative():
         ]
     ])
 
-    def derivative_constraints_func(derivative, _x_ind, _y_ind):
-        assert x_ind == 0
-        assert y_ind == 1
-
+    def derivative_constraints_func(derivative):
         derivative[1, 1] = 9999.
 
     expected_derivative = np.array([
@@ -622,7 +616,7 @@ def test_fpfdm_constrained_derivative():
         ]
     ])
     actual_derivative = fpfdm.derivative(
-        y, d_x, x_ind, y_ind, derivative_constraints_func)
+        y, d_x, x_axis, y_ind, derivative_constraints_func)
 
     assert np.isclose(actual_derivative, expected_derivative).all()
 
@@ -630,7 +624,7 @@ def test_fpfdm_constrained_derivative():
 def test_fpfdm_second_derivative():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x = 2.
-    x_ind = 0
+    x_axis = 0
     y_ind = 1
     y = np.array([
         [
@@ -655,7 +649,7 @@ def test_fpfdm_second_derivative():
         ]
     ])
     actual_second_derivative = fpfdm.second_derivative(
-        y, d_x, d_x, x_ind, x_ind, y_ind)
+        y, d_x, d_x, x_axis, x_axis, y_ind)
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()
@@ -665,8 +659,8 @@ def test_fpfdm_mixed_second_derivative():
     fpfdm = ThreePointFiniteDifferenceMethod()
     d_x1 = 1.
     d_x2 = .5
-    x_ind1 = 0
-    x_ind2 = 1
+    x_axis1 = 0
+    x_axis2 = 1
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -690,7 +684,7 @@ def test_fpfdm_mixed_second_derivative():
         ]
     ])
     actual_second_derivative = fpfdm.second_derivative(
-        y, d_x1, d_x2, x_ind1, x_ind2)
+        y, d_x1, d_x2, x_axis1, x_axis2)
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()

@@ -53,14 +53,16 @@ def test_2d_bvp():
 
     y = np.zeros(bvp.y_shape())
     diff = ThreePointFiniteDifferenceMethod()
-    d_y_constraint_func = bvp.d_y_constraint_function()
+    d_y_constraint_functions = bvp.d_y_constraint_functions()
 
-    d_y_0_d_x_0 = diff.derivative(y, mesh.d_x()[0], 0, 0, d_y_constraint_func)
+    d_y_0_d_x_0 = diff.derivative(
+        y, mesh.d_x()[0], 0, 0, d_y_constraint_functions[0, 0])
 
     assert np.all(d_y_0_d_x_0[d_y_0_d_x_0.shape[0] - 1, :, :] == 100.)
     assert np.all(d_y_0_d_x_0[:d_y_0_d_x_0.shape[0] - 1, :, :] == 0.)
 
-    d_y_0_d_x_1 = diff.derivative(y, mesh.d_x()[1], 1, 0, d_y_constraint_func)
+    d_y_0_d_x_1 = diff.derivative(
+        y, mesh.d_x()[1], 1, 0, d_y_constraint_functions[1, 0])
 
     assert np.isclose(
         d_y_0_d_x_1[:, 0, 0],
@@ -70,11 +72,13 @@ def test_2d_bvp():
             y.shape[0])).all()
     assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
 
-    d_y_1_d_x_0 = diff.derivative(y, mesh.d_x()[0], 0, 1, d_y_constraint_func)
+    d_y_1_d_x_0 = diff.derivative(
+        y, mesh.d_x()[0], 0, 1, d_y_constraint_functions[0, 1])
 
     assert np.all(d_y_1_d_x_0[d_y_1_d_x_0.shape[0] - 1, :, :] == -100.)
     assert np.all(d_y_1_d_x_0[:d_y_1_d_x_0.shape[0] - 1, :, :] == 0.)
 
-    d_y_1_d_x_1 = diff.derivative(y, mesh.d_x()[1], 1, 1, d_y_constraint_func)
+    d_y_1_d_x_1 = diff.derivative(
+        y, mesh.d_x()[1], 1, 1, d_y_constraint_functions[1, 1])
 
     assert np.all(d_y_1_d_x_1 == 0.)

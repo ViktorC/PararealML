@@ -2,8 +2,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from src.core.differentiator import Differentiator, \
-    DerivativeConstraintFunction
+from src.core.differentiator import Differentiator
 
 
 class DifferentialEquation:
@@ -32,8 +31,8 @@ class DifferentialEquation:
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
         y'(t), given t, and y(t). In case of a partial differential equation,
@@ -48,9 +47,9 @@ class DifferentialEquation:
         :param differentiator: a differentiator instance that allows for
         calculating various differential terms of y with resptect to x given
         an estimate of y over the spatial mesh, y(t)
-        :param derivative_constraint_function: a callback function that allows
-        for applying boundary constraints to the calculated first spatial
-        derivatives
+        :param derivative_constraint_functions: a 2D array (x dimension,
+        y dimension) callback functions that allow for applying boundary
+        constraints to the calculated first spatial derivatives
         :return: an array representing y'(t)
         """
         pass
@@ -82,8 +81,8 @@ class RabbitPopulationEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
         return d_y
@@ -143,8 +142,8 @@ class LotkaVolterraEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         r = y[0]
         p = y[1]
         d_y = np.empty(2)
@@ -187,8 +186,8 @@ class LorenzEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         c = y[0]
         h = y[1]
         v = y[2]
@@ -228,11 +227,11 @@ class DiffusionEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         assert d_x and differentiator
         return self._d * differentiator.laplacian(
-            y, d_x, derivative_constraint_function)
+            y, d_x, derivative_constraint_functions)
 
 
 class WaveEquation(DifferentialEquation):
@@ -264,11 +263,12 @@ class WaveEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
-        assert d_x and differentiator
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
+        assert d_x and differentiator and \
+               derivative_constraint_functions is not None
         d_y = np.empty(y.shape)
         d_y[..., 0] = y[..., 1]
         d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
-            y[..., [0]], d_x, derivative_constraint_function)
+            y[..., [0]], d_x, derivative_constraint_functions[..., [0]])
         return d_y

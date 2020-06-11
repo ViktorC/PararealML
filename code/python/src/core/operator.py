@@ -71,7 +71,7 @@ class FDMOperator(Operator):
         diff_eq = bvp.differential_equation()
         d_x = bvp.mesh().d_x() if diff_eq.x_dimension() else None
         y_constraint_function = bvp.y_constraint_function()
-        d_y_constraint_function = bvp.d_y_constraint_function()
+        d_y_constraint_functions = bvp.d_y_constraint_functions()
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return diff_eq.d_y_over_d_t(
@@ -79,7 +79,7 @@ class FDMOperator(Operator):
                 _y,
                 d_x,
                 self._differentiator,
-                d_y_constraint_function)
+                d_y_constraint_functions)
 
         time_steps = self._discretise_time_domain(ivp.t_interval())
 
