@@ -81,7 +81,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_constraint_functions: np.ndarray = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         """
         Returns the gradient of y with respect to x at every point of the
         mesh. If y is vector-valued, the gradient at every point is the
@@ -126,7 +127,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_constraint_functions: np.ndarray = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         """
         Returns the divergence of y with respect to x at every point of the
         mesh.
@@ -159,7 +161,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_constraint_functions: np.ndarray = None) -> np.ndarray:
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
         """
         Returns the curl of y with respect to x at every point of the
         mesh.
@@ -207,8 +210,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_constraint_functions: np.ndarray = None) \
-            -> np.ndarray:
+            first_derivative_constraint_functions:
+            Optional[np.ndarray] = None) -> np.ndarray:
         """
         Returns the Laplacian of y with respect to x at every point of the
         mesh.
@@ -228,15 +231,15 @@ class Differentiator:
             self._verify_and_get_derivative_constraint_functions(
                 first_derivative_constraint_functions, y.shape)
 
-        lapl = np.zeros(list(y.shape) + [1])
+        laplacian = np.zeros(list(y.shape) + [1])
 
-        slicer: Slicer = [slice(None)] * len(lapl.shape)
+        slicer: Slicer = [slice(None)] * len(laplacian.shape)
 
         for y_ind in range(y.shape[-1]):
             slicer[-2] = y_ind
 
             for axis in range(len(y.shape) - 1):
-                lapl[tuple(slicer)] += self.second_derivative(
+                laplacian[tuple(slicer)] += self.second_derivative(
                     y,
                     d_x[axis],
                     d_x[axis],
@@ -245,8 +248,8 @@ class Differentiator:
                     y_ind,
                     first_derivative_constraint_functions[axis, y_ind])
 
-        lapl = lapl.reshape(y.shape)
-        return lapl
+        laplacian = laplacian.reshape(y.shape)
+        return laplacian
 
     @staticmethod
     def _verify_and_get_derivative_constraint_functions(
@@ -322,7 +325,7 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         derivative_slicer[x_axis] = y.shape[x_axis] - 1
         derivative[tuple(derivative_slicer)] = y_diff
 
-        if derivative_constraint_function:
+        if derivative_constraint_function is not None:
             derivative_constraint_function(derivative)
 
         return derivative
@@ -392,7 +395,7 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         derivative_slicer[x_axis] = y.shape[x_axis] - 1
         derivative[tuple(derivative_slicer)] = y_diff
 
-        if derivative_constraint_function:
+        if derivative_constraint_function is not None:
             derivative_constraint_function(derivative)
 
         return derivative
