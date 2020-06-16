@@ -79,7 +79,8 @@ class FDMOperator(Operator):
                 _y,
                 d_x,
                 self._differentiator,
-                d_y_constraint_functions)
+                d_y_constraint_functions,
+                y_constraint_function)
 
         time_steps = self._discretise_time_domain(ivp.t_interval())
 

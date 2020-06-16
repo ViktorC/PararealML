@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 
 import numpy as np
 
@@ -31,7 +31,9 @@ class DifferentialEquation:
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
@@ -50,6 +52,8 @@ class DifferentialEquation:
         :param derivative_constraint_functions: a 2D array (x dimension,
         y dimension) callback functions that allow for applying boundary
         constraints to the calculated first spatial derivatives
+        :param y_constraint_function: a callback function that allows for
+        applying constraints to the values of y
         :return: an array representing y'(t)
         """
         pass
@@ -81,7 +85,9 @@ class RabbitPopulationEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
@@ -142,7 +148,9 @@ class LotkaVolterraEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         r = y[0]
         p = y[1]
@@ -186,7 +194,9 @@ class LorenzEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         c = y[0]
         h = y[1]
@@ -227,7 +237,9 @@ class DiffusionEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -265,7 +277,9 @@ class WaveEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -278,3 +292,133 @@ class WaveEquation(DifferentialEquation):
         d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
             y[..., [0]], d_x, derivative_constraint_functions[..., [0]])
         return d_y
+
+
+class NavierStokesEquation(DifferentialEquation):
+    """
+    A partial differential equation modelling the stream function and vorticity
+    of incompressible fluids.
+    """
+
+    def __init__(
+            self,
+            x_dimension: int,
+            re: float = 1.,
+            tol: float = 1e-5):
+        """
+        :param x_dimension: the dimension of the non-temporal domain of the
+        differential equation's solution
+        :param re: the Reynolds number
+        :param tol: ...
+        """
+        assert x_dimension == 2 or x_dimension == 3
+
+        self._x_dimension = x_dimension
+        self._re = re
+        self._tol = tol
+
+    def x_dimension(self) -> int:
+        return self._x_dimension
+
+    def y_dimension(self) -> int:
+        return 1
+
+    def d_y_over_d_t(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Tuple[float, ...]] = None,
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_function:
+            Optional[Callable[[np.ndarray], None]] = None) \
+            -> np.ndarray:
+        assert d_x is not None
+        assert differentiator is not None
+        assert derivative_constraint_functions is not None
+        assert len(y.shape) - 1 == 2
+        assert y.shape[-1] == 3
+
+        vorticity = y[..., [0]]
+        stream_function = y[..., [1]]
+
+        velocity = self.velocity(
+            stream_function,
+            d_x,
+            differentiator,
+            derivative_constraint_functions[:, [1]])
+
+        updated_stream_function = self._calculate_updated_stream_function(
+            stream_function,
+            vorticity,
+            d_x,
+            differentiator,
+            derivative_constraint_functions,
+            y_constraint_function)
+
+        d_y = np.empty(y.shape)
+        d_y[..., [0]] = -velocity @ differentiator.gradient(vorticity, d_x) + \
+            (1. / self._re) * differentiator.laplacian(vorticity, d_x)
+        d_y[..., [1]] = updated_stream_function - stream_function
+        return d_y
+
+    def velocity(
+            self,
+            stream_function: np.ndarray,
+            d_x: Tuple[float, ...],
+            differentiator: Differentiator,
+            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
+        """
+        ...
+
+        :param stream_function:
+        :param d_x:
+        :param differentiator:
+        :param derivative_constraint_functions:
+        :return:
+        """
+        if self._x_dimension == 2:
+            np.concatenate(
+                -differentiator.derivative(
+                    stream_function, d_x[1], 1, 0,
+                    derivative_constraint_functions[1]),
+                differentiator.derivative(
+                    stream_function, d_x[0], 0, 0,
+                    derivative_constraint_functions[0]),
+                axis=-1)
+        else:
+            return -differentiator.curl(
+                stream_function, d_x, derivative_constraint_functions)
+
+    def _calculate_updated_stream_function(
+            self,
+            stream_function_hat: np.ndarray,
+            vorticity: np.ndarray,
+            d_x: Tuple[float, ...],
+            differentiator: Differentiator,
+            derivative_constraint_functions: Optional[np.ndarray],
+            y_constraint_function: Optional[Callable[[np.ndarray], None]]):
+        """
+        ...
+
+        :param stream_function_hat:
+        :param vorticity:
+        :param d_x:
+        :param differentiator:
+        :param derivative_constraint_functions:
+        :param y_constraint_function:
+        :return:
+        """
+        diff = float('inf')
+        while diff > self._tol:
+            stream_function = differentiator.anti_laplacian(
+                stream_function_hat,
+                -vorticity,
+                d_x,
+                derivative_constraint_functions)
+            y_constraint_function(stream_function)
+            diff = np.linalg.norm(stream_function - stream_function_hat)
+            stream_function_hat = stream_function
+
+        return stream_function_hat
