@@ -2,7 +2,7 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition
+from src.core.boundary_condition import DirichletCondition, CauchyCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import WaveEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
@@ -22,8 +22,12 @@ mesh = NonUniformGrid(((-2.5, 2.5), (10., 20)), (.05, .1))
 bvp = BoundaryValueProblem(
     diff_eq,
     mesh,
-    ((DirichletCondition(lambda x: np.array([.0, .0])),
-      DirichletCondition(lambda x: np.array([.0, .0]))),
+    ((CauchyCondition(
+        lambda x: np.array([.0, .0]),
+        lambda x: np.array([-.1, -.1])),
+      CauchyCondition(
+          lambda x: np.array([.0, .0]),
+          lambda x: np.array([.1, .1]))),
      (DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0])))))
 ivp = InitialValueProblem(
