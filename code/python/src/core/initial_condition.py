@@ -65,13 +65,16 @@ class WellDefinedInitialCondition(InitialCondition):
         diff_eq = self._bvp.differential_equation()
         if diff_eq.x_dimension():
             mesh = self._bvp.mesh()
+
             y_0 = np.empty(self._bvp.y_shape())
             for index in np.ndindex(mesh.shape()):
                 y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
+
+            constraint_functions = self._bvp.y_constraint_functions()
+            for i in range(diff_eq.y_dimension()):
+                constraint_functions[i](y_0[..., i])
         else:
             y_0 = self._y_0_func(None)
-
-        self._bvp.y_constraint_function()(y_0)
 
         return y_0
 

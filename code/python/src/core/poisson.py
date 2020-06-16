@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, Callable
+from typing import Tuple, Optional
 
 import numpy as np
 
@@ -17,7 +17,7 @@ class Poisson:
             tol: float,
             y_hat: Optional[np.ndarray],
             derivative_constraint_functions: Optional[np.ndarray],
-            y_constraint_function: Optional[Callable[[np.ndarray], None]]) \
+            y_constraint_functions: Optional[np.ndarray]) \
             -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
@@ -33,11 +33,14 @@ class Poisson:
         :param derivative_constraint_functions: an optional 2D array
         (x dimension, y dimension) of callback functions that specify
         constraints on the first derivatives of the solution
-        :param y_constraint_function: an optional callback function that
-        specifies constraints on the values of the solution
+        :param y_constraint_functions: an optional 1D array of callback
+        functions that specify constraints on the values of the solution
         :return: the array representing the solution to Poisson's equation at
         every point of the mesh
         """
+        assert y_constraint_functions is None \
+            or y_constraint_functions.shape == (laplacian.shape[-1],)
+
         if y_hat is None:
             y_hat = np.random.random(laplacian.shape)
 
@@ -49,7 +52,10 @@ class Poisson:
                 laplacian,
                 d_x,
                 derivative_constraint_functions)
-            y_constraint_function(y)
+            if y_constraint_functions is not None:
+                for i in range(y.shape[-1]):
+                    y_constraint_functions[i](y[..., i])
+
             diff = np.linalg.norm(y - y_hat)
             y_hat = y
 

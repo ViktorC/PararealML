@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -33,8 +33,7 @@ class DifferentialEquation:
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
@@ -53,8 +52,8 @@ class DifferentialEquation:
         :param derivative_constraint_functions: a 2D array (x dimension,
         y dimension) of callback functions that allow for applying boundary
         constraints to the calculated first spatial derivatives
-        :param y_constraint_function: a callback function that allows for
-        applying constraints to the values of y
+        :param y_constraint_functions: a 1D array (y dimension) of callback
+        functions that allows for applying constraints to the values of y
         :return: an array representing y'(t)
         """
         pass
@@ -87,8 +86,7 @@ class RabbitPopulationEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
@@ -150,8 +148,7 @@ class LotkaVolterraEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         r = y[0]
         p = y[1]
@@ -196,8 +193,7 @@ class LorenzEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         c = y[0]
         h = y[1]
@@ -239,8 +235,7 @@ class DiffusionEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -279,8 +274,7 @@ class WaveEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -333,8 +327,7 @@ class NavierStokesEquation(DifferentialEquation):
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
             derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_function:
-            Optional[Callable[[np.ndarray], None]] = None) \
+            y_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -357,7 +350,7 @@ class NavierStokesEquation(DifferentialEquation):
             self._tol,
             stream_function,
             derivative_constraint_functions,
-            y_constraint_function)
+            y_constraint_functions[[1]])
 
         d_y = np.empty(y.shape)
         d_y[..., [0]] = -velocity @ differentiator.gradient(vorticity, d_x) + \

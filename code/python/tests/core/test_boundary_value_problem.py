@@ -12,15 +12,9 @@ def test_bvp_with_ode():
     bvp = BoundaryValueProblem(diff_eq)
 
     assert bvp.mesh() is None
+    assert bvp.y_constraint_functions() is None
     assert bvp.boundary_conditions() is None
     assert bvp.y_shape() == (diff_eq.y_dimension(),)
-
-    y = np.ones(5)
-    y_copy = np.copy(y)
-
-    bvp.y_constraint_function()(y)
-
-    assert np.all(y_copy == y)
 
 
 def test_2d_bvp():
@@ -37,7 +31,10 @@ def test_2d_bvp():
           DirichletCondition(lambda x: np.array([x[0], -999])))))
 
     y = np.full(bvp.y_shape(), 13.)
-    bvp.y_constraint_function()(y)
+
+    y_constraint_functions = bvp.y_constraint_functions()
+    y_constraint_functions[0](y[..., 0])
+    y_constraint_functions[1](y[..., 1])
 
     assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
     assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)
