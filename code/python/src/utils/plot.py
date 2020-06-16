@@ -53,7 +53,8 @@ def plot_evolution_of_y(
         y: np.ndarray,
         time_steps_between_updates: int,
         interval: int,
-        file_name: str):
+        file_name: str,
+        three_d: bool = True):
     x_intervals = ivp.boundary_value_problem().mesh().x_intervals()
 
     if len(x_intervals) == 1:
@@ -62,44 +63,56 @@ def plot_evolution_of_y(
         ax.set_ylabel('y')
 
         x = np.linspace(*x_intervals[0], y.shape[1])
-        plot, = ax.plot(x, y[0, ..., 0])
+        plot, = ax.plot(x, y[0, ...])
 
         def update_plot(time_step: int):
-            plot.set_ydata(y[time_step, ..., 0])
+            plot.set_ydata(y[time_step, ...])
             return plot, ax
     else:
-        fig = plt.figure()
-        ax = Axes3D(fig)
         x0_label = 'x 0'
         x1_label = 'x 1'
-        y_label = 'y'
-        ax.set_xlabel(x0_label)
-        ax.set_ylabel(x1_label)
-        ax.set_zlabel(y_label)
 
         x_0 = np.linspace(*x_intervals[0], y.shape[1])
         x_1 = np.linspace(*x_intervals[1], y.shape[2])
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
-        plot_args = {
-            'rstride': 1,
-            'cstride': 1,
-            'linewidth': 0,
-            'antialiased': False,
-            'cmap': cm.coolwarm}
-        plot = ax.plot_surface(x_0, x_1, y[0, ..., 0], **plot_args)
-        z_lim = ax.get_zlim()
-
-        def update_plot(time_step: int):
-            ax.clear()
+        if three_d:
+            fig = plt.figure()
+            ax = Axes3D(fig)
+            y_label = 'y'
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)
             ax.set_zlabel(y_label)
 
-            _plot = ax.plot_surface(
-                x_0, x_1, y[time_step, ..., 0], **plot_args)
-            ax.set_zlim(z_lim)
-            return _plot,
+            plot_args = {
+                'rstride': 1,
+                'cstride': 1,
+                'linewidth': 0,
+                'antialiased': False,
+                'cmap': cm.coolwarm}
+            plot = ax.plot_surface(x_0, x_1, y[0, ...], **plot_args)
+            z_lim = ax.get_zlim()
+
+            def update_plot(time_step: int):
+                ax.clear()
+                ax.set_xlabel(x0_label)
+                ax.set_ylabel(x1_label)
+                ax.set_zlabel(y_label)
+
+                _plot = ax.plot_surface(
+                    x_0, x_1, y[time_step, ...], **plot_args)
+                ax.set_zlim(z_lim)
+                return _plot,
+        else:
+            fig, ax = plt.subplots(1, 1)
+            cp = ax.contourf(x_0, x_1, y[0, ...].T)
+            plt.axis('scaled')
+            fig.colorbar(cp)
+            ax.set_xlabel(x0_label)
+            ax.set_ylabel(x1_label)
+
+            def update_plot(time_step: int):
+                return plt.contourf(x_0, x_1, y[time_step, ...].T)
 
     animation = FuncAnimation(
         fig,
