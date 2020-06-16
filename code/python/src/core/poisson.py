@@ -143,9 +143,10 @@ class Poisson:
             assert first_derivative_constraint_functions.shape == \
                    (len(y_shape) - 1, y_shape[-1])
 
-            derivative_constraints = np.full(y_shape, np.nan)
+            derivative_constraints = np.empty(list(y_shape[:-1]) + [1])
 
             slicer: Slicer = [slice(None)] * len(y_shape)
+            slicer[-1] = 0
 
             for x_axis in range(len(d_x)):
                 for y_ind in range(y_shape[-1]):
@@ -153,9 +154,9 @@ class Poisson:
                         first_derivative_constraint_functions[x_axis, y_ind]
 
                     if constraint_function:
+                        derivative_constraints.fill(np.nan)
                         constraint_function(derivative_constraints)
 
-                        slicer[-1] = y_ind
                         padded_slicer[-1] = y_ind
                         padded_slicer_axis = padded_slicer[x_axis]
 
@@ -178,16 +179,16 @@ class Poisson:
                         upper_boundary_diff = \
                             derivative_constraints[tuple(slicer)]
 
-                        padded_slicer[x_axis] = y_shape[x_axis] + 1
-                        y_upper_boundary_next = \
+                        padded_slicer[x_axis] = y_shape[x_axis] - 1
+                        y_upper_boundary_prev = \
                             padded_y_hat[tuple(padded_slicer)]
 
-                        y_upper_boundary_prev = y_upper_boundary_next - \
+                        y_upper_boundary_next = y_upper_boundary_prev + \
                             2 * d_x[x_axis] * upper_boundary_diff
 
-                        padded_slicer[x_axis] = y_shape[x_axis] - 1
+                        padded_slicer[x_axis] = y_shape[x_axis] + 1
                         padded_y_hat[tuple(padded_slicer)] = \
-                            y_upper_boundary_prev
+                            y_upper_boundary_next
 
                         padded_slicer[-1] = slice(None)
                         padded_slicer[x_axis] = padded_slicer_axis
