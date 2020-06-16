@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Callable
 import numpy as np
 
 from src.core.differentiator import Differentiator
+from src.core.poisson import Poisson
 
 
 class DifferentialEquation:
@@ -47,10 +48,10 @@ class DifferentialEquation:
         :param d_x: a tuple of step sizes corresponding to each spatial
         dimension
         :param differentiator: a differentiator instance that allows for
-        calculating various differential terms of y with resptect to x given
+        calculating various differential terms of y with respect to x given
         an estimate of y over the spatial mesh, y(t)
         :param derivative_constraint_functions: a 2D array (x dimension,
-        y dimension) callback functions that allow for applying boundary
+        y dimension) of callback functions that allow for applying boundary
         constraints to the calculated first spatial derivatives
         :param y_constraint_function: a callback function that allows for
         applying constraints to the values of y
@@ -309,7 +310,9 @@ class NavierStokesEquation(DifferentialEquation):
         :param x_dimension: the dimension of the non-temporal domain of the
         differential equation's solution
         :param re: the Reynolds number
-        :param tol: ...
+        :param tol: the stopping criterion for the Poisson solver; once the
+        second norm of the difference of the estimate and the updated estimate
+        drops below this threshold, the equation is considered to be solved
         """
         assert x_dimension == 2 or x_dimension == 3
 
@@ -348,11 +351,11 @@ class NavierStokesEquation(DifferentialEquation):
             differentiator,
             derivative_constraint_functions[:, [1]])
 
-        updated_stream_function = self._calculate_updated_stream_function(
-            stream_function,
-            vorticity,
+        updated_stream_function = Poisson.solve(
+            -vorticity,
             d_x,
-            differentiator,
+            self._tol,
+            stream_function,
             derivative_constraint_functions,
             y_constraint_function)
 
@@ -370,13 +373,18 @@ class NavierStokesEquation(DifferentialEquation):
             derivative_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
-        ...
+        Calculates the vector field representing the velocity of the fluid at
+        every point of the mesh from the stream function.
 
-        :param stream_function:
-        :param d_x:
-        :param differentiator:
-        :param derivative_constraint_functions:
-        :return:
+        :param stream_function: the stream function scalar field
+        :param d_x: a tuple of step sizes corresponding to each spatial
+        dimension
+        :param differentiator: a differentiator instance that allows for
+        calculating various differential terms of y with respect to x
+        :param derivative_constraint_functions: a 2D array (x dimension,
+        y dimension) of callback functions that allow for applying boundary
+        constraints to the calculated first spatial derivatives
+        :return: the velocity vector field
         """
         if self._x_dimension == 2:
             np.concatenate(
@@ -390,35 +398,3 @@ class NavierStokesEquation(DifferentialEquation):
         else:
             return -differentiator.curl(
                 stream_function, d_x, derivative_constraint_functions)
-
-    def _calculate_updated_stream_function(
-            self,
-            stream_function_hat: np.ndarray,
-            vorticity: np.ndarray,
-            d_x: Tuple[float, ...],
-            differentiator: Differentiator,
-            derivative_constraint_functions: Optional[np.ndarray],
-            y_constraint_function: Optional[Callable[[np.ndarray], None]]):
-        """
-        ...
-
-        :param stream_function_hat:
-        :param vorticity:
-        :param d_x:
-        :param differentiator:
-        :param derivative_constraint_functions:
-        :param y_constraint_function:
-        :return:
-        """
-        diff = float('inf')
-        while diff > self._tol:
-            stream_function = differentiator.anti_laplacian(
-                stream_function_hat,
-                -vorticity,
-                d_x,
-                derivative_constraint_functions)
-            y_constraint_function(stream_function)
-            diff = np.linalg.norm(stream_function - stream_function_hat)
-            stream_function_hat = stream_function
-
-        return stream_function_hat
