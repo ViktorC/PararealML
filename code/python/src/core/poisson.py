@@ -82,7 +82,7 @@ class Poisson:
         :return: an improved estimate of y_hat
         """
         assert len(y_hat.shape) > 1
-        assert np.all(np.array(y_hat.shape) > 1)
+        assert np.all(np.array(y_hat.shape[:-1]) > 1)
         assert len(d_x) == len(y_hat.shape) - 1
         assert laplacian.shape == y_hat.shape
 
