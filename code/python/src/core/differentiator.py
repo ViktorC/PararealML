@@ -199,6 +199,34 @@ class Differentiator:
 
         return curl
 
+    def hessian(
+            self,
+            y: np.ndarray,
+            d_x: Tuple[float, ...],
+            first_derivative_constraint_functions:
+            Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Returns the Hessian of y with respect to x at every point of the
+        mesh.
+
+        :param y: the values of y at every point of the mesh
+        :param d_x: the step sizes used to create the mesh
+        :param first_derivative_constraint_functions: a 2D array (x dimension,
+        y dimension) of callback functions that allow for applying constraints
+        to the calculated first derivatives before using them to compute the
+        second derivatives and the Hessian
+        :return: the Hessian of y
+        """
+        jacobian = self.jacobian(y, d_x, first_derivative_constraint_functions)
+
+        hessian = np.empty(list(jacobian.shape) + [len(y.shape) - 1])
+
+        for y_ind in range(y.shape[-1]):
+            hessian[..., y_ind, :, :] = self.jacobian(
+                jacobian[..., y_ind, :], d_x)
+
+        return hessian
+
     def laplacian(
             self,
             y: np.ndarray,

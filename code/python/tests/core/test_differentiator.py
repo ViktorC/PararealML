@@ -108,24 +108,6 @@ def test_differentiator_curl_with_wrong_d_x_size():
         diff.curl(y, d_x)
 
 
-def test_differentiator_laplacian_with_insufficient_dimensions():
-    diff = Differentiator()
-    d_x = 1.,
-    y = np.arange(1., 5.)
-
-    with pytest.raises(AssertionError):
-        diff.laplacian(y, d_x)
-
-
-def test_differentiator_laplacian_with_wrong_d_x_size():
-    diff = Differentiator()
-    d_x = (1.,) * 3
-    y = np.array([[[0.] * 2] * 2] * 2)
-
-    with pytest.raises(AssertionError):
-        diff.laplacian(y, d_x)
-
-
 def test_tpfdm_derivative_with_insufficient_dimensions():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 1.
@@ -318,20 +300,35 @@ def test_tpfdm_jacobian():
             [2., 6.], [8., 2.]
         ]
     ])
-    expected_grad = np.array([
+    expected_jacobian = np.array([
         [
-            [[2., 2.], [0., 4.]], [[0., 2.], [-2., 4.]]
+            [
+                [2., 2.], [0., 4.]
+            ],
+            [
+                [0., 2.], [-2., 4.]
+            ]
         ],
         [
-            [[-2., -2.], [1., 0.]], [[2., -2.], [-1, 0.]]
+            [
+                [-2., -2.], [1., 0.]
+            ],
+            [
+                [2., -2.], [-1, 0.]
+            ]
         ],
         [
-            [[-2., 6.], [1., -4.]], [[2., 6.], [-1., -4.]]
+            [
+                [-2., 6.], [1., -4.]
+            ],
+            [
+                [2., 6.], [-1., -4.]
+            ]
         ]
     ])
-    actual_grad = tpfdm.jacobian(y, d_x)
+    actual_jacobian = tpfdm.jacobian(y, d_x)
 
-    assert np.isclose(actual_grad, expected_grad).all()
+    assert np.isclose(actual_jacobian, expected_jacobian).all()
 
 
 def test_tpfdm_2d_divergence():
@@ -480,6 +477,81 @@ def test_tpfdm_3d_curl():
     actual_curl = tpfdm.curl(y, d_x)
 
     assert np.isclose(actual_curl, expected_curl).all()
+
+
+def test_tpfdm_hessian():
+    tpfdm = TwoPointFiniteDifferenceMethod()
+    d_x = 2., 1.
+    y = np.array([
+        [
+            [2., 4.], [4., 8.]
+        ],
+        [
+            [6., 4.], [4., 4.]
+        ],
+        [
+            [2., 6.], [8., 2.]
+        ]
+    ])
+    expected_hessian = np.array([
+        [
+            [
+                [
+                    [-2., -2.], [-2., 0.]
+                ],
+                [
+                    [.5, -2.], [-2., 0.]
+                ]
+            ],
+            [
+                [
+                    [1., -2.], [-2., 0.]
+                ],
+                [
+                    [.5, -2.], [-2., 0.]
+                ]
+            ]
+        ],
+        [
+            [
+                [
+                    [0., 4.], [4., 0.]
+                ],
+                [
+                    [0., -2.], [-2., 0.]
+                ]
+            ],
+            [
+                [
+                    [0., 4.], [4., 0.]
+                ],
+                [
+                    [0., -2.], [-2., 0.]
+                ]
+            ]
+        ],
+        [
+            [
+                [
+                    [0., 4.], [4., 0.]
+                ],
+                [
+                    [0., -2.], [-2., 0.]
+                ]
+            ],
+            [
+                [
+                    [0., 4.], [4., 0.]
+                ],
+                [
+                    [0., -2.], [-2., 0.]
+                ]
+            ]
+        ]
+    ])
+    actual_hessian = tpfdm.hessian(y, d_x)
+
+    assert np.isclose(actual_hessian, expected_hessian).all()
 
 
 def test_tpfdm_laplacian():
