@@ -25,9 +25,9 @@ class Poisson:
 
         :param laplacian: the left-hand side of the equation
         :param d_x: the step sizes of the mesh along the spatial axes
-        :param tol: the stopping criterion for the algorithm; once the second
-        norm of the difference of the estimate and the updated estimate drops
-        below this threshold, the equation is considered to be solved
+        :param tol: the stopping criterion for the Jacobi algorithm; once the
+        second norm of the difference of the estimate and the updated estimate
+        drops below this threshold, the equation is considered to be solved
         :param y_hat: an optional estimate of the solution; if it is None, a
         random array is used
         :param derivative_constraint_functions: an optional 2D array
