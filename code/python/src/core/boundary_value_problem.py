@@ -94,7 +94,9 @@ class BoundaryValueProblem:
         conditions of y evaluated on the mesh. If the differential equation is
         an ODE, it returns None.
         """
-        return self._y_constraint_functions
+        if self._y_constraint_functions is None:
+            return None
+        return np.copy(self._y_constraint_functions)
 
     def d_y_constraint_functions(self) -> Optional[np.ndarray]:
         """
@@ -103,7 +105,9 @@ class BoundaryValueProblem:
         derivative of y evaluated on the mesh. If the differential equation is
         an ODE, it returns None.
         """
-        return self._d_y_constraint_functions
+        if self._d_y_constraint_functions is None:
+            return None
+        return np.copy(self._d_y_constraint_functions)
 
     def _create_y_boundary_constraint_functions(self) -> Optional[np.ndarray]:
         """
