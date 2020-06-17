@@ -7,7 +7,7 @@ from src.core.differentiator import Slicer
 
 class Poisson:
     """
-    A class for solving Poisson's equation.
+    A class for solving Poisson's equation using the finite difference method.
     """
 
     @staticmethod
