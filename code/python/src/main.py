@@ -17,8 +17,8 @@ from src.utils.plot import plot_y_against_t, plot_phase_space, \
 from src.utils.time import time
 
 
-diff_eq = NavierStokesEquation(2, 5000)
-mesh = NonUniformGrid(((-2.5, 2.5), (10., 12.5)), (.05, .05))
+diff_eq = NavierStokesEquation(2, 5000.)
+mesh = NonUniformGrid(((-3, 3), (10., 14.)), (.05, .05))
 bvp = BoundaryValueProblem(
     diff_eq,
     mesh,
@@ -28,13 +28,14 @@ bvp = BoundaryValueProblem(
       DirichletCondition(lambda x: np.array([.0, .0])))))
 ivp = InitialValueProblem(
     bvp,
-    (10., 60.),
+    (0., 80.),
     WellDefinedInitialCondition(bvp, lambda x: np.array([.0, .0])))
 
 f = FDMOperator(
     RK4(), ThreePointFiniteDifferenceMethod(), .01)
 g = FDMOperator(
     ExplicitMidpointMethod(), ThreePointFiniteDifferenceMethod(), .01)
+
 parareal = Parareal(f, g)
 
 threshold = .1
@@ -62,14 +63,14 @@ def plot_solution(solve_func):
             plot_evolution_of_y(
                 ivp,
                 y[..., 0],
-                25,
+                50,
                 100,
                 f'evolution_{solve_func.__name__}1',
                 False)
             plot_evolution_of_y(
                 ivp,
                 y[..., 1],
-                25,
+                50,
                 100,
                 f'evolution_{solve_func.__name__}2',
                 False)
