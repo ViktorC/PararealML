@@ -298,8 +298,8 @@ class NavierStokesEquation(DifferentialEquation):
     def __init__(
             self,
             x_dimension: int,
-            re: float = 1.,
-            tol: float = 1e-5):
+            re: float = 4000.,
+            tol: float = 1e-3):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
         differential equation's solution
@@ -318,7 +318,7 @@ class NavierStokesEquation(DifferentialEquation):
         return self._x_dimension
 
     def y_dimension(self) -> int:
-        return 1
+        return 2
 
     def d_y_over_d_t(
             self,
@@ -333,7 +333,7 @@ class NavierStokesEquation(DifferentialEquation):
         assert differentiator is not None
         assert derivative_constraint_functions is not None
         assert len(y.shape) - 1 == 2
-        assert y.shape[-1] == 3
+        assert y.shape[-1] == 2
 
         vorticity = y[..., [0]]
         stream_function = y[..., [1]]
@@ -342,19 +342,29 @@ class NavierStokesEquation(DifferentialEquation):
             stream_function,
             d_x,
             differentiator,
-            derivative_constraint_functions[:, [1]])
+            derivative_constraint_functions)
+
+        vorticity_gradient = differentiator.gradient(vorticity, d_x)
+
+        vorticity_laplacian = np.empty(vorticity.shape)
+        for y_ind in range(vorticity.shape[-1]):
+            vorticity_laplacian[..., [y_ind]] = differentiator.divergence(
+                vorticity_gradient[..., y_ind, :], d_x)
 
         updated_stream_function = Poisson.solve(
             -vorticity,
             d_x,
             self._tol,
             stream_function,
-            derivative_constraint_functions,
+            derivative_constraint_functions[..., [1]],
             y_constraint_functions[[1]])
 
         d_y = np.empty(y.shape)
-        d_y[..., [0]] = -velocity @ differentiator.gradient(vorticity, d_x) + \
-            (1. / self._re) * differentiator.laplacian(vorticity, d_x)
+        d_y[..., [0]] = (1. / self._re) * vorticity_laplacian - \
+            np.sum(
+                velocity * vorticity_gradient.reshape(velocity.shape),
+                axis=-1,
+                keepdims=True)
         d_y[..., [1]] = updated_stream_function - stream_function
         return d_y
 
@@ -380,14 +390,16 @@ class NavierStokesEquation(DifferentialEquation):
         :return: the velocity vector field
         """
         if self._x_dimension == 2:
-            np.concatenate(
-                -differentiator.derivative(
+            velocity = np.concatenate(
+                (-differentiator.derivative(
                     stream_function, d_x[1], 1, 0,
-                    derivative_constraint_functions[1]),
-                differentiator.derivative(
-                    stream_function, d_x[0], 0, 0,
-                    derivative_constraint_functions[0]),
+                    derivative_constraint_functions[1, 1]),
+                 differentiator.derivative(
+                     stream_function, d_x[0], 0, 0,
+                     derivative_constraint_functions[0, 1])),
                 axis=-1)
         else:
-            return -differentiator.curl(
+            velocity = -differentiator.curl(
                 stream_function, d_x, derivative_constraint_functions)
+
+        return velocity
