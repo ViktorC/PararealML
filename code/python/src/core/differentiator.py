@@ -101,26 +101,18 @@ class Differentiator:
             self._verify_and_get_derivative_constraint_functions(
                 derivative_constraint_functions, y.shape)
 
-        grad_shape = list(y.shape)
-        grad_shape.append(len(y.shape) - 1)
-        grad = np.empty(grad_shape + [1])
-
-        grad_slicer: Slicer = [slice(None)] * len(grad.shape)
+        jacobian = np.empty(list(y.shape) + [len(y.shape) - 1])
 
         for y_ind in range(y.shape[-1]):
-            grad_slicer[-3] = y_ind
-
             for axis in range(len(y.shape) - 1):
-                grad_slicer[-2] = axis
-                grad[tuple(grad_slicer)] = self.derivative(
+                jacobian[..., y_ind, [axis]] = self.derivative(
                     y,
                     d_x[axis],
                     axis,
                     y_ind,
                     derivative_constraint_functions[axis, y_ind])
 
-        grad = grad.reshape(grad_shape)
-        return grad
+        return jacobian
 
     def divergence(
             self,
@@ -188,20 +180,22 @@ class Differentiator:
                 self.derivative(
                     y, d_x[1], 1, 0, derivative_constraint_functions[1, 0])
         else:
-            curl = np.empty(list(y.shape) + [1])
-            curl[..., 0, :] = self.derivative(
-                y, d_x[1], 1, 2, derivative_constraint_functions[1, 2]) - \
-                self.derivative(
-                    y, d_x[2], 2, 1, derivative_constraint_functions[2, 1])
-            curl[..., 1, :] = self.derivative(
-                y, d_x[2], 2, 0, derivative_constraint_functions[2, 0]) - \
-                self.derivative(
-                    y, d_x[0], 0, 2, derivative_constraint_functions[0, 2])
-            curl[..., 2, :] = self.derivative(
-                y, d_x[0], 0, 1, derivative_constraint_functions[0, 1]) - \
-                self.derivative(
-                    y, d_x[1], 1, 0, derivative_constraint_functions[1, 0])
-            curl = curl.reshape(y.shape)
+            curl = np.empty(y.shape)
+            curl[..., 0] = (self.derivative(
+                y, d_x[1], 1, 2, derivative_constraint_functions[1, 2]) -
+                            self.derivative(
+                                y, d_x[2], 2, 1,
+                                derivative_constraint_functions[2, 1]))[..., 0]
+            curl[..., 1] = (self.derivative(
+                y, d_x[2], 2, 0, derivative_constraint_functions[2, 0]) -
+                            self.derivative(
+                                y, d_x[0], 0, 2,
+                                derivative_constraint_functions[0, 2]))[..., 0]
+            curl[..., 2] = (self.derivative(
+                y, d_x[0], 0, 1, derivative_constraint_functions[0, 1]) -
+                            self.derivative(
+                                y, d_x[1], 1, 0,
+                                derivative_constraint_functions[1, 0]))[..., 0]
 
         return curl
 
@@ -223,12 +217,9 @@ class Differentiator:
         second derivatives and the Laplacian
         :return: the Laplacian of y
         """
-        assert len(y.shape) > 1
-        assert len(d_x) == len(y.shape) - 1
+        jacobian = self.jacobian(y, d_x, first_derivative_constraint_functions)
 
         laplacian = np.empty(y.shape)
-
-        jacobian = self.jacobian(y, d_x, first_derivative_constraint_functions)
 
         for y_ind in range(y.shape[-1]):
             laplacian[..., [y_ind]] = self.divergence(
