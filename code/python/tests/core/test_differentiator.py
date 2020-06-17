@@ -36,22 +36,22 @@ def test_differentiator_second_derivative_with_out_of_bounds_y_ind():
         diff.second_derivative(y, d_x, d_x, x_axis, x_axis, y_ind)
 
 
-def test_differentiator_gradient_with_insufficient_dimensions():
+def test_differentiator_jacobian_with_insufficient_dimensions():
     diff = Differentiator()
     d_x = 1.,
     y = np.arange(1., 5.)
 
     with pytest.raises(AssertionError):
-        diff.gradient(y, d_x)
+        diff.jacobian(y, d_x)
 
 
-def test_differentiator_gradient_with_wrong_d_x_size():
+def test_differentiator_jacobian_with_wrong_d_x_size():
     diff = Differentiator()
     d_x = (1.,) * 3
     y = np.array([[[0.] * 3] * 2])
 
     with pytest.raises(AssertionError):
-        diff.gradient(y, d_x)
+        diff.jacobian(y, d_x)
 
 
 def test_differentiator_divergence_with_insufficient_dimensions():
@@ -304,7 +304,7 @@ def test_tpfdm_mixed_second_derivative():
         actual_second_derivative, expected_second_derivative).all()
 
 
-def test_tpfdm_gradient():
+def test_tpfdm_jacobian():
     tpfdm = TwoPointFiniteDifferenceMethod()
     d_x = 2., 1.
     y = np.array([
@@ -329,7 +329,7 @@ def test_tpfdm_gradient():
             [[-2., 6.], [1., -4.]], [[2., 6.], [-1., -4.]]
         ]
     ])
-    actual_grad = tpfdm.gradient(y, d_x)
+    actual_grad = tpfdm.jacobian(y, d_x)
 
     assert np.isclose(actual_grad, expected_grad).all()
 

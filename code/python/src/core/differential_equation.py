@@ -344,7 +344,7 @@ class NavierStokesEquation(DifferentialEquation):
             differentiator,
             derivative_constraint_functions)
 
-        vorticity_gradient = differentiator.gradient(vorticity, d_x)
+        vorticity_gradient = differentiator.jacobian(vorticity, d_x)
 
         vorticity_laplacian = np.empty(vorticity.shape)
         for y_ind in range(vorticity.shape[-1]):

@@ -77,23 +77,22 @@ class Differentiator:
             y, d_x1, x_axis1, y_ind, first_derivative_constraint_function)
         return self.derivative(first_derivative, d_x2, x_axis2)
 
-    def gradient(
+    def jacobian(
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
             derivative_constraint_functions: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
-        Returns the gradient of y with respect to x at every point of the
-        mesh. If y is vector-valued, the gradient at every point is the
-        Jacobian.
+        Returns the Jacobian of y with respect to x at every point of the
+        mesh. If y is scalar-valued, it returns the gradient.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param derivative_constraint_functions: a 2D array (x dimension,
         y dimension) of callback functions that allow for applying constraints
         to the calculated first derivatives
-        :return: the gradient of y
+        :return: the Jacobian of y
         """
         assert len(y.shape) > 1
         assert len(d_x) == len(y.shape) - 1
@@ -227,17 +226,13 @@ class Differentiator:
         assert len(y.shape) > 1
         assert len(d_x) == len(y.shape) - 1
 
-        first_derivative_constraint_functions = \
-            self._verify_and_get_derivative_constraint_functions(
-                first_derivative_constraint_functions, y.shape)
-
         laplacian = np.empty(y.shape)
 
-        gradient = self.gradient(y, d_x, first_derivative_constraint_functions)
+        jacobian = self.jacobian(y, d_x, first_derivative_constraint_functions)
 
         for y_ind in range(y.shape[-1]):
             laplacian[..., [y_ind]] = self.divergence(
-                gradient[..., y_ind, :], d_x)
+                jacobian[..., y_ind, :], d_x)
 
         return laplacian
 
