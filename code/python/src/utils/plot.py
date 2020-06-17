@@ -105,14 +105,21 @@ def plot_evolution_of_y(
                 return _plot,
         else:
             fig, ax = plt.subplots(1, 1)
-            cp = ax.contourf(x_0, x_1, y[0, ...].T)
-            plt.axis('scaled')
-            fig.colorbar(cp)
+            v_min = y.min()
+            v_max = y.max()
+            ax.contourf(x_0, x_1, y[0, ...].T, vmin=v_min, vmax=v_max)
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)
+            plt.axis('scaled')
+
+            mappable = plt.cm.ScalarMappable()
+            mappable.set_array(y[0, ...])
+            mappable.set_clim(v_min, v_max)
+            plt.colorbar(mappable)
 
             def update_plot(time_step: int):
-                return plt.contourf(x_0, x_1, y[time_step, ...].T)
+                return plt.contourf(
+                    x_0, x_1, y[time_step, ...].T, vmin=v_min, vmax=v_max)
 
     animation = FuncAnimation(
         fig,
