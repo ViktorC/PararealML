@@ -181,21 +181,27 @@ class Differentiator:
                     y, d_x[1], 1, 0, derivative_constraint_functions[1, 0])
         else:
             curl = np.empty(y.shape)
-            curl[..., 0] = (self.derivative(
-                y, d_x[1], 1, 2, derivative_constraint_functions[1, 2]) -
-                            self.derivative(
-                                y, d_x[2], 2, 1,
-                                derivative_constraint_functions[2, 1]))[..., 0]
-            curl[..., 1] = (self.derivative(
-                y, d_x[2], 2, 0, derivative_constraint_functions[2, 0]) -
-                            self.derivative(
-                                y, d_x[0], 0, 2,
-                                derivative_constraint_functions[0, 2]))[..., 0]
-            curl[..., 2] = (self.derivative(
-                y, d_x[0], 0, 1, derivative_constraint_functions[0, 1]) -
-                            self.derivative(
-                                y, d_x[1], 1, 0,
-                                derivative_constraint_functions[1, 0]))[..., 0]
+            curl[..., 0] = (
+                    self.derivative(
+                        y, d_x[1], 1, 2,
+                        derivative_constraint_functions[1, 2]) -
+                    self.derivative(
+                        y, d_x[2], 2, 1,
+                        derivative_constraint_functions[2, 1]))[..., 0]
+            curl[..., 1] = (
+                    self.derivative(
+                        y, d_x[2], 2, 0,
+                        derivative_constraint_functions[2, 0]) -
+                    self.derivative(
+                        y, d_x[0], 0, 2,
+                        derivative_constraint_functions[0, 2]))[..., 0]
+            curl[..., 2] = (
+                    self.derivative(
+                        y, d_x[0], 0, 1,
+                        derivative_constraint_functions[0, 1]) -
+                    self.derivative(
+                        y, d_x[1], 1, 0,
+                        derivative_constraint_functions[1, 0]))[..., 0]
 
         return curl
 
