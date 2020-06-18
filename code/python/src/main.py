@@ -9,7 +9,7 @@ from src.core.differentiator import ThreePointFiniteDifferenceMethod
 from src.core.initial_condition import WellDefinedInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
-from src.core.mesh import NonUniformGrid
+from src.core.mesh import UniformGrid
 from src.core.operator import FDMOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
@@ -18,7 +18,7 @@ from src.utils.time import time
 
 
 diff_eq = NavierStokesEquation(2, 5000.)
-mesh = NonUniformGrid(((-3, 3), (10., 14.)), (.05, .05))
+mesh = UniformGrid(((-3, 3), (10., 14.)), (.05, .05))
 bvp = BoundaryValueProblem(
     diff_eq,
     mesh,

@@ -4,7 +4,7 @@ from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import LotkaVolterraEquation, WaveEquation
 from src.core.differentiator import ThreePointFiniteDifferenceMethod
-from src.core.mesh import NonUniformGrid
+from src.core.mesh import UniformGrid
 
 
 def test_bvp_with_ode():
@@ -19,7 +19,7 @@ def test_bvp_with_ode():
 
 def test_2d_bvp():
     diff_eq = WaveEquation(2)
-    mesh = NonUniformGrid(
+    mesh = UniformGrid(
             ((2., 6.), (-3., 3.)),
             (.1, .2))
     bvp = BoundaryValueProblem(

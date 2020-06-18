@@ -4,14 +4,14 @@ from src.core.boundary_condition import DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.initial_condition import WellDefinedInitialCondition
-from src.core.mesh import NonUniformGrid
+from src.core.mesh import UniformGrid
 
 
 def test_1d_well_defined_initial_condition():
     diff_eq = DiffusionEquation(1)
     bvp = BoundaryValueProblem(
         diff_eq,
-        NonUniformGrid(((0., 20.),), (.1,)),
+        UniformGrid(((0., 20.),), (.1,)),
         ((DirichletCondition(lambda x: np.zeros(1)),
           DirichletCondition(lambda x: np.full(1, 1.5))),))
     initial_condition = WellDefinedInitialCondition(

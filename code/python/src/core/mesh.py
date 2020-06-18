@@ -2,6 +2,8 @@ from copy import copy, deepcopy
 from typing import Tuple
 
 import numpy as np
+# from fipy import UniformGrid2D, UniformGrid1D, UniformGrid3D
+# from fipy.meshes.abstractMesh import AbstractMesh
 
 SpatialDomainInterval = Tuple[float, float]
 
@@ -39,10 +41,17 @@ class Mesh:
         """
         pass
 
+    # def to_fipy_mesh(self) -> AbstractMesh:
+    #     """
+    #     Returns the FiPy equivalent of the mesh instance.
+    #     """
+    #     pass
 
-class NonUniformGrid(Mesh):
+
+class UniformGrid(Mesh):
     """
-    A non-uniform rectangular grid of arbitrary dimensionality and shape.
+    A rectangular grid of arbitrary dimensionality and shape with a uniform
+    spacing of grid points along each axis.
     """
 
     def __init__(
@@ -77,6 +86,46 @@ class NonUniformGrid(Mesh):
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         assert len(index) == len(self._shape)
         return tuple(self._x_offset + self._d_x * index)
+
+    # def to_fipy_mesh(self) -> AbstractMesh:
+    #     x_dimension = len(self._x_intervals)
+    #     if x_dimension == 1:
+    #         mesh = UniformGrid1D(
+    #             dx=self._d_x[0],
+    #             nx=self._shape[0])
+    #         mesh += self._x_offset
+    #         mesh -= (self._d_x[0] / 2.,)
+    #     elif x_dimension == 2:
+    #         mesh = UniformGrid2D(
+    #             dx=self._d_x[0],
+    #             dy=self._d_x[1],
+    #             nx=self._shape[0],
+    #             ny=self._shape[1])
+    #         mesh += self._x_offset
+    #         mesh -= (
+    #             (self._d_x[0] / 2.,),
+    #             (self._d_x[1] / 2.,)
+    #         )
+    #     elif x_dimension == 3:
+    #         mesh = UniformGrid3D(
+    #             dx=self._d_x[0],
+    #             dy=self._d_x[1],
+    #             dz=self._d_x[2],
+    #             nx=self._shape[0],
+    #             ny=self._shape[1],
+    #             nz=self._shape[2])
+    #         mesh += self._x_offset
+    #         mesh -= (
+    #             (
+    #                 (self._d_x[0] / 2.,),
+    #                 (self._d_x[1] / 2.,),
+    #                 (self._d_x[2] / 2.,)
+    #             )
+    #         )
+    #     else:
+    #         raise NotImplementedError
+    #
+    #     return mesh
 
     @staticmethod
     def _calculate_shape(
