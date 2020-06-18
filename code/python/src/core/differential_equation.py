@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 import numpy as np
 
 from src.core.differentiator import Differentiator
-from src.core.poisson import Poisson
 
 
 class DifferentialEquation:
@@ -351,7 +350,7 @@ class NavierStokesEquation(DifferentialEquation):
             vorticity_laplacian[..., [y_ind]] = differentiator.divergence(
                 vorticity_gradient[..., y_ind, :], d_x)
 
-        updated_stream_function = Poisson.solve(
+        updated_stream_function = differentiator.anti_laplacian(
             -vorticity,
             d_x,
             self._tol,
