@@ -3,7 +3,7 @@ from typing import Callable, Union, List, Optional, Tuple
 import numpy as np
 
 Slicer = List[Union[int, slice]]
-DerivativeConstraintFunction = Callable[[np.ndarray], None]
+ConstraintFunction = Callable[[np.ndarray], None]
 
 
 class Differentiator:
@@ -18,7 +18,7 @@ class Differentiator:
             x_axis: int,
             y_ind: int = 0,
             derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            Optional[ConstraintFunction] = None) -> np.ndarray:
         """
         Returns the derivative of the y_ind-th element of y with respect to
         the spatial dimension defined by x_axis at every point of the mesh.
@@ -45,7 +45,7 @@ class Differentiator:
             x_axis2: int,
             y_ind: int = 0,
             first_derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            Optional[ConstraintFunction] = None) -> np.ndarray:
         """
         Returns the second derivative of the y_ind-th element of y with respect
         to the spatial dimensions defined by x_axis1 and x_axis2 at every point
@@ -494,7 +494,7 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
             x_axis: int,
             y_ind: int = 0,
             derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            Optional[ConstraintFunction] = None) -> np.ndarray:
         assert y.shape[x_axis] > 1
         assert 0 <= x_axis < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]
@@ -549,7 +549,7 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
             x_axis: int,
             y_ind: int = 0,
             derivative_constraint_function:
-            Optional[DerivativeConstraintFunction] = None) -> np.ndarray:
+            Optional[ConstraintFunction] = None) -> np.ndarray:
         assert y.shape[x_axis] > 2
         assert 0 <= x_axis < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]

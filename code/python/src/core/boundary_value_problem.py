@@ -9,7 +9,6 @@ from src.core.differentiator import Slicer
 from src.core.mesh import Mesh
 
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
-SolutionConstraintFunction = Callable[[np.ndarray], None]
 
 
 class BoundaryValueProblem:
