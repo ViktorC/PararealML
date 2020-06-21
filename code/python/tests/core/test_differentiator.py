@@ -690,7 +690,7 @@ def test_2pfdm_laplacian():
 def test_2pfdm_anti_derivative():
     diff = TwoPointFiniteDifferenceMethod()
     y = np.random.random((10, 10, 1))
-    x_axis = 0
+    x_axis = 1
     d_x = .05
     tol = 0.
 
@@ -704,14 +704,8 @@ def test_2pfdm_anti_derivative():
 
     d_y_over_d_x = diff.derivative(y, d_x, x_axis)
 
-    a = np.triu(np.full(
-        (d_y_over_d_x.shape[x_axis], d_y_over_d_x.shape[x_axis]), - 1))
-
-    anti_derivative = a @ (d_y_over_d_x.T / d_x)
-
-    diff0 = (diff.derivative(anti_derivative, d_x, x_axis) -
-        d_y_over_d_x)[..., 0]
-    diff1 = (anti_derivative - y)[..., 0]
+    anti_derivative = diff.anti_derivative(
+        d_y_over_d_x, x_axis, d_x, tol, y_constraint_function)
 
     assert np.isclose(
         diff.derivative(anti_derivative, d_x, x_axis),
