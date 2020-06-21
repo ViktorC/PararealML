@@ -896,7 +896,7 @@ def test_3pfdm_anti_derivative():
     y = np.random.random((20, 20, 1))
     x_axis = 0
     d_x = .07
-    tol = 1e-5
+    tol = 0.
 
     def y_constraint_function(_y: np.ndarray):
         _y[0, :] = -1.
