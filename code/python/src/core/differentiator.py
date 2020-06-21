@@ -748,19 +748,6 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
 
         slicer: Slicer = [slice(None)] * len(y_hat.shape)
 
-        # Forward difference
-        slicer[x_axis] = 0
-        y_curr = y_hat[tuple(slicer)]
-        slicer[x_axis] = 2
-        y_next_next = y_hat[tuple(slicer)]
-        slicer[x_axis] = 0
-        y_diff = d_y_over_d_x[tuple(slicer)]
-
-        y_next = (3 * y_curr + y_next_next + 2 * d_x * y_diff) / 4.
-
-        slicer[x_axis] = 1
-        anti_derivative[tuple(slicer)] = y_next
-
         # Central difference
         slicer[x_axis] = slice(2, y_hat.shape[x_axis])
         y_next = y_hat[tuple(slicer)]
@@ -784,5 +771,13 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
 
         slicer[x_axis] = y_hat.shape[x_axis] - 2
         anti_derivative[tuple(slicer)] = y_prev
+
+        slicer[x_axis] = y_hat.shape[x_axis] - 2
+        y_prev = y_hat[tuple(slicer)]
+
+        y_curr = (-y_prev_prev + 4 * y_prev + 2 * d_x * y_diff) / 3.
+
+        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        anti_derivative[tuple(slicer)] = y_curr
 
         return anti_derivative
