@@ -261,67 +261,109 @@ class Differentiator:
 
         return laplacian
 
+    def anti_derivative(
+            self,
+            d_y_over_d_x: np.ndarray,
+            x_axis: int,
+            d_x: float,
+            tol: float,
+            y_constraint_function: ConstraintFunction,
+            y_init: Optional[np.ndarray] = None) \
+            -> np.ndarray:
+        """
+        Returns an array whose derivative with respect to the specified axis
+        closely matches the provided values.
+
+        :param d_y_over_d_x: the right-hand side of the equation
+        :param x_axis: the spatial dimension that the anti-derivative of
+        d_y_over_d_x is to be calculated with respect to
+        :param d_x: the step sizes of the mesh along the spatial axes
+        :param tol: the stopping criterion for the Jacobi algorithm; once the
+        second norm of the difference of the estimate and the updated estimate
+        drops below this threshold, the equation is considered to be solved
+        :param y_constraint_function: a callback function that specifies
+        constraints on the values of the solution
+        :param y_init: an optional initial estimate of the solution; if it is
+        None, a random array is used
+        :return: the array representing the solution
+        """
+        assert y_constraint_function is not None
+
+        def update(y: np.ndarray) -> np.ndarray:
+            return self._calculate_updated_anti_derivative(
+                y, d_y_over_d_x, x_axis, d_x)
+
+        y_constraint_functions = np.array([y_constraint_function])
+
+        return self._solve_with_jacobi_method(
+            update, d_y_over_d_x.shape, tol, y_init, y_constraint_functions)
+
     def anti_laplacian(
             self,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
             tol: float,
-            y_init: Optional[np.ndarray],
-            derivative_constraint_functions: Optional[np.ndarray],
-            y_constraint_functions: Optional[np.ndarray]) \
+            y_constraint_functions: np.ndarray,
+            first_derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_init: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
         Laplacian.
 
-        :param laplacian: the left-hand side of the equation
+        :param laplacian: the right-hand side of the equation
         :param d_x: the step sizes of the mesh along the spatial axes
         :param tol: the stopping criterion for the Jacobi algorithm; once the
         second norm of the difference of the estimate and the updated estimate
         drops below this threshold, the equation is considered to be solved
-        :param y_init: an optional initial estimate of the solution; if it is
-        None, a random array is used
-        :param derivative_constraint_functions: an optional 2D array
+        :param y_constraint_functions: a 1D array of callback functions that
+        specify constraints on the values of the solution
+        :param first_derivative_constraint_functions: an optional 2D array
         (x dimension, y dimension) of callback functions that specify
         constraints on the first derivatives of the solution
-        :param y_constraint_functions: an optional 1D array of callback
-        functions that specify constraints on the values of the solution
+        :param y_init: an optional initial estimate of the solution; if it is
+        None, a random array is used
         :return: the array representing the solution to Poisson's equation at
         every point of the mesh
         """
-        assert len(laplacian.shape) > 1
-        assert y_constraint_functions is None \
-            or y_constraint_functions.shape == (laplacian.shape[-1],)
+        assert y_constraint_functions is not None
 
-        if y_init is None:
-            y_init = np.random.random(laplacian.shape)
-        else:
-            assert y_init.shape == laplacian.shape
+        def update(y: np.ndarray) -> np.ndarray:
+            return self._calculate_updated_anti_laplacian(
+                y, laplacian, d_x, first_derivative_constraint_functions)
 
-        diff = float('inf')
+        return self._solve_with_jacobi_method(
+            update, laplacian.shape, tol, y_init, y_constraint_functions)
 
-        while diff > tol:
-            y = self._calculate_updated_anti_laplacian(
-                y_init,
-                laplacian,
-                d_x,
-                derivative_constraint_functions)
-            if y_constraint_functions is not None:
-                for i in range(y.shape[-1]):
-                    y_constraint_functions[i](y[..., i])
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            d_y_over_d_x: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        """
+        Given an estimate, y_hat, of the anti-derivative of d_y_over_d_x, it
+        returns an improved estimate.
 
-            diff = np.linalg.norm(y - y_init)
-            y_init = y
-
-        return y_init
+        :param y_hat: the current estimated values of the anti-derivative at
+        every point of the mesh
+        :param d_y_over_d_x: the derivative of y with respect to the spatial
+        dimension defined by x_axis
+        :param x_axis: the spatial dimension that the anti-derivative of
+        d_y_over_d_x is to be calculated with respect to
+        :param d_x: the step size of the mesh along the specified axis
+        :return: an improved estimate of the anti-derivative of d_y_over_d_x
+        given the current estimate, y_hat
+        """
+        pass
 
     def _calculate_updated_anti_laplacian(
             self,
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_constraint_functions:
-            Optional[np.ndarray] = None) -> np.ndarray:
+            first_derivative_constraint_functions: Optional[np.ndarray]) \
+            -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it returns an improved
         estimate.
@@ -379,6 +421,55 @@ class Differentiator:
         return anti_laplacian
 
     @staticmethod
+    def _solve_with_jacobi_method(
+            update_func: Callable[[np.ndarray], np.ndarray],
+            y_shape: Tuple[int, ...],
+            tol: float,
+            y_init: Optional[np.ndarray],
+            y_constraint_functions: Optional[np.ndarray]) -> np.ndarray:
+        """
+        Calculates the inverse of a differential operation using the Jacobi
+        method.
+
+        :param update_func: the function to calculate the updated
+        anti-differential
+        :param y_shape: the shape of the solution
+        :param tol: the stopping criterion for the Jacobi algorithm; once the
+        second norm of the difference of the estimate and the updated estimate
+        drops below this threshold, the equation is considered to be solved
+        :param y_init: an optional initial estimate of the solution; if it is
+        None, a random array is used
+        :param y_constraint_functions: an optional 1D array of callback
+        functions that specify constraints on the values of the solution
+        :return: the inverse of the differential operation
+        """
+        assert len(y_shape) > 1
+        assert y_constraint_functions is None \
+            or y_constraint_functions.shape == (y_shape[-1],)
+
+        if y_init is None:
+            y_init = np.random.random(y_shape)
+        else:
+            assert y_init.shape == y_shape
+
+        if y_constraint_functions is not None:
+            for i in range(y_shape[-1]):
+                y_constraint_functions[i](y_init[..., i])
+
+        diff = float('inf')
+
+        while diff > tol:
+            y = update_func(y_init)
+            if y_constraint_functions is not None:
+                for i in range(y_shape[-1]):
+                    y_constraint_functions[i](y[..., i])
+
+            diff = np.linalg.norm(y - y_init)
+            y_init = y
+
+        return y_init
+
+    @staticmethod
     def _set_y_hat_padding(
             padded_y_hat: np.ndarray,
             padded_slicer: Slicer,
@@ -415,7 +506,7 @@ class Differentiator:
 
                     if constraint_function:
                         derivative_constraints.fill(np.nan)
-                        constraint_function(derivative_constraints)
+                        constraint_function(derivative_constraints[..., 0])
 
                         padded_slicer[-1] = y_ind
                         padded_slicer_axis = padded_slicer[x_axis]
@@ -531,9 +622,46 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         derivative[tuple(derivative_slicer)] = y_diff
 
         if derivative_constraint_function is not None:
-            derivative_constraint_function(derivative)
+            derivative_constraint_function(derivative[..., 0])
 
         return derivative
+
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            d_y_over_d_x: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        assert y_hat.shape[x_axis] > 1
+        assert 0 <= x_axis < len(y_hat.shape) - 1
+        assert y_hat.shape == d_y_over_d_x.shape
+        assert y_hat.shape[-1] == 1
+
+        anti_derivative = np.empty(y_hat.shape)
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        # Forward difference
+        slicer[x_axis] = slice(1, y_hat.shape[x_axis])
+        y_next = y_hat[tuple(slicer)]
+        slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 1)
+        y_diff = d_y_over_d_x[tuple(slicer)]
+
+        y_curr = y_next - y_diff * d_x
+
+        anti_derivative[tuple(slicer)] = y_curr
+
+        # Backward difference
+        slicer[x_axis] = y_hat.shape[x_axis] - 2
+        y_prev = y_hat[tuple(slicer)]
+        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        y_diff = d_y_over_d_x[tuple(slicer)]
+
+        y_curr = y_prev + y_diff * d_x
+
+        anti_derivative[tuple(slicer)] = y_curr
+
+        return anti_derivative
 
 
 class ThreePointFiniteDifferenceMethod(Differentiator):
@@ -601,6 +729,60 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         derivative[tuple(derivative_slicer)] = y_diff
 
         if derivative_constraint_function is not None:
-            derivative_constraint_function(derivative)
+            derivative_constraint_function(derivative[..., 0])
 
         return derivative
+
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            d_y_over_d_x: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        assert y_hat.shape[x_axis] > 2
+        assert 0 <= x_axis < len(y_hat.shape) - 1
+        assert y_hat.shape == d_y_over_d_x.shape
+        assert y_hat.shape[-1] == 1
+
+        anti_derivative = np.empty(y_hat.shape)
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        # Forward difference
+        slicer[x_axis] = 0
+        y_curr = y_hat[tuple(slicer)]
+        slicer[x_axis] = 2
+        y_next_next = y_hat[tuple(slicer)]
+        slicer[x_axis] = 0
+        y_diff = d_y_over_d_x[tuple(slicer)]
+
+        y_next = (3 * y_curr + y_next_next + 2 * d_x * y_diff) / 4.
+
+        slicer[x_axis] = 1
+        anti_derivative[tuple(slicer)] = y_next
+
+        # Central difference
+        slicer[x_axis] = slice(2, y_hat.shape[x_axis])
+        y_next = y_hat[tuple(slicer)]
+        slicer[x_axis] = slice(1, y_hat.shape[x_axis] - 1)
+        y_diff = d_y_over_d_x[tuple(slicer)]
+
+        y_prev = y_next - 2 * d_x * y_diff
+
+        slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 2)
+        anti_derivative[tuple(slicer)] = y_prev
+
+        # Backward difference
+        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        y_curr = y_hat[tuple(slicer)]
+        slicer[x_axis] = y_hat.shape[x_axis] - 3
+        y_prev_prev = y_hat[tuple(slicer)]
+        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        y_diff = d_y_over_d_x[tuple(slicer)]
+
+        y_prev = (3 * y_curr + y_prev_prev - 2 * d_x * y_diff) / 4.
+
+        slicer[x_axis] = y_hat.shape[x_axis] - 2
+        anti_derivative[tuple(slicer)] = y_prev
+
+        return anti_derivative

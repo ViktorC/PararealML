@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Optional, Tuple
 
 import numpy as np
@@ -60,8 +61,8 @@ class DifferentialEquation:
 
 class RabbitPopulationEquation(DifferentialEquation):
     """
-    A simple differential equation modelling the growth of a rabbit population
-    over time.
+    A simple ordinary differential equation modelling the growth of a rabbit
+    population over time.
     """
 
     def __init__(
@@ -91,25 +92,10 @@ class RabbitPopulationEquation(DifferentialEquation):
         d_y[0] = self._r * y
         return d_y
 
-    def exact_y(
-            self,
-            y_0: float,
-            t: float) -> np.ndarray:
-        """
-        Returns the exact solution to the ordinary differential equation given
-        the initial rabbit population at t=0 and a point in time t.
-
-        :param y_0: the rabbit population at t=0
-        :param t: the point in time at which the exact solution is to be
-        calculated
-        :return: y(t), the exact solution at time t
-        """
-        return np.array([y_0 * np.math.exp(self._r * t)])
-
 
 class LotkaVolterraEquation(DifferentialEquation):
     """
-    A system of two differential equations modelling the dynamics of
+    A system of two ordinary differential equations modelling the dynamics of
     populations of preys and predators.
     """
 
@@ -159,7 +145,8 @@ class LotkaVolterraEquation(DifferentialEquation):
 
 class LorenzEquation(DifferentialEquation):
     """
-    A system of three differential equations modelling atmospheric convection.
+    A system of three ordinary differential equations modelling atmospheric
+    convection.
     """
 
     def __init__(
@@ -201,6 +188,75 @@ class LorenzEquation(DifferentialEquation):
         d_y[0] = self._sigma * (h - c)
         d_y[1] = c * (self._rho - v) - h
         d_y[2] = c * h - self._beta * v
+        return d_y
+
+
+class NBodyGravitationalEquation(DifferentialEquation):
+    """
+    A system of ordinary differential equations modelling the motion of
+    planetary objects.
+    """
+
+    def __init__(
+            self,
+            dims: int,
+            masses: Tuple[float, float, ...],
+            g: float = 6.6743e-11):
+        """
+        :param dims: the spatial the motion of the objects is to be considered
+        in (must be either 2 or 3)
+        :param masses: a list of the masses of the objects (kg)
+        :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
+        """
+        assert 2 <= dims <= 3
+        assert masses is not None
+        assert len(masses) >= 2
+        for mass in masses:
+            assert mass > 0
+        self._dims = dims
+        self._masses = copy(masses)
+        self._n_objects = len(masses)
+        self._g = g
+
+    def x_dimension(self) -> int:
+        return 0
+
+    def y_dimension(self) -> int:
+        return 2 * self._n_objects * self._dims
+
+    def d_y_over_d_t(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Tuple[float, ...]] = None,
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
+        n_obj_by_dims = self._n_objects * self._dims
+
+        d_y = np.empty(self.y_dimension())
+        d_y[:n_obj_by_dims] = y[n_obj_by_dims:]
+
+        forces = np.empty((self._n_objects, self._n_objects, self._dims))
+        for i in range(self._n_objects):
+            position_i = y[i * self._dims:(i + 1) * self._dims]
+            mass_i = self._masses[i]
+
+            for j in range(i + 1, self._n_objects):
+                position_j = y[j * self._dims:(j + 1) * self._dims]
+                mass_j = self._masses[j]
+                displacement = position_j - position_i
+                distance = np.linalg.norm(displacement)
+                force = (self._g * mass_i * mass_j / (distance ** 3)) * \
+                    displacement
+                forces[i, j] = force
+                forces[j, i] = -force
+
+            acceleration = forces[i, ...].sum(axis=1) / mass_i
+            d_y[n_obj_by_dims + i * self._n_objects:
+                n_obj_by_dims + (i + 1) * self._n_objects] = acceleration
+
         return d_y
 
 
@@ -288,6 +344,64 @@ class WaveEquation(DifferentialEquation):
         return d_y
 
 
+class MaxwellsEquation(DifferentialEquation):
+    """
+    A partial differential equation modelling the evolution of electric and
+    magnetic fields assuming that there are no electric or magnetic conductive
+    currents.
+    """
+
+    def __init__(
+            self,
+            x_dimension: int,
+            epsilon: float = 1.,
+            mu: float = 1.):
+        """
+        :param x_dimension: the dimension of the non-temporal domain of the
+        differential equation's solution
+        :param epsilon: the electric permittivity coefficient
+        :param mu: the magnetic permeability coefficient
+        """
+        assert x_dimension == 2 or x_dimension == 3
+
+        self._x_dimension = x_dimension
+        self._epsilon = epsilon
+        self._mu = mu
+
+    def x_dimension(self) -> int:
+        return self._x_dimension
+
+    def y_dimension(self) -> int:
+        return self._x_dimension * 2
+
+    def d_y_over_d_t(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Tuple[float, ...]] = None,
+            differentiator: Optional[Differentiator] = None,
+            derivative_constraint_functions: Optional[np.ndarray] = None,
+            y_constraint_functions: Optional[np.ndarray] = None) \
+            -> np.ndarray:
+        assert d_x is not None
+        assert differentiator is not None
+        assert len(y.shape) - 1 == 2
+        assert y.shape[-1] == 2
+
+        electric_field_strength = y[..., :self._x_dimension, np.newaxis]
+        magnetic_field_strength = y[..., self._x_dimension:, np.newaxis]
+
+        d_e_over_d_t = (1. / self._epsilon) * differentiator.curl(
+            electric_field_strength, d_x, derivative_constraint_functions)
+        d_m_over_d_t = -(1. / self._mu) * differentiator.curl(
+            magnetic_field_strength, d_x, derivative_constraint_functions)
+
+        d_y = np.empty(y.shape)
+        d_y[..., :self._x_dimension, np.newaxis] = d_e_over_d_t
+        d_y[..., self._x_dimension:, np.newaxis] = d_m_over_d_t
+        return d_y
+
+
 class NavierStokesEquation(DifferentialEquation):
     """
     A partial differential equation modelling the stream function and vorticity
@@ -354,9 +468,9 @@ class NavierStokesEquation(DifferentialEquation):
             -vorticity,
             d_x,
             self._tol,
-            stream_function,
+            y_constraint_functions[[1]],
             derivative_constraint_functions[..., [1]],
-            y_constraint_functions[[1]])
+            stream_function)
 
         d_y = np.empty(y.shape)
         d_y[..., [0]] = (1. / self._re) * vorticity_laplacian - \

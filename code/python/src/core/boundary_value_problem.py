@@ -266,8 +266,7 @@ class BoundaryValueProblem:
         d_y_constraint_functions_for_axis = np.empty(
             self._diff_eq.y_dimension(), dtype=object)
 
-        slicer: Slicer = [slice(None)] * len(self._y_shape)
-        slicer[-1] = 0
+        slicer: Slicer = [slice(None)] * (len(self._y_shape) - 1)
 
         slicer[x_axis] = 0
         lower_slicer = tuple(slicer)
