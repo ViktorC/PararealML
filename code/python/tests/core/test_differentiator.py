@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from src.core.differentiator import Differentiator, \
-    TwoPointFiniteDifferenceMethod, ThreePointFiniteDifferenceMethod, Slicer
+    TwoPointFiniteDifferenceMethod, ThreePointFiniteDifferenceMethod
 
 
 def test_differentiator_second_derivative_with_insufficient_dimensions():
@@ -275,7 +275,7 @@ def test_2pfdm_derivative():
             [1.], [-1.]
         ],
         [
-            [1.], [-1.]
+            [-3.], [-1.]
         ]
     ])
     actual_derivative = diff.derivative(y, d_x, x_axis, y_ind)
@@ -311,7 +311,7 @@ def test_2pfdm_constrained_derivative():
             [1.], [-1.]
         ],
         [
-            [1.], [-1.]
+            [-3.], [-1.]
         ]
     ])
     actual_derivative = diff.derivative(
@@ -341,10 +341,10 @@ def test_2pfdm_second_derivative():
             [.5], [.5]
         ],
         [
-            [0.], [0.]
+            [-2.], [0.]
         ],
         [
-            [0.], [0.]
+            [1.5], [0.5]
         ]
     ])
     actual_second_derivative = diff.second_derivative(
@@ -373,13 +373,13 @@ def test_2pfdm_mixed_second_derivative():
     ])
     expected_second_derivative = np.array([
         [
-            [-8.], [16.], [16.]
+            [-8.], [16.], [-16.]
         ],
         [
-            [16.], [-32.], [-32]
+            [16.], [-32.], [24.]
         ],
         [
-            [16.], [-32.], [-32]
+            [-12.], [30.], [-14.]
         ]
     ])
     actual_second_derivative = diff.second_derivative(
@@ -409,7 +409,7 @@ def test_2pfdm_jacobian():
                 [2., 2.], [0., 4.]
             ],
             [
-                [0., 2.], [-2., 4.]
+                [0., -4.], [-2., -8.]
             ]
         ],
         [
@@ -417,15 +417,15 @@ def test_2pfdm_jacobian():
                 [-2., -2.], [1., 0.]
             ],
             [
-                [2., -2.], [-1, 0.]
+                [2., -4.], [-1, -4.]
             ]
         ],
         [
             [
-                [-2., 6.], [1., -4.]
+                [-1., 6.], [-3., -4.]
             ],
             [
-                [2., 6.], [-1., -4.]
+                [-4., -8.], [-1., -2.]
             ]
         ]
     ])
@@ -447,10 +447,10 @@ def test_2pfdm_2d_divergence():
     ])
     expected_div = np.array([
         [
-            [6.], [2.]
+            [6.], [-4.]
         ],
         [
-            [4.], [0.]
+            [-6.], [-6.]
         ]
     ])
     actual_div = diff.divergence(y, d_x)
@@ -482,18 +482,18 @@ def test_2pfdm_3d_divergence():
     expected_div = np.array([
         [
             [
-                [-12.], [-16.]
+                [-12.], [-24.]
             ],
             [
-                [0.], [-16.]
+                [-8.], [-4.]
             ]
         ],
         [
             [
-                [4.], [-16.]
+                [8.], [-20.]
             ],
             [
-                [68.], [36.]
+                [20.], [-24.]
             ]
         ]
     ])
@@ -515,10 +515,10 @@ def test_2pfdm_2d_curl():
     ])
     expected_curl = np.array([
         [
-            [0.], [-24.]
+            [0.], [-6.]
         ],
         [
-            [8.], [-16.]
+            [-14.], [20.]
         ]
     ])
     actual_curl = diff.curl(y, d_x)
@@ -556,24 +556,24 @@ def test_2pfdm_3d_curl():
     expected_curl = np.array([
         [
             [
-                [-15., 10., -8.], [-4., 5., 1.], [4.5, -5., 1.]
+                [-15., 10., -8.], [-4., 5., 1.], [10.5, -13., 1.]
             ],
             [
-                [-8., -5., -1.], [31., -16., -9.], [19.5, 11., 12.5]
+                [-8., -5., -1.], [31., -16., -9.], [-12.5, 3., 12.5]
             ],
             [
-                [10., -24., -5.], [-9., 7., 5.], [-20.5, -2., -2.5]
+                [19., -24., 0.], [-25., 7., 5.], [12.5, -2., -3.5]
             ]
         ],
         [
             [
-                [-25.5, 14., -11.5], [6.5, 5., 2.], [-3.5, -5., 2.5]
+                [-25.5, 14., -.5], [6.5, 3., -5.], [4.5, 0., -3.5]
             ],
             [
-                [17.5, -19., 7.5], [-23.5, -18., -12.], [-17., 9., 9.5]
+                [17.5, -19., 3.5], [-23.5, 10., 2.], [15., -5., -7.5]
             ],
             [
-                [-0.5, 8., 3.5], [-5.5, 5., 2.], [1., -4., -5.5]
+                [-3., 22., -3.], [-4.5, 1., 1.], [4.5, -5., -1.]
             ]
         ]
     ])
@@ -600,59 +600,63 @@ def test_2pfdm_hessian():
         [
             [
                 [
-                    [-2., -2.], [-2., 0.]
+                    [-2., -2.], [-2., -6.]
                 ],
                 [
-                    [.5, -2.], [-2., 0.]
+                    [0.5, -2.], [-2., -12.]
                 ]
             ],
             [
                 [
-                    [1., -2.], [-2., 0.]
+                    [1., -0.], [0., 4.]
                 ],
                 [
-                    [.5, -2.], [-2., 0.]
+                    [0.5, 2.], [2., 8.]
                 ]
             ]
         ],
         [
             [
                 [
-                    [0., 4.], [4., 0.]
+                    [0.5, 4.], [4., -2.]
                 ],
                 [
-                    [0., -2.], [-2., 0.]
+                    [-2., -2.], [-2., -4.]
                 ]
             ],
             [
                 [
-                    [0., 4.], [4., 0.]
+                    [-3., -2.], [-2., 4.]
                 ],
                 [
-                    [0., -2.], [-2., 0.]
+                    [0., 1.],
+                    [1., 4.]
                 ]
             ]
         ],
         [
             [
                 [
-                    [0., 4.], [4., 0.]
+                    [0.5, -3.], [-3., -14.]
                 ],
                 [
-                    [0., -2.], [-2., 0.]
+                    [1.5, 2.], [2., 2.]
                 ]
             ],
             [
                 [
-                    [0., 4.], [4., 0.]
+                    [2., 4.], [4., 8.]
                 ],
                 [
-                    [0., -2.], [-2., 0.]
+                    [0.5, 1.],
+                    [1., 2.]
                 ]
             ]
         ]
     ])
     actual_hessian = diff.hessian(y, d_x)
+
+    print(actual_hessian)
 
     assert np.isclose(actual_hessian, expected_hessian).all()
 
@@ -673,44 +677,18 @@ def test_2pfdm_laplacian():
     ])
     expected_lapl = np.array([
         [
-            [-6., -7.5], [1., .5], [-5., 4.]
+            [-6., -7.5], [1., .5], [-3., 8.]
         ],
         [
-            [8., -8.], [0., 0.], [0., 0.]
+            [8.5, -10.], [-19., 12.], [13.5, -7.]
         ],
         [
-            [-16., 6.], [0., 0.], [0., 0.]
+            [-15.5, 7.5], [14., -5.5], [-2.5, 5.]
         ]
     ])
     actual_lapl = diff.laplacian(y, d_x)
 
     assert np.isclose(actual_lapl, expected_lapl).all()
-
-
-def test_2pfdm_anti_derivative():
-    diff = TwoPointFiniteDifferenceMethod()
-    y = np.random.random((10, 10, 1))
-    x_axis = 1
-    d_x = .05
-    tol = 0.
-
-    def y_constraint_function(_y: np.ndarray):
-        _y[0, :] = 1.
-        _y[_y.shape[0] - 1, :] = 2.
-        _y[:, 0] = 3.
-        _y[:, _y.shape[1] - 1] = 4.
-
-    y_constraint_function(y[..., 0])
-
-    d_y_over_d_x = diff.derivative(y, d_x, x_axis)
-
-    anti_derivative = diff.anti_derivative(
-        d_y_over_d_x, x_axis, d_x, tol, y_constraint_function)
-
-    assert np.isclose(
-        diff.derivative(anti_derivative, d_x, x_axis),
-        d_y_over_d_x).all()
-    assert np.isclose(anti_derivative, y).all()
 
 
 def test_3pfdm_derivative_with_insufficient_dimensions():
@@ -771,13 +749,13 @@ def test_3pfdm_derivative():
     ])
     expected_derivative = np.array([
         [
-            [-.5], [-2.5], [-4.25]
+            [1.], [1.], [-.25]
         ],
         [
             [0.5], [-1.5], [1.25]
         ],
         [
-            [1.5], [-.5], [6.75]
+            [-1.], [-1.], [.25]
         ]
     ])
     actual_derivative = diff.derivative(y, d_x, x_axis, y_ind)
@@ -807,13 +785,13 @@ def test_3pfdm_constrained_derivative():
 
     expected_derivative = np.array([
         [
-            [-.5], [-2.5], [-4.25]
+            [1.], [1.], [-.25]
         ],
         [
             [0.5], [9999.], [1.25]
         ],
         [
-            [1.5], [-.5], [6.75]
+            [-1.], [-1.], [.25]
         ]
     ])
     actual_derivative = diff.derivative(
@@ -840,13 +818,13 @@ def test_3pfdm_second_derivative():
     ])
     expected_second_derivative = np.array([
         [
-            [.5], [.5], [2.75]
+            [.125], [-.375], [.3125]
         ],
         [
-            [.5], [.5], [2.75]
+            [-.5], [-.5], [.125]
         ],
         [
-            [.5], [.5], [2.75]
+            [-.125], [.375], [-.3125]
         ]
     ])
     actual_second_derivative = diff.second_derivative(
@@ -875,13 +853,13 @@ def test_3pfdm_mixed_second_derivative():
     ])
     expected_second_derivative = np.array([
         [
-            [-50.], [10.], [70.]
+            [2.], [-.5], [-2.]
         ],
         [
-            [10.], [-2.], [-14.]
+            [2.], [-2.], [-2.]
         ],
         [
-            [70.], [-14.], [-98.]
+            [-2.], [.5], [2.]
         ]
     ])
     actual_second_derivative = diff.second_derivative(
@@ -889,32 +867,6 @@ def test_3pfdm_mixed_second_derivative():
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()
-
-
-def test_3pfdm_anti_derivative():
-    diff = ThreePointFiniteDifferenceMethod()
-    y = np.random.random((20, 20, 1))
-    x_axis = 0
-    d_x = .07
-    tol = 0.
-
-    def y_constraint_function(_y: np.ndarray):
-        _y[0, :] = -1.
-        _y[_y.shape[0] - 1, :] = 5.
-        _y[:, 0] = 4.
-        _y[:, _y.shape[1] - 1] = -3.
-
-    y_constraint_function(y[..., 0])
-
-    d_y_over_d_x = diff.derivative(y, d_x, x_axis)
-
-    anti_derivative = diff.anti_derivative(
-        d_y_over_d_x, x_axis, d_x, tol, y_constraint_function)
-
-    assert np.isclose(
-        diff.derivative(anti_derivative, d_x, x_axis),
-        d_y_over_d_x).all()
-    assert np.isclose(anti_derivative, y).all()
 
 
 def get_2d_derivative_constraint_functions() -> np.ndarray:
