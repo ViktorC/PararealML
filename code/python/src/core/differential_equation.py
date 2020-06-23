@@ -471,8 +471,6 @@ class NavierStokesEquation(DifferentialEquation):
             y_constraint_functions[[1]],
             derivative_constraint_functions[..., [1]],
             stream_function)
-        bla_vort = -vorticity[..., 0]
-        bla_anti_vort = updated_stream_function[..., 0]
 
         d_y = np.empty(y.shape)
         d_y[..., [0]] = (1. / self._re) * vorticity_laplacian - \
