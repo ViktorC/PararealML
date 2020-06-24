@@ -513,7 +513,7 @@ class Differentiator:
 
 class TwoPointForwardFiniteDifferenceMethod(Differentiator):
     """
-    A numerical differentiator using two-point (first order) forward finite
+    A numerical differentiator using a two-point (first order) forward
     difference.
     """
 
@@ -661,9 +661,9 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
         return anti_laplacian
 
 
-class ThreePointCenteredFiniteDifferenceMethod(Differentiator):
+class ThreePointCentralFiniteDifferenceMethod(Differentiator):
     """
-    A numerical differentiator using three-point (second order) centered finite
+    A numerical differentiator using a three-point (second order) central
     difference.
     """
 
