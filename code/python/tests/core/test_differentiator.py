@@ -642,6 +642,47 @@ def test_2pfdm_anti_laplacian():
     assert np.isclose(anti_laplacian, y).all()
 
 
+def test_2pfdm_anti_laplacian_with_derivative_constraints():
+    diff = TwoPointFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    def d_y_constraint_function_0(_d_y: np.ndarray):
+        _d_y[0, :] = 2.
+        _d_y[_d_y.shape[0] - 1, :] = -3.
+
+    def d_y_constraint_function_1(_d_y: np.ndarray):
+        _d_y[:, 0] = .5
+        _d_y[:, _d_y.shape[1] - 1] = 0.
+
+    d_y_constraint_functions = np.array([
+        [d_y_constraint_function_0, None],
+        [d_y_constraint_function_1, None]
+    ])
+
+    laplacian = diff.laplacian(y, d_x, d_y_constraint_functions)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, d_y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x, d_y_constraint_functions),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
 def test_3pfdm_derivative_with_insufficient_dimensions():
     diff = ThreePointFiniteDifferenceMethod()
     d_x = 1.
@@ -870,6 +911,47 @@ def test_3pfdm_anti_laplacian():
 
     assert np.isclose(
         diff.laplacian(anti_laplacian, d_x),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_3pfdm_anti_laplacian_with_derivative_constraints():
+    diff = ThreePointFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    def d_y_constraint_function_0(_d_y: np.ndarray):
+        _d_y[0, :] = 2.
+        _d_y[_d_y.shape[0] - 1, :] = -3.
+
+    def d_y_constraint_function_1(_d_y: np.ndarray):
+        _d_y[:, 0] = .5
+        _d_y[:, _d_y.shape[1] - 1] = 0.
+
+    d_y_constraint_functions = np.array([
+        [d_y_constraint_function_0, None],
+        [d_y_constraint_function_1, None]
+    ])
+
+    laplacian = diff.laplacian(y, d_x, d_y_constraint_functions)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, d_y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x, d_y_constraint_functions),
         laplacian).all()
     assert np.isclose(anti_laplacian, y).all()
 
