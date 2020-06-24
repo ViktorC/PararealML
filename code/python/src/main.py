@@ -5,8 +5,8 @@ from mpi4py import MPI
 from src.core.boundary_condition import DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import NavierStokesEquation
-from src.core.differentiator import ThreePointFiniteDifferenceMethod, \
-    TwoPointFiniteDifferenceMethod
+from src.core.differentiator import ThreePointCenteredFiniteDifferenceMethod, \
+    TwoPointForwardFiniteDifferenceMethod
 from src.core.initial_condition import WellDefinedInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
@@ -23,8 +23,8 @@ mesh = UniformGrid(((-3, 3), (10., 14.)), (.05, .05))
 bvp = BoundaryValueProblem(
     diff_eq,
     mesh,
-    ((DirichletCondition(lambda x: np.array([0., .0])),
-      DirichletCondition(lambda x: np.array([1.0, .1]))),
+    ((DirichletCondition(lambda x: np.array([1., .1])),
+      DirichletCondition(lambda x: np.array([.0, .0]))),
      (DirichletCondition(lambda x: np.array([.0, .0])),
       DirichletCondition(lambda x: np.array([.0, .0])))))
 ivp = InitialValueProblem(
@@ -33,9 +33,9 @@ ivp = InitialValueProblem(
     WellDefinedInitialCondition(bvp, lambda x: np.array([.0, .0])))
 
 f = FDMOperator(
-    RK4(), ThreePointFiniteDifferenceMethod(), .01)
+    RK4(), ThreePointCenteredFiniteDifferenceMethod(), .01)
 g = FDMOperator(
-    ExplicitMidpointMethod(), TwoPointFiniteDifferenceMethod(), .01)
+    ExplicitMidpointMethod(), TwoPointForwardFiniteDifferenceMethod(), .01)
 
 parareal = Parareal(f, g)
 

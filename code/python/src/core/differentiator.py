@@ -511,7 +511,7 @@ class Differentiator:
             return np.empty((len(y_shape) - 1, y_shape[-1]), dtype=object)
 
 
-class TwoPointFiniteDifferenceMethod(Differentiator):
+class TwoPointForwardFiniteDifferenceMethod(Differentiator):
     """
     A numerical differentiator using two-point (first order) forward finite
     difference.
@@ -661,9 +661,9 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         return anti_laplacian
 
 
-class ThreePointFiniteDifferenceMethod(Differentiator):
+class ThreePointCenteredFiniteDifferenceMethod(Differentiator):
     """
-    A numerical differentiator using three-point (second order) central finite
+    A numerical differentiator using three-point (second order) centered finite
     difference.
     """
 
