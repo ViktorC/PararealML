@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from src.core.differentiator import Differentiator, \
-    TwoPointForwardFiniteDifferenceMethod,\
+    TwoPointForwardFiniteDifferenceMethod, \
     ThreePointCentralFiniteDifferenceMethod
 
 
@@ -597,8 +597,6 @@ def test_2pffdm_anti_derivative():
     tol = 0.
 
     def y_constraint_function(_y: np.ndarray):
-        _y[0, :] = 1.
-        _y[_y.shape[0] - 1, :] = 2.
         _y[:, 0] = 3.
         _y[:, _y.shape[1] - 1] = 4.
 
@@ -867,13 +865,11 @@ def test_3pcfdm_anti_derivative():
     y = np.random.random((20, 20, 1))
     x_axis = 0
     d_x = .07
-    tol = 0.
+    tol = 1e-12
 
     def y_constraint_function(_y: np.ndarray):
         _y[0, :] = -1.
         _y[_y.shape[0] - 1, :] = 5.
-        _y[:, 0] = 4.
-        _y[:, _y.shape[1] - 1] = -3.
 
     y_constraint_function(y[..., 0])
 

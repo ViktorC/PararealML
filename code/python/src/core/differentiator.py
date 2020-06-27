@@ -263,7 +263,7 @@ class Differentiator:
 
     def anti_derivative(
             self,
-            d_y_over_d_x: np.ndarray,
+            derivative: np.ndarray,
             x_axis: int,
             d_x: float,
             tol: float,
@@ -274,9 +274,9 @@ class Differentiator:
         Returns an array whose derivative with respect to the specified axis
         closely matches the provided values.
 
-        :param d_y_over_d_x: the right-hand side of the equation
-        :param x_axis: the spatial dimension that the anti-derivative of
-        d_y_over_d_x is to be calculated with respect to
+        :param derivative: the right-hand side of the equation
+        :param x_axis: the spatial dimension that the anti-derivative is to be
+        calculated with respect to
         :param d_x: the step sizes of the mesh along the spatial axes
         :param tol: the stopping criterion for the Jacobi algorithm; once the
         second norm of the difference of the estimate and the updated estimate
@@ -291,12 +291,12 @@ class Differentiator:
 
         def update(y: np.ndarray) -> np.ndarray:
             return self._calculate_updated_anti_derivative(
-                y, d_y_over_d_x, x_axis, d_x)
+                y, derivative, x_axis, d_x)
 
         y_constraint_functions = np.array([y_constraint_function])
 
         return self._solve_with_jacobi_method(
-            update, d_y_over_d_x.shape, tol, y_init, y_constraint_functions)
+            update, derivative.shape, tol, y_init, y_constraint_functions)
 
     def anti_laplacian(
             self,
@@ -343,22 +343,21 @@ class Differentiator:
     def _calculate_updated_anti_derivative(
             self,
             y_hat: np.ndarray,
-            d_y_over_d_x: np.ndarray,
+            derivative: np.ndarray,
             x_axis: int,
             d_x: float) -> np.ndarray:
         """
-        Given an estimate, y_hat, of the anti-derivative of d_y_over_d_x, it
-        returns an improved estimate.
+        Given an estimate, y_hat, of the anti-derivative, it returns an
+        improved estimate.
 
         :param y_hat: the current estimated values of the anti-derivative at
         every point of the mesh
-        :param d_y_over_d_x: the derivative of y with respect to the spatial
+        :param derivative: the derivative of y with respect to the spatial
         dimension defined by x_axis
-        :param x_axis: the spatial dimension that the anti-derivative of
-        d_y_over_d_x is to be calculated with respect to
+        :param x_axis: the spatial dimension that the anti-derivative is to be
+        calculated with respect to
         :param d_x: the step size of the mesh along the specified axis
-        :return: an improved estimate of the anti-derivative of d_y_over_d_x
-        given the current estimate, y_hat
+        :return: an improved estimate of the anti-derivative
         """
         pass
 
@@ -566,12 +565,12 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
     def _calculate_updated_anti_derivative(
             self,
             y_hat: np.ndarray,
-            d_y_over_d_x: np.ndarray,
+            derivative: np.ndarray,
             x_axis: int,
             d_x: float) -> np.ndarray:
         assert y_hat.shape[x_axis] > 1
         assert 0 <= x_axis < len(y_hat.shape) - 1
-        assert y_hat.shape == d_y_over_d_x.shape
+        assert y_hat.shape == derivative.shape
         assert y_hat.shape[-1] == 1
 
         anti_derivative = np.empty(y_hat.shape)
@@ -582,7 +581,7 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
         slicer[x_axis] = slice(1, y_hat.shape[x_axis])
         y_next = y_hat[tuple(slicer)]
         slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 1)
-        y_diff = d_y_over_d_x[tuple(slicer)]
+        y_diff = derivative[tuple(slicer)]
 
         y_curr = y_next - y_diff * d_x
 
@@ -590,7 +589,7 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
 
         # Upper boundary.
         slicer[x_axis] = y_hat.shape[x_axis] - 1
-        y_diff = d_y_over_d_x[tuple(slicer)]
+        y_diff = derivative[tuple(slicer)]
 
         y_curr = -y_diff * d_x
 
@@ -613,15 +612,15 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
 
         anti_laplacian = np.zeros(y_hat.shape)
 
-        square_d_x_arr = np.square(np.array(d_x))
+        d_x_squared_arr = np.square(np.array(d_x))
 
         slicer: Slicer = [slice(None)] * len(y_hat.shape)
 
         step_size_coefficient_sum = 0.
 
         for axis in range(len(d_x)):
-            step_size_coefficient = square_d_x_arr[:axis].prod() * \
-                square_d_x_arr[axis + 1:].prod()
+            step_size_coefficient = d_x_squared_arr[:axis].prod() * \
+                d_x_squared_arr[axis + 1:].prod()
             step_size_coefficient_sum += step_size_coefficient
 
             upper_boundary_constraint = \
@@ -635,7 +634,7 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
 
             slicer[axis] = slice(0, y_hat.shape[axis] - 2)
             anti_laplacian[tuple(slicer)] += step_size_coefficient * \
-                (-y_next_next + 2 * y_next)
+                (-y_next_next + 2. * y_next)
 
             # Second uppermost points.
             slicer[axis] = y_hat.shape[axis] - 1
@@ -649,14 +648,14 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
                 y_next_next[np.isnan(y_next_next)] = 0.
 
                 anti_laplacian[tuple(slicer)] += \
-                    step_size_coefficient * (-y_next_next + 2 * y_next)
+                    step_size_coefficient * (-y_next_next + 2. * y_next)
             else:
                 anti_laplacian[tuple(slicer)] += \
-                    step_size_coefficient * 2 * y_next
+                    step_size_coefficient * 2. * y_next
 
             slicer[axis] = slice(None)
 
-        anti_laplacian += square_d_x_arr.prod() * laplacian
+        anti_laplacian += d_x_squared_arr.prod() * laplacian
         anti_laplacian /= step_size_coefficient_sum
         return anti_laplacian
 
@@ -688,11 +687,13 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_slicer[-1] = y_ind
         derivative_slicer[-1] = 0
 
+        two_d_x = 2. * d_x
+
         # Lower boundary.
         y_slicer[x_axis] = 1
         y_next = y[tuple(y_slicer)]
 
-        y_diff = y_next / (2 * d_x)
+        y_diff = y_next / two_d_x
 
         derivative_slicer[x_axis] = 0
         derivative[tuple(derivative_slicer)] = y_diff
@@ -703,7 +704,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_slicer[x_axis] = slice(2, y.shape[x_axis])
         y_next = y[tuple(y_slicer)]
 
-        y_diff = (y_next - y_prev) / (2 * d_x)
+        y_diff = (y_next - y_prev) / two_d_x
 
         derivative_slicer[x_axis] = slice(1, y.shape[x_axis] - 1)
         derivative[tuple(derivative_slicer)] = y_diff
@@ -712,7 +713,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_slicer[x_axis] = y.shape[x_axis] - 2
         y_prev = y[tuple(y_slicer)]
 
-        y_diff = -y_prev / (2 * d_x)
+        y_diff = -y_prev / two_d_x
 
         derivative_slicer[x_axis] = y.shape[x_axis] - 1
         derivative[tuple(derivative_slicer)] = y_diff
@@ -725,34 +726,36 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
     def _calculate_updated_anti_derivative(
             self,
             y_hat: np.ndarray,
-            d_y_over_d_x: np.ndarray,
+            derivative: np.ndarray,
             x_axis: int,
             d_x: float) -> np.ndarray:
         assert y_hat.shape[x_axis] > 2
         assert 0 <= x_axis < len(y_hat.shape) - 1
-        assert y_hat.shape == d_y_over_d_x.shape
+        assert y_hat.shape == derivative.shape
         assert y_hat.shape[-1] == 1
 
         anti_derivative = np.empty(y_hat.shape)
 
         slicer: Slicer = [slice(None)] * len(y_hat.shape)
 
+        two_d_x = 2. * d_x
+
         # Lower boundary and internal points.
         slicer[x_axis] = slice(2, y_hat.shape[x_axis])
         y_next = y_hat[tuple(slicer)]
         slicer[x_axis] = slice(1, y_hat.shape[x_axis] - 1)
-        y_diff = d_y_over_d_x[tuple(slicer)]
+        y_diff = derivative[tuple(slicer)]
 
-        y_prev = y_next - 2 * d_x * y_diff
+        y_prev = y_next - two_d_x * y_diff
 
         slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 2)
         anti_derivative[tuple(slicer)] = y_prev
 
         # Second uppermost points.
         slicer[x_axis] = y_hat.shape[x_axis] - 1
-        y_diff = d_y_over_d_x[tuple(slicer)]
+        y_diff = derivative[tuple(slicer)]
 
-        y_prev = -2 * d_x * y_diff
+        y_prev = -two_d_x * y_diff
 
         slicer[x_axis] = y_hat.shape[x_axis] - 2
         anti_derivative[tuple(slicer)] = y_prev
@@ -761,9 +764,9 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         slicer[x_axis] = y_hat.shape[x_axis] - 3
         y_prev = y_hat[tuple(slicer)]
         slicer[x_axis] = y_hat.shape[x_axis] - 2
-        y_diff = d_y_over_d_x[tuple(slicer)]
+        y_diff = derivative[tuple(slicer)]
 
-        y_next = y_prev + 2 * d_x * y_diff
+        y_next = y_prev + two_d_x * y_diff
 
         slicer[x_axis] = y_hat.shape[x_axis] - 1
         anti_derivative[tuple(slicer)] = y_next
@@ -785,15 +788,15 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
         anti_laplacian = np.zeros(y_hat.shape)
 
-        squared_double_d_x_arr = np.square(2. * np.array(d_x))
+        two_d_x_squared_arr = np.square(2. * np.array(d_x))
 
         slicer: Slicer = [slice(None)] * len(y_hat.shape)
 
         step_size_coefficient_sum = 0.
 
         for axis in range(len(d_x)):
-            step_size_coefficient = squared_double_d_x_arr[:axis].prod() * \
-                squared_double_d_x_arr[axis + 1:].prod()
+            step_size_coefficient = two_d_x_squared_arr[:axis].prod() * \
+                two_d_x_squared_arr[axis + 1:].prod()
             step_size_coefficient_sum += step_size_coefficient
 
             boundary_constraints = derivative_boundary_constraints[axis]
@@ -817,7 +820,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                 y_curr = y_hat[tuple(slicer)]
                 y_diff = lower_boundary_constraint
 
-                y_prev_prev = y_curr - 2 * d_x[axis] * y_diff
+                y_prev_prev = y_curr - 2. * d_x[axis] * y_diff
                 y_prev_prev[np.isnan(y_prev_prev)] = 0.
 
                 anti_laplacian[tuple(slicer)] += \
@@ -841,11 +844,11 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             y_prev_prev = y_hat[tuple(slicer)]
 
             slicer[axis] = y_hat.shape[axis] - 2
-            if lower_boundary_constraint is not None:
+            if upper_boundary_constraint is not None:
                 y_curr = y_hat[tuple(slicer)]
                 y_diff = upper_boundary_constraint
 
-                y_next_next = y_curr + 2 * d_x[axis] * y_diff
+                y_next_next = y_curr + 2. * d_x[axis] * y_diff
                 y_next_next[np.isnan(y_next_next)] = 0.
 
                 anti_laplacian[tuple(slicer)] += \
@@ -864,6 +867,6 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
             slicer[axis] = slice(None)
 
-        anti_laplacian -= squared_double_d_x_arr.prod() * laplacian
+        anti_laplacian -= two_d_x_squared_arr.prod() * laplacian
         anti_laplacian /= 2. * step_size_coefficient_sum
         return anti_laplacian
