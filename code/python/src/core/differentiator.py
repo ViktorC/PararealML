@@ -671,14 +671,6 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
 
         anti_derivative[tuple(slicer)] = y_curr
 
-        # Upper boundary.
-        slicer[x_axis] = y_hat.shape[x_axis] - 1
-        y_diff = derivative[tuple(slicer)]
-
-        y_curr = -y_diff * d_x
-
-        anti_derivative[tuple(slicer)] = y_curr
-
         return anti_derivative
 
     def _calculate_updated_anti_laplacian(
@@ -844,17 +836,6 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         slicer[x_axis] = y_hat.shape[x_axis] - 2
         anti_derivative[tuple(slicer)] = y_prev
 
-        # Upper boundary.
-        slicer[x_axis] = y_hat.shape[x_axis] - 3
-        y_prev = y_hat[tuple(slicer)]
-        slicer[x_axis] = y_hat.shape[x_axis] - 2
-        y_diff = derivative[tuple(slicer)]
-
-        y_next = y_prev + two_d_x * y_diff
-
-        slicer[x_axis] = y_hat.shape[x_axis] - 1
-        anti_derivative[tuple(slicer)] = y_next
-
         return anti_derivative
 
     def _calculate_updated_anti_laplacian(
@@ -886,14 +867,6 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             boundary_constraints = derivative_boundary_constraints[axis]
             lower_boundary_constraint = boundary_constraints[0]
             upper_boundary_constraint = boundary_constraints[1]
-
-            # Lower boundary.
-            slicer[axis] = 2
-            y_next_next = y_hat[tuple(slicer)]
-
-            slicer[axis] = 0
-            anti_laplacian[tuple(slicer)] += \
-                step_size_coefficient * y_next_next
 
             # Second lowermost points.
             slicer[axis] = 3
@@ -940,14 +913,6 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             else:
                 anti_laplacian[tuple(slicer)] += \
                     step_size_coefficient * y_prev_prev
-
-            # Upper boundary.
-            slicer[axis] = y_hat.shape[axis] - 3
-            y_prev_prev = y_hat[tuple(slicer)]
-
-            slicer[axis] = y_hat.shape[axis] - 1
-            anti_laplacian[tuple(slicer)] += \
-                step_size_coefficient * y_prev_prev
 
             slicer[axis] = slice(None)
 
