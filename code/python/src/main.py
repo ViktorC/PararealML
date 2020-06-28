@@ -5,8 +5,7 @@ from mpi4py import MPI
 from src.core.boundary_condition import DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import NavierStokesEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod, \
-    TwoPointForwardFiniteDifferenceMethod
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import WellDefinedInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
