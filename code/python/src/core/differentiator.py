@@ -268,8 +268,7 @@ class Differentiator:
             d_x: float,
             tol: float,
             y_constraint_function: ConstraintFunction,
-            y_init: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            y_init: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Returns an array whose derivative with respect to the specified axis
         closely matches the provided values.
@@ -305,8 +304,8 @@ class Differentiator:
             tol: float,
             y_constraint_functions: np.ndarray,
             first_derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_init: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            y_init: Optional[np.ndarray] = None,
+            base_implementation: bool = False) -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
         Laplacian.
@@ -324,6 +323,18 @@ class Differentiator:
         along the boundaries normal to the axes are considered
         :param y_init: an optional initial estimate of the solution; if it is
         None, a random array is used
+        :param base_implementation: whether the base implementation of the
+        anti-Laplacian solver is to be used. If true, the solver may be
+        inconsistent with the differentiator instance as in, it may use a
+        different stencil and have a truncation error of a different order.
+        Consequently, while the non-base implementation of the anti-Laplacian
+        should return a solution whose Laplacian, as computed by the
+        differentiator instance, matches the input Laplacian, this does not
+        hold for the base implementation. However, this base implementation
+        uses a stencil (f_i'' = (u_{i-1} - 2 * u_i + u_{i+1}) / h^2) that may
+        be better suited for solving certain problems, where the inconsistency
+        with the differentiator instance is not an issue, than the sub class'
+        implementation.
         :return: the array representing the solution to Poisson's equation at
         every point of the mesh
         """
@@ -333,9 +344,14 @@ class Differentiator:
             self._evaluate_derivative_boundary_constraints(
                 first_derivative_constraint_functions, laplacian.shape)
 
-        def update(y: np.ndarray) -> np.ndarray:
-            return self._calculate_updated_anti_laplacian(
-                y, laplacian, d_x, derivative_boundary_constraints)
+        if base_implementation:
+            def update(y: np.ndarray) -> np.ndarray:
+                return Differentiator._calculate_updated_anti_laplacian(
+                    self, y, laplacian, d_x, derivative_boundary_constraints)
+        else:
+            def update(y: np.ndarray) -> np.ndarray:
+                return self._calculate_updated_anti_laplacian(
+                    y, laplacian, d_x, derivative_boundary_constraints)
 
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraint_functions)
@@ -383,7 +399,75 @@ class Differentiator:
         arrays to which no constraints apply are represented by NaNs
         :return: an improved estimate of y_hat
         """
-        pass
+        assert len(y_hat.shape) > 1
+        assert np.all(np.array(y_hat.shape[:-1]) > 2)
+        assert len(d_x) == len(y_hat.shape) - 1
+        assert laplacian.shape == y_hat.shape
+
+        anti_laplacian = np.zeros(y_hat.shape)
+
+        d_x_squared_arr = np.square(np.array(d_x))
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        step_size_coefficient_sum = 0.
+
+        for axis in range(len(d_x)):
+            step_size_coefficient = d_x_squared_arr[:axis].prod() * \
+                d_x_squared_arr[axis + 1:].prod()
+            step_size_coefficient_sum += step_size_coefficient
+
+            boundary_constraints = derivative_boundary_constraints[axis]
+            lower_boundary_constraint = boundary_constraints[0]
+            upper_boundary_constraint = boundary_constraints[1]
+
+            # Lower boundary.
+            slicer[axis] = 1
+            y_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = 0
+            if lower_boundary_constraint is not None:
+                y_diff = lower_boundary_constraint
+
+                y_prev = y_next - 2. * d_x[axis] * y_diff
+                y_prev[np.isnan(y_prev)] = 0.
+
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * (y_prev + y_next)
+            else:
+                anti_laplacian[tuple(slicer)] += step_size_coefficient * y_next
+
+            # Internal points.
+            slicer[axis] = slice(0, y_hat.shape[axis] - 2)
+            y_prev = y_hat[tuple(slicer)]
+            slicer[axis] = slice(2, y_hat.shape[axis])
+            y_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = slice(1, y_hat.shape[axis] - 1)
+            anti_laplacian[tuple(slicer)] += \
+                step_size_coefficient * (y_prev + y_next)
+
+            # Upper boundary.
+            slicer[axis] = y_hat.shape[axis] - 2
+            y_prev = y_hat[tuple(slicer)]
+
+            slicer[axis] = y_hat.shape[axis] - 1
+            if upper_boundary_constraint is not None:
+                y_diff = upper_boundary_constraint
+
+                y_next = y_prev + 2. * d_x[axis] * y_diff
+                y_next[np.isnan(y_next)] = 0.
+
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * (y_prev + y_next)
+            else:
+                anti_laplacian[tuple(slicer)] += step_size_coefficient * y_prev
+
+            slicer[axis] = slice(None)
+
+        anti_laplacian -= d_x_squared_arr.prod() * laplacian
+        anti_laplacian /= 2. * step_size_coefficient_sum
+        return anti_laplacian
 
     @staticmethod
     def _solve_with_jacobi_method(

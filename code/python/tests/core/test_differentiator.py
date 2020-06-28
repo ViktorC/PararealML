@@ -109,6 +109,24 @@ def test_differentiator_curl_with_wrong_d_x_size():
         diff.curl(y, d_x)
 
 
+def test_differentiator_anti_laplacian():
+    diff = Differentiator()
+    laplacian = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    diff.anti_laplacian(laplacian, d_x, tol, y_constraint_functions)
+
+
 def test_2pffdm_derivative_with_insufficient_dimensions():
     diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1.
