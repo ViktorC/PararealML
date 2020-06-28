@@ -340,15 +340,19 @@ class Differentiator:
         """
         assert y_constraint_functions is not None
 
-        derivative_boundary_constraints = \
-            self._evaluate_derivative_boundary_constraints(
-                first_derivative_constraint_functions, laplacian.shape)
-
         if base_implementation:
+            derivative_boundary_constraints = \
+                self._evaluate_derivative_boundary_constraints(
+                    None, laplacian.shape)
+
             def update(y: np.ndarray) -> np.ndarray:
                 return Differentiator._calculate_updated_anti_laplacian(
                     self, y, laplacian, d_x, derivative_boundary_constraints)
         else:
+            derivative_boundary_constraints = \
+                self._evaluate_derivative_boundary_constraints(
+                    first_derivative_constraint_functions, laplacian.shape)
+
             def update(y: np.ndarray) -> np.ndarray:
                 return self._calculate_updated_anti_laplacian(
                     y, laplacian, d_x, derivative_boundary_constraints)
@@ -417,26 +421,6 @@ class Differentiator:
                 d_x_squared_arr[axis + 1:].prod()
             step_size_coefficient_sum += step_size_coefficient
 
-            boundary_constraints = derivative_boundary_constraints[axis]
-            lower_boundary_constraint = boundary_constraints[0]
-            upper_boundary_constraint = boundary_constraints[1]
-
-            # Lower boundary.
-            slicer[axis] = 1
-            y_next = y_hat[tuple(slicer)]
-
-            slicer[axis] = 0
-            if lower_boundary_constraint is not None:
-                y_diff = lower_boundary_constraint
-
-                y_prev = y_next - 2. * d_x[axis] * y_diff
-                y_prev[np.isnan(y_prev)] = 0.
-
-                anti_laplacian[tuple(slicer)] += \
-                    step_size_coefficient * (y_prev + y_next)
-            else:
-                anti_laplacian[tuple(slicer)] += step_size_coefficient * y_next
-
             # Internal points.
             slicer[axis] = slice(0, y_hat.shape[axis] - 2)
             y_prev = y_hat[tuple(slicer)]
@@ -446,22 +430,6 @@ class Differentiator:
             slicer[axis] = slice(1, y_hat.shape[axis] - 1)
             anti_laplacian[tuple(slicer)] += \
                 step_size_coefficient * (y_prev + y_next)
-
-            # Upper boundary.
-            slicer[axis] = y_hat.shape[axis] - 2
-            y_prev = y_hat[tuple(slicer)]
-
-            slicer[axis] = y_hat.shape[axis] - 1
-            if upper_boundary_constraint is not None:
-                y_diff = upper_boundary_constraint
-
-                y_next = y_prev + 2. * d_x[axis] * y_diff
-                y_next[np.isnan(y_next)] = 0.
-
-                anti_laplacian[tuple(slicer)] += \
-                    step_size_coefficient * (y_prev + y_next)
-            else:
-                anti_laplacian[tuple(slicer)] += step_size_coefficient * y_prev
 
             slicer[axis] = slice(None)
 
@@ -537,7 +505,7 @@ class Differentiator:
         :return: the evaluated derivative boundary constraints
         """
         if first_derivative_constraint_functions is None:
-            return ((None,) * 2,) * (len(y_shape) - 1)
+            return ((None, None),) * (len(y_shape) - 1)
 
         assert first_derivative_constraint_functions.shape == \
             (len(y_shape) - 1, y_shape[-1])
