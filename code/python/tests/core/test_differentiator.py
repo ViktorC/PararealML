@@ -124,7 +124,8 @@ def test_differentiator_anti_laplacian():
     y_constraint_functions = np.array(
         [y_constraint_function, y_constraint_function])
 
-    diff.anti_laplacian(laplacian, d_x, tol, y_constraint_functions)
+    diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, None, None, True)
 
 
 def test_2pffdm_derivative_with_insufficient_dimensions():
