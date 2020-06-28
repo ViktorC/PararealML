@@ -29,13 +29,13 @@ bvp = BoundaryValueProblem(
       DirichletCondition(lambda x: np.array([.0, .0])))))
 ivp = InitialValueProblem(
     bvp,
-    (0., 1.),
+    (0., 80.),
     WellDefinedInitialCondition(bvp, lambda x: np.array([.0, .0])))
 
 f = FDMOperator(
     RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 g = FDMOperator(
-    ExplicitMidpointMethod(), TwoPointForwardFiniteDifferenceMethod(), .01)
+    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
 
 parareal = Parareal(f, g)
 
