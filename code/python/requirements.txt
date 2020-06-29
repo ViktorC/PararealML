@@ -1,7 +1,7 @@
 flake8~=3.7.9
 mypy~=0.770
 pytest~=5.0.0
-numpy~=1.18.1
+numpy~=1.17.5
 scipy~=1.4.1
 matplotlib~=3.2.1
 mpi4py~=3.0.3
