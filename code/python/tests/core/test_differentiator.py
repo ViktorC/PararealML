@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from src.core.differentiator import Differentiator, \
-    TwoPointFiniteDifferenceMethod, ThreePointFiniteDifferenceMethod
+    TwoPointForwardFiniteDifferenceMethod, \
+    ThreePointCentralFiniteDifferenceMethod
 
 
 def test_differentiator_second_derivative_with_insufficient_dimensions():
@@ -108,97 +109,11 @@ def test_differentiator_curl_with_wrong_d_x_size():
         diff.curl(y, d_x)
 
 
-def test_differentiator_set_y_hat_padding():
-    d_x = 2., 1.
-    y_hat = np.array([
-        [
-            [2., 4.], [4., 8.], [2., 4.]
-        ],
-        [
-            [6., 4.], [4., 4.], [10., -4.]
-        ],
-        [
-            [2., 6.], [8., 2.], [-2., 4.]
-        ]
-    ])
-    padded_y_hat = np.zeros((5, 5, 2))
-    padded_y_hat[1:4, 1:4, :] = y_hat
-
-    padded_slicer: Slicer = \
-        [slice(1, y_hat.shape[i] + 1) for i in range(len(d_x))] + \
-        [slice(None)]
-
-    derivative_constraint_functions = get_2d_derivative_constraint_functions()
-
-    Differentiator._set_y_hat_padding(
-        padded_y_hat,
-        padded_slicer,
-        d_x,
-        y_hat.shape,
-        derivative_constraint_functions)
-
-    assert np.all(padded_y_hat[1:4, 1:4, :] == y_hat)
-
-    assert np.all(padded_y_hat[0, 1:4, 0] == np.array([6., 0., 2.]))
-    assert np.all(padded_y_hat[4, 1:4, 0] == np.array([2., 0., 6.]))
-    assert np.all(padded_y_hat[1:4, 0, 0] == np.array([0., 0., 0.]))
-    assert np.all(padded_y_hat[1:4, 4, 0] == np.array([0., 8., 0.]))
-
-    assert np.all(padded_y_hat[0, 1:4, 1] == np.array([0., 0., 0.]))
-    assert np.all(padded_y_hat[4, 1:4, 1] == np.array([0., 0., 0.]))
-    assert np.all(padded_y_hat[1:4, 0, 1] == np.array([4., 0., -2.]))
-    assert np.all(padded_y_hat[1:4, 4, 1] == np.array([0., 0., 0.]))
-
-
-def test_differentiator_calculate_updated_anti_laplacian():
+def test_differentiator_anti_laplacian():
     diff = Differentiator()
-    d_x = 2., 1.
-    y_hat = np.array([
-        [
-            [2., 4.], [4., 8.], [2., 4.]
-        ],
-        [
-            [6., 4.], [4., 4.], [10., -4.]
-        ],
-        [
-            [2., 6.], [8., 2.], [-2., 4.]
-        ]
-    ])
-    derivative_constraint_functions = get_2d_derivative_constraint_functions()
-    laplacian = np.array([
-        [
-            [2., 1.], [3., -1.], [4., 1.]
-        ],
-        [
-            [1., 1.], [2., 1.], [3., -2.]
-        ],
-        [
-            [2., -1.], [3., -2.], [2., -1.]
-        ]
-    ])
-
-    expected_y = np.array([
-        [
-            [2., 4.8], [.8, 4.], [1.2, 2.4]
-        ],
-        [
-            [1.6, 2.2], [6.8, .6], [3.6, 3.2]
-        ],
-        [
-            [3.2, .8], [-.8, 5.2], [4., .8]
-        ]
-    ])
-    actual_y = diff._calculate_updated_anti_laplacian(
-        y_hat, laplacian, d_x, derivative_constraint_functions)
-
-    assert np.isclose(actual_y, expected_y).all()
-
-
-def test_differentiator_anti_laplacian_with_y_constraints():
-    diff = Differentiator()
-    laplacian = np.random.random((10, 10, 3))
-    d_x = .05, .1
-    tol = 0.
+    laplacian = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
 
     def y_constraint_function(_y: np.ndarray):
         _y[0, :] = 1.
@@ -206,13 +121,15 @@ def test_differentiator_anti_laplacian_with_y_constraints():
         _y[:, 0] = 3.
         _y[:, _y.shape[1] - 1] = 4.
 
-    y_constraint_functions = np.array([y_constraint_function] * 3)
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
 
-    diff.anti_laplacian(laplacian, d_x, tol, y_constraint_functions)
+    diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, None, None, True)
 
 
-def test_2pfdm_derivative_with_insufficient_dimensions():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_derivative_with_insufficient_dimensions():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1.
     y = np.arange(1., 5.)
 
@@ -220,8 +137,8 @@ def test_2pfdm_derivative_with_insufficient_dimensions():
         diff.derivative(y, d_x, 0)
 
 
-def test_2pfdm_derivative_with_out_of_bounds_x_axis():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_derivative_with_out_of_bounds_x_axis():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
@@ -230,8 +147,8 @@ def test_2pfdm_derivative_with_out_of_bounds_x_axis():
         diff.derivative(y, d_x, x_axis)
 
 
-def test_2pfdm_derivative_with_out_of_bounds_y_ind():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_derivative_with_out_of_bounds_y_ind():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 0
     y_ind = 2
@@ -241,8 +158,8 @@ def test_2pfdm_derivative_with_out_of_bounds_y_ind():
         diff.derivative(y, d_x, x_axis, y_ind)
 
 
-def test_2pfdm_derivative_with_insufficient_dimension_extent():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_derivative_with_insufficient_dimension_extent():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 0
     y = np.arange(0., 6.).reshape((1, 2, 3))
@@ -251,8 +168,8 @@ def test_2pfdm_derivative_with_insufficient_dimension_extent():
         diff.derivative(y, d_x, x_axis)
 
 
-def test_2pfdm_derivative():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_derivative():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -283,8 +200,8 @@ def test_2pfdm_derivative():
     assert np.isclose(actual_derivative, expected_derivative).all()
 
 
-def test_2pfdm_constrained_derivative():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_constrained_derivative():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -320,8 +237,8 @@ def test_2pfdm_constrained_derivative():
     assert np.isclose(actual_derivative, expected_derivative).all()
 
 
-def test_2pfdm_second_derivative():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_second_derivative():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -354,8 +271,8 @@ def test_2pfdm_second_derivative():
         actual_second_derivative, expected_second_derivative).all()
 
 
-def test_2pfdm_mixed_second_derivative():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_mixed_second_derivative():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x1 = 1.
     d_x2 = .5
     x_axis1 = 0
@@ -389,8 +306,8 @@ def test_2pfdm_mixed_second_derivative():
         actual_second_derivative, expected_second_derivative).all()
 
 
-def test_2pfdm_jacobian():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_jacobian():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2., 1.
     y = np.array([
         [
@@ -434,8 +351,8 @@ def test_2pfdm_jacobian():
     assert np.isclose(actual_jacobian, expected_jacobian).all()
 
 
-def test_2pfdm_2d_divergence():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_2d_divergence():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1., 2.
     y = np.array([
         [
@@ -458,8 +375,8 @@ def test_2pfdm_2d_divergence():
     assert np.isclose(actual_div, expected_div).all()
 
 
-def test_2pfdm_3d_divergence():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_3d_divergence():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = (.5,) * 3
     y = np.array([
         [
@@ -502,8 +419,8 @@ def test_2pfdm_3d_divergence():
     assert np.isclose(actual_div, expected_div).all()
 
 
-def test_2pfdm_2d_curl():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_2d_curl():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = (.5,) * 2
     y = np.array([
         [
@@ -526,8 +443,8 @@ def test_2pfdm_2d_curl():
     assert np.isclose(actual_curl, expected_curl).all()
 
 
-def test_2pfdm_3d_curl():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_3d_curl():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 1., 2., .5
     y = np.array([
         [
@@ -582,8 +499,8 @@ def test_2pfdm_3d_curl():
     assert np.isclose(actual_curl, expected_curl).all()
 
 
-def test_2pfdm_hessian():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_hessian():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2., 1.
     y = np.array([
         [
@@ -661,8 +578,8 @@ def test_2pfdm_hessian():
     assert np.isclose(actual_hessian, expected_hessian).all()
 
 
-def test_2pfdm_laplacian():
-    diff = TwoPointFiniteDifferenceMethod()
+def test_2pffdm_laplacian():
+    diff = TwoPointForwardFiniteDifferenceMethod()
     d_x = 2., 1.
     y = np.array([
         [
@@ -691,8 +608,101 @@ def test_2pfdm_laplacian():
     assert np.isclose(actual_lapl, expected_lapl).all()
 
 
-def test_3pfdm_derivative_with_insufficient_dimensions():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_2pffdm_anti_derivative():
+    diff = TwoPointForwardFiniteDifferenceMethod()
+    y = np.random.random((10, 10, 1))
+    x_axis = 1
+    d_x = .05
+    tol = 0.
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+
+    d_y_over_d_x = diff.derivative(y, d_x, x_axis)
+
+    anti_derivative = diff.anti_derivative(
+        d_y_over_d_x, x_axis, d_x, tol, y_constraint_function)
+
+    assert np.isclose(
+        diff.derivative(anti_derivative, d_x, x_axis),
+        d_y_over_d_x).all()
+    assert np.isclose(anti_derivative, y).all()
+
+
+def test_2pffdm_anti_laplacian():
+    diff = TwoPointForwardFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-8
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    laplacian = diff.laplacian(y, d_x)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_2pffdm_anti_laplacian_with_derivative_constraints():
+    diff = TwoPointForwardFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    def d_y_constraint_function_0(_d_y: np.ndarray):
+        _d_y[0, :] = 2.
+        _d_y[_d_y.shape[0] - 1, :] = -3.
+
+    def d_y_constraint_function_1(_d_y: np.ndarray):
+        _d_y[:, 0] = .5
+        _d_y[:, _d_y.shape[1] - 1] = 0.
+
+    d_y_constraint_functions = np.array([
+        [d_y_constraint_function_0, None],
+        [d_y_constraint_function_1, None]
+    ])
+
+    laplacian = diff.laplacian(y, d_x, d_y_constraint_functions)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, d_y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x, d_y_constraint_functions),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_3pcfdm_derivative_with_insufficient_dimensions():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.
     y = np.arange(1., 5.)
 
@@ -700,8 +710,8 @@ def test_3pfdm_derivative_with_insufficient_dimensions():
         diff.derivative(y, d_x, 0)
 
 
-def test_3pfdm_derivative_with_out_of_bounds_x_axis():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_derivative_with_out_of_bounds_x_axis():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
@@ -710,8 +720,8 @@ def test_3pfdm_derivative_with_out_of_bounds_x_axis():
         diff.derivative(y, d_x, x_axis)
 
 
-def test_3pfdm_derivative_with_out_of_bounds_y_ind():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_derivative_with_out_of_bounds_y_ind():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 0
     y_ind = 2
@@ -721,8 +731,8 @@ def test_3pfdm_derivative_with_out_of_bounds_y_ind():
         diff.derivative(y, d_x, x_axis, y_ind)
 
 
-def test_3pfdm_derivative_with_insufficient_dimension_extent():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_derivative_with_insufficient_dimension_extent():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 0
     y = np.arange(0., 12.).reshape((2, 3, 2))
@@ -731,8 +741,8 @@ def test_3pfdm_derivative_with_insufficient_dimension_extent():
         diff.derivative(y, d_x, x_axis)
 
 
-def test_3pfdm_derivative():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_derivative():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -763,8 +773,8 @@ def test_3pfdm_derivative():
     assert np.isclose(actual_derivative, expected_derivative).all()
 
 
-def test_3pfdm_constrained_derivative():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_constrained_derivative():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -800,8 +810,8 @@ def test_3pfdm_constrained_derivative():
     assert np.isclose(actual_derivative, expected_derivative).all()
 
 
-def test_3pfdm_second_derivative():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_second_derivative():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
     y_ind = 1
@@ -834,8 +844,8 @@ def test_3pfdm_second_derivative():
         actual_second_derivative, expected_second_derivative).all()
 
 
-def test_3pfdm_mixed_second_derivative():
-    diff = ThreePointFiniteDifferenceMethod()
+def test_3pcfdm_mixed_second_derivative():
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x1 = 1.
     d_x2 = .5
     x_axis1 = 0
@@ -867,6 +877,99 @@ def test_3pfdm_mixed_second_derivative():
 
     assert np.isclose(
         actual_second_derivative, expected_second_derivative).all()
+
+
+def test_3pcfdm_anti_derivative():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 1))
+    x_axis = 0
+    d_x = .07
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = -1.
+        _y[_y.shape[0] - 1, :] = 5.
+
+    y_constraint_function(y[..., 0])
+
+    d_y_over_d_x = diff.derivative(y, d_x, x_axis)
+
+    anti_derivative = diff.anti_derivative(
+        d_y_over_d_x, x_axis, d_x, tol, y_constraint_function)
+
+    assert np.isclose(
+        diff.derivative(anti_derivative, d_x, x_axis),
+        d_y_over_d_x).all()
+    assert np.isclose(anti_derivative, y).all()
+
+
+def test_3pcfdm_anti_laplacian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    laplacian = diff.laplacian(y, d_x)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_3pcfdm_anti_laplacian_with_derivative_constraints():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    d_x = .05, .025
+    tol = 1e-12
+
+    def y_constraint_function(_y: np.ndarray):
+        _y[0, :] = 1.
+        _y[_y.shape[0] - 1, :] = 2.
+        _y[:, 0] = 3.
+        _y[:, _y.shape[1] - 1] = 4.
+
+    y_constraint_function(y[..., 0])
+    y_constraint_function(y[..., 1])
+    y_constraint_functions = np.array(
+        [y_constraint_function, y_constraint_function])
+
+    def d_y_constraint_function_0(_d_y: np.ndarray):
+        _d_y[0, :] = 2.
+        _d_y[_d_y.shape[0] - 1, :] = -3.
+
+    def d_y_constraint_function_1(_d_y: np.ndarray):
+        _d_y[:, 0] = .5
+        _d_y[:, _d_y.shape[1] - 1] = 0.
+
+    d_y_constraint_functions = np.array([
+        [d_y_constraint_function_0, None],
+        [d_y_constraint_function_1, None]
+    ])
+
+    laplacian = diff.laplacian(y, d_x, d_y_constraint_functions)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, d_x, tol, y_constraint_functions, d_y_constraint_functions)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, d_x, d_y_constraint_functions),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
 
 
 def get_2d_derivative_constraint_functions() -> np.ndarray:

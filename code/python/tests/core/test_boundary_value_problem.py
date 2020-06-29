@@ -3,7 +3,7 @@ import numpy as np
 from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import LotkaVolterraEquation, WaveEquation
-from src.core.differentiator import ThreePointFiniteDifferenceMethod
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.mesh import UniformGrid
 
 
@@ -49,7 +49,7 @@ def test_2d_bvp():
     assert np.all(y[:, y.shape[1] - 1, 1] == -999.)
 
     y = np.zeros(bvp.y_shape())
-    diff = ThreePointFiniteDifferenceMethod()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_y_constraint_functions = bvp.d_y_constraint_functions()
 
     d_y_0_d_x_0 = diff.derivative(

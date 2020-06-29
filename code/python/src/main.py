@@ -5,7 +5,7 @@ from mpi4py import MPI
 from src.core.boundary_condition import DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import NavierStokesEquation
-from src.core.differentiator import ThreePointFiniteDifferenceMethod
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import WellDefinedInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import ExplicitMidpointMethod, RK4
@@ -32,9 +32,9 @@ ivp = InitialValueProblem(
     WellDefinedInitialCondition(bvp, lambda x: np.array([.0, .0])))
 
 f = FDMOperator(
-    RK4(), ThreePointFiniteDifferenceMethod(), .01)
+    RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 g = FDMOperator(
-    ExplicitMidpointMethod(), ThreePointFiniteDifferenceMethod(), .01)
+    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
 
 parareal = Parareal(f, g)
 

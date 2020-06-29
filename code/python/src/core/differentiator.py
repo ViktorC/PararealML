@@ -261,6 +261,42 @@ class Differentiator:
 
         return laplacian
 
+    def anti_derivative(
+            self,
+            derivative: np.ndarray,
+            x_axis: int,
+            d_x: float,
+            tol: float,
+            y_constraint_function: ConstraintFunction,
+            y_init: Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Returns an array whose derivative with respect to the specified axis
+        closely matches the provided values.
+
+        :param derivative: the right-hand side of the equation
+        :param x_axis: the spatial dimension that the anti-derivative is to be
+        calculated with respect to
+        :param d_x: the step sizes of the mesh along the spatial axes
+        :param tol: the stopping criterion for the Jacobi algorithm; once the
+        second norm of the difference of the estimate and the updated estimate
+        drops below this threshold, the equation is considered to be solved
+        :param y_constraint_function: a callback function that specifies
+        constraints on the values of the solution
+        :param y_init: an optional initial estimate of the solution; if it is
+        None, a random array is used
+        :return: the array representing the solution
+        """
+        assert y_constraint_function is not None
+
+        def update(y: np.ndarray) -> np.ndarray:
+            return self._calculate_updated_anti_derivative(
+                y, derivative, x_axis, d_x)
+
+        y_constraint_functions = np.array([y_constraint_function])
+
+        return self._solve_with_jacobi_method(
+            update, derivative.shape, tol, y_init, y_constraint_functions)
+
     def anti_laplacian(
             self,
             laplacian: np.ndarray,
@@ -268,8 +304,8 @@ class Differentiator:
             tol: float,
             y_constraint_functions: np.ndarray,
             first_derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_init: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            y_init: Optional[np.ndarray] = None,
+            base_implementation: bool = False) -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
         Laplacian.
@@ -283,27 +319,75 @@ class Differentiator:
         specify constraints on the values of the solution
         :param first_derivative_constraint_functions: an optional 2D array
         (x dimension, y dimension) of callback functions that specify
-        constraints on the first derivatives of the solution
+        constraints on the first derivatives of the solution; only constraints
+        along the boundaries normal to the axes are considered
         :param y_init: an optional initial estimate of the solution; if it is
         None, a random array is used
+        :param base_implementation: whether the base implementation of the
+        anti-Laplacian solver is to be used. If true, the solver may be
+        inconsistent with the differentiator instance as in, it may use a
+        different stencil and have a truncation error of a different order.
+        Consequently, while the non-base implementation of the anti-Laplacian
+        should return a solution whose Laplacian, as computed by the
+        differentiator instance, matches the input Laplacian, this does not
+        hold for the base implementation. However, this base implementation
+        uses a stencil (f_i'' = (u_{i-1} - 2 * u_i + u_{i+1}) / h^2) that may
+        be better suited for solving certain problems, where the inconsistency
+        with the differentiator instance is not an issue, than the sub class'
+        implementation.
         :return: the array representing the solution to Poisson's equation at
         every point of the mesh
         """
         assert y_constraint_functions is not None
 
-        def update(y: np.ndarray) -> np.ndarray:
-            return self._calculate_updated_anti_laplacian(
-                y, laplacian, d_x, first_derivative_constraint_functions)
+        if base_implementation:
+            derivative_boundary_constraints = \
+                self._evaluate_derivative_boundary_constraints(
+                    None, laplacian.shape)
+
+            def update(y: np.ndarray) -> np.ndarray:
+                return Differentiator._calculate_updated_anti_laplacian(
+                    self, y, laplacian, d_x, derivative_boundary_constraints)
+        else:
+            derivative_boundary_constraints = \
+                self._evaluate_derivative_boundary_constraints(
+                    first_derivative_constraint_functions, laplacian.shape)
+
+            def update(y: np.ndarray) -> np.ndarray:
+                return self._calculate_updated_anti_laplacian(
+                    y, laplacian, d_x, derivative_boundary_constraints)
 
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraint_functions)
+
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            derivative: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        """
+        Given an estimate, y_hat, of the anti-derivative, it returns an
+        improved estimate.
+
+        :param y_hat: the current estimated values of the anti-derivative at
+        every point of the mesh
+        :param derivative: the derivative of y with respect to the spatial
+        dimension defined by x_axis
+        :param x_axis: the spatial dimension that the anti-derivative is to be
+        calculated with respect to
+        :param d_x: the step size of the mesh along the specified axis
+        :return: an improved estimate of the anti-derivative
+        """
+        pass
 
     def _calculate_updated_anti_laplacian(
             self,
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_constraint_functions: Optional[np.ndarray]) \
+            derivative_boundary_constraints:
+            Tuple[Tuple[Optional[np.ndarray], Optional[np.ndarray]], ...]) \
             -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it returns an improved
@@ -313,52 +397,44 @@ class Differentiator:
         point of the mesh
         :param laplacian: the Laplacian for which y is to be determined
         :param d_x: the step sizes of the mesh along the spatial axes
-        :param first_derivative_constraint_functions: a 2D array (x dimension,
-        y dimension) of callback functions that specify constraints on the
-        first derivatives of the anti-Laplacian
+        :param derivative_boundary_constraints: a tuple containing a tuple of
+        two arrays for each spatial axis that represent the boundaries
+        with the derivative constraints evaluated on them; elements of the
+        arrays to which no constraints apply are represented by NaNs
         :return: an improved estimate of y_hat
         """
         assert len(y_hat.shape) > 1
-        assert np.all(np.array(y_hat.shape[:-1]) > 1)
+        assert np.all(np.array(y_hat.shape[:-1]) > 2)
         assert len(d_x) == len(y_hat.shape) - 1
         assert laplacian.shape == y_hat.shape
 
         anti_laplacian = np.zeros(y_hat.shape)
 
-        padding_shape = tuple([(1, 1)] * len(d_x) + [(0, 0)])
-        padded_y_hat = np.pad(y_hat, padding_shape, 'constant')
+        d_x_squared_arr = np.square(np.array(d_x))
 
-        d_x_arr = np.array(d_x)
-
-        padded_slicer: Slicer = \
-            [slice(1, y_hat.shape[i] + 1) for i in range(len(d_x))] + \
-            [slice(None)]
-
-        self._set_y_hat_padding(
-            padded_y_hat,
-            padded_slicer,
-            d_x,
-            y_hat.shape,
-            first_derivative_constraint_functions)
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
 
         step_size_coefficient_sum = 0.
 
         for axis in range(len(d_x)):
-            step_size_coefficient = np.square(d_x_arr[:axis]).prod() * \
-                                    np.square(d_x_arr[axis + 1:]).prod()
+            step_size_coefficient = d_x_squared_arr[:axis].prod() * \
+                d_x_squared_arr[axis + 1:].prod()
             step_size_coefficient_sum += step_size_coefficient
 
-            padded_slicer_axis = padded_slicer[axis]
-            padded_slicer[axis] = slice(0, padded_y_hat.shape[axis] - 2)
-            y_prev = padded_y_hat[tuple(padded_slicer)]
-            padded_slicer[axis] = slice(2, padded_y_hat.shape[axis])
-            y_next = padded_y_hat[tuple(padded_slicer)]
-            padded_slicer[axis] = padded_slicer_axis
+            # Internal points.
+            slicer[axis] = slice(0, y_hat.shape[axis] - 2)
+            y_prev = y_hat[tuple(slicer)]
+            slicer[axis] = slice(2, y_hat.shape[axis])
+            y_next = y_hat[tuple(slicer)]
 
-            anti_laplacian += step_size_coefficient * (y_next + y_prev)
+            slicer[axis] = slice(1, y_hat.shape[axis] - 1)
+            anti_laplacian[tuple(slicer)] += \
+                step_size_coefficient * (y_prev + y_next)
 
-        anti_laplacian -= (np.square(d_x_arr).prod() * laplacian)
-        anti_laplacian /= (2. * step_size_coefficient_sum)
+            slicer[axis] = slice(None)
+
+        anti_laplacian -= d_x_squared_arr.prod() * laplacian
+        anti_laplacian /= 2. * step_size_coefficient_sum
         return anti_laplacian
 
     @staticmethod
@@ -411,82 +487,55 @@ class Differentiator:
         return y_init
 
     @staticmethod
-    def _set_y_hat_padding(
-            padded_y_hat: np.ndarray,
-            padded_slicer: Slicer,
-            d_x: Tuple[float, ...],
-            y_shape: Tuple[int, ...],
-            first_derivative_constraint_functions: Optional[np.ndarray]):
+    def _evaluate_derivative_boundary_constraints(
+            first_derivative_constraint_functions: Optional[np.ndarray],
+            y_shape: Tuple[int, ...]) \
+            -> Tuple[Tuple[Optional[np.ndarray], Optional[np.ndarray]], ...]:
         """
-        Sets the halo cells of padded_y_hat based on the Neumann boundary
-        conditions to ensure that the spatial derivatives of y with respect to
-        the normal vectors of the boundaries match the constraints.
+        Evaluates the boundary constraints on the first derivatives and returns
+        a tuple containing a tuple of two arrays for each spatial axis that
+        represent the boundaries with the derivative constraints evaluated on
+        them. Elements of the arrays to which no constraints apply are
+        represented by NaNs
 
-        :param padded_y_hat: the estimate of the solution padded with halo
-        cells
-        :param padded_slicer: a slicer for padded_y_hat
-        :param d_x: the step sizes of the mesh along the spatial axes
-        :param y_shape: the shape of the non-padded solution
-        :param first_derivative_constraint_functions: a 2D array (x dimension,
-        y dimension) of callback functions that specify constraints on the
-        first derivatives of the solution
+        :param first_derivative_constraint_functions: an optional 2D array
+        (x dimension, y dimension) of callback functions that specify
+        constraints on the first derivatives of y
+        :param y_shape: the shape of y
+        :return: the evaluated derivative boundary constraints
         """
-        if first_derivative_constraint_functions is not None:
-            assert first_derivative_constraint_functions.shape == \
-                   (len(y_shape) - 1, y_shape[-1])
+        if first_derivative_constraint_functions is None:
+            return ((None, None),) * (len(y_shape) - 1)
 
-            derivative_constraints = np.empty(list(y_shape[:-1]) + [1])
+        assert first_derivative_constraint_functions.shape == \
+            (len(y_shape) - 1, y_shape[-1])
 
-            slicer: Slicer = [slice(None)] * len(y_shape)
-            slicer[-1] = 0
+        evaluated_derivative_constraints = []
 
-            for x_axis in range(len(d_x)):
-                for y_ind in range(y_shape[-1]):
-                    constraint_function = \
-                        first_derivative_constraint_functions[x_axis, y_ind]
+        slicer: Slicer = [slice(None)] * len(y_shape)
 
-                    if constraint_function:
-                        derivative_constraints.fill(np.nan)
-                        constraint_function(derivative_constraints[..., 0])
+        array = np.empty(y_shape)
+        for axis in range(len(y_shape) - 1):
+            array.fill(np.nan)
 
-                        padded_slicer[-1] = y_ind
-                        padded_slicer_axis = padded_slicer[x_axis]
+            for y_ind in range(y_shape[-1]):
+                constraint_function = \
+                    first_derivative_constraint_functions[axis, y_ind]
+                if constraint_function is not None:
+                    constraint_function(array[..., y_ind])
 
-                        slicer[x_axis] = 0
-                        lower_boundary_diff = \
-                            derivative_constraints[tuple(slicer)]
+            slicer[axis] = 0
+            lower_boundary = np.copy(array[tuple(slicer)])
 
-                        padded_slicer[x_axis] = 2
-                        y_lower_boundary_next = \
-                            padded_y_hat[tuple(padded_slicer)]
+            slicer[axis] = y_shape[axis] - 1
+            upper_boundary = np.copy(array[tuple(slicer)])
 
-                        y_lower_boundary_prev = y_lower_boundary_next - \
-                            2 * d_x[x_axis] * lower_boundary_diff
+            evaluated_derivative_constraints.append(
+                (lower_boundary, upper_boundary))
 
-                        padded_slicer[x_axis] = 0
-                        padded_y_hat[tuple(padded_slicer)] = \
-                            y_lower_boundary_prev
+            slicer[axis] = slice(None)
 
-                        slicer[x_axis] = y_shape[x_axis] - 1
-                        upper_boundary_diff = \
-                            derivative_constraints[tuple(slicer)]
-
-                        padded_slicer[x_axis] = y_shape[x_axis] - 1
-                        y_upper_boundary_prev = \
-                            padded_y_hat[tuple(padded_slicer)]
-
-                        y_upper_boundary_next = y_upper_boundary_prev + \
-                            2 * d_x[x_axis] * upper_boundary_diff
-
-                        padded_slicer[x_axis] = y_shape[x_axis] + 1
-                        padded_y_hat[tuple(padded_slicer)] = \
-                            y_upper_boundary_next
-
-                        padded_slicer[-1] = slice(None)
-                        padded_slicer[x_axis] = padded_slicer_axis
-                        slicer[x_axis] = slice(None)
-
-            padded_y_hat[np.isnan(padded_y_hat)] = 0.
+        return tuple(evaluated_derivative_constraints)
 
     @staticmethod
     def _verify_and_get_derivative_constraint_functions(
@@ -513,9 +562,9 @@ class Differentiator:
             return np.empty((len(y_shape) - 1, y_shape[-1]), dtype=object)
 
 
-class TwoPointFiniteDifferenceMethod(Differentiator):
+class TwoPointForwardFiniteDifferenceMethod(Differentiator):
     """
-    A numerical differentiator using two-point (first order) forward finite
+    A numerical differentiator using a two-point (first order) forward
     difference.
     """
 
@@ -540,7 +589,7 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         y_slicer[-1] = y_ind
         derivative_slicer[-1] = 0
 
-        # Left boundary and internal points.
+        # Lower boundary and internal points.
         y_slicer[x_axis] = slice(0, y.shape[x_axis] - 1)
         y_curr = y[tuple(y_slicer)]
         y_slicer[x_axis] = slice(1, y.shape[x_axis])
@@ -551,7 +600,7 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
         derivative_slicer[x_axis] = slice(0, y.shape[x_axis] - 1)
         derivative[tuple(derivative_slicer)] = y_diff
 
-        # Right boundary.
+        # Upper boundary.
         y_slicer[x_axis] = y.shape[x_axis] - 1
         y_curr = y[tuple(y_slicer)]
 
@@ -565,10 +614,99 @@ class TwoPointFiniteDifferenceMethod(Differentiator):
 
         return derivative
 
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            derivative: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        assert y_hat.shape[x_axis] > 1
+        assert 0 <= x_axis < len(y_hat.shape) - 1
+        assert y_hat.shape == derivative.shape
+        assert y_hat.shape[-1] == 1
 
-class ThreePointFiniteDifferenceMethod(Differentiator):
+        anti_derivative = np.empty(y_hat.shape)
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        # Lower boundary and internal points.
+        slicer[x_axis] = slice(1, y_hat.shape[x_axis])
+        y_next = y_hat[tuple(slicer)]
+        slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 1)
+        y_diff = derivative[tuple(slicer)]
+
+        y_curr = y_next - y_diff * d_x
+
+        anti_derivative[tuple(slicer)] = y_curr
+
+        return anti_derivative
+
+    def _calculate_updated_anti_laplacian(
+            self,
+            y_hat: np.ndarray,
+            laplacian: np.ndarray,
+            d_x: Tuple[float, ...],
+            derivative_boundary_constraints:
+            Tuple[Tuple[Optional[np.ndarray], Optional[np.ndarray]], ...]) \
+            -> np.ndarray:
+        assert len(y_hat.shape) > 1
+        assert np.all(np.array(y_hat.shape[:-1]) > 2)
+        assert len(d_x) == len(y_hat.shape) - 1
+        assert laplacian.shape == y_hat.shape
+
+        anti_laplacian = np.zeros(y_hat.shape)
+
+        d_x_squared_arr = np.square(np.array(d_x))
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        step_size_coefficient_sum = 0.
+
+        for axis in range(len(d_x)):
+            step_size_coefficient = d_x_squared_arr[:axis].prod() * \
+                d_x_squared_arr[axis + 1:].prod()
+            step_size_coefficient_sum += step_size_coefficient
+
+            upper_boundary_constraint = \
+                derivative_boundary_constraints[axis][1]
+
+            # Lower boundary and internal points.
+            slicer[axis] = slice(1, y_hat.shape[axis] - 1)
+            y_next = y_hat[tuple(slicer)]
+            slicer[axis] = slice(2, y_hat.shape[axis])
+            y_next_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = slice(0, y_hat.shape[axis] - 2)
+            anti_laplacian[tuple(slicer)] += step_size_coefficient * \
+                (-y_next_next + 2. * y_next)
+
+            # Second uppermost points.
+            slicer[axis] = y_hat.shape[axis] - 1
+            y_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = y_hat.shape[axis] - 2
+            if upper_boundary_constraint is not None:
+                y_diff = upper_boundary_constraint
+
+                y_next_next = y_next + d_x[axis] * y_diff
+                y_next_next[np.isnan(y_next_next)] = 0.
+
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * (-y_next_next + 2. * y_next)
+            else:
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * 2. * y_next
+
+            slicer[axis] = slice(None)
+
+        anti_laplacian += d_x_squared_arr.prod() * laplacian
+        anti_laplacian /= step_size_coefficient_sum
+        return anti_laplacian
+
+
+class ThreePointCentralFiniteDifferenceMethod(Differentiator):
     """
-    A numerical differentiator using three-point (second order) central finite
+    A numerical differentiator using a three-point (second order) central
     difference.
     """
 
@@ -593,11 +731,13 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         y_slicer[-1] = y_ind
         derivative_slicer[-1] = 0
 
-        # Left boundary.
+        two_d_x = 2. * d_x
+
+        # Lower boundary.
         y_slicer[x_axis] = 1
         y_next = y[tuple(y_slicer)]
 
-        y_diff = y_next / (2 * d_x)
+        y_diff = y_next / two_d_x
 
         derivative_slicer[x_axis] = 0
         derivative[tuple(derivative_slicer)] = y_diff
@@ -608,16 +748,16 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
         y_slicer[x_axis] = slice(2, y.shape[x_axis])
         y_next = y[tuple(y_slicer)]
 
-        y_diff = (y_next - y_prev) / (2 * d_x)
+        y_diff = (y_next - y_prev) / two_d_x
 
         derivative_slicer[x_axis] = slice(1, y.shape[x_axis] - 1)
         derivative[tuple(derivative_slicer)] = y_diff
 
-        # Right boundary.
+        # Upper boundary.
         y_slicer[x_axis] = y.shape[x_axis] - 2
         y_prev = y[tuple(y_slicer)]
 
-        y_diff = -y_prev / (2 * d_x)
+        y_diff = -y_prev / two_d_x
 
         derivative_slicer[x_axis] = y.shape[x_axis] - 1
         derivative[tuple(derivative_slicer)] = y_diff
@@ -626,3 +766,124 @@ class ThreePointFiniteDifferenceMethod(Differentiator):
             derivative_constraint_function(derivative[..., 0])
 
         return derivative
+
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            derivative: np.ndarray,
+            x_axis: int,
+            d_x: float) -> np.ndarray:
+        assert y_hat.shape[x_axis] > 2
+        assert 0 <= x_axis < len(y_hat.shape) - 1
+        assert y_hat.shape == derivative.shape
+        assert y_hat.shape[-1] == 1
+
+        anti_derivative = np.empty(y_hat.shape)
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        two_d_x = 2. * d_x
+
+        # Lower boundary and internal points.
+        slicer[x_axis] = slice(2, y_hat.shape[x_axis])
+        y_next = y_hat[tuple(slicer)]
+        slicer[x_axis] = slice(1, y_hat.shape[x_axis] - 1)
+        y_diff = derivative[tuple(slicer)]
+
+        y_prev = y_next - two_d_x * y_diff
+
+        slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 2)
+        anti_derivative[tuple(slicer)] = y_prev
+
+        # Second uppermost points.
+        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        y_diff = derivative[tuple(slicer)]
+
+        y_prev = -two_d_x * y_diff
+
+        slicer[x_axis] = y_hat.shape[x_axis] - 2
+        anti_derivative[tuple(slicer)] = y_prev
+
+        return anti_derivative
+
+    def _calculate_updated_anti_laplacian(
+            self,
+            y_hat: np.ndarray,
+            laplacian: np.ndarray,
+            d_x: Tuple[float, ...],
+            derivative_boundary_constraints:
+            Tuple[Tuple[Optional[np.ndarray], Optional[np.ndarray]], ...]) \
+            -> np.ndarray:
+        assert len(y_hat.shape) > 1
+        assert np.all(np.array(y_hat.shape[:-1]) > 4)
+        assert len(d_x) == len(y_hat.shape) - 1
+        assert laplacian.shape == y_hat.shape
+
+        anti_laplacian = np.zeros(y_hat.shape)
+
+        two_d_x_squared_arr = np.square(2. * np.array(d_x))
+
+        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+
+        step_size_coefficient_sum = 0.
+
+        for axis in range(len(d_x)):
+            step_size_coefficient = two_d_x_squared_arr[:axis].prod() * \
+                two_d_x_squared_arr[axis + 1:].prod()
+            step_size_coefficient_sum += step_size_coefficient
+
+            boundary_constraints = derivative_boundary_constraints[axis]
+            lower_boundary_constraint = boundary_constraints[0]
+            upper_boundary_constraint = boundary_constraints[1]
+
+            # Second lowermost points.
+            slicer[axis] = 3
+            y_next_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = 1
+            if lower_boundary_constraint is not None:
+                y_curr = y_hat[tuple(slicer)]
+                y_diff = lower_boundary_constraint
+
+                y_prev_prev = y_curr - 2. * d_x[axis] * y_diff
+                y_prev_prev[np.isnan(y_prev_prev)] = 0.
+
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * (y_next_next + y_prev_prev)
+            else:
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * y_next_next
+
+            # Internal points.
+            slicer[axis] = slice(0, y_hat.shape[axis] - 4)
+            y_prev_prev = y_hat[tuple(slicer)]
+            slicer[axis] = slice(4, y_hat.shape[axis])
+            y_next_next = y_hat[tuple(slicer)]
+
+            slicer[axis] = slice(2, y_hat.shape[axis] - 2)
+            anti_laplacian[tuple(slicer)] += \
+                step_size_coefficient * (y_next_next + y_prev_prev)
+
+            # Second uppermost points.
+            slicer[axis] = y_hat.shape[axis] - 4
+            y_prev_prev = y_hat[tuple(slicer)]
+
+            slicer[axis] = y_hat.shape[axis] - 2
+            if upper_boundary_constraint is not None:
+                y_curr = y_hat[tuple(slicer)]
+                y_diff = upper_boundary_constraint
+
+                y_next_next = y_curr + 2. * d_x[axis] * y_diff
+                y_next_next[np.isnan(y_next_next)] = 0.
+
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * (y_next_next + y_prev_prev)
+            else:
+                anti_laplacian[tuple(slicer)] += \
+                    step_size_coefficient * y_prev_prev
+
+            slicer[axis] = slice(None)
+
+        anti_laplacian -= two_d_x_squared_arr.prod() * laplacian
+        anti_laplacian /= 2. * step_size_coefficient_sum
+        return anti_laplacian
