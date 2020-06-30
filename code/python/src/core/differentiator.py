@@ -527,7 +527,7 @@ class Differentiator:
             slicer[axis] = 0
             lower_boundary = np.copy(array[tuple(slicer)])
 
-            slicer[axis] = y_shape[axis] - 1
+            slicer[axis] = -1
             upper_boundary = np.copy(array[tuple(slicer)])
 
             evaluated_derivative_constraints.append(
@@ -601,12 +601,12 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
         derivative[tuple(derivative_slicer)] = y_diff
 
         # Upper boundary.
-        y_slicer[x_axis] = y.shape[x_axis] - 1
+        y_slicer[x_axis] = -1
         y_curr = y[tuple(y_slicer)]
 
         y_diff = -y_curr / d_x
 
-        derivative_slicer[x_axis] = y.shape[x_axis] - 1
+        derivative_slicer[x_axis] = -1
         derivative[tuple(derivative_slicer)] = y_diff
 
         if derivative_constraint_function is not None:
@@ -681,10 +681,10 @@ class TwoPointForwardFiniteDifferenceMethod(Differentiator):
                 (-y_next_next + 2. * y_next)
 
             # Second uppermost points.
-            slicer[axis] = y_hat.shape[axis] - 1
+            slicer[axis] = -1
             y_next = y_hat[tuple(slicer)]
 
-            slicer[axis] = y_hat.shape[axis] - 2
+            slicer[axis] = -2
             if upper_boundary_constraint is not None:
                 y_diff = upper_boundary_constraint
 
@@ -754,12 +754,12 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         derivative[tuple(derivative_slicer)] = y_diff
 
         # Upper boundary.
-        y_slicer[x_axis] = y.shape[x_axis] - 2
+        y_slicer[x_axis] = -2
         y_prev = y[tuple(y_slicer)]
 
         y_diff = -y_prev / two_d_x
 
-        derivative_slicer[x_axis] = y.shape[x_axis] - 1
+        derivative_slicer[x_axis] = -1
         derivative[tuple(derivative_slicer)] = y_diff
 
         if derivative_constraint_function is not None:
@@ -796,12 +796,12 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         anti_derivative[tuple(slicer)] = y_prev
 
         # Second uppermost points.
-        slicer[x_axis] = y_hat.shape[x_axis] - 1
+        slicer[x_axis] = -1
         y_diff = derivative[tuple(slicer)]
 
         y_prev = -two_d_x * y_diff
 
-        slicer[x_axis] = y_hat.shape[x_axis] - 2
+        slicer[x_axis] = -2
         anti_derivative[tuple(slicer)] = y_prev
 
         return anti_derivative
@@ -865,10 +865,10 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                 step_size_coefficient * (y_next_next + y_prev_prev)
 
             # Second uppermost points.
-            slicer[axis] = y_hat.shape[axis] - 4
+            slicer[axis] = -4
             y_prev_prev = y_hat[tuple(slicer)]
 
-            slicer[axis] = y_hat.shape[axis] - 2
+            slicer[axis] = -2
             if upper_boundary_constraint is not None:
                 y_curr = y_hat[tuple(slicer)]
                 y_diff = upper_boundary_constraint
