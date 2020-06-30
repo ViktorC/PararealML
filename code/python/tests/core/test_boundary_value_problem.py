@@ -1,8 +1,10 @@
 import numpy as np
+from fipy.meshes.uniformGrid3D import UniformGrid3D
 
 from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
-from src.core.differential_equation import LotkaVolterraEquation, WaveEquation
+from src.core.differential_equation import LotkaVolterraEquation, WaveEquation, \
+    DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.mesh import UniformGrid
 
@@ -79,3 +81,28 @@ def test_2d_bvp():
         y, mesh.d_x()[1], 1, 1, d_y_constraint_functions[1, 1])
 
     assert np.all(d_y_1_d_x_1 == 0.)
+
+
+def test_3d_bvp():
+    mesh = UniformGrid(
+        ((2., 6.), (-3., 3.), (10., 12.)),
+        (.1, .2, .5))
+
+    fipy_mesh: UniformGrid3D = mesh.fipy_mesh()
+
+    assert fipy_mesh.shape[::-1] == mesh.shape() == (41, 31, 5)
+
+    diff_eq = DiffusionEquation(3)
+    bvp = BoundaryValueProblem(
+        diff_eq,
+        mesh,
+        ((DirichletCondition(lambda x: np.array([999.])),
+          NeumannCondition(lambda x: np.array([None]))),
+         (DirichletCondition(lambda x: np.zeros(1)),
+          NeumannCondition(lambda x: np.zeros(1))),
+         (NeumannCondition(lambda x: np.array([-x[0]])),
+          DirichletCondition(lambda x: np.array([-999])))))
+
+    fipy_vars = bvp.fipy_vars()
+
+    assert len(fipy_vars) == 1

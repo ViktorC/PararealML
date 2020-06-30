@@ -1,13 +1,9 @@
-from typing import Callable
-
 import numpy as np
 
 from src.core.differentiator import Differentiator
 from src.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
 from src.core.integrator import Integrator
-
-SolutionConstraintFunction = Callable[[np.ndarray], None]
 
 
 class Operator:
@@ -93,5 +89,49 @@ class FDMOperator(Operator):
                 for j in range(diff_eq.y_dimension()):
                     y_constraint_functions[j](y_i[..., j])
             y[i] = y_i
+
+        return y
+
+
+class FVMOperator(Operator):
+    """
+    A finite volume method based conventional differential equation solver
+    using the FiPy library.
+    """
+
+    def __init__(
+            self,
+            d_t: float):
+        """
+        :param d_t: the temporal step size to use
+        """
+        self._d_t = d_t
+
+    def d_t(self) -> float:
+        return self._d_t
+
+    def trace(self, ivp: InitialValueProblem) -> np.ndarray:
+        bvp = ivp.boundary_value_problem()
+        diff_eq = bvp.differential_equation()
+        mesh = bvp.mesh()
+
+        assert 1 <= diff_eq.x_dimension() <= 3
+
+        y_0 = ivp.initial_condition().discrete_y_0()
+
+        fipy_vars = bvp.fipy_vars()
+        for i, fipy_var in enumerate(fipy_vars):
+            fipy_var.setValue(y_0[..., i].flatten())
+
+        fipy_diff_eq = diff_eq.fipy_equation()
+
+        time_steps = self._discretise_time_domain(ivp.t_interval())
+
+        y = np.empty([len(time_steps)] + list(bvp.y_shape()))
+        for i, t_i in enumerate(time_steps):
+            for j in range(diff_eq.y_dimension()):
+                y_var_j = fipy_vars[j]
+                fipy_diff_eq.solve(var=y_var_j, dt=self._d_t)
+                y[i, ..., j] = y_var_j.value.reshape(mesh.shape())
 
         return y

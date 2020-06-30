@@ -2,6 +2,8 @@ from copy import copy
 from typing import Optional, Tuple
 
 import numpy as np
+from fipy import TransientTerm, DiffusionTerm
+from fipy.terms.term import Term
 
 from src.core.differentiator import Differentiator
 
@@ -55,6 +57,12 @@ class DifferentialEquation:
         :param y_constraint_functions: a 1D array (y dimension) of callback
         functions that allows for applying constraints to the values of y
         :return: an array representing y'(t)
+        """
+        pass
+
+    def fipy_equation(self) -> Optional[Term]:
+        """
+        Returns the FiPy equivalent of the differential equation.
         """
         pass
 
@@ -298,6 +306,9 @@ class DiffusionEquation(DifferentialEquation):
         return self._d * differentiator.laplacian(
             y, d_x, derivative_constraint_functions)
 
+    def fipy_equation(self) -> Optional[Term]:
+        return TransientTerm() == DiffusionTerm(coeff=self._d)
+
 
 class WaveEquation(DifferentialEquation):
     """
@@ -346,9 +357,9 @@ class WaveEquation(DifferentialEquation):
 
 class MaxwellsEquation(DifferentialEquation):
     """
-    A partial differential equation modelling the evolution of electric and
-    magnetic fields assuming that there are no electric or magnetic conductive
-    currents.
+    A system of two partial differential equations modelling the evolution of
+    electric and magnetic fields assuming that there are no electric or
+    magnetic conductive currents.
     """
 
     def __init__(
@@ -404,8 +415,8 @@ class MaxwellsEquation(DifferentialEquation):
 
 class NavierStokesEquation(DifferentialEquation):
     """
-    A partial differential equation modelling the stream function and vorticity
-    of incompressible fluids.
+    A system of two partial differential equations modelling the stream
+    function and vorticity of incompressible fluids.
     """
 
     def __init__(

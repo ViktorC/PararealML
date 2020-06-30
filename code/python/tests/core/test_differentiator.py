@@ -573,8 +573,6 @@ def test_2pffdm_hessian():
     ])
     actual_hessian = diff.hessian(y, d_x)
 
-    print(actual_hessian)
-
     assert np.isclose(actual_hessian, expected_hessian).all()
 
 

@@ -90,7 +90,7 @@ def plot_evolution_of_y(
                 'linewidth': 0,
                 'antialiased': False,
                 'cmap': cm.coolwarm}
-            plot = ax.plot_surface(x_0, x_1, y[0, ...], **plot_args)
+            plot = ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
             z_lim = ax.get_zlim()
 
             def update_plot(time_step: int):
@@ -100,13 +100,13 @@ def plot_evolution_of_y(
                 ax.set_zlabel(y_label)
 
                 _plot = ax.plot_surface(
-                    x_0, x_1, y[time_step, ...], **plot_args)
+                    x_0, x_1, y[time_step, ...].T, **plot_args)
                 ax.set_zlim(z_lim)
                 return _plot,
         else:
             fig, ax = plt.subplots(1, 1)
-            v_min = y.min()
-            v_max = y.max()
+            v_min = np.min(y)
+            v_max = np.max(y)
             ax.contourf(x_0, x_1, y[0, ...].T, vmin=v_min, vmax=v_max)
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)

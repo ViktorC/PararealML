@@ -2,8 +2,11 @@ from copy import copy, deepcopy
 from typing import Tuple
 
 import numpy as np
-# from fipy import UniformGrid2D, UniformGrid1D, UniformGrid3D
-# from fipy.meshes.abstractMesh import AbstractMesh
+
+from fipy.meshes.abstractMesh import AbstractMesh as FiPyAbstractMesh
+from fipy.meshes.uniformGrid1D import UniformGrid1D as FiPyUniformGrid1D
+from fipy.meshes.uniformGrid2D import UniformGrid2D as FiPyUniformGrid2D
+from fipy.meshes.uniformGrid3D import UniformGrid3D as FiPyUniformGrid3D
 
 SpatialDomainInterval = Tuple[float, float]
 
@@ -41,11 +44,11 @@ class Mesh:
         """
         pass
 
-    # def to_fipy_mesh(self) -> AbstractMesh:
-    #     """
-    #     Returns the FiPy equivalent of the mesh instance.
-    #     """
-    #     pass
+    def fipy_mesh(self) -> FiPyAbstractMesh:
+        """
+        Returns the FiPy equivalent of the mesh instance.
+        """
+        pass
 
 
 class UniformGrid(Mesh):
@@ -73,6 +76,7 @@ class UniformGrid(Mesh):
         self._shape = self._calculate_shape(x_intervals, d_x)
         self._x_offset = np.array([interval[0] for interval in x_intervals])
         self._d_x = np.array(copy(d_x))
+        self._fipy_mesh = self._create_fipy_mesh()
 
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         return deepcopy(self._x_intervals)
@@ -87,45 +91,51 @@ class UniformGrid(Mesh):
         assert len(index) == len(self._shape)
         return tuple(self._x_offset + self._d_x * index)
 
-    # def to_fipy_mesh(self) -> AbstractMesh:
-    #     x_dimension = len(self._x_intervals)
-    #     if x_dimension == 1:
-    #         mesh = UniformGrid1D(
-    #             dx=self._d_x[0],
-    #             nx=self._shape[0])
-    #         mesh += self._x_offset
-    #         mesh -= (self._d_x[0] / 2.,)
-    #     elif x_dimension == 2:
-    #         mesh = UniformGrid2D(
-    #             dx=self._d_x[0],
-    #             dy=self._d_x[1],
-    #             nx=self._shape[0],
-    #             ny=self._shape[1])
-    #         mesh += self._x_offset
-    #         mesh -= (
-    #             (self._d_x[0] / 2.,),
-    #             (self._d_x[1] / 2.,)
-    #         )
-    #     elif x_dimension == 3:
-    #         mesh = UniformGrid3D(
-    #             dx=self._d_x[0],
-    #             dy=self._d_x[1],
-    #             dz=self._d_x[2],
-    #             nx=self._shape[0],
-    #             ny=self._shape[1],
-    #             nz=self._shape[2])
-    #         mesh += self._x_offset
-    #         mesh -= (
-    #             (
-    #                 (self._d_x[0] / 2.,),
-    #                 (self._d_x[1] / 2.,),
-    #                 (self._d_x[2] / 2.,)
-    #             )
-    #         )
-    #     else:
-    #         raise NotImplementedError
-    #
-    #     return mesh
+    def fipy_mesh(self) -> FiPyAbstractMesh:
+        return self._fipy_mesh
+
+    def _create_fipy_mesh(self) -> FiPyAbstractMesh:
+        """
+        Creates and returns the FiPy equivalent of the mesh.
+        """
+        x_dimension = len(self._x_intervals)
+        if x_dimension == 1:
+            mesh = FiPyUniformGrid1D(
+                dx=self._d_x[0],
+                nx=self._shape[0])
+            mesh += np.flip(self._x_offset).reshape(1, 1)
+            mesh -= (
+                (self._d_x[0] / 2.,),
+            )
+        elif x_dimension == 2:
+            mesh = FiPyUniformGrid2D(
+                dx=self._d_x[1],
+                dy=self._d_x[0],
+                nx=self._shape[1],
+                ny=self._shape[0])
+            mesh += np.flip(self._x_offset).reshape(2, 1)
+            mesh -= (
+                (self._d_x[1] / 2.,),
+                (self._d_x[0] / 2.,)
+            )
+        elif x_dimension == 3:
+            mesh = FiPyUniformGrid3D(
+                dx=self._d_x[2],
+                dy=self._d_x[1],
+                dz=self._d_x[0],
+                nx=self._shape[2],
+                ny=self._shape[1],
+                nz=self._shape[0])
+            mesh += np.flip(self._x_offset).reshape(3, 1)
+            mesh -= (
+                (self._d_x[2] / 2.,),
+                (self._d_x[1] / 2.,),
+                (self._d_x[0] / 2.,)
+            )
+        else:
+            raise NotImplementedError
+
+        return mesh
 
     @staticmethod
     def _calculate_shape(
@@ -141,6 +151,6 @@ class UniformGrid(Mesh):
         shape = []
         for i in range(len(x_intervals)):
             x_interval = x_intervals[i]
-            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i]))
+            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i] + 1))
 
         return tuple(shape)
