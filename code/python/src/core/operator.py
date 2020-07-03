@@ -36,8 +36,9 @@ class Operator:
         :param t: the time interval to discretise
         :return: the array containing the discretised temporal domain
         """
-        adjusted_t_1 = self.d_t() * round(t[1] / self.d_t())
-        return np.arange(t[0], adjusted_t_1, self.d_t())
+        d_t = self.d_t()
+        adjusted_t_1 = d_t * round(t[1] / d_t)
+        return np.arange(t[0], adjusted_t_1, d_t)
 
 
 class FDMOperator(Operator):
