@@ -84,13 +84,12 @@ class FDMOperator(Operator):
         y_i = ivp.initial_condition().discrete_y_0()
 
         for i, t_i in enumerate(time_steps):
-            y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_over_d_t)
-
-            if y_constraints is not None:
-                for j in range(diff_eq.y_dimension()):
-                    y_constraint = y_constraints[j]
-                    y_i[..., j][y_constraint.mask] = y_constraint.value
-
+            y_i = self._integrator.integral(
+                y_i,
+                t_i,
+                self._d_t,
+                d_y_over_d_t,
+                y_constraints)
             y[i] = y_i
 
         return y
