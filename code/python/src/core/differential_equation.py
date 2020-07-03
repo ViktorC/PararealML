@@ -34,8 +34,8 @@ class DifferentialEquation:
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
         Returns the time derivative of the differential equation's solution,
@@ -51,11 +51,14 @@ class DifferentialEquation:
         :param differentiator: a differentiator instance that allows for
         calculating various differential terms of y with respect to x given
         an estimate of y over the spatial mesh, y(t)
-        :param derivative_constraint_functions: a 2D array (x dimension,
-        y dimension) of callback functions that allow for applying boundary
-        constraints to the calculated first spatial derivatives
-        :param y_constraint_functions: a 1D array (y dimension) of callback
-        functions that allows for applying constraints to the values of y
+        :param derivative_boundary_constraints: a 2D array (x dimension,
+        y dimension) of boundary value constraint pairs that represent the
+        lower and upper boundary conditions of the spatial derivative of y
+        normal to the boundaries evaluated on the boundaries of the
+        corresponding axes of the spatial domain
+        :param solution_constraints: a 1D array (y dimension) of solution
+        constraints that represent the boundary conditions of y evaluated on
+        the entire spatial domain
         :return: an array representing y'(t)
         """
         pass
@@ -93,8 +96,8 @@ class RabbitPopulationEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         d_y = np.empty(1)
         d_y[0] = self._r * y
@@ -140,8 +143,8 @@ class LotkaVolterraEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         r = y[0]
         p = y[1]
@@ -186,8 +189,8 @@ class LorenzEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         c = y[0]
         h = y[1]
@@ -238,8 +241,8 @@ class NBodyGravitationalEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         n_obj_by_dims = self._n_objects * self._dims
 
@@ -297,14 +300,14 @@ class DiffusionEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
 
         return self._d * differentiator.laplacian(
-            y, d_x, derivative_constraint_functions)
+            y, d_x, derivative_boundary_constraints)
 
     def fipy_equation(self) -> Optional[Term]:
         return TransientTerm() == DiffusionTerm(coeff=self._d)
@@ -339,19 +342,19 @@ class WaveEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
-        assert derivative_constraint_functions is not None
+        assert derivative_boundary_constraints is not None
         assert len(y.shape) - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         d_y = np.empty(y.shape)
         d_y[..., 0] = y[..., 1]
         d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
-            y[..., [0]], d_x, derivative_constraint_functions[..., [0]])
+            y[..., [0]], d_x, derivative_boundary_constraints[..., [0]])
         return d_y
 
 
@@ -391,8 +394,8 @@ class MaxwellsEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
@@ -403,9 +406,9 @@ class MaxwellsEquation(DifferentialEquation):
         magnetic_field_strength = y[..., self._x_dimension:, np.newaxis]
 
         d_e_over_d_t = (1. / self._epsilon) * differentiator.curl(
-            electric_field_strength, d_x, derivative_constraint_functions)
+            electric_field_strength, d_x, derivative_boundary_constraints)
         d_m_over_d_t = -(1. / self._mu) * differentiator.curl(
-            magnetic_field_strength, d_x, derivative_constraint_functions)
+            magnetic_field_strength, d_x, derivative_boundary_constraints)
 
         d_y = np.empty(y.shape)
         d_y[..., :self._x_dimension, np.newaxis] = d_e_over_d_t
@@ -450,12 +453,12 @@ class NavierStokesEquation(DifferentialEquation):
             y: np.ndarray,
             d_x: Optional[Tuple[float, ...]] = None,
             differentiator: Optional[Differentiator] = None,
-            derivative_constraint_functions: Optional[np.ndarray] = None,
-            y_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
-        assert derivative_constraint_functions is not None
+        assert derivative_boundary_constraints is not None
         assert len(y.shape) - 1 == 2
         assert y.shape[-1] == 2
 
@@ -466,24 +469,21 @@ class NavierStokesEquation(DifferentialEquation):
             stream_function,
             d_x,
             differentiator,
-            derivative_constraint_functions)
+            derivative_boundary_constraints)
 
         vorticity_gradient = differentiator.jacobian(
-            vorticity, d_x, derivative_constraint_functions[:, [0]])
+            vorticity, d_x, derivative_boundary_constraints[:, [0]])
 
-        vorticity_laplacian = np.empty(vorticity.shape)
-        for y_ind in range(vorticity.shape[-1]):
-            vorticity_laplacian[..., [y_ind]] = differentiator.divergence(
-                vorticity_gradient[..., y_ind, :], d_x)
+        vorticity_laplacian = differentiator.laplacian(
+            vorticity, d_x, derivative_boundary_constraints[:, [0]])
 
         updated_stream_function = differentiator.anti_laplacian(
             -vorticity,
             d_x,
             self._tol,
-            y_constraint_functions[[1]],
-            derivative_constraint_functions[:, [1]],
-            stream_function,
-            True)
+            solution_constraints[[1]],
+            derivative_boundary_constraints[:, [1]],
+            stream_function)
 
         d_y = np.empty(y.shape)
         d_y[..., [0]] = (1. / self._re) * vorticity_laplacian - \
@@ -499,7 +499,7 @@ class NavierStokesEquation(DifferentialEquation):
             stream_function: np.ndarray,
             d_x: Tuple[float, ...],
             differentiator: Differentiator,
-            derivative_constraint_functions: Optional[np.ndarray] = None) \
+            derivative_boundary_constraints: Optional[np.ndarray] = None) \
             -> np.ndarray:
         """
         Calculates the vector field representing the velocity of the fluid at
@@ -510,22 +510,24 @@ class NavierStokesEquation(DifferentialEquation):
         dimension
         :param differentiator: a differentiator instance that allows for
         calculating various differential terms of y with respect to x
-        :param derivative_constraint_functions: a 2D array (x dimension,
-        y dimension) of callback functions that allow for applying boundary
-        constraints to the calculated first spatial derivatives
+        :param derivative_boundary_constraints: a 2D array (x dimension,
+        y dimension) of boundary value constraint pairs that represent the
+        lower and upper boundary conditions of the spatial derivative of y
+        normal to the boundaries evaluated on the boundaries of the
+        corresponding axes of the spatial domain
         :return: the velocity vector field
         """
         if self._x_dimension == 2:
             velocity = np.concatenate(
                 (-differentiator.derivative(
                     stream_function, d_x[1], 1, 0,
-                    derivative_constraint_functions[1, 1]),
+                    derivative_boundary_constraints[1, 1]),
                  differentiator.derivative(
                      stream_function, d_x[0], 0, 0,
-                     derivative_constraint_functions[0, 1])),
+                     derivative_boundary_constraints[0, 1])),
                 axis=-1)
         else:
             velocity = -differentiator.curl(
-                stream_function, d_x, derivative_constraint_functions)
+                stream_function, d_x, derivative_boundary_constraints)
 
         return velocity

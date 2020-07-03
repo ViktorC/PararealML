@@ -70,9 +70,8 @@ class WellDefinedInitialCondition(InitialCondition):
             for index in np.ndindex(mesh.shape()):
                 y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
 
-            constraint_functions = self._bvp.y_constraint_functions()
-            for i in range(diff_eq.y_dimension()):
-                constraint_functions[i](y_0[..., i])
+            for i, y_constraint in enumerate(self._bvp.y_constraints()):
+                y_0[..., i][y_constraint.mask] = y_constraint.value
         else:
             y_0 = self._y_0_func(None)
 
