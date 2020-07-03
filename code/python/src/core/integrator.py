@@ -37,10 +37,12 @@ class Integrator:
             y_constraints: Optional[Sequence[SolutionConstraint]]
     ) -> np.ndarray:
         """
+        Applies the provided constraints to the solution in-place and returns
+        the constrained solution.
 
-        :param y_hat:
-        :param y_constraints:
-        :return:
+        :param y_hat: the estimate of the solution
+        :param y_constraints: the constraints on the values of the solution
+        :return: the constrained estimate of the solution
         """
         if y_constraints is not None:
             assert len(y_constraints) == y_hat.shape[-1]
