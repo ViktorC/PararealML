@@ -611,7 +611,24 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         else:
             lower_boundary_constraint = upper_boundary_constraint = None
 
+        # Lower boundary.
+        y_slicer[x_axis1] = 0
+        y_curr = y[tuple(y_slicer)]
+        y_slicer[x_axis1] = 1
+        y_next = y[tuple(y_slicer)]
 
+        y_prev = .0
+
+        if lower_boundary_constraint is not None:
+            y_prev = np.zeros(y_next.shape)
+            y_prev[lower_boundary_constraint.mask] = \
+                y_next[lower_boundary_constraint.mask] - \
+                2 * d_x1 * lower_boundary_constraint.value
+
+        y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
+
+        second_derivative_slicer[x_axis1] = 0
+        second_derivative[tuple(second_derivative_slicer)] = y_diff
 
         # Internal points.
         y_slicer[x_axis1] = slice(0, y.shape[x_axis1] - 2)
@@ -626,7 +643,24 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         second_derivative_slicer[x_axis1] = slice(1, y.shape[x_axis1] - 1)
         second_derivative[tuple(second_derivative_slicer)] = y_diff
 
+        # Upper boundary.
+        y_slicer[x_axis1] = -2
+        y_prev = y[tuple(y_slicer)]
+        y_slicer[x_axis1] = -1
+        y_curr = y[tuple(y_slicer)]
 
+        y_next = .0
+
+        if upper_boundary_constraint is not None:
+            y_next = np.zeros(y_prev.shape)
+            y_next[upper_boundary_constraint.mask] = \
+                y_prev[upper_boundary_constraint.mask] + \
+                2 * d_x1 * upper_boundary_constraint.value
+
+        y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
+
+        second_derivative_slicer[x_axis1] = -1
+        second_derivative[tuple(second_derivative_slicer)] = y_diff
 
         return second_derivative
 
