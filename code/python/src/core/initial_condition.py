@@ -134,7 +134,8 @@ class GaussianInitialCondition(WellDefinedInitialCondition):
 
     @staticmethod
     def multivariate_gaussian(
-            x: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> float:
+            x: np.ndarray, mean: np.ndarray, cov: np.ndarray
+    ) -> float:
         """
         Returns the value of a Gaussian probability distribution function
         defined by the provided mean and covariance at the coordinates

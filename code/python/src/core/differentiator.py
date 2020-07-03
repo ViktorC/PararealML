@@ -32,7 +32,8 @@ class Differentiator:
             x_axis: int,
             y_ind: int = 0,
             derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None) -> np.ndarray:
+            Optional[BoundaryConstraintPair] = None
+    ) -> np.ndarray:
         """
         Returns the derivative of the y_ind-th element of y with respect to
         the spatial dimension defined by x_axis at every point of the mesh.
@@ -61,7 +62,8 @@ class Differentiator:
             x_axis2: int,
             y_ind: int = 0,
             first_derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None) -> np.ndarray:
+            Optional[BoundaryConstraintPair] = None
+    ) -> np.ndarray:
         """
         Returns the second derivative of the y_ind-th element of y with respect
         to the spatial dimensions defined by x_axis1 and x_axis2 at every point
@@ -91,8 +93,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            derivative_boundary_constraints: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the Jacobian of y with respect to x at every point of the
         mesh. If y is scalar-valued, it returns the gradient.
@@ -128,8 +130,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            derivative_boundary_constraints: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the divergence of y with respect to x at every point of the
         mesh.
@@ -162,8 +164,8 @@ class Differentiator:
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray] = None) \
-            -> np.ndarray:
+            derivative_boundary_constraints: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the curl of y with respect to x at every point of the
         mesh.
@@ -220,7 +222,8 @@ class Differentiator:
             y: np.ndarray,
             d_x: Tuple[float, ...],
             first_derivative_boundary_constraints:
-            Optional[np.ndarray] = None) -> np.ndarray:
+            Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the Hessian of y with respect to x at every point of the
         mesh.
@@ -264,7 +267,8 @@ class Differentiator:
             y: np.ndarray,
             d_x: Tuple[float, ...],
             first_derivative_boundary_constraints:
-            Optional[np.ndarray] = None) -> np.ndarray:
+            Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the Laplacian of y with respect to x at every point of the
         mesh.
@@ -306,7 +310,8 @@ class Differentiator:
             d_x: float,
             tol: float,
             y_constraint: SolutionConstraint,
-            y_init: Optional[np.ndarray] = None) -> np.ndarray:
+            y_init: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns an array whose derivative with respect to the specified axis
         closely matches the provided values.
@@ -340,7 +345,8 @@ class Differentiator:
             tol: float,
             y_constraints: Sequence[SolutionConstraint],
             first_derivative_boundary_constraints: Optional[np.ndarray] = None,
-            y_init: Optional[np.ndarray] = None) -> np.ndarray:
+            y_init: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
         Laplacian.
@@ -384,7 +390,8 @@ class Differentiator:
             y_hat: np.ndarray,
             derivative: np.ndarray,
             x_axis: int,
-            d_x: float) -> np.ndarray:
+            d_x: float
+    ) -> np.ndarray:
         """
         Given an estimate, y_hat, of the anti-derivative, it returns an
         improved estimate.
@@ -405,8 +412,8 @@ class Differentiator:
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints: Optional[np.ndarray]) \
-            -> np.ndarray:
+            first_derivative_boundary_constraints: Optional[np.ndarray]
+    ) -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it returns an improved
         estimate.
@@ -428,7 +435,8 @@ class Differentiator:
             y_shape: Tuple[int, ...],
             tol: float,
             y_init: Optional[np.ndarray],
-            y_constraints: Sequence[SolutionConstraint]) -> np.ndarray:
+            y_constraints: Sequence[SolutionConstraint]
+    ) -> np.ndarray:
         """
         Calculates the inverse of a differential operation using the Jacobi
         method.
@@ -471,7 +479,8 @@ class Differentiator:
     @staticmethod
     def _verify_and_get_derivative_boundary_constraints(
             derivative_boundary_constraints: Optional[np.ndarray],
-            y_shape: Tuple[int, ...]) -> np.ndarray:
+            y_shape: Tuple[int, ...]
+    ) -> np.ndarray:
         """
         If the provided derivative boundary constraints are not None, it just
         asserts that the input array's shape matches expectations and returns
@@ -506,7 +515,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             x_axis: int,
             y_ind: int = 0,
             derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None) -> np.ndarray:
+            Optional[BoundaryConstraintPair] = None
+    ) -> np.ndarray:
         assert y.shape[x_axis] > 2
         assert 0 <= x_axis < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]
@@ -576,7 +586,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             x_axis2: int,
             y_ind: int = 0,
             first_derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None) -> np.ndarray:
+            Optional[BoundaryConstraintPair] = None
+    ) -> np.ndarray:
         assert len(y.shape) > 1
         assert 0 <= x_axis1 < len(y.shape) - 1
         assert 0 <= x_axis2 < len(y.shape) - 1
@@ -669,7 +680,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             y_hat: np.ndarray,
             derivative: np.ndarray,
             x_axis: int,
-            d_x: float) -> np.ndarray:
+            d_x: float
+    ) -> np.ndarray:
         assert y_hat.shape[x_axis] > 2
         assert 0 <= x_axis < len(y_hat.shape) - 1
         assert y_hat.shape == derivative.shape
@@ -712,8 +724,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints: Optional[np.ndarray]) \
-            -> np.ndarray:
+            first_derivative_boundary_constraints: Optional[np.ndarray]
+    ) -> np.ndarray:
         assert len(y_hat.shape) > 1
         assert np.all(np.array(y_hat.shape[:-1]) > 2)
         assert len(d_x) == len(y_hat.shape) - 1

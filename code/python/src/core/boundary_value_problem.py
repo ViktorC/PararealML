@@ -168,7 +168,8 @@ class BoundaryValueProblem:
             self,
             boundary_condition_pair: BoundaryConditionPair,
             boundary_shape: Tuple[int, ...],
-            d_x_arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+            d_x_arr: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates a tuple of two 1D arrays (y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary
@@ -232,7 +233,8 @@ class BoundaryValueProblem:
             self,
             condition_function: Callable[[Tuple[float, ...]], np.ndarray],
             boundary_shape: Tuple[int, ...],
-            d_x_arr: np.ndarray) -> Sequence[BoundaryConstraint]:
+            d_x_arr: np.ndarray
+    ) -> Sequence[BoundaryConstraint]:
         """
         Creates a sequence of boundary constraints representing the boundary
         condition, defined by the condition function, evaluated on a single
