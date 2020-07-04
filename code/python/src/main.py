@@ -2,13 +2,13 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition, CauchyCondition
+from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import GaussianInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
-from src.core.integrator import RK4, ForwardEulerMethod, ExplicitMidpointMethod
+from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
 from src.core.operator import FDMOperator, FVMOperator
 from src.core.parareal import Parareal
@@ -18,7 +18,7 @@ from src.utils.time import time
 
 
 f = FDMOperator(
-    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .001)
+    RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
 g = FVMOperator(.01)
 
 parareal = Parareal(f, g)
@@ -29,21 +29,21 @@ threshold = .1
 @time
 def create_ivp():
     diff_eq = DiffusionEquation(2)
-    mesh = UniformGrid(((0., 10.), (0., 10.)), (.05, .05))
+    mesh = UniformGrid(((0., 10.), (0., 5.)), (.1, .1))
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: np.zeros(1)),
-          DirichletCondition(lambda x: np.zeros(1))),
+        ((NeumannCondition(lambda x: np.zeros(1)),
+          NeumannCondition(lambda x: np.zeros(1))),
          (DirichletCondition(lambda x: np.zeros(1)),
           DirichletCondition(lambda x: np.zeros(1)))))
     ic = GaussianInitialCondition(
         bvp,
-        ((np.array([5., 5.]), np.array([[1., .0], [.0, 1.]])),),
-        np.full(diff_eq.y_dimension(), 0.1))
+        ((np.array([7.5, 4.]), np.array([[3., .0], [.0, 1.5]])),),
+        np.full(diff_eq.y_dimension(), 50.))
     return InitialValueProblem(
         bvp,
-        (0., .1),
+        (0., 5.),
         ic)
 
 
@@ -74,7 +74,7 @@ def plot_solution(solve_func):
                 plot_evolution_of_y(
                     ivp,
                     y[..., i],
-                    50,
+                    100,
                     100,
                     f'evolution_{solve_func.__name__}_{i}')
         else:
@@ -87,4 +87,4 @@ def plot_solution(solve_func):
 
 # plot_solution(solve_parallel)
 plot_solution(solve_serial_fine)
-# plot_solution(solve_serial_coarse)
+plot_solution(solve_serial_coarse)
