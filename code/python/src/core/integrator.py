@@ -34,7 +34,7 @@ class Integrator:
     @staticmethod
     def _apply_y_constraints(
             y_hat: np.ndarray,
-            y_constraints: Optional[Sequence[SolutionConstraint]]
+            y_constraints: Optional[Sequence[Optional[SolutionConstraint]]]
     ) -> np.ndarray:
         """
         Applies the provided constraints to the solution in-place and returns
@@ -47,9 +47,9 @@ class Integrator:
         if y_constraints is not None:
             assert len(y_constraints) == y_hat.shape[-1]
 
-            for j in range(y_hat.shape[-1]):
-                y_constraint = y_constraints[j]
-                y_hat[..., j][y_constraint.mask] = y_constraint.value
+            for i, y_constraint in enumerate(y_constraints):
+                if y_constraint is not None:
+                    y_hat[..., i][y_constraint.mask] = y_constraint.value
 
         return y_hat
 
