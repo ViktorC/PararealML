@@ -1,5 +1,5 @@
 from copy import copy, deepcopy
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 
@@ -20,19 +20,19 @@ class Mesh:
         """
         Returns the bounds of each axis of the domain
         """
-        pass
+        raise NotImplementedError
 
     def d_x(self) -> Tuple[float, ...]:
         """
         Returns the step sizes along the dimensions of the domain.
         """
-        pass
+        raise NotImplementedError
 
     def shape(self) -> Tuple[int, ...]:
         """
         Returns the shape of the discretised domain.
         """
-        pass
+        raise NotImplementedError
 
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         """
@@ -42,9 +42,9 @@ class Mesh:
         :param index: the index of a vertex of the mesh
         :return: the coordinates of the corresponding point of the domain
         """
-        pass
+        raise NotImplementedError
 
-    def fipy_mesh(self) -> FiPyAbstractMesh:
+    def fipy_mesh(self) -> Optional[FiPyAbstractMesh]:
         """
         Returns the FiPy equivalent of the mesh instance.
         """

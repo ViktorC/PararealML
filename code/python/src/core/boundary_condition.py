@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Optional
 
 import numpy as np
 
@@ -12,16 +12,16 @@ class BoundaryCondition:
         """
         Returns whether the boundary conditions restrict the value of y.
         """
-        pass
+        raise NotImplementedError
 
     def has_d_y_condition(self) -> bool:
         """
         Returns whether the boundary conditions restrict the value of the
         derivative of y with respect to the normal vector of the boundary.
         """
-        pass
+        raise NotImplementedError
 
-    def y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
+    def y_condition(self, x: Tuple[float, ...]) -> Optional[np.ndarray]:
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
@@ -32,7 +32,7 @@ class BoundaryCondition:
         """
         pass
 
-    def d_y_condition(self, x: Tuple[float, ...]) -> np.ndarray:
+    def d_y_condition(self, x: Tuple[float, ...]) -> Optional[np.ndarray]:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the

@@ -51,7 +51,7 @@ class Differentiator:
         :return: the derivative of the y_ind-th element of y with respect to
         the spatial dimension defined by x_axis
         """
-        pass
+        raise NotImplementedError
 
     def second_derivative(
             self,
@@ -87,7 +87,7 @@ class Differentiator:
         :return: the second derivative of the y_ind-th element of y with
         respect to the spatial dimensions defined by x_axis1 and x_axis2
         """
-        pass
+        raise NotImplementedError
 
     def jacobian(
             self,
@@ -405,7 +405,7 @@ class Differentiator:
         :param d_x: the step size of the mesh along the specified axis
         :return: an improved estimate of the anti-derivative
         """
-        pass
+        raise NotImplementedError
 
     def _calculate_updated_anti_laplacian(
             self,
@@ -427,7 +427,7 @@ class Differentiator:
         constraints on the first derivatives of the solution
         :return: an improved estimate of y_hat
         """
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def _solve_with_jacobi_method(

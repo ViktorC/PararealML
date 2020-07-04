@@ -29,7 +29,7 @@ class Integrator:
         solution containing a constraint for each element of y
         :return: the value of y(t + d_t).
         """
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def _apply_y_constraints(

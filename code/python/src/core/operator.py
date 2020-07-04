@@ -16,7 +16,7 @@ class Operator:
         """
         Returns the temporal step size of the operator.
         """
-        pass
+        raise NotImplementedError
 
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         """
@@ -25,7 +25,7 @@ class Operator:
         :param ivp: the initial value problem to solve
         :return: the discretised solution of the IVP
         """
-        pass
+        raise NotImplementedError
 
     def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
         """
@@ -124,7 +124,7 @@ class FVMOperator(Operator):
 
         fipy_vars = bvp.fipy_vars()
         for i, fipy_var in enumerate(fipy_vars):
-            fipy_var.setValue(y_0[..., i].flatten())
+            fipy_var.setValue(value=y_0[..., i].flatten())
 
         fipy_diff_eq = diff_eq.fipy_equation()
 

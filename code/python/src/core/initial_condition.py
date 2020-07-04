@@ -17,9 +17,9 @@ class InitialCondition:
         over a mesh. In case of the latter, the y_0 function is not
         implemented.
         """
-        pass
+        raise NotImplementedError
 
-    def y_0(self, x: Optional[Tuple[float, ...]]) -> np.ndarray:
+    def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         """
         Returns the initial value of y at the point in the spatial domain
         defined by x.
@@ -33,7 +33,7 @@ class InitialCondition:
         """
         Returns the discretised initial values of y over a spatial mesh.
         """
-        pass
+        raise NotImplementedError
 
 
 class WellDefinedInitialCondition(InitialCondition):

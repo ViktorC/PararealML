@@ -19,14 +19,14 @@ class DifferentialEquation:
         equation's solution. If the differential equation is an ODE, it returns
         0.
         """
-        pass
+        raise NotImplementedError
 
     def y_dimension(self) -> int:
         """
         Returns the dimension of the image of the differential equation's
         solution. If the solution is not vector-valued, its dimension is 1.
         """
-        pass
+        raise NotImplementedError
 
     def d_y_over_d_t(
             self,
@@ -61,7 +61,7 @@ class DifferentialEquation:
         the entire spatial domain
         :return: an array representing y'(t)
         """
-        pass
+        raise NotImplementedError
 
     def fipy_equation(self) -> Optional[Term]:
         """
