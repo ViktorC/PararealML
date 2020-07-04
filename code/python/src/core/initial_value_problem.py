@@ -72,7 +72,8 @@ class InitialValueProblem:
     def exact_y(
             self,
             t: float,
-            x: Optional[np.ndarray] = None) -> Optional[np.ndarray]:
+            x: Optional[np.ndarray] = None
+    ) -> Optional[np.ndarray]:
         """
         Returns the exact value of y(t, x).
 

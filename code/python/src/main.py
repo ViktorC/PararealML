@@ -2,7 +2,7 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition, CauchyCondition
+from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -18,7 +18,7 @@ from src.utils.time import time
 
 
 f = FDMOperator(
-    RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
+    RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
 g = FVMOperator(.01)
 
 parareal = Parareal(f, g)
@@ -33,17 +33,13 @@ def create_ivp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: np.zeros(1)),
-          DirichletCondition(lambda x: np.zeros(1))),
-         (CauchyCondition(
-             lambda x: np.full(1, x[0]) if x[0] < 5. else np.full(1, 5),
-             lambda x: np.zeros(1) if x[0] < 5. else np.ones(1)),
-          CauchyCondition(
-              lambda x: np.full(1, x[0]) if x[0] < 5. else np.full(1, 5),
-              lambda x: np.zeros(1) if x[0] < 5. else -np.ones(1)))))
+        ((NeumannCondition(lambda x: np.zeros(1)),
+          NeumannCondition(lambda x: np.zeros(1))),
+         (DirichletCondition(lambda x: np.zeros(1)),
+          DirichletCondition(lambda x: np.zeros(1)))))
     ic = GaussianInitialCondition(
         bvp,
-        ((np.array([7.5, 3.75]), np.array([[3., .0], [.0, 1.5]])),),
+        ((np.array([7.5, 4.]), np.array([[3., .0], [.0, 1.5]])),),
         np.full(diff_eq.y_dimension(), 50.))
     return InitialValueProblem(
         bvp,
@@ -77,8 +73,8 @@ def plot_solution(solve_func):
             for i in range(diff_eq.y_dimension()):
                 plot_evolution_of_y(
                     ivp,
-                    y[..., 0],
-                    50,
+                    y[..., i],
+                    100,
                     100,
                     f'evolution_{solve_func.__name__}_{i}')
         else:

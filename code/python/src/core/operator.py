@@ -36,8 +36,9 @@ class Operator:
         :param t: the time interval to discretise
         :return: the array containing the discretised temporal domain
         """
-        adjusted_t_1 = self.d_t() * round(t[1] / self.d_t())
-        return np.arange(t[0], adjusted_t_1, self.d_t())
+        d_t = self.d_t()
+        adjusted_t_1 = d_t * round(t[1] / d_t)
+        return np.arange(t[0], adjusted_t_1, d_t)
 
 
 class FDMOperator(Operator):
@@ -66,8 +67,8 @@ class FDMOperator(Operator):
         bvp = ivp.boundary_value_problem()
         diff_eq = bvp.differential_equation()
         d_x = bvp.mesh().d_x() if diff_eq.x_dimension() else None
-        y_constraint_functions = bvp.y_constraint_functions()
-        d_y_constraint_functions = bvp.d_y_constraint_functions()
+        y_constraints = bvp.y_constraints()
+        d_y_boundary_constraints = bvp.d_y_boundary_constraints()
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return diff_eq.d_y_over_d_t(
@@ -75,8 +76,8 @@ class FDMOperator(Operator):
                 _y,
                 d_x,
                 self._differentiator,
-                d_y_constraint_functions,
-                y_constraint_functions)
+                d_y_boundary_constraints,
+                y_constraints)
 
         time_steps = self._discretise_time_domain(ivp.t_interval())
 
@@ -84,10 +85,12 @@ class FDMOperator(Operator):
         y_i = ivp.initial_condition().discrete_y_0()
 
         for i, t_i in enumerate(time_steps):
-            y_i = self._integrator.integral(y_i, t_i, self._d_t, d_y_over_d_t)
-            if y_constraint_functions is not None:
-                for j in range(diff_eq.y_dimension()):
-                    y_constraint_functions[j](y_i[..., j])
+            y_i = self._integrator.integral(
+                y_i,
+                t_i,
+                self._d_t,
+                d_y_over_d_t,
+                y_constraints)
             y[i] = y_i
 
         return y

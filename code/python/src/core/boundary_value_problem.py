@@ -1,12 +1,13 @@
 from copy import deepcopy, copy
-from typing import Tuple, Optional, Callable, List, Union
+from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
 from fipy import CellVariable
 
 from src.core.boundary_condition import BoundaryCondition
 from src.core.differential_equation import DifferentialEquation
-from src.core.differentiator import Slicer, ConstraintFunction
+from src.core.differentiator import Slicer, BoundaryConstraint, \
+    SolutionConstraint
 from src.core.mesh import Mesh
 
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
@@ -52,10 +53,10 @@ class BoundaryValueProblem:
             self._boundary_conditions = deepcopy(boundary_conditions)
             self._y_shape = tuple(list(mesh.shape()) + [diff_eq.y_dimension()])
 
-            self._y_constraint_functions = \
-                self._create_y_boundary_constraint_functions()
-            self._d_y_constraint_functions = \
-                self._create_d_y_boundary_constraint_functions()
+            self._y_boundary_constraints, self._d_y_boundary_constraints = \
+                self._create_boundary_constraints()
+
+            self._y_constraints = self._create_solution_constraints()
 
             self._fipy_vars = self._create_fipy_variables()
         else:
@@ -63,8 +64,10 @@ class BoundaryValueProblem:
             self._boundary_conditions = None
             self._y_shape = diff_eq.y_dimension(),
 
-            self._y_constraint_functions = None
-            self._d_y_constraint_functions = None
+            self._y_boundary_constraints = None
+            self._d_y_boundary_constraints = None
+
+            self._y_constraints = None
 
             self._fipy_vars = None
 
@@ -95,26 +98,32 @@ class BoundaryValueProblem:
         """
         return copy(self._y_shape)
 
-    def y_constraint_functions(self) -> Optional[np.ndarray]:
+    def y_boundary_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 1D array (y dimension) of functions that enforce the boundary
-        conditions of y evaluated on the mesh. If the differential equation is
-        an ODE, it returns None.
+        Returns a 2D array (x dimension, y dimension) of boundary value
+        constraint pairs that represent the lower and upper boundary conditions
+        of y evaluated on the boundaries of the corresponding axes of the mesh.
+        If the differential equation is an ODE, it returns None.
         """
-        if self._y_constraint_functions is None:
-            return None
-        return np.copy(self._y_constraint_functions)
+        return deepcopy(self._y_boundary_constraints)
 
-    def d_y_constraint_functions(self) -> Optional[np.ndarray]:
+    def d_y_boundary_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 2D array (x dimension, y dimension) of boundary constraint
-        functions that enforce the boundary conditions of the spatial
-        derivative of y evaluated on the mesh. If the differential equation is
-        an ODE, it returns None.
+        Returns a 2D array (x dimension, y dimension) of boundary value
+        constraint pairs that represent the lower and upper boundary conditions
+        of the spatial derivative of y normal to the boundaries evaluated on
+        the boundaries of the corresponding axes of the mesh. If the
+        differential equation is an ODE, it returns None.
         """
-        if self._d_y_constraint_functions is None:
-            return None
-        return np.copy(self._d_y_constraint_functions)
+        return deepcopy(self._d_y_boundary_constraints)
+
+    def y_constraints(self) -> Optional[np.ndarray]:
+        """
+        Returns a 1D array (y dimension) of solution constraints that represent
+        the boundary conditions of y evaluated on the entire mesh. If the
+        differential equation is an ODE, it returns None.
+        """
+        return deepcopy(self._y_constraints)
 
     def fipy_vars(self) -> Optional[Tuple[CellVariable]]:
         """
@@ -123,222 +132,181 @@ class BoundaryValueProblem:
         """
         return copy(self._fipy_vars)
 
-    def _create_y_boundary_constraint_functions(self) -> np.ndarray:
+    def _create_boundary_constraints(self) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Creates the 1D array of constraint functions used to enforce the
-        boundary conditions on y.
+        Creates a tuple of two 2D arrays (x dimension, y dimension) of boundary
+        value constraint pairs that represent the lower and upper boundary
+        conditions of y and the spatial derivative of y respectively, evaluated
+        on the boundaries of the corresponding axes of the mesh.
         """
-        constrained_y_values = np.empty(self._y_shape)
-        y_mask = np.zeros(self._y_shape, dtype=bool)
-
-        slicer: List[Union[int, slice]] = \
-            [slice(None)] * len(self._y_shape)
-
-        boundary_conditions = self.boundary_conditions()
-        for fixed_axis in range(self._diff_eq.x_dimension()):
-            bc = boundary_conditions[fixed_axis]
-
-            lower_bc = bc[0]
-            if lower_bc.has_y_condition():
-                slicer[fixed_axis] = 0
-                self._set_boundary_and_mask_values(
-                    lower_bc.y_condition,
-                    constrained_y_values[tuple(slicer)],
-                    y_mask[tuple(slicer)],
-                    fixed_axis)
-
-            upper_bc = bc[1]
-            if upper_bc.has_y_condition():
-                slicer[fixed_axis] = -1
-                self._set_boundary_and_mask_values(
-                    upper_bc.y_condition,
-                    constrained_y_values[tuple(slicer)],
-                    y_mask[tuple(slicer)],
-                    fixed_axis)
-
-            slicer[fixed_axis] = slice(None)
-
-        y_mask[np.isnan(constrained_y_values)] = False
-
-        y_constraint_functions = \
-            self._create_y_boundary_constraint_functions_for_all_y(
-                constrained_y_values,
-                y_mask)
-
-        return y_constraint_functions
-
-    def _create_y_boundary_constraint_functions_for_all_y(
-            self,
-            constrained_y_values: np.ndarray,
-            y_mask: np.ndarray) -> np.ndarray:
-        """
-        Creates the array of boundary constraint functions for each element of
-        y based on the provided constrained values and mask arrays.
-
-        :param constrained_y_values: an array containing the evaluated boundary
-        constraints
-        :param y_mask: an array representing a mask for the
-        constrained_y_values array that can be used to select the actual
-        constrained values
-        :return: a 1D array y boundary constraint functions
-        """
-        y_constraint_functions = np.empty(
-            self._diff_eq.y_dimension(), dtype=object)
-        for i in range(self._diff_eq.y_dimension()):
-            constrained_y_values_i = constrained_y_values[..., i]
-            y_mask_i = y_mask[..., i]
-
-            def y_constraint_function(
-                    y: np.ndarray,
-                    _constrained_y_values: np.ndarray =
-                    constrained_y_values_i,
-                    _y_mask: np.ndarray = y_mask_i):
-                y[_y_mask] = _constrained_y_values[_y_mask]
-
-            y_constraint_functions[i] = y_constraint_function
-
-        return y_constraint_functions
-
-    def _create_d_y_boundary_constraint_functions(self) -> np.ndarray:
-        """
-        Creates the 2D array of constraint functions used to enforce the
-        boundary conditions on the spatial derivatives of y.
-        """
-        d_y_constraint_functions = np.empty(
+        y_boundary_constraints = np.empty(
             (self._diff_eq.x_dimension(), self._diff_eq.y_dimension()),
             dtype=object)
+        d_y_boundary_constraints = np.empty(
+            y_boundary_constraints.shape, dtype=object)
 
-        boundary_conditions = self.boundary_conditions()
-        for fixed_axis in range(self._diff_eq.x_dimension()):
-            bc = boundary_conditions[fixed_axis]
-            boundary_shape = self._y_shape[:fixed_axis] + \
-                self._y_shape[fixed_axis + 1:]
+        d_x = self._mesh.d_x()
 
-            lower_bc = bc[0]
-            if lower_bc.has_d_y_condition():
-                lower_boundary = np.empty(boundary_shape)
-                lower_mask = np.zeros(boundary_shape, dtype=bool)
-                self._set_boundary_and_mask_values(
-                    lower_bc.d_y_condition,
-                    lower_boundary,
-                    lower_mask,
-                    fixed_axis)
-            else:
-                lower_boundary = lower_mask = None
+        for axis, boundary_condition_pair in enumerate(
+                self._boundary_conditions):
+            if boundary_condition_pair is None:
+                continue
 
-            upper_bc = bc[1]
-            if upper_bc.has_d_y_condition():
-                upper_boundary = np.empty(boundary_shape)
-                upper_mask = np.zeros(boundary_shape, dtype=bool)
-                self._set_boundary_and_mask_values(
-                    upper_bc.d_y_condition,
-                    upper_boundary,
-                    upper_mask,
-                    fixed_axis)
-            else:
-                upper_boundary = upper_mask = None
+            boundary_shape = self._y_shape[:axis] + self._y_shape[axis + 1:]
+            d_x_arr = np.array([d_x[:axis] + d_x[axis + 1:]])
 
-            d_y_constraint_functions[fixed_axis, :] = \
-                self._create_d_y_boundary_constraint_functions_for_axis(
-                    fixed_axis,
-                    lower_boundary,
-                    upper_boundary,
-                    lower_mask,
-                    upper_mask)
+            y_boundary_constraint_pairs, d_y_boundary_constraint_pairs = \
+                self._create_boundary_constraint_pairs_for_all_y(
+                    boundary_condition_pair, boundary_shape, d_x_arr)
 
-        return d_y_constraint_functions
+            y_boundary_constraints[axis, :] = y_boundary_constraint_pairs
+            d_y_boundary_constraints[axis, :] = d_y_boundary_constraint_pairs
 
-    def _create_d_y_boundary_constraint_functions_for_axis(
+        return y_boundary_constraints, d_y_boundary_constraints
+
+    def _create_boundary_constraint_pairs_for_all_y(
             self,
-            x_axis: int,
-            lower_boundary: Optional[np.ndarray],
-            upper_boundary: Optional[np.ndarray],
-            lower_mask: Optional[np.ndarray],
-            upper_mask: Optional[np.ndarray]) -> np.ndarray:
+            boundary_condition_pair: BoundaryConditionPair,
+            boundary_shape: Tuple[int, ...],
+            d_x_arr: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Creates a 1D array of constraint functions corresponding to the
-        elements of y for the two boundaries of the specified spatial axis.
+        Creates a tuple of two 1D arrays (y dimension) of boundary value
+        constraint pairs that represent the lower and upper boundary
+        conditions of each element of y and the spatial derivative of y
+        respectively, evaluated on the boundaries of a single axis of the mesh.
 
-        :param x_axis: the spatial axis whose boundaries the constraint
-        functions are to be for
-        :param lower_boundary: an array representing the lower boundary of the
-        mesh along the specified axis
-        :param upper_boundary: an array representing the upper boundary of the
-        mesh along the specified axis
-        :param lower_mask: an array representing a mask that dictates which
-        points of the lower boundary's mesh the constraints apply to
-        :param upper_mask: an array representing a mask that dictates which
-        points of the upper boundary's mesh the constraints apply to
-        :return: the 1D array of of constraint functions for each element of y
+        :param boundary_condition_pair: the boundary condition pair to evaluate
+        :param boundary_shape: the shape of the boundary of the axis of the
+        mesh
+        :param d_x_arr: a 1D array of the step sizes of all the other spatial
+        axes
+        :return: two 1D arrays of boundary constraint pairs
         """
-        d_y_constraint_functions_for_axis = np.empty(
+        lower_y_boundary_constraints = lower_d_y_boundary_constraints = \
+            upper_y_boundary_constraints = upper_d_y_boundary_constraints = \
+            [None] * self._diff_eq.y_dimension()
+
+        lower_boundary_condition = boundary_condition_pair[0]
+        if lower_boundary_condition is not None:
+            if lower_boundary_condition.has_y_condition():
+                lower_y_boundary_constraints = \
+                    self._create_boundary_constraints_for_all_y(
+                        lower_boundary_condition.y_condition,
+                        boundary_shape,
+                        d_x_arr)
+            if lower_boundary_condition.has_d_y_condition():
+                lower_d_y_boundary_constraints = \
+                    self._create_boundary_constraints_for_all_y(
+                        lower_boundary_condition.d_y_condition,
+                        boundary_shape,
+                        d_x_arr)
+
+        upper_boundary_condition = boundary_condition_pair[1]
+        if upper_boundary_condition is not None:
+            if upper_boundary_condition.has_y_condition():
+                upper_y_boundary_constraints = \
+                    self._create_boundary_constraints_for_all_y(
+                        upper_boundary_condition.y_condition,
+                        boundary_shape,
+                        d_x_arr)
+            if upper_boundary_condition.has_d_y_condition():
+                upper_d_y_boundary_constraints = \
+                    self._create_boundary_constraints_for_all_y(
+                        upper_boundary_condition.d_y_condition,
+                        boundary_shape,
+                        d_x_arr)
+
+        y_boundary_constraint_pairs = np.empty(
             self._diff_eq.y_dimension(), dtype=object)
+        y_boundary_constraint_pairs[:] = list(zip(
+            lower_y_boundary_constraints, upper_y_boundary_constraints))
 
-        slicer: Slicer = [slice(None)] * (len(self._y_shape) - 1)
+        d_y_boundary_constraint_pairs = np.empty(
+            self._diff_eq.y_dimension(), dtype=object)
+        d_y_boundary_constraint_pairs[:] = list(zip(
+            lower_d_y_boundary_constraints, upper_d_y_boundary_constraints))
 
-        slicer[x_axis] = 0
-        lower_slicer = tuple(slicer)
+        return y_boundary_constraint_pairs, d_y_boundary_constraint_pairs
 
-        slicer[x_axis] = self._y_shape[x_axis] - 1
-        upper_slicer = tuple(slicer)
-
-        lower_boundary_y_ind = lower_mask_y_ind = None
-        upper_boundary_y_ind = upper_mask_y_ind = None
-        for y_ind in range(self._diff_eq.y_dimension()):
-            if lower_boundary is not None:
-                lower_boundary_y_ind = lower_boundary[..., y_ind]
-                lower_mask_y_ind = lower_mask[..., y_ind]
-
-            if upper_boundary is not None:
-                upper_boundary_y_ind = upper_boundary[..., y_ind]
-                upper_mask_y_ind = upper_mask[..., y_ind]
-
-            def d_y_constraint_function(
-                    d_y: np.ndarray,
-                    _lower_boundary: np.ndarray = lower_boundary_y_ind,
-                    _upper_boundary: np.ndarray = upper_boundary_y_ind,
-                    _lower_mask: np.ndarray = lower_mask_y_ind,
-                    _upper_mask: np.ndarray = upper_mask_y_ind):
-                if _lower_boundary is not None:
-                    d_y[lower_slicer][_lower_mask] = \
-                        _lower_boundary[_lower_mask]
-
-                if _upper_boundary is not None:
-                    d_y[upper_slicer][_upper_mask] = \
-                        _upper_boundary[_upper_mask]
-
-            d_y_constraint_functions_for_axis[y_ind] = \
-                d_y_constraint_function
-
-        return d_y_constraint_functions_for_axis
-
-    def _set_boundary_and_mask_values(
+    def _create_boundary_constraints_for_all_y(
             self,
             condition_function: Callable[[Tuple[float, ...]], np.ndarray],
-            boundary: np.ndarray,
-            mask: np.ndarray,
-            fixed_axis: int):
+            boundary_shape: Tuple[int, ...],
+            d_x_arr: np.ndarray
+    ) -> Sequence[BoundaryConstraint]:
         """
-        Evaluates the boundary conditions and sets the corresponding elements
-        of the boundary and mask arrays accordingly.
+        Creates a sequence of boundary constraints representing the boundary
+        condition, defined by the condition function, evaluated on a single
+        boundary for each element of y.
 
-        :param condition_function: the constraint function to evaluate
-        :param boundary: the array representing the boundary slice whose
-        elements are to be set according to the condition function
-        :param mask: the mask representing the elements of the boundary that
-        the condition function applies to
-        :param fixed_axis: the spatial axis the boundary terminates
+        :param condition_function: the boundary condition function
+        :param boundary_shape: the shape of the boundary
+        :param d_x_arr: a 1D array of the step sizes of all the other spatial
+        axes
+        :return: a sequence of boundary constraints
         """
-        x_offset = self._mesh.x((0,) * self._diff_eq.x_dimension())
-        d_x = self._mesh.d_x()
-        non_fixed_x_offset_arr = np.array(
-            list(x_offset[:fixed_axis]) + list(x_offset[fixed_axis + 1:]))
-        non_fixed_d_x_arr = np.array(
-            list(d_x[:fixed_axis]) + list(d_x[fixed_axis + 1:]))
-        for index in np.ndindex(boundary.shape[:-1]):
-            x = tuple(non_fixed_x_offset_arr + index * non_fixed_d_x_arr)
+        boundary = np.full(boundary_shape, np.nan)
+        for index in np.ndindex(boundary_shape[:-1]):
+            x = tuple(index * d_x_arr)
             boundary[(*index, slice(None))] = condition_function(x)
-        mask[~np.isnan(boundary)] = True
+
+        boundary_constraints = []
+        for y_ind in range(self._diff_eq.y_dimension()):
+            boundary_y_ind = boundary[..., y_ind]
+            mask = ~np.isnan(boundary_y_ind)
+            value = boundary_y_ind[mask]
+            boundary_constraints.append(BoundaryConstraint(value, mask))
+
+        return boundary_constraints
+
+    def _create_solution_constraints(self) -> np.ndarray:
+        """
+        Creates a 1D array of solution value constraints evaluated on the
+        entire mesh.
+        """
+        y_constraints = np.empty(self._diff_eq.y_dimension(), dtype=object)
+
+        slicer: Slicer = [slice(None)] * len(self._y_shape[:-1])
+
+        single_y = np.empty(self._y_shape[:-1])
+        for y_ind in range(self._diff_eq.y_dimension()):
+            single_y.fill(np.nan)
+
+            for axis in range(self._diff_eq.x_dimension()):
+                y_boundary_constraint_pair = \
+                    self._y_boundary_constraints[axis, y_ind]
+                if y_boundary_constraint_pair is not None:
+                    lower_y_boundary_constraint = y_boundary_constraint_pair[0]
+                    if lower_y_boundary_constraint is not None:
+                        slicer[axis] = 0
+                        if self._diff_eq.x_dimension() > 1:
+                            single_y[tuple(slicer)][
+                                lower_y_boundary_constraint.mask] = \
+                                lower_y_boundary_constraint.value
+                        elif lower_y_boundary_constraint.mask:
+                            single_y[tuple(slicer)] = \
+                                lower_y_boundary_constraint.value
+
+                    upper_y_boundary_constraint = y_boundary_constraint_pair[1]
+                    if upper_y_boundary_constraint is not None:
+                        slicer[axis] = -1
+                        if self._diff_eq.x_dimension() > 1:
+                            single_y[tuple(slicer)][
+                                upper_y_boundary_constraint.mask] = \
+                                upper_y_boundary_constraint.value
+                        elif upper_y_boundary_constraint.mask:
+                            single_y[tuple(slicer)] = \
+                                upper_y_boundary_constraint.value
+
+                    slicer[axis] = slice(None)
+
+            mask = ~np.isnan(single_y)
+            value = single_y[mask]
+            y_constraint = SolutionConstraint(value, mask)
+            y_constraints[y_ind] = y_constraint
+
+        return y_constraints
 
     def _create_fipy_variables(self) -> Tuple[CellVariable]:
         """
@@ -353,153 +321,58 @@ class BoundaryValueProblem:
                 name=f'y_{i}',
                 mesh=self._mesh.fipy_mesh())
 
-            y_constraint_function = self._y_constraint_functions[i]
-            self._set_fipy_y_constraint(y_var_i, y_constraint_function)
-
-            d_y_constraint_functions = self._d_y_constraint_functions[:, i]
-            self._set_fipy_d_y_constraint(y_var_i, d_y_constraint_functions)
+            self._set_fipy_variable_constraints(
+                y_var_i, self._y_boundary_constraints[:, i])
+            self._set_fipy_variable_constraints(
+                y_var_i.faceGrad, self._d_y_boundary_constraints[:, i])
 
             y_vars.append(y_var_i)
 
         return tuple(y_vars)
 
-    def _set_fipy_y_constraint(
+    def _set_fipy_variable_constraints(
             self,
-            y_var: CellVariable,
-            y_constraint_function: ConstraintFunction):
+            var: CellVariable,
+            boundary_constraints: np.ndarray):
         """
         It sets all constraints on the values of the variable at the
         boundaries.
 
-        :param y_var: the solution variable
-        :param y_constraint_function: the solution constraint function
+        :param var: the FiPy variable
+        :param boundary_constraints: the boundary constraint pairs
         """
         fipy_mesh = self._mesh.fipy_mesh()
+        face_masks = [(fipy_mesh.facesLeft.value, fipy_mesh.facesRight.value)]
+        if self._diff_eq.x_dimension() > 1:
+            face_masks.append(
+                (fipy_mesh.facesBottom.value, fipy_mesh.facesTop.value))
+        if self._diff_eq.x_dimension() > 2:
+            face_masks.append(
+                (fipy_mesh.facesFront.value, fipy_mesh.facesBack.value))
 
-        array = np.full(tuple(self._y_shape[:-1]), np.nan)
-        y_constraint_function(array)
-
-        if self._diff_eq.x_dimension() == 1:
-            left_boundary = array[0]
-            if not np.isnan(left_boundary):
-                y_var.constrain(left_boundary, where=fipy_mesh.facesLeft)
-
-            right_boundary = array[-1]
-            if not np.isnan(right_boundary):
-                y_var.constrain(right_boundary, where=fipy_mesh.facesRight)
-
-        elif self._diff_eq.x_dimension() == 2:
-            self._apply_fipy_var_constraint(
-                y_var, array[0, :], fipy_mesh.facesBottom.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[-1, :], fipy_mesh.facesTop.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, 0], fipy_mesh.facesLeft.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, -1], fipy_mesh.facesRight.value)
-
-        else:
-            self._apply_fipy_var_constraint(
-                y_var, array[0, :, :].flatten(), fipy_mesh.facesFront.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[-1, :, :].flatten(), fipy_mesh.facesBack.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, 0, :].flatten(), fipy_mesh.facesBottom.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, -1, :].flatten(), fipy_mesh.facesTop.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, :, 0].flatten(), fipy_mesh.facesLeft.value)
-            self._apply_fipy_var_constraint(
-                y_var, array[:, :, -1].flatten(), fipy_mesh.facesRight.value)
-
-    def _set_fipy_d_y_constraint(
-            self,
-            y_var: CellVariable,
-            d_y_constraint_functions: np.ndarray):
-        """
-        It sets all constraints on the derivatives of the variable normal to
-        the boundaries.
-
-        :param y_var: the solution variable
-        :param d_y_constraint_functions: the derivative constraint functions
-        """
-        fipy_mesh = self._mesh.fipy_mesh()
-
-        array = np.full(tuple(self._y_shape[:-1]), np.nan)
-
-        if self._diff_eq.x_dimension() == 1:
-            d_y_constraint_functions[0](array)
-
-            left_boundary = array[0]
-            if not np.isnan(left_boundary):
-                y_var.faceGrad.constrain(
-                    left_boundary, where=fipy_mesh.facesLeft)
-
-            right_boundary = array[-1]
-            if not np.isnan(right_boundary):
-                y_var.faceGrad.constrain(
-                    right_boundary, where=fipy_mesh.facesRight)
-
-        elif self._diff_eq.x_dimension() == 2:
-            d_y_constraint_functions[0](array)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad, array[0, :], fipy_mesh.facesBottom.value)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad, array[-1, :], fipy_mesh.facesTop.value)
-
-            array.fill(np.nan)
-            d_y_constraint_functions[1](array)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad, array[:, 0], fipy_mesh.facesLeft.value)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad, array[:, -1], fipy_mesh.facesRight.value)
-
-        else:
-            d_y_constraint_functions[0](array)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[0, :, :].flatten(),
-                fipy_mesh.facesFront.value)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[-1, :, :].flatten(),
-                fipy_mesh.facesBack.value)
-
-            array.fill(np.nan)
-            d_y_constraint_functions[1](array)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[:, 0, :].flatten(),
-                fipy_mesh.facesBottom.value)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[:, -1, :].flatten(),
-                fipy_mesh.facesTop.value)
-
-            array.fill(np.nan)
-            d_y_constraint_functions[2](array)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[:, :, 0].flatten(),
-                fipy_mesh.facesLeft.value)
-            self._apply_fipy_var_constraint(
-                y_var.faceGrad,
-                array[:, :, -1].flatten(),
-                fipy_mesh.facesRight.value)
+        for axis in range(self._diff_eq.x_dimension()):
+            boundary_constraint_pair = boundary_constraints[axis]
+            if boundary_constraint_pair is not None:
+                face_mask_pair = face_masks[
+                    self._diff_eq.x_dimension() - axis - 1]
+                self._apply_fipy_variable_constraint(
+                    var, boundary_constraint_pair[0], face_mask_pair[0])
+                self._apply_fipy_variable_constraint(
+                    var, boundary_constraint_pair[1], face_mask_pair[1])
 
     @staticmethod
-    def _apply_fipy_var_constraint(
+    def _apply_fipy_variable_constraint(
             var: CellVariable,
-            boundary: np.ndarray,
+            boundary_constraint: Optional[BoundaryConstraint],
             face_mask: np.ndarray):
         """
-        Applies the constraints evaluated on the boundary parameter to the
-        faces specified by the face mask parameter.
+        Applies the boundary constraint to the faces specified by the face mask
+        parameter.
 
         :param var: the variable whose values are to be constrained
-        :param boundary: the evaluated boundary value constraints
+        :param boundary_constraint: the boundary value constraints
         :param face_mask: the mask for the cell faces the boundary consists of
         """
-        boundary_is_not_nan = ~np.isnan(boundary)
-        face_mask[face_mask] &= boundary_is_not_nan
-        var.constrain(boundary[boundary_is_not_nan], where=face_mask)
+        if boundary_constraint is not None:
+            face_mask[face_mask] &= boundary_constraint.mask.flatten()
+            var.constrain(boundary_constraint.value.flatten(), where=face_mask)

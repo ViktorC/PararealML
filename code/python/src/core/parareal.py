@@ -29,7 +29,8 @@ class Parareal:
             self,
             ivp: InitialValueProblem,
             tol: float,
-            max_iterations: int = sys.maxsize) -> np.ndarray:
+            max_iterations: int = sys.maxsize
+    ) -> np.ndarray:
         """
         Runs the Parareal solver and returns the discretised solution of the
         differential equation.

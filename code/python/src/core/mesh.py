@@ -140,7 +140,8 @@ class UniformGrid(Mesh):
     @staticmethod
     def _calculate_shape(
             x_intervals: Tuple[SpatialDomainInterval, ...],
-            d_x: Tuple[float, ...]) -> Tuple[int, ...]:
+            d_x: Tuple[float, ...]
+    ) -> Tuple[int, ...]:
         """
         Calculates the shape of the mesh.
 
