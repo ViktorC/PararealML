@@ -71,7 +71,8 @@ class WellDefinedInitialCondition(InitialCondition):
                 y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
 
             for i, y_constraint in enumerate(self._bvp.y_constraints()):
-                y_0[..., i][y_constraint.mask] = y_constraint.value
+                if y_constraint is not None:
+                    y_0[..., i][y_constraint.mask] = y_constraint.value
         else:
             y_0 = self._y_0_func(None)
 

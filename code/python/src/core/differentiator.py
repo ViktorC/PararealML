@@ -309,7 +309,7 @@ class Differentiator:
             x_axis: int,
             d_x: float,
             tol: float,
-            y_constraint: SolutionConstraint,
+            y_constraint: Optional[SolutionConstraint],
             y_init: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
@@ -343,7 +343,7 @@ class Differentiator:
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
             tol: float,
-            y_constraints: Sequence[SolutionConstraint],
+            y_constraints: Sequence[Optional[SolutionConstraint]],
             first_derivative_boundary_constraints: Optional[np.ndarray] = None,
             y_init: Optional[np.ndarray] = None
     ) -> np.ndarray:
@@ -435,7 +435,7 @@ class Differentiator:
             y_shape: Tuple[int, ...],
             tol: float,
             y_init: Optional[np.ndarray],
-            y_constraints: Sequence[SolutionConstraint]
+            y_constraints: Sequence[Optional[SolutionConstraint]]
     ) -> np.ndarray:
         """
         Calculates the inverse of a differential operation using the Jacobi
@@ -462,14 +462,16 @@ class Differentiator:
             assert y_init.shape == y_shape
 
         for i, y_constraint in enumerate(y_constraints):
-            y_init[..., i][y_constraint.mask] = y_constraint.value
+            if y_constraint is not None:
+                y_init[..., i][y_constraint.mask] = y_constraint.value
 
         diff = float('inf')
 
         while diff > tol:
             y = update_func(y_init)
             for i, y_constraint in enumerate(y_constraints):
-                y[..., i][y_constraint.mask] = y_constraint.value
+                if y_constraint is not None:
+                    y[..., i][y_constraint.mask] = y_constraint.value
 
             diff = np.linalg.norm(y - y_init)
             y_init = y
