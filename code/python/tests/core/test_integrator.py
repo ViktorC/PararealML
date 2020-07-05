@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.core.differentiator import SolutionConstraint
+from src.core.constraint import Constraint
 from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
 
 
@@ -28,7 +28,7 @@ def test_forward_euler_method_with_constraints():
 
     def d_y_over_d_t(t, y): return 5 * y + t ** 2
 
-    y_constraint_0 = SolutionConstraint(np.zeros(10), np.ones(10, dtype=bool))
+    y_constraint_0 = Constraint(np.zeros(10), np.ones(10, dtype=bool))
     y_constraints = [y_constraint_0, None]
 
     expected_y_next = np.concatenate(
@@ -68,10 +68,10 @@ def test_explicit_midpoint_method_with_constraints():
     value[:, 0] = value[:, -1] = 2.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_constraint = SolutionConstraint(value, mask)
+    y_constraint = Constraint(value, mask)
 
     expected_y_next = np.full(y_shape, 4.5)
-    expected_y_next[..., 0][y_constraint.mask] = y_constraint.value
+    y_constraint.apply(expected_y_next[..., 0])
 
     actual_y_next = midpoint.integral(
         y_0,
@@ -112,10 +112,10 @@ def test_rk4_with_constraints():
     value[0] = value[-1] = 0.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_constraint = SolutionConstraint(value, mask)
+    y_constraint = Constraint(value, mask)
 
     expected_y_next = np.full(y_shape, 3.)
-    expected_y_next[..., 0][y_constraint.mask] = y_constraint.value
+    y_constraint.apply(expected_y_next[..., 0])
 
     actual_y_next = rk4.integral(y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
 

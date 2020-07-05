@@ -3,6 +3,7 @@ from fipy.meshes.uniformGrid3D import UniformGrid3D
 
 from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constraint import apply_constraints_along_last_axis
 from src.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation, DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -35,12 +36,7 @@ def test_2d_bvp():
           DirichletCondition(lambda x: np.array([x[0], -999])))))
 
     y = np.full(bvp.y_shape(), 13.)
-
-    y_constraints = bvp.y_constraints()
-    y_constraint_0 = y_constraints[0]
-    y_constraint_1 = y_constraints[1]
-    y[..., 0][y_constraint_0.mask] = y_constraint_0.value
-    y[..., 1][y_constraint_1.mask] = y_constraint_1.value
+    apply_constraints_along_last_axis(bvp.y_constraints(), y)
 
     assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
     assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)

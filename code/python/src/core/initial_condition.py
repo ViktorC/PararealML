@@ -4,6 +4,7 @@ from typing import Tuple, Optional, Callable
 import numpy as np
 
 from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constraint import apply_constraints_along_last_axis
 
 
 class InitialCondition:
@@ -70,9 +71,7 @@ class WellDefinedInitialCondition(InitialCondition):
             for index in np.ndindex(mesh.shape()):
                 y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
 
-            for i, y_constraint in enumerate(self._bvp.y_constraints()):
-                if y_constraint is not None:
-                    y_0[..., i][y_constraint.mask] = y_constraint.value
+            apply_constraints_along_last_axis(self._bvp.y_constraints(), y_0)
         else:
             y_0 = self._y_0_func(None)
 

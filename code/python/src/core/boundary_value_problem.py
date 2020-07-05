@@ -5,9 +5,9 @@ import numpy as np
 from fipy import CellVariable
 
 from src.core.boundary_condition import BoundaryCondition
+from src.core.constraint import Constraint
 from src.core.differential_equation import DifferentialEquation
-from src.core.differentiator import Slicer, BoundaryConstraint, \
-    SolutionConstraint
+from src.core.differentiator import Slicer
 from src.core.mesh import Mesh
 
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
@@ -105,7 +105,7 @@ class BoundaryValueProblem:
         of y evaluated on the boundaries of the corresponding axes of the mesh.
         If the differential equation is an ODE, it returns None.
         """
-        return deepcopy(self._y_boundary_constraints)
+        return copy(self._y_boundary_constraints)
 
     def d_y_boundary_constraints(self) -> Optional[np.ndarray]:
         """
@@ -115,7 +115,7 @@ class BoundaryValueProblem:
         the boundaries of the corresponding axes of the mesh. If the
         differential equation is an ODE, it returns None.
         """
-        return deepcopy(self._d_y_boundary_constraints)
+        return copy(self._d_y_boundary_constraints)
 
     def y_constraints(self) -> Optional[np.ndarray]:
         """
@@ -123,7 +123,7 @@ class BoundaryValueProblem:
         the boundary conditions of y evaluated on the entire mesh. If the
         differential equation is an ODE, it returns None.
         """
-        return deepcopy(self._y_constraints)
+        return copy(self._y_constraints)
 
     def fipy_vars(self) -> Optional[Tuple[CellVariable]]:
         """
@@ -234,7 +234,7 @@ class BoundaryValueProblem:
             condition_function: Callable[[Tuple[float, ...]], np.ndarray],
             boundary_shape: Tuple[int, ...],
             d_x_arr: np.ndarray
-    ) -> Sequence[BoundaryConstraint]:
+    ) -> Sequence[Constraint]:
         """
         Creates a sequence of boundary constraints representing the boundary
         condition, defined by the condition function, evaluated on a single
@@ -256,7 +256,7 @@ class BoundaryValueProblem:
             boundary_y_ind = boundary[..., y_ind]
             mask = ~np.isnan(boundary_y_ind)
             value = boundary_y_ind[mask]
-            boundary_constraints.append(BoundaryConstraint(value, mask))
+            boundary_constraints.append(Constraint(value, mask))
 
         return boundary_constraints
 
@@ -281,29 +281,27 @@ class BoundaryValueProblem:
                     if lower_y_boundary_constraint is not None:
                         slicer[axis] = 0
                         if self._diff_eq.x_dimension() > 1:
-                            single_y[tuple(slicer)][
-                                lower_y_boundary_constraint.mask] = \
-                                lower_y_boundary_constraint.value
-                        elif lower_y_boundary_constraint.mask:
+                            lower_y_boundary_constraint.apply(
+                                single_y[tuple(slicer)])
+                        elif lower_y_boundary_constraint.mask():
                             single_y[tuple(slicer)] = \
-                                lower_y_boundary_constraint.value
+                                lower_y_boundary_constraint.value()
 
                     upper_y_boundary_constraint = y_boundary_constraint_pair[1]
                     if upper_y_boundary_constraint is not None:
                         slicer[axis] = -1
                         if self._diff_eq.x_dimension() > 1:
-                            single_y[tuple(slicer)][
-                                upper_y_boundary_constraint.mask] = \
-                                upper_y_boundary_constraint.value
-                        elif upper_y_boundary_constraint.mask:
+                            upper_y_boundary_constraint.apply(
+                                single_y[tuple(slicer)])
+                        elif upper_y_boundary_constraint.mask():
                             single_y[tuple(slicer)] = \
-                                upper_y_boundary_constraint.value
+                                upper_y_boundary_constraint.value()
 
                     slicer[axis] = slice(None)
 
             mask = ~np.isnan(single_y)
             value = single_y[mask]
-            y_constraint = SolutionConstraint(value, mask)
+            y_constraint = Constraint(value, mask)
             y_constraints[y_ind] = y_constraint
 
         return y_constraints
@@ -363,7 +361,7 @@ class BoundaryValueProblem:
     @staticmethod
     def _apply_fipy_variable_constraint(
             var: CellVariable,
-            boundary_constraint: Optional[BoundaryConstraint],
+            boundary_constraint: Optional[Constraint],
             face_mask: np.ndarray):
         """
         Applies the boundary constraint to the faces specified by the face mask
@@ -374,5 +372,7 @@ class BoundaryValueProblem:
         :param face_mask: the mask for the cell faces the boundary consists of
         """
         if boundary_constraint is not None:
-            face_mask[face_mask] &= boundary_constraint.mask.flatten()
-            var.constrain(boundary_constraint.value.flatten(), where=face_mask)
+            face_mask[face_mask] &= boundary_constraint.mask().flatten()
+            var.constrain(
+                boundary_constraint.value().flatten(),
+                where=face_mask)

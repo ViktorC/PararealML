@@ -1,23 +1,15 @@
-from collections import namedtuple
 from typing import Callable, Union, List, Optional, Tuple, Sequence
 
 import numpy as np
 
+from src.core.constraint import Constraint, apply_constraints_along_last_axis
+
 Slicer = List[Union[int, slice]]
 
-BoundaryConstraint = namedtuple(
-    'BoundaryConstraint',
-    ['value', 'mask']
-)
 BoundaryConstraintPair = Tuple[
-    Optional[BoundaryConstraint],
-    Optional[BoundaryConstraint]
+    Optional[Constraint],
+    Optional[Constraint]
 ]
-
-SolutionConstraint = namedtuple(
-    'SolutionConstraint',
-    ['value', 'mask']
-)
 
 
 class Differentiator:
@@ -309,7 +301,7 @@ class Differentiator:
             x_axis: int,
             d_x: float,
             tol: float,
-            y_constraint: Optional[SolutionConstraint],
+            y_constraint: Optional[Constraint],
             y_init: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
@@ -343,7 +335,7 @@ class Differentiator:
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
             tol: float,
-            y_constraints: Sequence[Optional[SolutionConstraint]],
+            y_constraints: Sequence[Optional[Constraint]],
             first_derivative_boundary_constraints: Optional[np.ndarray] = None,
             y_init: Optional[np.ndarray] = None
     ) -> np.ndarray:
@@ -435,7 +427,7 @@ class Differentiator:
             y_shape: Tuple[int, ...],
             tol: float,
             y_init: Optional[np.ndarray],
-            y_constraints: Sequence[Optional[SolutionConstraint]]
+            y_constraints: Sequence[Optional[Constraint]]
     ) -> np.ndarray:
         """
         Calculates the inverse of a differential operation using the Jacobi
@@ -461,17 +453,13 @@ class Differentiator:
         else:
             assert y_init.shape == y_shape
 
-        for i, y_constraint in enumerate(y_constraints):
-            if y_constraint is not None:
-                y_init[..., i][y_constraint.mask] = y_constraint.value
+        apply_constraints_along_last_axis(y_constraints, y_init)
 
         diff = float('inf')
 
         while diff > tol:
             y = update_func(y_init)
-            for i, y_constraint in enumerate(y_constraints):
-                if y_constraint is not None:
-                    y[..., i][y_constraint.mask] = y_constraint.value
+            apply_constraints_along_last_axis(y_constraints, y)
 
             diff = np.linalg.norm(y - y_init)
             y_init = y
@@ -547,12 +535,10 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_diff = y_next / two_d_x
 
         if lower_boundary_constraint is not None:
-            if len(y.shape) - 1 == 1:
-                if lower_boundary_constraint.mask:
-                    y_diff = lower_boundary_constraint.value
-            else:
-                y_diff[lower_boundary_constraint.mask, ...] = \
-                    lower_boundary_constraint.value
+            if len(y.shape) - 1 > 1:
+                lower_boundary_constraint.apply(y_diff)
+            elif lower_boundary_constraint.mask():
+                y_diff = lower_boundary_constraint.value()
 
         derivative_slicer[x_axis] = 0
         derivative[tuple(derivative_slicer)] = y_diff
@@ -575,12 +561,10 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_diff = -y_prev / two_d_x
 
         if upper_boundary_constraint is not None:
-            if len(y.shape) - 1 == 1:
-                if upper_boundary_constraint.mask:
-                    y_diff = upper_boundary_constraint.value
-            else:
-                y_diff[upper_boundary_constraint.mask, ...] = \
-                    upper_boundary_constraint.value
+            if len(y.shape) - 1 > 1:
+                upper_boundary_constraint.apply(y_diff)
+            elif upper_boundary_constraint.mask():
+                y_diff = upper_boundary_constraint.value()
 
         derivative_slicer[x_axis] = -1
         derivative[tuple(derivative_slicer)] = y_diff
@@ -641,15 +625,11 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_prev = .0
 
         if lower_boundary_constraint is not None:
-            if len(y.shape) - 1 == 1:
-                if lower_boundary_constraint.mask:
-                    y_prev = y_next - \
-                        2 * d_x1 * lower_boundary_constraint.value
-            else:
-                y_prev = np.zeros(y_next.shape)
-                y_prev[lower_boundary_constraint.mask] = \
-                    y_next[lower_boundary_constraint.mask] - \
-                    2 * d_x1 * lower_boundary_constraint.value
+            if len(y.shape) - 1 > 1:
+                y_prev = lower_boundary_constraint.multiply_and_add(
+                    y_next, -2. * d_x1, np.zeros(y_next.shape))
+            elif lower_boundary_constraint.mask():
+                y_prev = y_next - 2. * d_x1 * lower_boundary_constraint.value()
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -678,15 +658,11 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_next = .0
 
         if upper_boundary_constraint is not None:
-            if len(y.shape) - 1 == 1:
-                if upper_boundary_constraint.mask:
-                    y_next = y_prev + \
-                        2 * d_x1 * upper_boundary_constraint.value
-            else:
-                y_next = np.zeros(y_prev.shape)
-                y_next[upper_boundary_constraint.mask] = \
-                    y_prev[upper_boundary_constraint.mask] + \
-                    2 * d_x1 * upper_boundary_constraint.value
+            if len(y.shape) - 1 > 1:
+                y_next = upper_boundary_constraint.multiply_and_add(
+                    y_prev, 2. * d_x1, np.zeros(y_prev.shape))
+            elif upper_boundary_constraint.mask():
+                y_next = y_prev + 2. * d_x1 * upper_boundary_constraint.value()
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -784,18 +760,15 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                         y_lower_halo = np.zeros(
                             y_lower_boundary_adjacent.shape)
 
-                    value = lower_boundary_constraint.value
-                    mask = lower_boundary_constraint.mask
-
-                    if len(y_hat.shape) - 1 == 1:
-                        if mask:
-                            y_lower_halo[..., y_ind] = \
-                                y_lower_boundary_adjacent[..., y_ind] - \
-                                2. * d_x[axis] * value
-                    else:
-                        y_lower_halo[..., y_ind][mask] = \
-                            y_lower_boundary_adjacent[..., y_ind][mask] - \
-                            2. * d_x[axis] * value
+                    if len(y_hat.shape) - 1 > 1:
+                        lower_boundary_constraint.multiply_and_add(
+                            y_lower_boundary_adjacent[..., y_ind],
+                            -2. * d_x[axis],
+                            y_lower_halo[..., y_ind])
+                    elif lower_boundary_constraint.mask:
+                        y_lower_halo[..., y_ind] = \
+                            y_lower_boundary_adjacent[..., y_ind] - \
+                            2. * d_x[axis] * lower_boundary_constraint.value()
 
                 upper_boundary_constraint = boundary_constraint_pair[1]
                 if upper_boundary_constraint is not None:
@@ -803,18 +776,15 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                         y_upper_halo = np.zeros(
                             y_upper_boundary_adjacent.shape)
 
-                    value = upper_boundary_constraint.value
-                    mask = upper_boundary_constraint.mask
-
-                    if len(y_hat.shape) - 1 == 1:
-                        if mask:
-                            y_upper_halo[..., y_ind] = \
-                                y_upper_boundary_adjacent[..., y_ind] + \
-                                2. * d_x[axis] * value
-                    else:
-                        y_upper_halo[..., y_ind][mask] = \
-                            y_upper_boundary_adjacent[..., y_ind][mask] + \
-                            2. * d_x[axis] * value
+                    if len(y_hat.shape) - 1 > 1:
+                        upper_boundary_constraint.multiply_and_add(
+                            y_upper_boundary_adjacent[..., y_ind],
+                            2. * d_x[axis],
+                            y_upper_halo[..., y_ind])
+                    elif upper_boundary_constraint.mask():
+                        y_upper_halo[..., y_ind] = \
+                            y_upper_boundary_adjacent[..., y_ind] + \
+                            2. * d_x[axis] * upper_boundary_constraint.value()
 
             # Lower boundary.
             slicer[axis] = 0

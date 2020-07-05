@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
+from src.core.constraint import Constraint
 from src.core.differentiator import Differentiator, \
-    ThreePointCentralFiniteDifferenceMethod, BoundaryConstraint, \
-    SolutionConstraint
+    ThreePointCentralFiniteDifferenceMethod
 
 
 def test_differentiator_jacobian_with_insufficient_dimensions():
@@ -159,8 +159,7 @@ def test_3pcfdm_1d_constrained_derivative():
         [2., 4.], [4., 8.], [-3., 2.], [-3., 2.]
     ])
 
-    lower_constraint = BoundaryConstraint(
-        np.full(1, 9999.), np.array([True]))
+    lower_constraint = Constraint(np.full(1, 9999.), np.array([True]))
     upper_constraint = None
     boundary_constraint_pair = lower_constraint, upper_constraint
 
@@ -190,7 +189,7 @@ def test_3pcfdm_2d_constrained_derivative():
         ]
     ])
 
-    lower_constraint = BoundaryConstraint(
+    lower_constraint = Constraint(
         np.full(1, 9999.), np.array([False, True, False]))
     upper_constraint = None
     boundary_constraint_pair = lower_constraint, upper_constraint
@@ -255,10 +254,8 @@ def test_3pcfdm_1d_constrained_second_derivative():
         [2., 4.], [4., 8.], [-3., 2.], [-3., 2.]
     ])
 
-    lower_constraint = BoundaryConstraint(
-        np.full(1, 0.), np.array([True]))
-    upper_constraint = BoundaryConstraint(
-        np.full(1, 2.), np.array([False]))
+    lower_constraint = Constraint(np.array([0.]), np.array([True]))
+    upper_constraint = Constraint(np.array([]), np.array([False]))
     boundary_constraint_pair = lower_constraint, upper_constraint
 
     expected_second_derivative = np.array([
@@ -288,9 +285,9 @@ def test_3pcfdm_2d_constrained_second_derivative():
         ]
     ])
 
-    lower_constraint = BoundaryConstraint(
+    lower_constraint = Constraint(
         np.full(2, -2.), np.array([True, True, False]))
-    upper_constraint = BoundaryConstraint(
+    upper_constraint = Constraint(
         np.full(1, 0.), np.array([False, False, True]))
     boundary_constraint_pair = lower_constraint, upper_constraint
 
@@ -758,7 +755,7 @@ def test_3pcfdm_anti_derivative():
     value[y.shape[0] - 1, :] = 5.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_constraint = SolutionConstraint(value, mask)
+    y_constraint = Constraint(value, mask)
 
     y[..., 0][mask] = value
 
@@ -786,7 +783,7 @@ def test_3pcfdm_anti_laplacian():
     value[:, y.shape[1] - 1] = 42.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_constraint = SolutionConstraint(value, mask)
+    y_constraint = Constraint(value, mask)
 
     y[..., 0][mask] = value
     y[..., 1][mask] = value
@@ -814,7 +811,7 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
     value[0] = 1.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_0_constraint = SolutionConstraint(np.copy(value), np.copy(mask))
+    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
 
     y[..., 0][mask] = value
 
@@ -823,13 +820,13 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
     value[y.shape[0] - 1] = 2.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_1_constraint = SolutionConstraint(np.copy(value), np.copy(mask))
+    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
 
     y[..., 1][mask] = value
 
     y_constraints = [y_0_constraint, y_1_constraint]
 
-    x_0_upper_derivative_boundary_constraint = BoundaryConstraint(
+    x_0_upper_derivative_boundary_constraint = Constraint(
         np.full(1, -3.), np.ones(1, dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
@@ -860,7 +857,7 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     value[:, 0] = 3.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_0_constraint = SolutionConstraint(np.copy(value), np.copy(mask))
+    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
 
     y[..., 0][mask] = value
 
@@ -871,18 +868,18 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     value[:, y.shape[1] - 1] = 4.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_1_constraint = SolutionConstraint(np.copy(value), np.copy(mask))
+    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
 
     y[..., 1][mask] = value
 
     y_constraints = [y_0_constraint, y_1_constraint]
 
-    x_0_upper_derivative_boundary_constraint = BoundaryConstraint(
+    x_0_upper_derivative_boundary_constraint = Constraint(
         np.full(20, -3.), np.ones(20, dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
-    x_1_upper_derivative_boundary_constraint = BoundaryConstraint(
+    x_1_upper_derivative_boundary_constraint = Constraint(
         np.full(20, 0.), np.ones(20, dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
