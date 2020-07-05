@@ -2,6 +2,7 @@ from copy import copy
 from typing import Optional, Tuple
 
 import numpy as np
+from tensorflow import Tensor
 from fipy import TransientTerm, DiffusionTerm
 from fipy.terms.term import Term
 
@@ -66,6 +67,17 @@ class DifferentialEquation:
     def fipy_equation(self) -> Optional[Term]:
         """
         Returns the FiPy equivalent of the differential equation.
+        """
+        pass
+
+    def deepxde_equation(self, x: Tensor, y: Tensor) -> Optional[Tensor]:
+        """
+        Returns the DeepXDE (Tensorflow) equivalent of the differential
+        equation.
+
+        :param x: the spatial coordinates
+        :param y: the current estimate of y at the spatial coordinates
+        :return: the tensor operation representing the differential equation
         """
         pass
 
