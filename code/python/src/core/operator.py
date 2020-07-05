@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from src.core.differentiator import Differentiator
@@ -6,18 +8,19 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
 from src.core.integrator import Integrator
 
 
-class Operator:
+class Operator(ABC):
     """
     A base class for an operator to estimate the solution of a differential
     equation over a specific time domain interval given an initial value.
     """
 
+    @abstractmethod
     def d_t(self) -> float:
         """
         Returns the temporal step size of the operator.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         """
         Returns a discretised approximation of the IVP's solution.
@@ -25,7 +28,6 @@ class Operator:
         :param ivp: the initial value problem to solve
         :return: the discretised solution of the IVP
         """
-        raise NotImplementedError
 
     def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
         """

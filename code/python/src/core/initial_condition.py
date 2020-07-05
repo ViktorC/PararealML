@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Tuple, Optional, Callable
 
@@ -7,19 +8,20 @@ from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
 
 
-class InitialCondition:
+class InitialCondition(ABC):
     """
     A base class for initial conditions.
     """
 
+    @abstractmethod
     def is_well_defined(self) -> bool:
         """
         Returns whether the initial conditions are well defined or approximated
         over a mesh. In case of the latter, the y_0 function is not
         implemented.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         """
         Returns the initial value of y at the point in the spatial domain
@@ -28,13 +30,12 @@ class InitialCondition:
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
-        pass
 
+    @abstractmethod
     def discrete_y_0(self) -> np.ndarray:
         """
         Returns the discretised initial values of y over a spatial mesh.
         """
-        raise NotImplementedError
 
 
 class WellDefinedInitialCondition(InitialCondition):
@@ -59,7 +60,7 @@ class WellDefinedInitialCondition(InitialCondition):
     def is_well_defined(self) -> bool:
         return True
 
-    def y_0(self, x: Optional[Tuple[float, ...]]) -> np.ndarray:
+    def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         return self._y_0_func(x)
 
     def discrete_y_0(self) -> np.ndarray:
@@ -92,6 +93,9 @@ class DiscreteInitialCondition(InitialCondition):
 
     def is_well_defined(self) -> bool:
         return False
+
+    def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
+        pass
 
     def discrete_y_0(self) -> np.ndarray:
         return np.copy(self._y_0)

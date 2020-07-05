@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Callable, Sequence, Optional
 
 import numpy as np
@@ -5,11 +6,12 @@ import numpy as np
 from src.core.constraint import Constraint, apply_constraints_along_last_axis
 
 
-class Integrator:
+class Integrator(ABC):
     """
     A base class for numerical integrators.
     """
 
+    @abstractmethod
     def integral(
             self,
             y: np.ndarray,
@@ -29,7 +31,6 @@ class Integrator:
         solution containing a constraint for each element of y
         :return: the value of y(t + d_t).
         """
-        raise NotImplementedError
 
 
 class ForwardEulerMethod(Integrator):

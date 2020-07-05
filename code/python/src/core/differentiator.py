@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Callable, Union, List, Optional, Tuple, Sequence
 
 import numpy as np
@@ -12,11 +13,12 @@ BoundaryConstraintPair = Tuple[
 ]
 
 
-class Differentiator:
+class Differentiator(ABC):
     """
     A base class for numerical differentiators.
     """
 
+    @abstractmethod
     def derivative(
             self,
             y: np.ndarray,
@@ -43,8 +45,8 @@ class Differentiator:
         :return: the derivative of the y_ind-th element of y with respect to
         the spatial dimension defined by x_axis
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def second_derivative(
             self,
             y: np.ndarray,
@@ -79,7 +81,6 @@ class Differentiator:
         :return: the second derivative of the y_ind-th element of y with
         respect to the spatial dimensions defined by x_axis1 and x_axis2
         """
-        raise NotImplementedError
 
     def jacobian(
             self,
@@ -377,6 +378,7 @@ class Differentiator:
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraints)
 
+    @abstractmethod
     def _calculate_updated_anti_derivative(
             self,
             y_hat: np.ndarray,
@@ -397,8 +399,8 @@ class Differentiator:
         :param d_x: the step size of the mesh along the specified axis
         :return: an improved estimate of the anti-derivative
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def _calculate_updated_anti_laplacian(
             self,
             y_hat: np.ndarray,
@@ -419,7 +421,6 @@ class Differentiator:
         constraints on the first derivatives of the solution
         :return: an improved estimate of y_hat
         """
-        raise NotImplementedError
 
     @staticmethod
     def _solve_with_jacobi_method(

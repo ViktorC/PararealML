@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from typing import Tuple, Optional
 
@@ -11,29 +12,31 @@ from fipy.meshes.uniformGrid3D import UniformGrid3D as FiPyUniformGrid3D
 SpatialDomainInterval = Tuple[float, float]
 
 
-class Mesh:
+class Mesh(ABC):
     """
     A mesh representing a discretised domain of arbitrary dimensionality.
     """
 
+    @abstractmethod
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         """
         Returns the bounds of each axis of the domain
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def d_x(self) -> Tuple[float, ...]:
         """
         Returns the step sizes along the dimensions of the domain.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def shape(self) -> Tuple[int, ...]:
         """
         Returns the shape of the discretised domain.
         """
         raise NotImplementedError
 
+    @abstractmethod
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         """
         Returns the coordinates of the point in the domain corresponding to the
@@ -42,13 +45,12 @@ class Mesh:
         :param index: the index of a vertex of the mesh
         :return: the coordinates of the corresponding point of the domain
         """
-        raise NotImplementedError
 
-    def fipy_mesh(self) -> Optional[FiPyAbstractMesh]:
+    @abstractmethod
+    def fipy_mesh(self) -> FiPyAbstractMesh:
         """
         Returns the FiPy equivalent of the mesh instance.
         """
-        pass
 
 
 class UniformGrid(Mesh):

@@ -2,12 +2,11 @@ import numpy as np
 import pytest
 
 from src.core.constraint import Constraint
-from src.core.differentiator import Differentiator, \
-    ThreePointCentralFiniteDifferenceMethod
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 
 
 def test_differentiator_jacobian_with_insufficient_dimensions():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.,
     y = np.arange(1., 5.)
 
@@ -16,7 +15,7 @@ def test_differentiator_jacobian_with_insufficient_dimensions():
 
 
 def test_differentiator_jacobian_with_wrong_d_x_size():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = (1.,) * 3
     y = np.array([[[0.] * 3] * 2])
 
@@ -25,7 +24,7 @@ def test_differentiator_jacobian_with_wrong_d_x_size():
 
 
 def test_differentiator_divergence_with_insufficient_dimensions():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.,
     y = np.arange(1., 5.)
 
@@ -34,7 +33,7 @@ def test_differentiator_divergence_with_insufficient_dimensions():
 
 
 def test_differentiator_divergence_with_non_matching_vector_field_dimension():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = (1.,) * 2
     y = np.array([[[0.] * 3] * 2] * 2)
 
@@ -43,7 +42,7 @@ def test_differentiator_divergence_with_non_matching_vector_field_dimension():
 
 
 def test_differentiator_divergence_with_wrong_d_x_size():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
@@ -52,7 +51,7 @@ def test_differentiator_divergence_with_wrong_d_x_size():
 
 
 def test_differentiator_1d_curl():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.,
     y = np.array([[0.]])
 
@@ -61,7 +60,7 @@ def test_differentiator_1d_curl():
 
 
 def test_differentiator_more_than_3d_curl():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = (1.,) * 4
     y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
 
@@ -70,7 +69,7 @@ def test_differentiator_more_than_3d_curl():
 
 
 def test_differentiator_curl_with_wrong_d_x_size():
-    diff = Differentiator()
+    diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
