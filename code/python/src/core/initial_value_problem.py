@@ -4,6 +4,7 @@ from copy import copy
 from typing import Callable, Optional, Tuple
 
 import numpy as np
+from deepxde.geometry import TimeDomain, GeometryXTime
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.initial_condition import InitialCondition
@@ -83,3 +84,20 @@ class InitialValueProblem:
         :return: the value of y(t, x) or y(t) if it is an ODE.
         """
         return self._exact_y(self, t, x)
+
+    def deepxde_time_domain(self) -> TimeDomain:
+        """
+        Returns the DeepXDE equivalent of the temporal domain of the IVP.
+        """
+        return TimeDomain(*self._t_interval)
+
+    def deepxde_geometry_time_domain(self) -> Optional[GeometryXTime]:
+        """
+        Returns the DeepXDE equivalent of the combined temporal and spatial
+        domain of the IVP. If the IVP is an ODE, it returns None.
+        """
+        if self._bvp.differential_equation().x_dimension():
+            return GeometryXTime(
+                self._bvp.mesh().deepxde_geometry(),
+                self.deepxde_time_domain())
+        return None

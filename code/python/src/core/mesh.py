@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
-from typing import Tuple, Optional
+from typing import Tuple
 
 import numpy as np
+from deepxde.geometry import Hypercube
+from deepxde.geometry.geometry import Geometry
 
 from fipy.meshes.abstractMesh import AbstractMesh as FiPyAbstractMesh
 from fipy.meshes.uniformGrid1D import UniformGrid1D as FiPyUniformGrid1D
@@ -50,6 +52,13 @@ class Mesh(ABC):
     def fipy_mesh(self) -> FiPyAbstractMesh:
         """
         Returns the FiPy equivalent of the mesh instance.
+        """
+
+    @abstractmethod
+    def deepxde_geometry(self) -> Geometry:
+        """
+        Returns the DeepXDE equivalent of the spatial domain represented by the
+        mesh.
         """
 
 
@@ -138,6 +147,9 @@ class UniformGrid(Mesh):
             raise NotImplementedError
 
         return mesh
+
+    def deepxde_geometry(self) -> Geometry:
+        return Hypercube(*zip(*self._x_intervals))
 
     @staticmethod
     def _calculate_shape(

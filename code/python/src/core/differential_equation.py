@@ -3,9 +3,10 @@ from copy import copy
 from typing import Optional, Tuple
 
 import numpy as np
-from tensorflow import Tensor
+import tensorflow as tf
 from fipy import TransientTerm, DiffusionTerm
 from fipy.terms.term import Term
+from tensorflow import Tensor
 
 from src.core.differentiator import Differentiator
 
@@ -350,7 +351,10 @@ class DiffusionEquation(DifferentialEquation):
         return TransientTerm() == DiffusionTerm(coeff=self._d)
 
     def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
-        raise NotImplementedError
+        dy_x = tf.gradients(y, x)[0]
+        dy_x, dy_t = dy_x[:, 0:1], dy_x[:, 1:]
+        dy_xx = tf.gradients(dy_x, x)[0][:, 0:1]
+        return dy_t - dy_xx
 
 
 class WaveEquation(DifferentialEquation):

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
+from deepxde.maps.map import Map
 
 from src.core.differentiator import Differentiator
 from src.core.initial_value_problem import TemporalDomainInterval, \
@@ -58,6 +59,8 @@ class FDMOperator(Operator):
         :param differentiator: the differentiator to use
         :param d_t: the temporal step size to use
         """
+        assert integrator is not None
+        assert d_t > 0.
         self._integrator = integrator
         self._differentiator = differentiator
         self._d_t = d_t
@@ -110,6 +113,7 @@ class FVMOperator(Operator):
         """
         :param d_t: the temporal step size to use
         """
+        assert d_t > 0.
         self._d_t = d_t
 
     def d_t(self) -> float:
@@ -140,3 +144,34 @@ class FVMOperator(Operator):
                 y[i, ..., j] = y_var_j.value.reshape(mesh.shape())
 
         return y
+
+
+class PINNOperator(Operator):
+    """
+    A physics informed neural network (PINN) based differential equation solver
+    using the DeepXDE library.
+    """
+
+    def __init__(
+            self,
+            d_t: float,
+            network: Map):
+        """
+        :param d_t: the temporal step size to use
+        :param network: the PINN to use
+        """
+        assert d_t > 0.
+        self._d_t = d_t
+        self._network = network
+
+    def d_t(self) -> float:
+        return self._d_t
+
+    def trace(self, ivp: InitialValueProblem) -> np.ndarray:
+        raise NotImplementedError
+
+    def train(self, ivp: InitialValueProblem):
+        """
+        Trains the PINN model behind the operator on the provided IVP.
+        """
+        raise NotImplementedError
