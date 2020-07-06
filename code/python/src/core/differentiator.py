@@ -82,6 +82,50 @@ class Differentiator(ABC):
         respect to the spatial dimensions defined by x_axis1 and x_axis2
         """
 
+    @abstractmethod
+    def _calculate_updated_anti_derivative(
+            self,
+            y_hat: np.ndarray,
+            derivative: np.ndarray,
+            x_axis: int,
+            d_x: float
+    ) -> np.ndarray:
+        """
+        Given an estimate, y_hat, of the anti-derivative, it returns an
+        improved estimate.
+
+        :param y_hat: the current estimated values of the anti-derivative at
+        every point of the mesh
+        :param derivative: the derivative of y with respect to the spatial
+        dimension defined by x_axis
+        :param x_axis: the spatial dimension that the anti-derivative is to be
+        calculated with respect to
+        :param d_x: the step size of the mesh along the specified axis
+        :return: an improved estimate of the anti-derivative
+        """
+
+    @abstractmethod
+    def _calculate_updated_anti_laplacian(
+            self,
+            y_hat: np.ndarray,
+            laplacian: np.ndarray,
+            d_x: Tuple[float, ...],
+            first_derivative_boundary_constraints: Optional[np.ndarray]
+    ) -> np.ndarray:
+        """
+        Given an estimate of the anti-Laplacian, it returns an improved
+        estimate.
+
+        :param y_hat: the current estimated values of the solution at every
+        point of the mesh
+        :param laplacian: the Laplacian for which y is to be determined
+        :param d_x: the step sizes of the mesh along the spatial axes
+        :param first_derivative_boundary_constraints: an optional 2D array
+        (x dimension, y dimension) of boundary constraint pairs that specify
+        constraints on the first derivatives of the solution
+        :return: an improved estimate of y_hat
+        """
+
     def jacobian(
             self,
             y: np.ndarray,
@@ -377,50 +421,6 @@ class Differentiator(ABC):
 
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraints)
-
-    @abstractmethod
-    def _calculate_updated_anti_derivative(
-            self,
-            y_hat: np.ndarray,
-            derivative: np.ndarray,
-            x_axis: int,
-            d_x: float
-    ) -> np.ndarray:
-        """
-        Given an estimate, y_hat, of the anti-derivative, it returns an
-        improved estimate.
-
-        :param y_hat: the current estimated values of the anti-derivative at
-        every point of the mesh
-        :param derivative: the derivative of y with respect to the spatial
-        dimension defined by x_axis
-        :param x_axis: the spatial dimension that the anti-derivative is to be
-        calculated with respect to
-        :param d_x: the step size of the mesh along the specified axis
-        :return: an improved estimate of the anti-derivative
-        """
-
-    @abstractmethod
-    def _calculate_updated_anti_laplacian(
-            self,
-            y_hat: np.ndarray,
-            laplacian: np.ndarray,
-            d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints: Optional[np.ndarray]
-    ) -> np.ndarray:
-        """
-        Given an estimate of the anti-Laplacian, it returns an improved
-        estimate.
-
-        :param y_hat: the current estimated values of the solution at every
-        point of the mesh
-        :param laplacian: the Laplacian for which y is to be determined
-        :param d_x: the step sizes of the mesh along the spatial axes
-        :param first_derivative_boundary_constraints: an optional 2D array
-        (x dimension, y dimension) of boundary constraint pairs that specify
-        constraints on the first derivatives of the solution
-        :return: an improved estimate of y_hat
-        """
 
     @staticmethod
     def _solve_with_jacobi_method(
