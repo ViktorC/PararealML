@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 from typing import Tuple
 
 import numpy as np
-from deepxde.geometry import Hypercube
+from deepxde.geometry import Interval, Rectangle, Cuboid
 from deepxde.geometry.geometry import Geometry
 
 from fipy.meshes.abstractMesh import AbstractMesh as FiPyAbstractMesh
@@ -92,7 +92,7 @@ class UniformGrid(Mesh):
         self._x_offset = np.array([interval[0] for interval in x_intervals])
         self._d_x = np.array(copy(d_x))
         self._fipy_mesh = self._create_fipy_mesh()
-        self._deepxde_geometry = Hypercube(*zip(*self._x_intervals))
+        self._deepxde_geometry = self._create_deepxde_geometry()
 
     @property
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
@@ -160,6 +160,24 @@ class UniformGrid(Mesh):
             raise NotImplementedError
 
         return mesh
+
+    def _create_deepxde_geometry(self) -> Geometry:
+        """
+        Creates and returns the DeepXDE equivalent of the spatial domain
+        represented by the mesh.
+        """
+        x_dimension = len(self._x_intervals)
+        if x_dimension == 1:
+            x_interval = self._x_intervals[0]
+            geometry = Interval(*x_interval)
+        elif x_dimension == 2:
+            geometry = Rectangle(*zip(*self._x_intervals))
+        elif x_dimension == 3:
+            geometry = Cuboid(*zip(*self._x_intervals))
+        else:
+            raise NotImplementedError
+
+        return geometry
 
     @staticmethod
     def _calculate_shape(
