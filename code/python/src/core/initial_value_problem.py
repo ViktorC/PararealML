@@ -46,24 +46,49 @@ class InitialValueProblem:
 
         self._exact_y = exact_y
 
+        self._deepxde_time_domain = TimeDomain(*self._t_interval)
+        self._deepxde_geometry_time_domain = GeometryXTime(
+            self._bvp.mesh.deepxde_geometry,
+            self.deepxde_time_domain
+        ) if self._bvp.differential_equation.x_dimension else None
+
+    @property
     def boundary_value_problem(self) -> BoundaryValueProblem:
         """
         Returns the boundary value problem instance.
         """
         return self._bvp
 
+    @property
     def t_interval(self) -> TemporalDomainInterval:
         """
         Returns the bounds of the temporal domain of the differential equation.
         """
         return copy(self._t_interval)
 
+    @property
     def initial_condition(self) -> InitialCondition:
         """
         Returns the initial condition of the IVP.
         """
         return self._initial_condition
 
+    @property
+    def deepxde_time_domain(self) -> TimeDomain:
+        """
+        Returns the DeepXDE equivalent of the temporal domain of the IVP.
+        """
+        return self._deepxde_time_domain
+
+    @property
+    def deepxde_geometry_time_domain(self) -> Optional[GeometryXTime]:
+        """
+        Returns the DeepXDE equivalent of the combined temporal and spatial
+        domain of the IVP. If the IVP is an ODE, it returns None.
+        """
+        return self._deepxde_geometry_time_domain
+
+    @property
     def has_exact_solution(self) -> bool:
         """
         Returns whether the differential equation has an analytic solution
@@ -84,20 +109,3 @@ class InitialValueProblem:
         :return: the value of y(t, x) or y(t) if it is an ODE.
         """
         return self._exact_y(self, t, x)
-
-    def deepxde_time_domain(self) -> TimeDomain:
-        """
-        Returns the DeepXDE equivalent of the temporal domain of the IVP.
-        """
-        return TimeDomain(*self._t_interval)
-
-    def deepxde_geometry_time_domain(self) -> Optional[GeometryXTime]:
-        """
-        Returns the DeepXDE equivalent of the combined temporal and spatial
-        domain of the IVP. If the IVP is an ODE, it returns None.
-        """
-        if self._bvp.differential_equation().x_dimension():
-            return GeometryXTime(
-                self._bvp.mesh().deepxde_geometry(),
-                self.deepxde_time_domain())
-        return None

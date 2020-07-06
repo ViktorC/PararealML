@@ -11,12 +11,12 @@ def plot_y_against_t(
         ivp: InitialValueProblem,
         y: np.ndarray,
         file_name: str):
-    t = np.linspace(*ivp.t_interval(), len(y))
+    t = np.linspace(*ivp.t_interval, len(y))
 
     plt.xlabel('t')
     plt.ylabel('y')
 
-    if ivp.boundary_value_problem().differential_equation().y_dimension() == 1:
+    if ivp.boundary_value_problem.differential_equation.y_dimension == 1:
         plt.plot(t, y)
     else:
         for i in range(y.shape[1]):
@@ -55,7 +55,7 @@ def plot_evolution_of_y(
         interval: int,
         file_name: str,
         three_d: bool = True):
-    x_intervals = ivp.boundary_value_problem().mesh().x_intervals()
+    x_intervals = ivp.boundary_value_problem.mesh.x_intervals
 
     if len(x_intervals) == 1:
         fig, ax = plt.subplots()

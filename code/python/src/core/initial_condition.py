@@ -13,6 +13,14 @@ class InitialCondition(ABC):
     A base class for initial conditions.
     """
 
+    @property
+    @abstractmethod
+    def discrete_y_0(self) -> np.ndarray:
+        """
+        Returns the discretised initial values of y over a spatial mesh.
+        """
+
+    @property
     @abstractmethod
     def is_well_defined(self) -> bool:
         """
@@ -29,12 +37,6 @@ class InitialCondition(ABC):
 
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
-        """
-
-    @abstractmethod
-    def discrete_y_0(self) -> np.ndarray:
-        """
-        Returns the discretised initial values of y over a spatial mesh.
         """
 
 
@@ -56,23 +58,33 @@ class WellDefinedInitialCondition(InitialCondition):
         """
         self._bvp = bvp
         self._y_0_func = y_0_func
+        self._discrete_y_0 = self._create_discrete_y_0()
 
+    @property
+    def discrete_y_0(self) -> np.ndarray:
+        return np.copy(self._discrete_y_0)
+
+    @property
     def is_well_defined(self) -> bool:
         return True
 
     def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         return self._y_0_func(x)
 
-    def discrete_y_0(self) -> np.ndarray:
-        diff_eq = self._bvp.differential_equation()
-        if diff_eq.x_dimension():
-            mesh = self._bvp.mesh()
+    def _create_discrete_y_0(self) -> np.ndarray:
+        """
+        Creates the discretised initial values of y over the spatial mesh of
+        the BVP associated with the initial condition.
+        """
+        diff_eq = self._bvp.differential_equation
+        if diff_eq.x_dimension:
+            mesh = self._bvp.mesh
 
-            y_0 = np.empty(self._bvp.y_shape())
-            for index in np.ndindex(mesh.shape()):
+            y_0 = np.empty(self._bvp.y_shape)
+            for index in np.ndindex(mesh.shape):
                 y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
 
-            apply_constraints_along_last_axis(self._bvp.y_constraints(), y_0)
+            apply_constraints_along_last_axis(self._bvp.y_constraints, y_0)
         else:
             y_0 = self._y_0_func(None)
 
@@ -91,14 +103,16 @@ class DiscreteInitialCondition(InitialCondition):
         """
         self._y_0 = np.copy(y_0)
 
+    @property
+    def discrete_y_0(self) -> np.ndarray:
+        return np.copy(self._y_0)
+
+    @property
     def is_well_defined(self) -> bool:
         return False
 
     def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         pass
-
-    def discrete_y_0(self) -> np.ndarray:
-        return np.copy(self._y_0)
 
 
 class GaussianInitialCondition(WellDefinedInitialCondition):
@@ -120,19 +134,19 @@ class GaussianInitialCondition(WellDefinedInitialCondition):
         :param multipliers: an array of multipliers for each element of the
         initial y values
         """
-        diff_eq = bvp.differential_equation()
-        assert diff_eq.x_dimension()
-        assert len(means_and_covs) == diff_eq.y_dimension()
+        diff_eq = bvp.differential_equation
+        assert diff_eq.x_dimension
+        assert len(means_and_covs) == diff_eq.y_dimension
         for mean, cov in means_and_covs:
-            assert mean.shape == (diff_eq.x_dimension(),)
-            assert cov.shape == (diff_eq.x_dimension(), diff_eq.x_dimension())
+            assert mean.shape == (diff_eq.x_dimension,)
+            assert cov.shape == (diff_eq.x_dimension, diff_eq.x_dimension)
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
-            assert multipliers.shape == (diff_eq.y_dimension(),)
+            assert multipliers.shape == (diff_eq.y_dimension,)
             self._multipliers = np.copy(multipliers)
         else:
-            self._multipliers = np.ones(diff_eq.y_dimension())
+            self._multipliers = np.ones(diff_eq.y_dimension)
 
         super(GaussianInitialCondition, self).__init__(bvp, self._y_0_func)
 

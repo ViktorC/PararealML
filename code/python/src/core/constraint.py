@@ -18,12 +18,14 @@ class Constraint:
         self._value = np.copy(value)
         self._mask = np.copy(mask)
 
+    @property
     def value(self) -> np.ndarray:
         """
         Returns the constraint values.
         """
         return np.copy(self._value)
 
+    @property
     def mask(self) -> np.ndarray:
         """
         Returns the mask denoting the elements of the array that are to be

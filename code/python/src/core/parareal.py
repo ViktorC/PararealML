@@ -48,10 +48,10 @@ class Parareal:
         """
         comm = MPI.COMM_WORLD
 
-        bvp = ivp.boundary_value_problem()
-        y_shape = bvp.y_shape()
+        bvp = ivp.boundary_value_problem
+        y_shape = bvp.y_shape
 
-        t_interval = ivp.t_interval()
+        t_interval = ivp.t_interval
         time_slices = np.linspace(
             t_interval[0],
             t_interval[1],
@@ -62,7 +62,7 @@ class Parareal:
         g_values = np.empty((comm.size, *y_shape))
         new_g_values = np.empty((comm.size, *y_shape))
 
-        y[0] = ivp.initial_condition().discrete_y_0()
+        y[0] = ivp.initial_condition.discrete_y_0
         for i, t in enumerate(time_slices[:-1]):
             coarse_ivp = InitialValueProblem(
                 bvp,
@@ -112,7 +112,7 @@ class Parareal:
                 break
 
         y_length = comm.size * int(
-            (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t()))
+            (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t))
         y_trajectory = np.empty((y_length, *y_shape))
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         comm.Allgather(

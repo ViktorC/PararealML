@@ -14,12 +14,12 @@ def test_bvp_with_ode():
     diff_eq = LotkaVolterraEquation()
     bvp = BoundaryValueProblem(diff_eq)
 
-    assert bvp.mesh() is None
-    assert bvp.y_constraints() is None
-    assert bvp.y_boundary_constraints() is None
-    assert bvp.d_y_boundary_constraints() is None
-    assert bvp.boundary_conditions() is None
-    assert bvp.y_shape() == (diff_eq.y_dimension(),)
+    assert bvp.mesh is None
+    assert bvp.y_constraints is None
+    assert bvp.y_boundary_constraints is None
+    assert bvp.d_y_boundary_constraints is None
+    assert bvp.boundary_conditions is None
+    assert bvp.y_shape == (diff_eq.y_dimension,)
 
 
 def test_2d_bvp():
@@ -35,8 +35,8 @@ def test_2d_bvp():
          (NeumannCondition(lambda x: np.array([-x[0], None])),
           DirichletCondition(lambda x: np.array([x[0], -999])))))
 
-    y = np.full(bvp.y_shape(), 13.)
-    apply_constraints_along_last_axis(bvp.y_constraints(), y)
+    y = np.full(bvp.y_shape, 13.)
+    apply_constraints_along_last_axis(bvp.y_constraints, y)
 
     assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
     assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)
@@ -44,36 +44,36 @@ def test_2d_bvp():
     assert np.all(y[1:, 0, :] == 13.)
     assert np.isclose(
         y[:, y.shape[1] - 1, 0],
-        np.linspace(0, (y.shape[0] - 1) * mesh.d_x()[0], y.shape[0])).all()
+        np.linspace(0, (y.shape[0] - 1) * mesh.d_x[0], y.shape[0])).all()
     assert np.all(y[:, y.shape[1] - 1, 1] == -999.)
 
-    y = np.zeros(bvp.y_shape())
+    y = np.zeros(bvp.y_shape)
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_y_boundary_constraints = bvp.d_y_boundary_constraints()
+    d_y_boundary_constraints = bvp.d_y_boundary_constraints
 
     d_y_0_d_x_0 = diff.derivative(
-        y, mesh.d_x()[0], 0, 0, d_y_boundary_constraints[0, 0])
+        y, mesh.d_x[0], 0, 0, d_y_boundary_constraints[0, 0])
 
     assert np.all(d_y_0_d_x_0[d_y_0_d_x_0.shape[0] - 1, :, :] == 100.)
     assert np.all(d_y_0_d_x_0[:d_y_0_d_x_0.shape[0] - 1, :, :] == 0.)
 
     d_y_0_d_x_1 = diff.derivative(
-        y, mesh.d_x()[1], 1, 0, d_y_boundary_constraints[1, 0])
+        y, mesh.d_x[1], 1, 0, d_y_boundary_constraints[1, 0])
 
     assert np.isclose(
         d_y_0_d_x_1[:, 0, 0],
         np.linspace(
-            0, -((y.shape[0] - 1) * mesh.d_x()[0]), y.shape[0])).all()
+            0, -((y.shape[0] - 1) * mesh.d_x[0]), y.shape[0])).all()
     assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
 
     d_y_1_d_x_0 = diff.derivative(
-        y, mesh.d_x()[0], 0, 1, d_y_boundary_constraints[0, 1])
+        y, mesh.d_x[0], 0, 1, d_y_boundary_constraints[0, 1])
 
     assert np.all(d_y_1_d_x_0[d_y_1_d_x_0.shape[0] - 1, :, :] == -100.)
     assert np.all(d_y_1_d_x_0[:d_y_1_d_x_0.shape[0] - 1, :, :] == 0.)
 
     d_y_1_d_x_1 = diff.derivative(
-        y, mesh.d_x()[1], 1, 1, d_y_boundary_constraints[1, 1])
+        y, mesh.d_x[1], 1, 1, d_y_boundary_constraints[1, 1])
 
     assert np.all(d_y_1_d_x_1 == 0.)
 
@@ -83,9 +83,9 @@ def test_3d_bvp():
         ((2., 6.), (-3., 3.), (10., 12.)),
         (.1, .2, .5))
 
-    fipy_mesh: UniformGrid3D = mesh.fipy_mesh()
+    fipy_mesh: UniformGrid3D = mesh.fipy_mesh
 
-    assert fipy_mesh.shape[::-1] == mesh.shape() == (41, 31, 5)
+    assert fipy_mesh.shape[::-1] == mesh.shape == (41, 31, 5)
 
     diff_eq = DiffusionEquation(3)
     bvp = BoundaryValueProblem(
@@ -98,6 +98,4 @@ def test_3d_bvp():
          (NeumannCondition(lambda x: np.array([-x[0][0]])),
           DirichletCondition(lambda x: np.array([-999])))))
 
-    fipy_vars = bvp.fipy_vars()
-
-    assert len(fipy_vars) == 1
+    assert len(bvp.fipy_vars) == 1

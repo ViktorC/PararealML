@@ -40,7 +40,7 @@ def create_ivp():
     ic = GaussianInitialCondition(
         bvp,
         ((np.array([7.5, 4.]), np.array([[3., .0], [.0, 1.5]])),),
-        np.full(diff_eq.y_dimension(), 50.))
+        np.full(diff_eq.y_dimension, 50.))
     return InitialValueProblem(
         bvp,
         (0., 5.),
@@ -68,9 +68,9 @@ def solve_serial_coarse():
 def plot_solution(solve_func):
     y = solve_func()
     if MPI.COMM_WORLD.rank == 0:
-        diff_eq = ivp.boundary_value_problem().differential_equation()
-        if diff_eq.x_dimension():
-            for i in range(diff_eq.y_dimension()):
+        diff_eq = ivp.boundary_value_problem.differential_equation
+        if diff_eq.x_dimension:
+            for i in range(diff_eq.y_dimension):
                 plot_evolution_of_y(
                     ivp,
                     y[..., i],
@@ -79,9 +79,9 @@ def plot_solution(solve_func):
                     f'evolution_{solve_func.__name__}_{i}')
         else:
             print(f'According to {solve_func.__name__!r}, '
-                  f'y({ivp.t_interval()[1]})={y[-1]}')
+                  f'y({ivp.t_interval[1]})={y[-1]}')
             plot_y_against_t(ivp, y, solve_func.__name__)
-            if diff_eq.y_dimension() > 1:
+            if diff_eq.y_dimension > 1:
                 plot_phase_space(y, f'phase_space_{solve_func.__name__}')
 
 

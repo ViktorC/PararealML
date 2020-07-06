@@ -18,7 +18,7 @@ def test_1d_well_defined_initial_condition():
             bvp,
             lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
 
-    y_0 = initial_condition.discrete_y_0()
+    y_0 = initial_condition.discrete_y_0
 
     assert y_0[0, 0] == 0.
     assert y_0[-1, 0] == 1.5

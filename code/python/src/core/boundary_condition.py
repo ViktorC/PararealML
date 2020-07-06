@@ -9,12 +9,14 @@ class BoundaryCondition(ABC):
     A base class for boundary conditions.
     """
 
+    @property
     @abstractmethod
     def has_y_condition(self) -> bool:
         """
         Returns whether the boundary conditions restrict the value of y.
         """
 
+    @property
     @abstractmethod
     def has_d_y_condition(self) -> bool:
         """
@@ -60,9 +62,11 @@ class DirichletCondition(BoundaryCondition):
         """
         self._y_condition = y_condition
 
+    @property
     def has_y_condition(self) -> bool:
         return True
 
+    @property
     def has_d_y_condition(self) -> bool:
         return False
 
@@ -90,9 +94,11 @@ class NeumannCondition(BoundaryCondition):
         """
         self._d_y_condition = d_y_condition
 
+    @property
     def has_y_condition(self) -> bool:
         return False
 
+    @property
     def has_d_y_condition(self) -> bool:
         return True
 
@@ -123,9 +129,11 @@ class CauchyCondition(BoundaryCondition):
         self._y_condition = y_condition
         self._d_y_condition = d_y_condition
 
+    @property
     def has_y_condition(self) -> bool:
         return True
 
+    @property
     def has_d_y_condition(self) -> bool:
         return True
 

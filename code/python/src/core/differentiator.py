@@ -538,8 +538,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         if lower_boundary_constraint is not None:
             if len(y.shape) - 1 > 1:
                 lower_boundary_constraint.apply(y_diff)
-            elif lower_boundary_constraint.mask():
-                y_diff = lower_boundary_constraint.value()
+            elif lower_boundary_constraint.mask:
+                y_diff = lower_boundary_constraint.value
 
         derivative_slicer[x_axis] = 0
         derivative[tuple(derivative_slicer)] = y_diff
@@ -564,8 +564,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         if upper_boundary_constraint is not None:
             if len(y.shape) - 1 > 1:
                 upper_boundary_constraint.apply(y_diff)
-            elif upper_boundary_constraint.mask():
-                y_diff = upper_boundary_constraint.value()
+            elif upper_boundary_constraint.mask:
+                y_diff = upper_boundary_constraint.value
 
         derivative_slicer[x_axis] = -1
         derivative[tuple(derivative_slicer)] = y_diff
@@ -629,8 +629,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             if len(y.shape) - 1 > 1:
                 y_prev = lower_boundary_constraint.multiply_and_add(
                     y_next, -2. * d_x1, np.zeros(y_next.shape))
-            elif lower_boundary_constraint.mask():
-                y_prev = y_next - 2. * d_x1 * lower_boundary_constraint.value()
+            elif lower_boundary_constraint.mask:
+                y_prev = y_next - 2. * d_x1 * lower_boundary_constraint.value
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -662,8 +662,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             if len(y.shape) - 1 > 1:
                 y_next = upper_boundary_constraint.multiply_and_add(
                     y_prev, 2. * d_x1, np.zeros(y_prev.shape))
-            elif upper_boundary_constraint.mask():
-                y_next = y_prev + 2. * d_x1 * upper_boundary_constraint.value()
+            elif upper_boundary_constraint.mask:
+                y_next = y_prev + 2. * d_x1 * upper_boundary_constraint.value
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -769,7 +769,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                     elif lower_boundary_constraint.mask:
                         y_lower_halo[..., y_ind] = \
                             y_lower_boundary_adjacent[..., y_ind] - \
-                            2. * d_x[axis] * lower_boundary_constraint.value()
+                            2. * d_x[axis] * lower_boundary_constraint.value
 
                 upper_boundary_constraint = boundary_constraint_pair[1]
                 if upper_boundary_constraint is not None:
@@ -782,10 +782,10 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                             y_upper_boundary_adjacent[..., y_ind],
                             2. * d_x[axis],
                             y_upper_halo[..., y_ind])
-                    elif upper_boundary_constraint.mask():
+                    elif upper_boundary_constraint.mask:
                         y_upper_halo[..., y_ind] = \
                             y_upper_boundary_adjacent[..., y_ind] + \
-                            2. * d_x[axis] * upper_boundary_constraint.value()
+                            2. * d_x[axis] * upper_boundary_constraint.value
 
             # Lower boundary.
             slicer[axis] = 0

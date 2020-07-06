@@ -19,24 +19,41 @@ class Mesh(ABC):
     A mesh representing a discretised domain of arbitrary dimensionality.
     """
 
+    @property
     @abstractmethod
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         """
         Returns the bounds of each axis of the domain
         """
 
+    @property
     @abstractmethod
     def d_x(self) -> Tuple[float, ...]:
         """
         Returns the step sizes along the dimensions of the domain.
         """
 
+    @property
     @abstractmethod
     def shape(self) -> Tuple[int, ...]:
         """
         Returns the shape of the discretised domain.
         """
-        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def fipy_mesh(self) -> FiPyAbstractMesh:
+        """
+        Returns the FiPy equivalent of the mesh instance.
+        """
+
+    @property
+    @abstractmethod
+    def deepxde_geometry(self) -> Geometry:
+        """
+        Returns the DeepXDE equivalent of the spatial domain represented by the
+        mesh.
+        """
 
     @abstractmethod
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
@@ -46,19 +63,6 @@ class Mesh(ABC):
 
         :param index: the index of a vertex of the mesh
         :return: the coordinates of the corresponding point of the domain
-        """
-
-    @abstractmethod
-    def fipy_mesh(self) -> FiPyAbstractMesh:
-        """
-        Returns the FiPy equivalent of the mesh instance.
-        """
-
-    @abstractmethod
-    def deepxde_geometry(self) -> Geometry:
-        """
-        Returns the DeepXDE equivalent of the spatial domain represented by the
-        mesh.
         """
 
 
@@ -88,22 +92,31 @@ class UniformGrid(Mesh):
         self._x_offset = np.array([interval[0] for interval in x_intervals])
         self._d_x = np.array(copy(d_x))
         self._fipy_mesh = self._create_fipy_mesh()
+        self._deepxde_geometry = Hypercube(*zip(*self._x_intervals))
 
+    @property
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         return deepcopy(self._x_intervals)
 
+    @property
     def d_x(self) -> Tuple[float, ...]:
         return tuple(self._d_x)
 
+    @property
     def shape(self) -> Tuple[int, ...]:
         return copy(self._shape)
+
+    @property
+    def fipy_mesh(self) -> FiPyAbstractMesh:
+        return self._fipy_mesh
+
+    @property
+    def deepxde_geometry(self) -> Geometry:
+        return self._deepxde_geometry
 
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         assert len(index) == len(self._shape)
         return tuple(self._x_offset + self._d_x * index)
-
-    def fipy_mesh(self) -> FiPyAbstractMesh:
-        return self._fipy_mesh
 
     def _create_fipy_mesh(self) -> FiPyAbstractMesh:
         """
@@ -147,9 +160,6 @@ class UniformGrid(Mesh):
             raise NotImplementedError
 
         return mesh
-
-    def deepxde_geometry(self) -> Geometry:
-        return Hypercube(*zip(*self._x_intervals))
 
     @staticmethod
     def _calculate_shape(
