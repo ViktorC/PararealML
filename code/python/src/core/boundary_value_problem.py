@@ -51,7 +51,7 @@ class BoundaryValueProblem:
 
             self._mesh = mesh
             self._boundary_conditions = deepcopy(boundary_conditions)
-            self._y_shape = tuple(list(mesh.shape) + [diff_eq.y_dimension])
+            self._y_shape = mesh.shape + (diff_eq.y_dimension,)
 
             self._y_boundary_constraints, self._d_y_boundary_constraints = \
                 self._create_boundary_constraints()

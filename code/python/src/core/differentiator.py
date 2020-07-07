@@ -150,7 +150,7 @@ class Differentiator(ABC):
             self._verify_and_get_derivative_boundary_constraints(
                 derivative_boundary_constraints, y.shape)
 
-        jacobian = np.empty(list(y.shape) + [len(y.shape) - 1])
+        jacobian = np.empty(y.shape + (len(y.shape) - 1,))
 
         for y_ind in range(y.shape[-1]):
             for axis in range(len(y.shape) - 1):
@@ -189,7 +189,7 @@ class Differentiator(ABC):
             self._verify_and_get_derivative_boundary_constraints(
                 derivative_boundary_constraints, y.shape)
 
-        div = np.zeros(list(y.shape[:-1]) + [1])
+        div = np.zeros(y.shape[:-1] + (1,))
 
         for i in range(y.shape[-1]):
             div += self.derivative(
@@ -280,7 +280,7 @@ class Differentiator(ABC):
             self._verify_and_get_derivative_boundary_constraints(
                 first_derivative_boundary_constraints, y.shape)
 
-        hessian = np.empty(list(y.shape) + [len(y.shape) - 1] * 2)
+        hessian = np.empty(y.shape + (len(y.shape) - 1,) * 2)
 
         for y_ind in range(y.shape[-1]):
             for axis_1 in range(len(y.shape) - 1):
@@ -512,7 +512,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         assert 0 <= x_axis < len(y.shape) - 1
         assert 0 <= y_ind < y.shape[-1]
 
-        derivative_shape = list(y.shape[:-1]) + [1]
+        derivative_shape = y.shape[:-1] + (1,)
         derivative = np.empty(derivative_shape)
 
         y_slicer: Slicer = [slice(None)] * len(y.shape)
@@ -597,7 +597,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                 first_derivative_boundary_constraint_pair)
             return self.derivative(first_derivative, d_x2, x_axis2)
 
-        second_derivative_shape = list(y.shape[:-1]) + [1]
+        second_derivative_shape = y.shape[:-1] + (1,)
         second_derivative = np.empty(second_derivative_shape)
 
         y_slicer: Slicer = [slice(None)] * len(y.shape)
