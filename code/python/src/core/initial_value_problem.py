@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Sequence, List
 
 import numpy as np
+from deepxde import IC
+from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.geometry import TimeDomain, GeometryXTime
 
 from src.core.boundary_value_problem import BoundaryValueProblem
@@ -52,6 +54,11 @@ class InitialValueProblem:
             self.deepxde_time_domain
         ) if self._bvp.differential_equation.x_dimension else None
 
+        self._deepxde_initial_conditions = \
+            self._create_deepxde_initial_conditions()
+        self._deepxde_boundary_conditions = \
+            self._create_deepxde_boundary_conditions()
+
     @property
     def boundary_value_problem(self) -> BoundaryValueProblem:
         """
@@ -89,6 +96,24 @@ class InitialValueProblem:
         return self._deepxde_geometry_time_domain
 
     @property
+    def deepxde_initial_conditions(self) -> Optional[Sequence[IC]]:
+        """
+        Returns the DeepXDE equivalent of the initial condition where each
+        element of the sequence represent the initial condition of the
+        corresponding element of y. If the initial condition is not
+        well-defined, it returns None.
+        """
+        return copy(self._deepxde_initial_conditions)
+
+    @property
+    def deepxde_boundary_conditions(self) -> Optional[Sequence[BC]]:
+        """
+        Returns the DeepXDE equivalent of the boundary conditions. If the IVP
+        is an ODE, it returns None.
+        """
+        return copy(self._deepxde_boundary_conditions)
+
+    @property
     def has_exact_solution(self) -> bool:
         """
         Returns whether the differential equation has an analytic solution
@@ -109,3 +134,135 @@ class InitialValueProblem:
         :return: the value of y(t, x) or y(t) if it is an ODE.
         """
         return self._exact_y(self, t, x)
+
+    def _create_deepxde_initial_conditions(self) -> Optional[Sequence[IC]]:
+        """
+        Creates the DeepXDE equivalent of the initial condition.
+        """
+        if not self._initial_condition.is_well_defined:
+            return None
+
+        geometry = self._deepxde_geometry_time_domain
+        if geometry is None:
+            geometry = self._deepxde_time_domain
+
+        condition_functions = self._create_deepxde_condition_functions(
+            self._initial_condition.y_0)
+
+        return [
+            IC(geometry, cond_func, lambda _, on_initial: on_initial, y_ind)
+            for y_ind, cond_func in enumerate(condition_functions)
+        ]
+
+    def _create_deepxde_boundary_conditions(self) -> Optional[Sequence[BC]]:
+        """
+        Creates the DeepXDE equivalent of the boundary conditions.
+        """
+        if not self._bvp.differential_equation.x_dimension:
+            return None
+
+        boundary_conditions = []
+
+        for axis, bc_pair in enumerate(self._bvp.boundary_conditions):
+            if bc_pair is not None:
+                for bc_ind, bc in enumerate(bc_pair):
+                    boundary_value = self._bvp.mesh.x_intervals[axis][bc_ind]
+
+                    self._add_deepxde_boundary_conditions_for_all_y(
+                        bc.has_y_condition,
+                        bc.y_condition,
+                        DirichletBC,
+                        axis,
+                        boundary_value,
+                        boundary_conditions)
+                    self._add_deepxde_boundary_conditions_for_all_y(
+                        bc.has_d_y_condition,
+                        bc.d_y_condition,
+                        NeumannBC,
+                        axis,
+                        boundary_value,
+                        boundary_conditions)
+
+        return boundary_conditions
+
+    def _add_deepxde_boundary_conditions_for_all_y(
+            self,
+            has_condition: bool,
+            condition_function: Callable[[Tuple[float, ...]], np.ndarray],
+            deepxde_boundary_condition_type: type,
+            fixed_axis: int,
+            boundary_value: float,
+            boundary_conditions: List[BC]):
+        """
+        Creates a DeepXDE boundary condition for each element of y and appends
+        them to the list of boundary conditions.
+
+        :param has_condition: whether there is an organic boundary condition
+        specified
+        :param condition_function: the organic boundary condition
+        :param deepxde_boundary_condition_type: the DeepXDE equivalent of the
+        type of the organic boundary condition
+        :param fixed_axis: the axis normal to the boundary
+        :param boundary_value: the value along the fixed axis at the boundary
+        :param boundary_conditions: the list of DeepXDE boundary conditions to
+        append the created boundary conditions to
+        """
+        if has_condition:
+            deepxde_condition_functions = \
+                self._create_deepxde_condition_functions(
+                    condition_function, fixed_axis)
+
+            for y_ind, cond_func in \
+                    enumerate(deepxde_condition_functions):
+                def predicate(
+                        x: np.ndarray,
+                        on_boundary: bool,
+                        _y_ind: int = y_ind) -> bool:
+                    return on_boundary \
+                           and np.isclose(x[fixed_axis], boundary_value) \
+                           and (cond_func(tuple(x[:-1].tolist()))[_y_ind]
+                                is not None)
+
+                boundary_conditions.append(
+                    deepxde_boundary_condition_type(
+                        self._deepxde_geometry_time_domain,
+                        cond_func,
+                        predicate,
+                        y_ind))
+
+    def _create_deepxde_condition_functions(
+            self,
+            condition_function:
+            Callable[[Tuple[float, ...]], Optional[np.ndarray]],
+            fixed_axis: Optional[int] = None
+    ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
+        """
+        Creates a list of functions that can be used to define DeepXDE boundary
+        conditions.
+        
+        :param condition_function: a condition function in the format of the
+        y_0 function of well defined initial conditions or the y_condition or
+        d_y_condition functions of boundary conditions
+        :param fixed_axis: the fixed axis in case the condition function is
+        a boundary condition function
+        :return: a list of DeepXDE condition functions with an element for each
+        component of the output array of the organic condition function
+        """
+        deepxde_condition_functions = []
+        for y_ind in range(self._bvp.differential_equation.y_dimension):
+            def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
+                n_rows = x.shape[0]
+                values = np.empty(n_rows)
+
+                if fixed_axis is not None:
+                    x = np.delete(x, fixed_axis, axis=1)
+
+                for i in range(n_rows):
+                    index = tuple(x[i, :-1].tolist())
+                    values[i] = condition_function(index)[_y_ind]
+
+                return values
+
+            deepxde_condition_functions.append(condition)
+
+        return deepxde_condition_functions
