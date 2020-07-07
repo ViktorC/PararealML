@@ -2,7 +2,7 @@ import numpy as np
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition, NeumannCondition
+from src.core.boundary_condition import DirichletCondition, CauchyCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -33,14 +33,18 @@ def create_ivp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((NeumannCondition(lambda x: np.zeros(1)),
-          NeumannCondition(lambda x: np.zeros(1))),
-         (DirichletCondition(lambda x: np.zeros(1)),
-          DirichletCondition(lambda x: np.zeros(1)))))
+        ((DirichletCondition(lambda x: (0.,)),
+          DirichletCondition(lambda x: (0.,))),
+         (CauchyCondition(
+             lambda x: (x[0],) if x[0] < 5. else (5.,),
+             lambda x: (0.,) if x[0] < 5. else (1.,)),
+          CauchyCondition(
+              lambda x: (x[0],) if x[0] < 5. else (5.,),
+              lambda x: (0.,) if x[0] < 5. else (-1.,)))))
     ic = GaussianInitialCondition(
         bvp,
         ((np.array([7.5, 4.]), np.array([[3., .0], [.0, 1.5]])),),
-        np.full(diff_eq.y_dimension, 50.))
+        [50.] * diff_eq.y_dimension)
     return InitialValueProblem(
         bvp,
         (0., 5.),
