@@ -33,7 +33,8 @@ class InitialCondition(ABC):
     def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
         """
         Returns the initial value of y at the point in the spatial domain
-        defined by x.
+        defined by x. If the initial condition is not well-defined, it returns
+        None.
 
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
@@ -112,7 +113,7 @@ class DiscreteInitialCondition(InitialCondition):
         return False
 
     def y_0(self, x: Optional[Tuple[float, ...]]) -> Optional[np.ndarray]:
-        pass
+        return None
 
 
 class GaussianInitialCondition(WellDefinedInitialCondition):
