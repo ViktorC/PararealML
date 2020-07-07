@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import Dict, Any
 
 import numpy as np
+from deepxde import Model
+from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
 
 from src.core.differentiator import Differentiator
@@ -171,10 +174,73 @@ class PINNOperator(Operator):
         return self._d_t
 
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
-        raise NotImplementedError
+        bvp = ivp.boundary_value_problem
+        diff_eq = bvp.differential_equation
 
-    def train(self, ivp: InitialValueProblem):
+        assert 1 <= diff_eq.x_dimension <= 3
+
+        time_steps = self._discretise_time_domain(ivp.t_interval)
+
+        y = np.empty([len(time_steps)] + list(bvp.y_shape))
+        for i, t_i in enumerate(time_steps):
+            ...
+
+        return y
+
+    def train(
+            self,
+            ivp: InitialValueProblem,
+            training_config: Dict[str, Any]):
         """
         Trains the PINN model behind the operator on the provided IVP.
+
+        :param ivp: the IVP to train the PINN on
+        :param training_config: a dictionary of training configurations
         """
-        raise NotImplementedError
+        diff_eq = ivp.boundary_value_problem.differential_equation
+
+        assert 1 <= diff_eq.x_dimension <= 3
+
+        deepxde_diff_eq = diff_eq.deepxde_equation
+        initial_conditions = ivp.deepxde_initial_conditions
+
+        n_domain = training_config['n_domain']
+        n_initial = training_config['n_initial']
+        sample_distribution = training_config.get(
+            'sample_distribution', 'random')
+        solution_function = training_config.get('solution_function', None)
+        n_test = training_config.get('n_test', None)
+
+        if diff_eq.x_dimension:
+            boundary_conditions = ivp.deepxde_boundary_conditions
+            n_boundary = training_config['n_boundary']
+            data = TimePDE(
+                geometryxtime=ivp.deepxde_geometry_time_domain,
+                pde=deepxde_diff_eq,
+                ic_bcs=initial_conditions + boundary_conditions,
+                num_domain=n_domain,
+                num_boundary=n_boundary,
+                num_initial=n_initial,
+                train_distribution=sample_distribution,
+                solution=solution_function,
+                num_test=n_test)
+        else:
+            data = PDE(
+                geometry=ivp.deepxde_time_domain,
+                pde=deepxde_diff_eq,
+                bcs=initial_conditions,
+                num_domain=n_domain,
+                num_boundary=n_initial,
+                train_distribution=sample_distribution,
+                solution=solution_function,
+                num_test=n_test)
+
+        model = Model(data, self._network)
+
+        optimiser = training_config.get('optimiser', 'adam')
+        learning_rate = training_config.get('learning_rate', .001)
+        model.compile(optimizer=optimiser, lr=learning_rate)
+
+        n_epochs = training_config['n_epochs']
+        batch_size = training_config.get('batch_size', None)
+        model.train(epochs=n_epochs, batch_size=batch_size)
