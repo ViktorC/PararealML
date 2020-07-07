@@ -239,7 +239,7 @@ class InitialValueProblem:
         """
         Creates a list of functions that can be used to define DeepXDE boundary
         conditions.
-        
+
         :param condition_function: a condition function in the format of the
         y_0 function of well defined initial conditions or the y_condition or
         d_y_condition functions of boundary conditions
