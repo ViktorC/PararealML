@@ -191,69 +191,58 @@ class BoundaryValueProblem:
         axes
         :return: two 1D arrays of boundary constraint pairs
         """
-        lower_y_boundary_constraints = lower_d_y_boundary_constraints = \
-            upper_y_boundary_constraints = upper_d_y_boundary_constraints = \
-            [None] * self._diff_eq.y_dimension
+        y_boundary_constraints = []
+        d_y_boundary_constraints = []
 
-        lower_boundary_condition = boundary_condition_pair[0]
-        if lower_boundary_condition is not None:
-            if lower_boundary_condition.has_y_condition:
-                lower_y_boundary_constraints = \
+        for bc_ind, bc in enumerate(boundary_condition_pair):
+            if bc is not None:
+                y_boundary_constraints.append(
                     self._create_boundary_constraints_for_all_y(
-                        lower_boundary_condition.y_condition,
+                        bc.has_y_condition,
+                        bc.y_condition,
                         boundary_shape,
-                        d_x_arr)
-            if lower_boundary_condition.has_d_y_condition:
-                lower_d_y_boundary_constraints = \
+                        d_x_arr))
+                d_y_boundary_constraints.append(
                     self._create_boundary_constraints_for_all_y(
-                        lower_boundary_condition.d_y_condition,
+                        bc.has_d_y_condition,
+                        bc.d_y_condition,
                         boundary_shape,
-                        d_x_arr)
-
-        upper_boundary_condition = boundary_condition_pair[1]
-        if upper_boundary_condition is not None:
-            if upper_boundary_condition.has_y_condition:
-                upper_y_boundary_constraints = \
-                    self._create_boundary_constraints_for_all_y(
-                        upper_boundary_condition.y_condition,
-                        boundary_shape,
-                        d_x_arr)
-            if upper_boundary_condition.has_d_y_condition:
-                upper_d_y_boundary_constraints = \
-                    self._create_boundary_constraints_for_all_y(
-                        upper_boundary_condition.d_y_condition,
-                        boundary_shape,
-                        d_x_arr)
+                        d_x_arr))
 
         y_boundary_constraint_pairs = np.empty(
             self._diff_eq.y_dimension, dtype=object)
         y_boundary_constraint_pairs[:] = list(zip(
-            lower_y_boundary_constraints, upper_y_boundary_constraints))
+            y_boundary_constraints[0], y_boundary_constraints[1]))
 
         d_y_boundary_constraint_pairs = np.empty(
             self._diff_eq.y_dimension, dtype=object)
         d_y_boundary_constraint_pairs[:] = list(zip(
-            lower_d_y_boundary_constraints, upper_d_y_boundary_constraints))
+            d_y_boundary_constraints[0], d_y_boundary_constraints[1]))
 
         return y_boundary_constraint_pairs, d_y_boundary_constraint_pairs
 
     def _create_boundary_constraints_for_all_y(
             self,
+            has_condition: bool,
             condition_function: Callable[[Tuple[float, ...]], np.ndarray],
             boundary_shape: Tuple[int, ...],
             d_x_arr: np.ndarray
-    ) -> Sequence[Constraint]:
+    ) -> Sequence[Optional[Constraint]]:
         """
         Creates a sequence of boundary constraints representing the boundary
         condition, defined by the condition function, evaluated on a single
         boundary for each element of y.
 
+        :param has_condition: whether there is a boundary condition specified
         :param condition_function: the boundary condition function
         :param boundary_shape: the shape of the boundary
         :param d_x_arr: a 1D array of the step sizes of all the other spatial
         axes
         :return: a sequence of boundary constraints
         """
+        if not has_condition:
+            return [None] * self._diff_eq.y_dimension
+
         boundary = np.full(boundary_shape, np.nan)
         for index in np.ndindex(boundary_shape[:-1]):
             x = tuple(index * d_x_arr)
@@ -285,25 +274,13 @@ class BoundaryValueProblem:
                 y_boundary_constraint_pair = \
                     self._y_boundary_constraints[axis, y_ind]
                 if y_boundary_constraint_pair is not None:
-                    lower_y_boundary_constraint = y_boundary_constraint_pair[0]
-                    if lower_y_boundary_constraint is not None:
-                        slicer[axis] = 0
-                        if self._diff_eq.x_dimension > 1:
-                            lower_y_boundary_constraint.apply(
-                                single_y[tuple(slicer)])
-                        elif lower_y_boundary_constraint.mask:
-                            single_y[tuple(slicer)] = \
-                                lower_y_boundary_constraint.value
-
-                    upper_y_boundary_constraint = y_boundary_constraint_pair[1]
-                    if upper_y_boundary_constraint is not None:
-                        slicer[axis] = -1
-                        if self._diff_eq.x_dimension > 1:
-                            upper_y_boundary_constraint.apply(
-                                single_y[tuple(slicer)])
-                        elif upper_y_boundary_constraint.mask:
-                            single_y[tuple(slicer)] = \
-                                upper_y_boundary_constraint.value
+                    for bc_ind, bc in enumerate(y_boundary_constraint_pair):
+                        if bc is not None:
+                            slicer[axis] = 0 - bc_ind
+                            if self._diff_eq.x_dimension > 1:
+                                bc.apply(single_y[tuple(slicer)])
+                            elif bc.mask:
+                                single_y[tuple(slicer)] = bc.value
 
                     slicer[axis] = slice(None)
 
