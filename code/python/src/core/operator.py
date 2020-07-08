@@ -157,17 +157,12 @@ class PINNOperator(Operator):
     using the DeepXDE library.
     """
 
-    def __init__(
-            self,
-            network: Map,
-            d_t: float):
+    def __init__(self, d_t: float):
         """
-        :param network: the PINN to use
         :param d_t: the temporal step size to use
         """
         assert d_t > 0.
         self._d_t = d_t
-        self._network = network
         self._model: Optional[Model] = None
 
     @property
@@ -203,11 +198,14 @@ class PINNOperator(Operator):
     def train(
             self,
             ivp: InitialValueProblem,
+            network: Map,
             training_config: Dict[str, Any]):
         """
-        Trains the PINN model behind the operator on the provided IVP.
+        Trains a PINN model on the provided IVP and keeps it for use by the
+        operator.
 
         :param ivp: the IVP to train the PINN on
+        :param network: the PINN to use
         :param training_config: a dictionary of training configurations
         """
         diff_eq = ivp.boundary_value_problem.differential_equation
@@ -250,7 +248,7 @@ class PINNOperator(Operator):
                 solution=solution_function,
                 num_test=n_test)
 
-        self._model = Model(data, self._network)
+        self._model = Model(data, network)
 
         optimiser = training_config.get('optimiser', 'adam')
         learning_rate = training_config.get('learning_rate', .001)

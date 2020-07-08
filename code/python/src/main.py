@@ -21,7 +21,7 @@ from src.utils.time import time
 f = FVMOperator(.01)
 g = FDMOperator(
     ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .0025)
-g_ml = PINNOperator(FNN([3] + [32] * 2 + [1], "tanh", "Glorot normal"), 5.)
+g_ml = PINNOperator(5.)
 
 parareal = Parareal(f, g)
 parareal_ml = Parareal(f, g_ml)
@@ -58,6 +58,7 @@ ivp = create_ivp()
 def train_coarse_ml():
     g_ml.train(
         ivp,
+        FNN([3] + [32] * 2 + [1], "tanh", "Glorot normal"),
         {
             'n_domain': 120000,
             'n_initial': 20000,
