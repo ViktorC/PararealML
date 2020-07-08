@@ -4,7 +4,7 @@ from typing import Tuple, Optional, Callable, Sequence
 import numpy as np
 from fipy import CellVariable
 
-from src.core.boundary_condition import BoundaryCondition
+from src.core.boundary_condition import BoundaryCondition, OptionalFloatTuple
 from src.core.constraint import Constraint
 from src.core.differential_equation import DifferentialEquation
 from src.core.differentiator import Slicer
@@ -224,7 +224,8 @@ class BoundaryValueProblem:
     def _create_boundary_constraints_for_all_y(
             self,
             has_condition: bool,
-            condition_function: Callable[[Tuple[float, ...]], np.ndarray],
+            condition_function:
+            Callable[[Tuple[float, ...]], OptionalFloatTuple],
             boundary_shape: Tuple[int, ...],
             d_x_arr: np.ndarray
     ) -> Sequence[Optional[Constraint]]:

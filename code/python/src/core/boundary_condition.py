@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Tuple, Optional
 
+OptionalFloatTuple = Tuple[Optional[float], ...]
+
 
 class BoundaryCondition(ABC):
     """
@@ -23,7 +25,8 @@ class BoundaryCondition(ABC):
         """
 
     @abstractmethod
-    def y_condition(self, x: Tuple[float, ...]) -> Optional[Tuple[float, ...]]:
+    def y_condition(self, x: Tuple[float, ...]) \
+            -> Optional[OptionalFloatTuple]:
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
@@ -35,7 +38,7 @@ class BoundaryCondition(ABC):
 
     @abstractmethod
     def d_y_condition(self, x: Tuple[float, ...]) \
-            -> Optional[Tuple[float, ...]]:
+            -> Optional[OptionalFloatTuple]:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the
@@ -56,7 +59,7 @@ class DirichletCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: Callable[[Tuple[float, ...]], Tuple[float, ...]]):
+            y_condition: Callable[[Tuple[float, ...]], OptionalFloatTuple]):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
@@ -71,11 +74,12 @@ class DirichletCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return False
 
-    def y_condition(self, x: Tuple[float, ...]) -> Optional[Tuple[float, ...]]:
+    def y_condition(self, x: Tuple[float, ...]) \
+            -> Optional[OptionalFloatTuple]:
         return self._y_condition(x)
 
     def d_y_condition(self, x: Tuple[float, ...]) \
-            -> Optional[Tuple[float, ...]]:
+            -> Optional[OptionalFloatTuple]:
         pass
 
 
@@ -87,7 +91,7 @@ class NeumannCondition(BoundaryCondition):
 
     def __init__(
             self,
-            d_y_condition: Callable[[Tuple[float, ...]], Tuple[float, ...]]):
+            d_y_condition: Callable[[Tuple[float, ...]], OptionalFloatTuple]):
         """
         :param d_y_condition: the function that determines the value of the
         derivative of y at the coordinates along the boundary specified by x
@@ -104,11 +108,12 @@ class NeumannCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def y_condition(self, x: Tuple[float, ...]) -> Optional[Tuple[float, ...]]:
+    def y_condition(self, x: Tuple[float, ...]) \
+            -> Optional[OptionalFloatTuple]:
         pass
 
     def d_y_condition(self, x: Tuple[float, ...]) \
-            -> Optional[Tuple[float, ...]]:
+            -> Optional[OptionalFloatTuple]:
         return self._d_y_condition(x)
 
 
@@ -119,8 +124,8 @@ class CauchyCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: Callable[[Tuple[float, ...]], Tuple[float, ...]],
-            d_y_condition: Callable[[Tuple[float, ...]], Tuple[float, ...]]):
+            y_condition: Callable[[Tuple[float, ...]], OptionalFloatTuple],
+            d_y_condition: Callable[[Tuple[float, ...]], OptionalFloatTuple]):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
@@ -140,9 +145,10 @@ class CauchyCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def y_condition(self, x: Tuple[float, ...]) -> Optional[Tuple[float, ...]]:
+    def y_condition(self, x: Tuple[float, ...]) \
+            -> Optional[OptionalFloatTuple]:
         return self._y_condition(x)
 
     def d_y_condition(self, x: Tuple[float, ...]) \
-            -> Optional[Tuple[float, ...]]:
+            -> Optional[OptionalFloatTuple]:
         return self._d_y_condition(x)

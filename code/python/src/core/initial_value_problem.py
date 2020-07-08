@@ -8,6 +8,7 @@ from deepxde import IC
 from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.geometry import TimeDomain, GeometryXTime
 
+from src.core.boundary_condition import OptionalFloatTuple
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.initial_condition import InitialCondition
 
@@ -188,7 +189,8 @@ class InitialValueProblem:
     def _add_deepxde_boundary_conditions_for_all_y(
             self,
             has_condition: bool,
-            condition_function: Callable[[Tuple[float, ...]], np.ndarray],
+            condition_function:
+            Callable[[Tuple[float, ...]], OptionalFloatTuple],
             deepxde_boundary_condition_type: type,
             fixed_axis: int,
             boundary_value: float,
@@ -233,7 +235,7 @@ class InitialValueProblem:
     def _create_deepxde_condition_functions(
             self,
             condition_function:
-            Callable[[Tuple[float, ...]], Optional[np.ndarray]],
+            Callable[[Tuple[float, ...]], OptionalFloatTuple],
             fixed_axis: Optional[int] = None
     ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
         """
