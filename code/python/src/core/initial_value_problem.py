@@ -221,7 +221,7 @@ class InitialValueProblem:
                         _y_ind: int = y_ind) -> bool:
                     return on_boundary \
                            and np.isclose(x[fixed_axis], boundary_value) \
-                           and (cond_func(x[np.newaxis, :-1])[0, _y_ind]
+                           and (condition_function(x[:-1])[_y_ind]
                                 is not None)
 
                 boundary_conditions.append(
