@@ -304,7 +304,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
     ) -> np.ndarray:
         n_obj_by_dims = self._n_objects * self._dims
 
-        d_y = np.empty(self.y_dimension())
+        d_y = np.empty(self.y_dimension)
         d_y[:n_obj_by_dims] = y[n_obj_by_dims:]
 
         forces = np.empty((self._n_objects, self._n_objects, self._dims))
