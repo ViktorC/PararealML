@@ -362,7 +362,7 @@ class DiffusionEquation(DifferentialEquation):
 
     @property
     def deepxde_equation(self) -> Callable[[Tensor, Tensor], Tensor]:
-        return DiffusionEquation._deepxde_diffusion_equation
+        return self._deepxde_diffusion_equation
 
     def d_y_over_d_t(
             self,
@@ -379,12 +379,13 @@ class DiffusionEquation(DifferentialEquation):
         return self._d * differentiator.laplacian(
             y, d_x, derivative_boundary_constraints)
 
-    @staticmethod
-    def _deepxde_diffusion_equation(x: Tensor, y: Tensor) -> Tensor:
-        dy_x = tf.gradients(y, x)[0]
-        dy_x, dy_t = dy_x[:, 0:1], dy_x[:, 1:]
-        dy_xx = tf.gradients(dy_x, x)[0][:, 0:1]
-        return dy_t - dy_xx
+    def _deepxde_diffusion_equation(self, x: Tensor, y: Tensor) -> Tensor:
+        dy_all_x = tf.gradients(y, x)[0]
+        dy_t = dy_all_x[:, self._x_dimension:]
+        dy_x = dy_all_x[:, :self._x_dimension]
+        dy_xx = tf.gradients(dy_x, x)[0][:, :self._x_dimension]
+        laplacian = tf.math.reduce_sum(dy_xx, -1, True)
+        return dy_t - self._d * laplacian
 
 
 class WaveEquation(DifferentialEquation):
