@@ -81,9 +81,10 @@ class DifferentialEquation(ABC):
         Returns the tensor operation representing the DeepXDE equivalent of the
         differential equation.
 
-        :param x: a rank-two tensor whose each row represents a point in the
-        spatiotemporal domain
-        :param y: the current estimates of y at the points
+        :param x: the input of the PINN; a rank-two tensor whose each row
+        represents a point in the spatiotemporal domain
+        :param y: the output of the PINN; the current estimates of y at the
+        points
         :return: the tensor operation representing the differential equation
         """
 
