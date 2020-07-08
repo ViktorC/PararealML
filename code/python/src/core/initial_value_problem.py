@@ -221,7 +221,7 @@ class InitialValueProblem:
                         _y_ind: int = y_ind) -> bool:
                     return on_boundary \
                            and np.isclose(x[fixed_axis], boundary_value) \
-                           and (cond_func(tuple(x[:-1].tolist()))[_y_ind]
+                           and (cond_func(x[np.newaxis, :-1])[0, _y_ind]
                                 is not None)
 
                 boundary_conditions.append(
@@ -259,8 +259,10 @@ class InitialValueProblem:
                     x = np.delete(x, fixed_axis, axis=1)
 
                 n_rows = x.shape[0]
-                return np.array([condition_function(x[i, :-1])[_y_ind]
-                                 for i in range(n_rows)])
+                values = np.array([condition_function(x[i, :-1])[_y_ind]
+                                   for i in range(n_rows)])
+                values = values.reshape((n_rows, 1))
+                return values
 
             deepxde_condition_functions.append(condition)
 
