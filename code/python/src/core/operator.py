@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import numpy as np
 from deepxde import Model
@@ -90,7 +90,7 @@ class FDMOperator(Operator):
 
         time_steps = self._discretise_time_domain(ivp.t_interval)
 
-        y = np.empty([len(time_steps)] + list(bvp.y_shape))
+        y = np.empty((len(time_steps),) + bvp.y_shape)
         y_i = ivp.initial_condition.discrete_y_0
 
         for i, t_i in enumerate(time_steps):
@@ -141,7 +141,7 @@ class FVMOperator(Operator):
 
         time_steps = self._discretise_time_domain(ivp.t_interval)
 
-        y = np.empty([len(time_steps)] + list(bvp.y_shape))
+        y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
             for j in range(diff_eq.y_dimension):
                 y_var_j = fipy_vars[j]
@@ -159,31 +159,44 @@ class PINNOperator(Operator):
 
     def __init__(
             self,
-            d_t: float,
-            network: Map):
+            network: Map,
+            d_t: float):
         """
-        :param d_t: the temporal step size to use
         :param network: the PINN to use
+        :param d_t: the temporal step size to use
         """
         assert d_t > 0.
         self._d_t = d_t
         self._network = network
+        self._model: Optional[Model] = None
 
     @property
     def d_t(self) -> float:
         return self._d_t
 
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
+        assert self._model is not None
+
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
 
         assert 1 <= diff_eq.x_dimension <= 3
 
+        mesh = bvp.mesh
+        mesh_shape = mesh.shape
+        n_points = np.prod(mesh_shape)
+        x = np.empty((n_points, diff_eq.x_dimension + 1))
+        for row_ind, index in enumerate(np.ndindex(mesh_shape)):
+            x[row_ind, :-1] = mesh.x(index)
+
         time_steps = self._discretise_time_domain(ivp.t_interval)
 
-        y = np.empty([len(time_steps)] + list(bvp.y_shape))
+        y_shape = bvp.y_shape
+        y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
-            ...
+            x[:, -1] = t_i
+            y_hat = self._model.predict(x)
+            y[i, ...] = y_hat.reshape(y_shape)
 
         return y
 
@@ -237,12 +250,12 @@ class PINNOperator(Operator):
                 solution=solution_function,
                 num_test=n_test)
 
-        model = Model(data, self._network)
+        self._model = Model(data, self._network)
 
         optimiser = training_config.get('optimiser', 'adam')
         learning_rate = training_config.get('learning_rate', .001)
-        model.compile(optimizer=optimiser, lr=learning_rate)
+        self._model.compile(optimizer=optimiser, lr=learning_rate)
 
         n_epochs = training_config['n_epochs']
         batch_size = training_config.get('batch_size', None)
-        model.train(epochs=n_epochs, batch_size=batch_size)
+        self._model.train(epochs=n_epochs, batch_size=batch_size)
