@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import numpy as np
 from deepxde import Model
@@ -214,10 +214,12 @@ class PINNOperator(Operator):
         if diff_eq.x_dimension:
             boundary_conditions = ivp.deepxde_boundary_conditions
             n_boundary = training_config['n_boundary']
+            ic_bcs: List[Any] = list(initial_conditions)
+            ic_bcs += list(boundary_conditions)
             data = TimePDE(
                 geometryxtime=ivp.deepxde_geometry_time_domain,
                 pde=deepxde_diff_eq,
-                ic_bcs=initial_conditions + boundary_conditions,
+                ic_bcs=ic_bcs,
                 num_domain=n_domain,
                 num_boundary=n_boundary,
                 num_initial=n_initial,

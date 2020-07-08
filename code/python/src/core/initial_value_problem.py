@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Callable, Optional, Tuple, Sequence, List
+from typing import Callable, Optional, Tuple, Sequence, List, Union
 
 import numpy as np
 from deepxde import IC
 from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.geometry import TimeDomain, GeometryXTime
 
-from src.core.boundary_condition import OptionalFloatTuple
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.initial_condition import InitialCondition
 
@@ -162,7 +161,7 @@ class InitialValueProblem:
         if not self._bvp.differential_equation.x_dimension:
             return None
 
-        boundary_conditions = []
+        boundary_conditions: List[BC] = []
 
         for axis, bc_pair in enumerate(self._bvp.boundary_conditions):
             if bc_pair is not None:
@@ -190,7 +189,7 @@ class InitialValueProblem:
             self,
             has_condition: bool,
             condition_function:
-            Callable[[Tuple[float, ...]], OptionalFloatTuple],
+            Callable[[Sequence[float]], Optional[Sequence[Optional[float]]]],
             deepxde_boundary_condition_type: type,
             fixed_axis: int,
             boundary_value: float,
@@ -234,8 +233,11 @@ class InitialValueProblem:
 
     def _create_deepxde_condition_functions(
             self,
-            condition_function:
-            Callable[[Tuple[float, ...]], OptionalFloatTuple],
+            condition_function: Union[
+                Callable[[Optional[Sequence[float]]],
+                         Optional[Sequence[float]]],
+                Callable[[Sequence[float]],
+                         Optional[Sequence[Optional[float]]]]],
             fixed_axis: Optional[int] = None
     ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
         """
@@ -253,17 +255,12 @@ class InitialValueProblem:
         deepxde_condition_functions = []
         for y_ind in range(self._bvp.differential_equation.y_dimension):
             def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
-                n_rows = x.shape[0]
-                values = np.empty(n_rows)
-
                 if fixed_axis is not None:
                     x = np.delete(x, fixed_axis, axis=1)
 
-                for i in range(n_rows):
-                    index = tuple(x[i, :-1].tolist())
-                    values[i] = condition_function(index)[_y_ind]
-
-                return values
+                n_rows = x.shape[0]
+                return np.array([condition_function(x[i, :-1])[_y_ind]
+                                 for i in range(n_rows)])
 
             deepxde_condition_functions.append(condition)
 

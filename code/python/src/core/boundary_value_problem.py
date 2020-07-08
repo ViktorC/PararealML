@@ -4,7 +4,7 @@ from typing import Tuple, Optional, Callable, Sequence
 import numpy as np
 from fipy import CellVariable
 
-from src.core.boundary_condition import BoundaryCondition, OptionalFloatTuple
+from src.core.boundary_condition import BoundaryCondition
 from src.core.constraint import Constraint
 from src.core.differential_equation import DifferentialEquation
 from src.core.differentiator import Slicer
@@ -38,6 +38,7 @@ class BoundaryValueProblem:
         self._mesh: Optional[Mesh]
         self._boundary_conditions: \
             Optional[Tuple[BoundaryConditionPair, ...]]
+        self._fipy_vars: Optional[Tuple[CellVariable]]
 
         if diff_eq.x_dimension:
             assert mesh is not None
@@ -225,7 +226,7 @@ class BoundaryValueProblem:
             self,
             has_condition: bool,
             condition_function:
-            Callable[[Tuple[float, ...]], OptionalFloatTuple],
+            Callable[[Sequence[float]], Optional[Sequence[Optional[float]]]],
             boundary_shape: Tuple[int, ...],
             d_x_arr: np.ndarray
     ) -> Sequence[Optional[Constraint]]:

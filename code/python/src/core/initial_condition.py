@@ -30,8 +30,7 @@ class InitialCondition(ABC):
         """
 
     @abstractmethod
-    def y_0(self, x: Optional[Tuple[float, ...]]) \
-            -> Optional[Tuple[float, ...]]:
+    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
         """
         Returns the initial value of y at the point in the spatial domain
         defined by x. If the initial condition is not well-defined, it returns
@@ -51,7 +50,7 @@ class WellDefinedInitialCondition(InitialCondition):
             self,
             bvp: BoundaryValueProblem,
             y_0_func:
-            Callable[[Optional[Tuple[float, ...]]], Tuple[float, ...]]):
+            Callable[[Optional[Sequence[float]]], Sequence[float]]):
         """
         :param bvp: the boundary value problem to turn into an initial value
         problem by providing the initial conditions for it
@@ -71,8 +70,7 @@ class WellDefinedInitialCondition(InitialCondition):
     def is_well_defined(self) -> bool:
         return True
 
-    def y_0(self, x: Optional[Tuple[float, ...]]) \
-            -> Optional[Tuple[float, ...]]:
+    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
         return self._y_0_func(x)
 
     def _create_discrete_y_0(self) -> np.ndarray:
@@ -115,8 +113,7 @@ class DiscreteInitialCondition(InitialCondition):
     def is_well_defined(self) -> bool:
         return False
 
-    def y_0(self, x: Optional[Tuple[float, ...]]) \
-            -> Optional[Tuple[float, ...]]:
+    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
         return None
 
 
@@ -173,7 +170,7 @@ class GaussianInitialCondition(WellDefinedInitialCondition):
         return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
             np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
 
-    def _y_0_func(self, x: Optional[Tuple[float, ...]]) -> Tuple[float, ...]:
+    def _y_0_func(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         """
         Calculates and returns the values of the multivariate Gaussian PDFs
         corresponding to each element of y_0 at x.
@@ -182,7 +179,6 @@ class GaussianInitialCondition(WellDefinedInitialCondition):
         :return: the initial value of y at the coordinates
         """
         x_arr = np.array(x)
-        return tuple(
-            [self.multivariate_gaussian(x_arr, mean, cov) *
-             self._multipliers[i] for i, (mean, cov) in
-             enumerate(self._means_and_covs)])
+        return [self.multivariate_gaussian(x_arr, mean, cov) *
+                self._multipliers[i] for i, (mean, cov) in
+                enumerate(self._means_and_covs)]
