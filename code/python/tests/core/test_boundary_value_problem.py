@@ -30,10 +30,10 @@ def test_2d_bvp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: np.array([999., None])),
-          NeumannCondition(lambda x: np.array([100., -100.]))),
-         (NeumannCondition(lambda x: np.array([-x[0], None])),
-          DirichletCondition(lambda x: np.array([x[0], -999])))))
+        ((DirichletCondition(lambda x: (999., None)),
+          NeumannCondition(lambda x: (100., -100.))),
+         (NeumannCondition(lambda x: (-x[0], None)),
+          DirichletCondition(lambda x: (x[0], -999.)))))
 
     y = np.full(bvp.y_shape, 13.)
     apply_constraints_along_last_axis(bvp.y_constraints, y)
@@ -91,11 +91,11 @@ def test_3d_bvp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: np.array([999.])),
-          NeumannCondition(lambda x: np.array([None]))),
-         (DirichletCondition(lambda x: np.zeros(1)),
-          NeumannCondition(lambda x: np.zeros(1))),
-         (NeumannCondition(lambda x: np.array([-x[0][0]])),
-          DirichletCondition(lambda x: np.array([-999])))))
+        ((DirichletCondition(lambda x: (999.,)),
+          NeumannCondition(lambda x: (None,))),
+         (DirichletCondition(lambda x: (0.,)),
+          NeumannCondition(lambda x: (0.,))),
+         (NeumannCondition(lambda x: (-x[0],)),
+          DirichletCondition(lambda x: (-999.,)))))
 
     assert len(bvp.fipy_vars) == 1

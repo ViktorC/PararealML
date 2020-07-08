@@ -12,8 +12,8 @@ def test_1d_well_defined_initial_condition():
     bvp = BoundaryValueProblem(
         diff_eq,
         UniformGrid(((0., 20.),), (.1,)),
-        ((DirichletCondition(lambda x: np.zeros(1)),
-          DirichletCondition(lambda x: np.full(1, 1.5))),))
+        ((DirichletCondition(lambda x: (0.,)),
+          DirichletCondition(lambda x: (1.5,))),))
     initial_condition = WellDefinedInitialCondition(
             bvp,
             lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
