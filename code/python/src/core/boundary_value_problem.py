@@ -161,7 +161,7 @@ class BoundaryValueProblem:
                 continue
 
             boundary_shape = self._y_shape[:axis] + self._y_shape[axis + 1:]
-            d_x_arr = np.array([d_x[:axis] + d_x[axis + 1:]])
+            d_x_arr = np.array(d_x[:axis] + d_x[axis + 1:])
 
             y_boundary_constraint_pairs, d_y_boundary_constraint_pairs = \
                 self._create_boundary_constraint_pairs_for_all_y(
