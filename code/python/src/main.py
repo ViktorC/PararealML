@@ -20,7 +20,7 @@ from src.utils.time import time
 
 f = FVMOperator(.01)
 g = FDMOperator(
-    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
+    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .0025)
 g_ml = PINNOperator(FNN([3] + [32] * 2 + [1], "tanh", "Glorot normal"), 5.)
 
 parareal = Parareal(f, g)
