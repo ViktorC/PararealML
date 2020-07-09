@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
 import numpy as np
-from deepxde import Model
+from deepxde import Model, IC
+from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
 
@@ -225,7 +226,7 @@ class PINNOperator(Operator):
         if diff_eq.x_dimension:
             boundary_conditions = ivp.deepxde_boundary_conditions
             n_boundary = training_config['n_boundary']
-            ic_bcs: List[Any] = list(initial_conditions)
+            ic_bcs: List[Union[IC, BC]] = list(initial_conditions)
             ic_bcs += list(boundary_conditions)
             data = TimePDE(
                 geometryxtime=ivp.deepxde_geometry_time_domain,
@@ -250,10 +251,15 @@ class PINNOperator(Operator):
 
         self._model = Model(data, network)
 
-        optimiser = training_config.get('optimiser', 'adam')
-        learning_rate = training_config.get('learning_rate', .001)
+        optimiser = training_config['optimiser']
+        learning_rate = training_config.get('learning_rate', None)
         self._model.compile(optimizer=optimiser, lr=learning_rate)
 
         n_epochs = training_config['n_epochs']
         batch_size = training_config.get('batch_size', None)
         self._model.train(epochs=n_epochs, batch_size=batch_size)
+
+        refine_with_bfgs = training_config.get('refine_with_bfgs', False)
+        if refine_with_bfgs:
+            self._model.compile('L-BFGS-B')
+            self._model.train()
