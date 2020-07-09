@@ -76,6 +76,9 @@ def plot_evolution_of_y(
         x_1 = np.linspace(*x_intervals[1], y.shape[2])
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
+        v_min = np.min(y)
+        v_max = np.max(y)
+
         if three_d:
             fig = plt.figure()
             ax = Axes3D(fig)
@@ -91,7 +94,7 @@ def plot_evolution_of_y(
                 'antialiased': False,
                 'cmap': cm.coolwarm}
             plot = ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
-            z_lim = ax.get_zlim()
+            ax.set_zlim(v_min, v_max)
 
             def update_plot(time_step: int):
                 ax.clear()
@@ -101,12 +104,10 @@ def plot_evolution_of_y(
 
                 _plot = ax.plot_surface(
                     x_0, x_1, y[time_step, ...].T, **plot_args)
-                ax.set_zlim(z_lim)
+                ax.set_zlim(v_min, v_max)
                 return _plot,
         else:
             fig, ax = plt.subplots(1, 1)
-            v_min = np.min(y)
-            v_max = np.max(y)
             ax.contourf(x_0, x_1, y[0, ...].T, vmin=v_min, vmax=v_max)
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)
