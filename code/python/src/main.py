@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from deepxde.maps import FNN
 
@@ -6,33 +8,30 @@ from mpi4py import MPI
 from src.core.boundary_condition import DirichletCondition, NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import GaussianInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
-from src.core.integrator import ExplicitMidpointMethod
 from src.core.mesh import UniformGrid
-from src.core.operator import FDMOperator, FVMOperator, PINNOperator
+from src.core.operator import FVMOperator, PINNOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
     plot_evolution_of_y
 from src.utils.time import time
 
 
-f = FVMOperator(.01)
-g = FDMOperator(
-    ExplicitMidpointMethod(), ThreePointCentralFiniteDifferenceMethod(), .0025)
-g_ml = PINNOperator(5.)
+f = FVMOperator(.005)
+g = FVMOperator(.05)
+g_ml = PINNOperator(.25)
 
 parareal = Parareal(f, g)
 parareal_ml = Parareal(f, g_ml)
 
-threshold = 1.
+threshold = .1
 
 
 @time
 def create_ivp():
     diff_eq = DiffusionEquation(2)
-    mesh = UniformGrid(((0., 10.), (0., 5.)), (.1, .1))
+    mesh = UniformGrid(((0., 1.), (0., 1.)), (.01, .01))
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
@@ -42,12 +41,12 @@ def create_ivp():
           DirichletCondition(lambda x: (0.,)))))
     ic = GaussianInitialCondition(
         bvp,
-        ((np.array([7.5, 4.]),
-          np.array([[3., .0], [.0, 1.5]])),),
-        [50.] * diff_eq.y_dimension)
+        ((np.array([.75, .75]),
+          np.array([[.3, .0], [.0, .3]])),),
+        [20.] * diff_eq.y_dimension)
     return InitialValueProblem(
         bvp,
-        (0., 20.),
+        (0., 1.),
         ic)
 
 
@@ -58,12 +57,15 @@ ivp = create_ivp()
 def train_coarse_ml():
     g_ml.train(
         ivp,
-        FNN([3] + [32] * 2 + [1], "tanh", "Glorot normal"),
+        FNN([3] + [50] * 4 + [1], "tanh", "Glorot normal"),
         {
-            'n_domain': 120000,
-            'n_initial': 20000,
-            'n_boundary': 40000,
-            'n_epochs': 50
+            'n_domain': 1200,
+            'n_initial': 240,
+            'n_boundary': 120,
+            'n_epochs': 10000,
+            'optimiser': 'adam',
+            'learning_rate': .001,
+            'refine_with_bfgs': True
         })
 
 
@@ -101,7 +103,7 @@ def plot_solution(solve_func):
                 plot_evolution_of_y(
                     ivp,
                     y[..., i],
-                    50,
+                    math.ceil(y.shape[0] / 20.),
                     100,
                     f'evolution_{solve_func.__name__}_{i}')
         else:
