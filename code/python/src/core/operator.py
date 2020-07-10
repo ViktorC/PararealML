@@ -227,7 +227,7 @@ class PINNOperator(Operator):
         for row_ind, index in enumerate(np.ndindex(mesh_shape)):
             x[row_ind, :-1] = mesh.x(index)
 
-        time_steps = self._discretise_time_domain(ivp.t_interval)
+        time_steps = self._discretise_time_domain(ivp.t_interval)[1:]
 
         y_shape = bvp.y_shape
         y = np.empty((len(time_steps),) + bvp.y_shape)
