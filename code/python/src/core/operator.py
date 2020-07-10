@@ -6,6 +6,7 @@ from deepxde import Model, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
+from scipy.integrate import solve_ivp, OdeSolver
 
 from src.core.differentiator import Differentiator
 from src.core.initial_value_problem import TemporalDomainInterval, \
@@ -37,16 +38,59 @@ class Operator(ABC):
 
     def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
         """
-        Returns a discretisation of the the interval [t_a, t_b^) using the
-        temporal step size of the operator d_t, where t_b^ is t_b rounded to
-        the nearest multiple of d_t.
+        Returns a discretisation of the interval [t_a, t_b^) using the temporal
+        step size of the operator d_t, where t_b^ = t_a + n * d_t and n E Z,
+        n = argmin |t_b^ - t_b|.
 
         :param t: the time interval to discretise
         :return: the array containing the discretised temporal domain
         """
         d_t = self.d_t
-        adjusted_t_1 = d_t * round(t[1] / d_t)
-        return np.arange(t[0], adjusted_t_1, d_t)
+        t_0 = t[0]
+        steps = round((t[1] - t_0) / d_t)
+        t_1 = t_0 + steps * d_t
+        return np.linspace(t_0, t_1, steps + 1)
+
+
+class ODEOperator(Operator):
+    """
+    An ordinary differential equation solver using the SciPy library.
+    """
+
+    def __init__(
+            self,
+            method: Union[str, OdeSolver],
+            d_t: float):
+        """
+        :param method: the ODE solver to use
+        :param d_t: the temporal step size to use
+        """
+        assert d_t > 0.
+        self._method = method
+        self._d_t = d_t
+
+    @property
+    def d_t(self) -> float:
+        return self._d_t
+
+    def trace(self, ivp: InitialValueProblem) -> np.ndarray:
+        bvp = ivp.boundary_value_problem
+        diff_eq = bvp.differential_equation
+
+        assert diff_eq.x_dimension == 0
+
+        t_interval = ivp.t_interval
+        time_steps = self._discretise_time_domain(t_interval)
+        adjusted_t_interval = (time_steps[0], time_steps[-1])
+
+        result = solve_ivp(
+            diff_eq.d_y_over_d_t,
+            adjusted_t_interval,
+            ivp.initial_condition.discrete_y_0,
+            self._method,
+            time_steps[1:])
+        y = np.ascontiguousarray(result.y.T)
+        return y
 
 
 class FDMOperator(Operator):
@@ -89,7 +133,7 @@ class FDMOperator(Operator):
                 d_y_boundary_constraints,
                 y_constraints)
 
-        time_steps = self._discretise_time_domain(ivp.t_interval)
+        time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         y_i = ivp.initial_condition.discrete_y_0
@@ -108,13 +152,11 @@ class FDMOperator(Operator):
 
 class FVMOperator(Operator):
     """
-    A finite volume method based conventional differential equation solver
-    using the FiPy library.
+    A finite volume method based conventional partial differential equation
+    solver using the FiPy library.
     """
 
-    def __init__(
-            self,
-            d_t: float):
+    def __init__(self, d_t: float):
         """
         :param d_t: the temporal step size to use
         """
@@ -140,7 +182,7 @@ class FVMOperator(Operator):
 
         fipy_diff_eq = diff_eq.fipy_equation
 
-        time_steps = self._discretise_time_domain(ivp.t_interval)
+        time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
