@@ -41,6 +41,30 @@ class InitialCondition(ABC):
         """
 
 
+class DiscreteInitialCondition(InitialCondition):
+    """
+    An initial condition defined by a fixed array of values.
+    """
+
+    def __init__(self, y_0: np.ndarray):
+        """
+        :param y_0: the array containing the initial values of y over a spatial
+        mesh (which may be 0 dimensional in case of an ODE)
+        """
+        self._y_0 = np.copy(y_0)
+
+    @property
+    def discrete_y_0(self) -> np.ndarray:
+        return np.copy(self._y_0)
+
+    @property
+    def is_well_defined(self) -> bool:
+        return False
+
+    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
+        return None
+
+
 class WellDefinedInitialCondition(InitialCondition):
     """
     An initial condition defined explicitly by a function.
@@ -91,30 +115,6 @@ class WellDefinedInitialCondition(InitialCondition):
             y_0 = self._y_0_func(None)
 
         return y_0
-
-
-class DiscreteInitialCondition(InitialCondition):
-    """
-    An initial condition defined by a fixed array of values.
-    """
-
-    def __init__(self, y_0: np.ndarray):
-        """
-        :param y_0: the array containing the initial values of y over a spatial
-        mesh (which may be 0 dimensional in case of an ODE)
-        """
-        self._y_0 = np.copy(y_0)
-
-    @property
-    def discrete_y_0(self) -> np.ndarray:
-        return np.copy(self._y_0)
-
-    @property
-    def is_well_defined(self) -> bool:
-        return False
-
-    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
-        return None
 
 
 class GaussianInitialCondition(WellDefinedInitialCondition):
