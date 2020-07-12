@@ -109,8 +109,42 @@ class BackwardEulerMethod(Integrator):
     The backward Euler method, an implicit first order Runge-Kutta method.
     """
 
-    def __init__(self):
-        self._forward_euler = ForwardEulerMethod()
+    def integral(
+            self,
+            y: np.ndarray,
+            t: float,
+            d_t: float,
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+            y_constraints: Optional[Sequence[Constraint]] = None
+    ) -> np.ndarray:
+        t_next = t + d_t
+        y_next_hat = apply_constraints_along_last_axis(
+            y_constraints,
+            y + d_t * d_y_over_d_t(t, y))
+
+        def f(y_next: np.ndarray) -> np.ndarray:
+            return y_next - apply_constraints_along_last_axis(
+                y_constraints,
+                y + d_t * d_y_over_d_t(t_next, y_next))
+
+        y_next_hat: np.ndarray = newton(f, y_next_hat)
+        return y_next_hat
+
+
+class CrankNicolsonMethod(Integrator):
+    """
+    A first order implicit-explicit method combining the forward and backward
+    Euler methods.
+    """
+
+    def __init__(self, a: float = .5):
+        """
+        :param a: the weight of the backward Euler term of the update; the
+        forward Euler term's weight is 1 - a
+        """
+        assert 0. <= a <= 1.
+        self._a = a
+        self._b = 1. - a
 
     def integral(
             self,
@@ -121,13 +155,16 @@ class BackwardEulerMethod(Integrator):
             y_constraints: Optional[Sequence[Constraint]] = None
     ) -> np.ndarray:
         t_next = t + d_t
-        y_next_hat = self._forward_euler.integral(
-            y, t, d_t, d_y_over_d_t, y_constraints)
+        forward_update = d_t * d_y_over_d_t(t, y)
+        y_next_hat = apply_constraints_along_last_axis(
+            y_constraints, y + forward_update)
 
         def f(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_constraints,
-                y + d_t * d_y_over_d_t(t_next, y_next))
+                y +
+                self._a * d_t * d_y_over_d_t(t_next, y_next) +
+                self._b * forward_update)
 
         y_next_hat: np.ndarray = newton(f, y_next_hat)
         return y_next_hat
