@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Sequence, Optional
 
 import numpy as np
+from scipy.optimize import newton
 
 from src.core.constraint import Constraint, apply_constraints_along_last_axis
 
@@ -101,3 +102,32 @@ class RK4(Integrator):
         return apply_constraints_along_last_axis(
             y_constraints,
             y + (k1 + 2 * k2 + 2 * k3 + k4) / 6)
+
+
+class BackwardEulerMethod(Integrator):
+    """
+    The backward Euler method, an implicit first order Runge-Kutta method.
+    """
+
+    def __init__(self):
+        self._forward_euler = ForwardEulerMethod()
+
+    def integral(
+            self,
+            y: np.ndarray,
+            t: float,
+            d_t: float,
+            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+            y_constraints: Optional[Sequence[Constraint]] = None
+    ) -> np.ndarray:
+        t_next = t + d_t
+        y_next_hat = self._forward_euler.integral(
+            y, t, d_t, d_y_over_d_t, y_constraints)
+
+        def f(y_next: np.ndarray) -> np.ndarray:
+            return apply_constraints_along_last_axis(
+                y_constraints,
+                y_next - y - d_t * d_y_over_d_t(t_next, y_next))
+
+        y_next_hat: np.ndarray = newton(f, y_next_hat)
+        return y_next_hat

@@ -1,7 +1,8 @@
 import numpy as np
 
 from src.core.constraint import Constraint
-from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod, RK4
+from src.core.integrator import ForwardEulerMethod, ExplicitMidpointMethod,\
+    RK4, BackwardEulerMethod
 
 
 def test_forward_euler_method():
@@ -118,5 +119,42 @@ def test_rk4_with_constraints():
     y_constraint.apply(expected_y_next[..., 0])
 
     actual_y_next = rk4.integral(y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
+
+    assert np.isclose(actual_y_next, expected_y_next).all()
+
+
+def test_backward_euler_method():
+    euler = BackwardEulerMethod()
+
+    y_0 = np.array([1.])
+    t_0 = 1.
+    d_t = .5
+
+    def d_y_over_d_t(t, y): return 5 * y + t ** 2
+
+    expected_y_next = -(y_0 + .5 * (t_0 + d_t) ** 2) / 1.5
+    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t)
+
+    assert np.isclose(actual_y_next, expected_y_next).all()
+
+
+def test_backward_euler_method_with_constraints():
+    euler = BackwardEulerMethod()
+
+    y_0 = np.ones((5, 1))
+    t_0 = 1.
+    d_t = .5
+
+    def d_y_over_d_t(t, y): return 5 * y + t ** 2
+
+    value = np.full(y_0.shape[:-1], np.nan)
+    value[0] = value[-1] = 999.
+    mask = ~np.isnan(value)
+    value = value[mask]
+    y_constraint = Constraint(value, mask)
+
+    expected_y_next = -(y_0 + .5 * (t_0 + d_t) ** 2) / 1.5
+    y_constraint.apply(expected_y_next[..., 0])
+    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
 
     assert np.isclose(actual_y_next, expected_y_next).all()
