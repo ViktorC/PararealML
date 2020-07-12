@@ -125,9 +125,9 @@ class BackwardEulerMethod(Integrator):
             y, t, d_t, d_y_over_d_t, y_constraints)
 
         def f(y_next: np.ndarray) -> np.ndarray:
-            return apply_constraints_along_last_axis(
+            return y_next - apply_constraints_along_last_axis(
                 y_constraints,
-                y_next - y - d_t * d_y_over_d_t(t_next, y_next))
+                y + d_t * d_y_over_d_t(t_next, y_next))
 
         y_next_hat: np.ndarray = newton(f, y_next_hat)
         return y_next_hat
