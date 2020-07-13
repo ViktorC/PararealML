@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, Sequence
 
 import numpy as np
 import tensorflow as tf
@@ -76,16 +76,22 @@ class DifferentialEquation(ABC):
         """
 
     @abstractmethod
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         """
-        Returns the tensor operation representing the DeepXDE equivalent of the
-        differential equation.
+        Returns the tensor operation or tensor operations representing the
+        DeepXDE equivalent of the differential equation.
 
         :param x: the input of the PINN; a rank-two tensor whose each row
         represents a point in the spatiotemporal domain
         :param y: the output of the PINN; the current estimates of y at the
         points
-        :return: the tensor operation representing the differential equation
+        :return: the tensor operation or sequence of tensor operations
+        (depending on whether the differential equation's solution is
+        vector-valued) representing the differential equation
         """
 
 
@@ -124,12 +130,15 @@ class RabbitPopulationEquation(DifferentialEquation):
             derivative_boundary_constraints: Optional[np.ndarray] = None,
             solution_constraints: Optional[np.ndarray] = None
     ) -> np.ndarray:
-        d_y = np.empty(1)
-        d_y[0] = self._r * y
-        return d_y
+        return self._r * y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
-        raise NotImplementedError
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
+        d_y_over_d_t = tf.gradients(y, x)[0]
+        return d_y_over_d_t - self._r * y
 
 
 class LotkaVolterraEquation(DifferentialEquation):
@@ -187,8 +196,19 @@ class LotkaVolterraEquation(DifferentialEquation):
         d_y[1] = self._gamma * r * p - self._delta * p
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
-        raise NotImplementedError
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
+        r = y[:, :1]
+        p = y[:, 1:]
+        d_r_over_d_t = tf.gradients(r, x)[0]
+        d_p_over_d_t = tf.gradients(p, x)[0]
+        return [
+            d_r_over_d_t - (self._alpha * r - self._beta * r * p),
+            d_p_over_d_t - (self._gamma * r * p - self._delta * p)
+        ]
 
 
 class LorenzEquation(DifferentialEquation):
@@ -244,8 +264,22 @@ class LorenzEquation(DifferentialEquation):
         d_y[2] = c * h - self._beta * v
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
-        raise NotImplementedError
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
+        c = y[:, :1]
+        h = y[:, 1:2]
+        v = y[:, 2:]
+        d_c_over_d_t = tf.gradients(c, x)[0]
+        d_h_over_d_t = tf.gradients(h, x)[0]
+        d_v_over_d_t = tf.gradients(v, x)[0]
+        return [
+            d_c_over_d_t - self._sigma * (h - c),
+            d_h_over_d_t - (c * (self._rho - v) - h),
+            d_v_over_d_t - (c * h - self._beta * v)
+        ]
 
 
 class NBodyGravitationalEquation(DifferentialEquation):
@@ -322,7 +356,11 @@ class NBodyGravitationalEquation(DifferentialEquation):
 
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         raise NotImplementedError
 
 
@@ -372,7 +410,11 @@ class DiffusionEquation(DifferentialEquation):
         return self._d * differentiator.laplacian(
             y, d_x, derivative_boundary_constraints)
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         d_y_over_d_all_x = tf.gradients(y, x)[0]
         d_y_over_d_t = d_y_over_d_all_x[:, self._x_dimension:]
         d_y_over_d_x = d_y_over_d_all_x[:, :self._x_dimension]
@@ -431,7 +473,11 @@ class WaveEquation(DifferentialEquation):
             y[..., [0]], d_x, derivative_boundary_constraints[..., [0]])
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         raise NotImplementedError
 
 
@@ -498,7 +544,11 @@ class MaxwellsEquation(DifferentialEquation):
         d_y[..., self._x_dimension:, np.newaxis] = d_m_over_d_t
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         raise NotImplementedError
 
 
@@ -586,7 +636,11 @@ class NavierStokesEquation(DifferentialEquation):
         d_y[..., [1]] = updated_stream_function - stream_function
         return d_y
 
-    def deepxde_equation(self, x: Tensor, y: Tensor) -> Tensor:
+    def deepxde_equation(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
         raise NotImplementedError
 
     def velocity(

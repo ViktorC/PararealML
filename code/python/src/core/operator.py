@@ -218,14 +218,17 @@ class PINNOperator(Operator):
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
 
-        assert 1 <= diff_eq.x_dimension <= 3
+        assert diff_eq.x_dimension <= 3
 
-        mesh = bvp.mesh
-        mesh_shape = mesh.shape
-        n_points = np.prod(mesh_shape)
-        x = np.empty((n_points, diff_eq.x_dimension + 1))
-        for row_ind, index in enumerate(np.ndindex(mesh_shape)):
-            x[row_ind, :-1] = mesh.x(index)
+        if diff_eq.x_dimension:
+            mesh = bvp.mesh
+            mesh_shape = mesh.shape
+            n_points = np.prod(mesh_shape)
+            x = np.empty((n_points, diff_eq.x_dimension + 1))
+            for row_ind, index in enumerate(np.ndindex(mesh_shape)):
+                x[row_ind, :-1] = mesh.x(index)
+        else:
+            x = np.empty((1, 1))
 
         time_steps = self._discretise_time_domain(ivp.t_interval)[1:]
 
@@ -253,7 +256,7 @@ class PINNOperator(Operator):
         """
         diff_eq = ivp.boundary_value_problem.differential_equation
 
-        assert 1 <= diff_eq.x_dimension <= 3
+        assert diff_eq.x_dimension <= 3
 
         deepxde_diff_eq = diff_eq.deepxde_equation
         initial_conditions = ivp.deepxde_initial_conditions
