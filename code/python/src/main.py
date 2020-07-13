@@ -62,6 +62,7 @@ def train_coarse_ml():
             'n_domain': 1200,
             'n_initial': 240,
             'n_boundary': 120,
+            'n_test': 120,
             'n_epochs': 10000,
             'optimiser': 'adam',
             'learning_rate': .001,

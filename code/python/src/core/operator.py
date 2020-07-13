@@ -263,10 +263,10 @@ class PINNOperator(Operator):
 
         n_domain = training_config['n_domain']
         n_initial = training_config['n_initial']
+        n_test = training_config.get('n_test', None)
         sample_distribution = training_config.get(
             'sample_distribution', 'random')
         solution_function = training_config.get('solution_function', None)
-        n_test = training_config.get('n_test', None)
 
         if diff_eq.x_dimension:
             boundary_conditions = ivp.deepxde_boundary_conditions
@@ -280,9 +280,9 @@ class PINNOperator(Operator):
                 num_domain=n_domain,
                 num_boundary=n_boundary,
                 num_initial=n_initial,
+                num_test=n_test,
                 train_distribution=sample_distribution,
-                solution=solution_function,
-                num_test=n_test)
+                solution=solution_function)
         else:
             data = PDE(
                 geometry=ivp.deepxde_time_domain,
@@ -290,9 +290,9 @@ class PINNOperator(Operator):
                 bcs=initial_conditions,
                 num_domain=n_domain,
                 num_boundary=n_initial,
+                num_test=n_test,
                 train_distribution=sample_distribution,
-                solution=solution_function,
-                num_test=n_test)
+                solution=solution_function)
 
         self._model = Model(data, network)
 
