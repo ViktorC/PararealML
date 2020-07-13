@@ -66,7 +66,7 @@ def train_coarse_ml():
             'n_epochs': 10000,
             'optimiser': 'adam',
             'learning_rate': .001,
-            'refine_with_bfgs': True
+            'scipy_optimiser': 'L-BFGS-B'
         })
 
 

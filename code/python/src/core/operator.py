@@ -304,7 +304,7 @@ class PINNOperator(Operator):
         batch_size = training_config.get('batch_size', None)
         self._model.train(epochs=n_epochs, batch_size=batch_size)
 
-        refine_with_bfgs = training_config.get('refine_with_bfgs', False)
-        if refine_with_bfgs:
-            self._model.compile('L-BFGS-B')
+        scipy_optimiser = training_config.get('scipy_optimiser', None)
+        if scipy_optimiser is not None:
+            self._model.compile(scipy_optimiser)
             self._model.train()
