@@ -4,7 +4,7 @@ from typing import Optional, Tuple, Union, Sequence
 
 import numpy as np
 import tensorflow as tf
-from fipy import TransientTerm, DiffusionTerm
+from fipy import TransientTerm, DiffusionTerm, CellVariable
 from fipy.terms.term import Term
 from tensorflow import Tensor
 
@@ -31,13 +31,6 @@ class DifferentialEquation(ABC):
         """
         Returns the dimension of the image of the differential equation's
         solution. If the solution is not vector-valued, its dimension is 1.
-        """
-
-    @property
-    @abstractmethod
-    def fipy_equation(self) -> Term:
-        """
-        Returns the FiPy equivalent of the differential equation.
         """
 
     @abstractmethod
@@ -76,7 +69,21 @@ class DifferentialEquation(ABC):
         """
 
     @abstractmethod
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        """
+        Returns the terms representing the FiPy equivalent of the differential
+        equation.
+
+        :param variables: the FiPy cell variables denoting the elements of y
+        :return: a sequence of FiPy terms representing the differential
+        equation (system)
+        """
+
+    @abstractmethod
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -117,10 +124,6 @@ class PopulationGrowthEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return 1
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -132,7 +135,13 @@ class PopulationGrowthEquation(DifferentialEquation):
     ) -> np.ndarray:
         return self._r * y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -176,10 +185,6 @@ class LotkaVolterraEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return 2
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -196,7 +201,13 @@ class LotkaVolterraEquation(DifferentialEquation):
         d_y[1] = self._gamma * r * p - self._delta * p
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -242,10 +253,6 @@ class LorenzEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return 3
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -264,7 +271,13 @@ class LorenzEquation(DifferentialEquation):
         d_y[2] = c * h - self._beta * v
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -317,10 +330,6 @@ class NBodyGravitationalEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return 2 * self._n_objects * self._dims
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -356,7 +365,13 @@ class NBodyGravitationalEquation(DifferentialEquation):
 
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -383,8 +398,6 @@ class DiffusionEquation(DifferentialEquation):
         self._x_dimension = x_dimension
         self._d = d
 
-        self._fipy_term = TransientTerm() == DiffusionTerm(coeff=d)
-
     @property
     def x_dimension(self) -> int:
         return self._x_dimension
@@ -392,10 +405,6 @@ class DiffusionEquation(DifferentialEquation):
     @property
     def y_dimension(self) -> int:
         return 1
-
-    @property
-    def fipy_equation(self) -> Term:
-        return self._fipy_term
 
     def d_y_over_d_t(
             self,
@@ -414,7 +423,13 @@ class DiffusionEquation(DifferentialEquation):
         return self._d * differentiator.laplacian(
             y, d_x, derivative_boundary_constraints)
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        return [TransientTerm() == DiffusionTerm(coeff=self._d)]
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -454,10 +469,6 @@ class WaveEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return 2
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -479,7 +490,13 @@ class WaveEquation(DifferentialEquation):
             y[..., [0]], d_x, derivative_boundary_constraints[..., [0]])
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -519,10 +536,6 @@ class MaxwellEquation(DifferentialEquation):
     def y_dimension(self) -> int:
         return self._x_dimension * 2
 
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
-
     def d_y_over_d_t(
             self,
             t: float,
@@ -554,7 +567,13 @@ class MaxwellEquation(DifferentialEquation):
         d_y[..., self._x_dimension:, np.newaxis] = d_m_over_d_t
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
@@ -594,10 +613,6 @@ class NavierStokesEquation(DifferentialEquation):
     @property
     def y_dimension(self) -> int:
         return 2
-
-    @property
-    def fipy_equation(self) -> Term:
-        raise NotImplementedError
 
     def d_y_over_d_t(
             self,
@@ -646,7 +661,13 @@ class NavierStokesEquation(DifferentialEquation):
         d_y[..., [1]] = updated_stream_function - stream_function
         return d_y
 
-    def deepxde_equation(
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        raise NotImplementedError
+
+    def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor

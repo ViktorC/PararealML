@@ -180,16 +180,14 @@ class FVMOperator(Operator):
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
 
-        fipy_diff_eq = diff_eq.fipy_equation
-
         time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
-            for j in range(diff_eq.y_dimension):
-                y_var_j = fipy_vars[j]
-                fipy_diff_eq.solve(var=y_var_j, dt=self._d_t)
-                y[i, ..., j] = y_var_j.value.reshape(mesh.shape)
+            fipy_terms = diff_eq.fipy_terms(fipy_vars)
+            for j, fipy_var in enumerate(fipy_vars):
+                fipy_terms[j].solve(var=fipy_var, dt=self._d_t)
+                y[i, ..., j] = fipy_var.value.reshape(mesh.shape)
 
         return y
 
@@ -258,7 +256,7 @@ class PINNOperator(Operator):
 
         assert diff_eq.x_dimension <= 3
 
-        deepxde_diff_eq = diff_eq.deepxde_equation
+        deepxde_diff_eq = diff_eq.deepxde_tensors
         initial_conditions = ivp.deepxde_initial_conditions
 
         n_domain = training_config['n_domain']
