@@ -95,9 +95,9 @@ class DifferentialEquation(ABC):
         """
 
 
-class RabbitPopulationEquation(DifferentialEquation):
+class PopulationGrowthEquation(DifferentialEquation):
     """
-    A simple ordinary differential equation modelling the growth of a rabbit
+    A simple ordinary differential equation modelling the growth of a
     population over time.
     """
 
@@ -201,8 +201,8 @@ class LotkaVolterraEquation(DifferentialEquation):
             x: Tensor,
             y: Tensor
     ) -> Union[Tensor, Sequence[Tensor]]:
-        r = y[:, :1]
-        p = y[:, 1:]
+        r = y[:, 0:1]
+        p = y[:, 1:2]
         d_r_over_d_t = tf.gradients(r, x)[0]
         d_p_over_d_t = tf.gradients(p, x)[0]
         return [
@@ -378,6 +378,8 @@ class DiffusionEquation(DifferentialEquation):
         differential equation's solution
         :param d: the diffusion coefficient
         """
+        assert x_dimension > 0
+
         self._x_dimension = x_dimension
         self._d = d
 
@@ -406,6 +408,8 @@ class DiffusionEquation(DifferentialEquation):
     ) -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
+        assert len(y.shape) - 1 == self._x_dimension
+        assert y.shape[-1] == 1
 
         return self._d * differentiator.laplacian(
             y, d_x, derivative_boundary_constraints)
@@ -437,6 +441,8 @@ class WaveEquation(DifferentialEquation):
         differential equation's solution
         :param c: the propagation speed coefficient
         """
+        assert x_dimension > 0
+
         self._x_dimension = x_dimension
         self._c = c
 
@@ -481,7 +487,7 @@ class WaveEquation(DifferentialEquation):
         raise NotImplementedError
 
 
-class MaxwellsEquation(DifferentialEquation):
+class MaxwellEquation(DifferentialEquation):
     """
     A system of two partial differential equations modelling the evolution of
     electric and magnetic fields assuming that there are no electric or
@@ -528,16 +534,20 @@ class MaxwellsEquation(DifferentialEquation):
     ) -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
-        assert len(y.shape) - 1 == 2
+        assert len(y.shape) - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         electric_field_strength = y[..., :self._x_dimension, np.newaxis]
         magnetic_field_strength = y[..., self._x_dimension:, np.newaxis]
 
         d_e_over_d_t = (1. / self._epsilon) * differentiator.curl(
-            electric_field_strength, d_x, derivative_boundary_constraints)
+            electric_field_strength,
+            d_x,
+            derivative_boundary_constraints[:, [0]])
         d_m_over_d_t = -(1. / self._mu) * differentiator.curl(
-            magnetic_field_strength, d_x, derivative_boundary_constraints)
+            magnetic_field_strength,
+            d_x,
+            derivative_boundary_constraints[:, [1]])
 
         d_y = np.empty(y.shape)
         d_y[..., :self._x_dimension, np.newaxis] = d_e_over_d_t
@@ -601,7 +611,7 @@ class NavierStokesEquation(DifferentialEquation):
         assert d_x is not None
         assert differentiator is not None
         assert derivative_boundary_constraints is not None
-        assert len(y.shape) - 1 == 2
+        assert len(y.shape) - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         vorticity = y[..., [0]]
