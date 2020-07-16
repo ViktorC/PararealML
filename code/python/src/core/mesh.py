@@ -88,7 +88,7 @@ class UniformGrid(Mesh):
             assert interval[1] > interval[0]
 
         self._x_intervals = deepcopy(x_intervals)
-        self._shape = self._calculate_shape(x_intervals, d_x)
+        self._shape = self._calculate_shape(d_x)
         self._x_offset = np.array([interval[0] for interval in x_intervals])
         self._d_x = np.array(copy(d_x))
         self._fipy_mesh = self._create_fipy_mesh()
@@ -117,6 +117,20 @@ class UniformGrid(Mesh):
     def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
         assert len(index) == len(self._shape)
         return tuple(self._x_offset + self._d_x * index)
+
+    def _calculate_shape(self, d_x: Tuple[float, ...]) -> Tuple[int, ...]:
+        """
+        Calculates the shape of the mesh.
+
+        :param d_x: the step sizes to use for each axis of the domain
+        :return: a tuple representing the shape of the mesh
+        """
+        shape = []
+        for i in range(len(self._x_intervals)):
+            x_interval = self._x_intervals[i]
+            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i] + 1))
+
+        return tuple(shape)
 
     def _create_fipy_mesh(self) -> FiPyAbstractMesh:
         """
@@ -178,22 +192,3 @@ class UniformGrid(Mesh):
             raise NotImplementedError
 
         return geometry
-
-    @staticmethod
-    def _calculate_shape(
-            x_intervals: Tuple[SpatialDomainInterval, ...],
-            d_x: Tuple[float, ...]
-    ) -> Tuple[int, ...]:
-        """
-        Calculates the shape of the mesh.
-
-        :param x_intervals: the bounds of each axis of the domain
-        :param d_x: the step sizes to use for each axis of the domain
-        :return: a tuple representing the shape of the mesh
-        """
-        shape = []
-        for i in range(len(x_intervals)):
-            x_interval = x_intervals[i]
-            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i] + 1))
-
-        return tuple(shape)
