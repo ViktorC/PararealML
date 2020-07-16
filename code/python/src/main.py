@@ -2,24 +2,27 @@ import math
 
 import numpy as np
 from deepxde.maps import FNN
+from fipy import LinearCGSSolver
 
 from mpi4py import MPI
 
-from src.core.boundary_condition import DirichletCondition, NeumannCondition
+from src.core.boundary_condition import NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
-from src.core.differential_equation import DiffusionEquation
-from src.core.initial_condition import GaussianInitialCondition
+from src.core.differential_equation import CahnHilliardEquation
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
+from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
+from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator, PINNOperator
+from src.core.operator import FVMOperator, PINNOperator, FDMOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_y_against_t, plot_phase_space, \
     plot_evolution_of_y
 from src.utils.time import time
 
 
-f = FVMOperator(.005)
-g = FVMOperator(.05)
+f = FVMOperator(LinearCGSSolver(), .01)
+g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
 g_ml = PINNOperator(.25)
 
 parareal = Parareal(f, g)
@@ -30,23 +33,20 @@ threshold = .1
 
 @time
 def create_ivp():
-    diff_eq = DiffusionEquation(2)
-    mesh = UniformGrid(((0., 1.), (0., 1.)), (.01, .01))
+    diff_eq = CahnHilliardEquation(2, 1., .01)
+    mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((NeumannCondition(lambda x: (0.,)),
-          NeumannCondition(lambda x: (0.,))),
-         (DirichletCondition(lambda x: (0.,)),
-          DirichletCondition(lambda x: (0.,)))))
-    ic = GaussianInitialCondition(
-        bvp,
-        ((np.array([.75, .75]),
-          np.array([[.3, .0], [.0, .3]])),),
-        [20.] * diff_eq.y_dimension)
+        ((NeumannCondition(lambda x: (0., 0.)),
+          NeumannCondition(lambda x: (0., 0.))),
+         (NeumannCondition(lambda x: (0., 0.)),
+          NeumannCondition(lambda x: (0., 0.)))))
+    ic = DiscreteInitialCondition(
+        .05 * np.random.uniform(-1., 1., bvp.y_shape))
     return InitialValueProblem(
         bvp,
-        (0., 1.),
+        (0., 5.),
         ic)
 
 
@@ -106,7 +106,8 @@ def plot_solution(solve_func):
                     y[..., i],
                     math.ceil(y.shape[0] / 20.),
                     100,
-                    f'evolution_{solve_func.__name__}_{i}')
+                    f'evolution_{solve_func.__name__}_{i}',
+                    False)
         else:
             print(f'According to {solve_func.__name__!r}, '
                   f'y({ivp.t_interval[1]})={y[-1]}')
@@ -115,10 +116,10 @@ def plot_solution(solve_func):
                 plot_phase_space(y, f'phase_space_{solve_func.__name__}')
 
 
-train_coarse_ml()
-plot_solution(solve_serial_coarse_ml)
-plot_solution(solve_parallel_ml)
+# train_coarse_ml()
+# plot_solution(solve_serial_coarse_ml)
+# plot_solution(solve_parallel_ml)
 
 plot_solution(solve_serial_fine)
 plot_solution(solve_serial_coarse)
-plot_solution(solve_parallel)
+# plot_solution(solve_parallel)

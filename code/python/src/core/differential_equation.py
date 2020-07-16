@@ -504,6 +504,92 @@ class WaveEquation(DifferentialEquation):
         raise NotImplementedError
 
 
+class CahnHilliardEquation(DifferentialEquation):
+    """
+    A partial differential equation modelling phase separation.
+    """
+
+    def __init__(
+            self,
+            x_dimension: int,
+            d: float,
+            gamma: float):
+        """
+        :param x_dimension: the dimension of the non-temporal domain of the
+        differential equation's solution
+        :param d: the potential diffusion coefficient
+        :param gamma: the concentration diffusion coefficient
+        """
+        assert x_dimension > 0
+
+        self._x_dimension = x_dimension
+        self._d = d
+        self._gamma = gamma
+
+    @property
+    def x_dimension(self) -> int:
+        return self._x_dimension
+
+    @property
+    def y_dimension(self) -> int:
+        return 2
+
+    def d_y_over_d_t(
+            self,
+            t: float,
+            y: np.ndarray,
+            d_x: Optional[Tuple[float, ...]] = None,
+            differentiator: Optional[Differentiator] = None,
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            solution_constraints: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        assert d_x is not None
+        assert differentiator is not None
+        assert len(y.shape) - 1 == self._x_dimension
+        assert y.shape[-1] == 2
+
+        potential = y[..., [0]]
+        concentration = y[..., [1]]
+
+        updated_potential = np.power(concentration, 3) - \
+            concentration - \
+            self._gamma * differentiator.laplacian(
+                concentration,
+                d_x,
+                derivative_boundary_constraints[:, [1]])
+
+        d_y = np.empty(y.shape)
+        d_y[..., [0]] = updated_potential - potential
+        d_y[..., [1]] = self._d * differentiator.laplacian(
+            potential,
+            d_x,
+            derivative_boundary_constraints[..., [0]])
+        return d_y
+
+    def fipy_terms(
+            self,
+            variables: Sequence[CellVariable]
+    ) -> Sequence[Term]:
+        potential_var = variables[0]
+        concentration_var = variables[1]
+
+        eq_0 = TransientTerm(var=potential_var) == \
+            concentration_var ** 3 - \
+            concentration_var - \
+            self._gamma * concentration_var.faceGrad.divergence - \
+            potential_var
+        eq_1 = TransientTerm(var=concentration_var) == \
+            self._d * potential_var.faceGrad.divergence
+        return [eq_0, eq_1]
+
+    def deepxde_tensors(
+            self,
+            x: Tensor,
+            y: Tensor
+    ) -> Union[Tensor, Sequence[Tensor]]:
+        raise NotImplementedError
+
+
 class MaxwellEquation(DifferentialEquation):
     """
     A system of two partial differential equations modelling the evolution of
