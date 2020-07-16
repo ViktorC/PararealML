@@ -139,9 +139,6 @@ class InitialValueProblem:
         """
         Creates the DeepXDE equivalent of the initial condition.
         """
-        if not self._initial_condition.is_well_defined:
-            return None
-
         geometry = self._deepxde_geometry_time_domain
         if geometry is None:
             geometry = self._deepxde_time_domain

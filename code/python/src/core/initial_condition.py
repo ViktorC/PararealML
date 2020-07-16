@@ -3,6 +3,7 @@ from copy import deepcopy, copy
 from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
+from scipy.interpolate import interpn
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
@@ -20,21 +21,11 @@ class InitialCondition(ABC):
         Returns the discretised initial values of y over a spatial mesh.
         """
 
-    @property
     @abstractmethod
-    def is_well_defined(self) -> bool:
-        """
-        Returns whether the initial conditions are well defined or approximated
-        over a mesh. In case of the latter, the y_0 function is not
-        implemented.
-        """
-
-    @abstractmethod
-    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
+    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         """
         Returns the initial value of y at the point in the spatial domain
-        defined by x. If the initial condition is not well-defined, it returns
-        None.
+        defined by x.
 
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
@@ -46,28 +37,60 @@ class DiscreteInitialCondition(InitialCondition):
     An initial condition defined by a fixed array of values.
     """
 
-    def __init__(self, y_0: np.ndarray):
+    def __init__(
+            self,
+            bvp: BoundaryValueProblem,
+            y_0: np.ndarray,
+            interpolation_method: str = 'linear'):
         """
+        :param bvp: the boundary value problem to turn into an initial value
+        problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
         mesh (which may be 0 dimensional in case of an ODE)
+        :param interpolation_method: the interpolation method to use to
+        calculate values that do not exactly fall on points of the y_0 grid
         """
+        assert y_0.shape == bvp.y_shape
+
+        self._bvp = bvp
         self._y_0 = np.copy(y_0)
+        apply_constraints_along_last_axis(bvp.y_constraints, self._y_0)
+
+        self._interpolation_method = interpolation_method
+        self._x_coordinates = self._create_x_coordinates()
 
     @property
     def discrete_y_0(self) -> np.ndarray:
         return np.copy(self._y_0)
 
-    @property
-    def is_well_defined(self) -> bool:
-        return False
+    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+        return interpn(
+            self._x_coordinates,
+            self._y_0,
+            np.asarray(x),
+            method=self._interpolation_method)[0, ...]
 
-    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
-        return None
+    def _create_x_coordinates(self) -> Tuple[np.ndarray, ...]:
+        """
+        Creates a tuple of arrays representing the coordinates along each axis
+        of the mesh.
+        """
+        mesh = self._bvp.mesh
+        mesh_shape = mesh.shape
+        x_intervals = mesh.x_intervals
+
+        x = []
+        for axis in range(self._bvp.differential_equation.x_dimension):
+            x_interval = x_intervals[axis]
+            x.append(
+                np.linspace(x_interval[0], x_interval[1], mesh_shape[axis]))
+
+        return tuple(x)
 
 
-class WellDefinedInitialCondition(InitialCondition):
+class ContinuousInitialCondition(InitialCondition):
     """
-    An initial condition defined explicitly by a function.
+    An initial condition defined by a function.
     """
 
     def __init__(
@@ -90,11 +113,7 @@ class WellDefinedInitialCondition(InitialCondition):
     def discrete_y_0(self) -> np.ndarray:
         return np.copy(self._discrete_y_0)
 
-    @property
-    def is_well_defined(self) -> bool:
-        return True
-
-    def y_0(self, x: Optional[Sequence[float]]) -> Optional[Sequence[float]]:
+    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_func(x)
 
     def _create_discrete_y_0(self) -> np.ndarray:
@@ -117,7 +136,7 @@ class WellDefinedInitialCondition(InitialCondition):
         return y_0
 
 
-class GaussianInitialCondition(WellDefinedInitialCondition):
+class GaussianInitialCondition(ContinuousInitialCondition):
     """
     An initial condition defined explicitly by Gaussian functions.
     """
