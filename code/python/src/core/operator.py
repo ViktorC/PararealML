@@ -6,6 +6,7 @@ from deepxde import Model, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
+from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
 
 from src.core.differentiator import Differentiator
@@ -156,11 +157,16 @@ class FVMOperator(Operator):
     solver using the FiPy library.
     """
 
-    def __init__(self, d_t: float):
+    def __init__(
+            self,
+            solver: Solver,
+            d_t: float):
         """
+        :param solver: the FiPy solver to use
         :param d_t: the temporal step size to use
         """
         assert d_t > 0.
+        self._solver = solver
         self._d_t = d_t
 
     @property
@@ -180,13 +186,19 @@ class FVMOperator(Operator):
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
 
+        fipy_terms = diff_eq.fipy_terms(fipy_vars)
+
         time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
-            fipy_terms = diff_eq.fipy_terms(fipy_vars)
+            for fipy_var in fipy_vars:
+                fipy_var.updateOld()
             for j, fipy_var in enumerate(fipy_vars):
-                fipy_terms[j].solve(var=fipy_var, dt=self._d_t)
+                fipy_terms[j].solve(
+                    var=fipy_var,
+                    dt=self._d_t,
+                    solver=self._solver)
                 y[i, ..., j] = fipy_var.value.reshape(mesh.shape)
 
         return y

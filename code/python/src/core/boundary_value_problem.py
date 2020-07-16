@@ -304,7 +304,8 @@ class BoundaryValueProblem:
         for i in range(self._diff_eq.y_dimension):
             y_var_i = CellVariable(
                 name=f'y_{i}',
-                mesh=self._mesh.fipy_mesh)
+                mesh=self._mesh.fipy_mesh,
+                hasOld=True)
 
             self._set_fipy_variable_constraints(
                 y_var_i, self._y_boundary_constraints[:, i])
