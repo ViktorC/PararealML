@@ -576,10 +576,10 @@ class CahnHilliardEquation(DifferentialEquation):
         eq_0 = TransientTerm(var=potential_var) == \
             concentration_var ** 3 - \
             concentration_var - \
-            self._gamma * concentration_var.faceGrad.divergence - \
+            DiffusionTerm(coeff=self._gamma, var=concentration_var) - \
             potential_var
         eq_1 = TransientTerm(var=concentration_var) == \
-            self._d * potential_var.faceGrad.divergence
+            DiffusionTerm(coeff=self._d, var=potential_var)
         return [eq_0, eq_1]
 
     def deepxde_tensors(
