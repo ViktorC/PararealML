@@ -587,7 +587,35 @@ class CahnHilliardEquation(DifferentialEquation):
             x: Tensor,
             y: Tensor
     ) -> Union[Tensor, Sequence[Tensor]]:
-        raise NotImplementedError
+        potential = y[:, 0:1]
+        concentration = y[:, 1:2]
+
+        d_potential_over_d_all_x = tf.gradients(potential, x)[0]
+        d_potential_over_d_t = d_potential_over_d_all_x[:, self._x_dimension:]
+        d_potential_over_d_x = d_potential_over_d_all_x[:, :self._x_dimension]
+        d_potential_over_d_xx = \
+            tf.gradients(d_potential_over_d_x, x)[0][:, :self._x_dimension]
+        potential_laplacian = tf.math.reduce_sum(
+            d_potential_over_d_xx, -1, True)
+
+        d_concentration_over_d_all_x = tf.gradients(concentration, x)[0]
+        d_concentration_over_d_t = \
+            d_concentration_over_d_all_x[:, self._x_dimension:]
+        d_concentration_over_d_x = \
+            d_concentration_over_d_all_x[:, :self._x_dimension]
+        d_concentration_over_d_xx = \
+            tf.gradients(d_concentration_over_d_x, x)[0][:, :self._x_dimension]
+        concentration_laplacian = tf.math.reduce_sum(
+            d_concentration_over_d_xx, -1, True)
+
+        updated_potential = tf.pow(concentration, 3) - \
+            concentration - \
+            self._gamma * concentration_laplacian
+
+        return [
+            d_potential_over_d_t - (updated_potential - potential),
+            d_concentration_over_d_t - (self._d * potential_laplacian)
+        ]
 
 
 class MaxwellEquation(DifferentialEquation):
