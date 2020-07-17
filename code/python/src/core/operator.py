@@ -236,7 +236,7 @@ class PINNOperator(Operator):
             n_points = np.prod(mesh_shape)
             x = np.empty((n_points, diff_eq.x_dimension + 1))
             for row_ind, index in enumerate(np.ndindex(mesh_shape)):
-                x[row_ind, :-1] = mesh.x_at_index(index)
+                x[row_ind, :-1] = mesh.x(index)
         else:
             x = np.empty((1, 1))
 
