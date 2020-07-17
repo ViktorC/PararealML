@@ -43,6 +43,7 @@ def create_ivp():
          (NeumannCondition(lambda x: (0., 0.)),
           NeumannCondition(lambda x: (0., 0.)))))
     ic = DiscreteInitialCondition(
+        bvp,
         .05 * np.random.uniform(-1., 1., bvp.y_shape))
     return InitialValueProblem(
         bvp,
