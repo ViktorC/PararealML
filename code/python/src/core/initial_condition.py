@@ -48,7 +48,8 @@ class DiscreteInitialCondition(InitialCondition):
         :param y_0: the array containing the initial values of y over a spatial
         mesh (which may be 0 dimensional in case of an ODE)
         :param interpolation_method: the interpolation method to use to
-        calculate values that do not exactly fall on points of the y_0 grid
+        calculate values that do not exactly fall on points of the y_0 grid; if
+        the BVP is that of an ODE, it is disregarded
         """
         assert y_0.shape == bvp.y_shape
 
@@ -64,11 +65,18 @@ class DiscreteInitialCondition(InitialCondition):
         return np.copy(self._y_0)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
-        return interpn(
-            self._x_coordinates,
-            self._y_0,
-            np.asarray(x),
-            method=self._interpolation_method)[0, ...]
+        x_dimension = self._bvp.differential_equation.x_dimension
+        if x_dimension:
+            assert x is not None
+            assert len(x) == x_dimension
+
+            return interpn(
+                self._x_coordinates,
+                self._y_0,
+                np.asarray(x),
+                method=self._interpolation_method)[0, ...]
+        else:
+            return np.copy(self._y_0)
 
     def _create_x_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
