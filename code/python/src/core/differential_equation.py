@@ -494,14 +494,42 @@ class WaveEquation(DifferentialEquation):
             self,
             variables: Sequence[CellVariable]
     ) -> Sequence[Term]:
-        raise NotImplementedError
+        displacement = variables[0]
+        displacement_first_order_time_derivative = variables[1]
+
+        eq_0 = TransientTerm(var=displacement) == \
+            displacement_first_order_time_derivative
+        eq_1 = TransientTerm(var=displacement_first_order_time_derivative) == \
+            DiffusionTerm(coeff=self._c ** 2, var=displacement)
+        return [eq_0, eq_1]
 
     def deepxde_tensors(
             self,
             x: Tensor,
             y: Tensor
     ) -> Union[Tensor, Sequence[Tensor]]:
-        raise NotImplementedError
+        displacement = y[:, 0:1]
+        displacement_first_order_time_derivative = y[:, 1:2]
+
+        d_displacement_over_d_all_x = tf.gradients(displacement, x)[0]
+        d_displacement_over_d_t = \
+            d_displacement_over_d_all_x[:, self._x_dimension:]
+        d_displacement_over_d_x = \
+            d_displacement_over_d_all_x[:, :self._x_dimension]
+        d_displacement_over_d_xx = \
+            tf.gradients(d_displacement_over_d_x, x)[0][:, :self._x_dimension]
+
+        d_displacement_first_order_time_derivative_d_t = \
+            tf.gradients(
+                displacement_first_order_time_derivative,
+                x
+            )[0][:, self._x_dimension:]
+
+        return [
+            d_displacement_over_d_t - displacement_first_order_time_derivative,
+            d_displacement_first_order_time_derivative_d_t -
+            ((self._c ** 2) * d_displacement_over_d_xx)
+        ]
 
 
 class CahnHilliardEquation(DifferentialEquation):
