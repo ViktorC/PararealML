@@ -30,7 +30,7 @@ def create_ivp():
         (0., .25, 0.) + (0., 5., 0.) + (0., -.25, .0))
     return InitialValueProblem(
         bvp,
-        (0., 10.),
+        (0., 20.),
         ic)
 
 
@@ -39,15 +39,18 @@ ivp = create_ivp()
 
 @time
 def train_coarse_ml():
+    diff_eq = ivp.boundary_value_problem.differential_equation
+    x_dim = diff_eq.x_dimension + 1
+    y_dim = diff_eq.y_dimension
     g_ml.train(
         ivp,
-        FNN([3] + [50] * 6 + [2], "tanh", "Glorot normal"),
+        FNN([x_dim] + [50] * 4 + [y_dim], "tanh", "Glorot normal"),
         {
             'n_domain': 3000,
             'n_initial': 400,
             'n_boundary': 200,
             'n_test': 200,
-            'n_epochs': 10000,
+            'n_epochs': 5000,
             'optimiser': 'adam',
             'learning_rate': .001,
             'scipy_optimiser': 'L-BFGS-B'

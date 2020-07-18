@@ -351,31 +351,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
             derivative_boundary_constraints: Optional[np.ndarray] = None,
             solution_constraints: Optional[np.ndarray] = None
     ) -> np.ndarray:
-        n_obj_by_dims = self._n_objects * self._dims
-
-        d_y = np.empty(self.y_dimension)
-        d_y[:n_obj_by_dims] = y[n_obj_by_dims:]
-
-        forces = np.zeros((self._n_objects, self._n_objects, self._dims))
-        for i in range(self._n_objects):
-            position_i = y[i * self._dims:(i + 1) * self._dims]
-            mass_i = self._masses[i]
-
-            for j in range(i + 1, self._n_objects):
-                position_j = y[j * self._dims:(j + 1) * self._dims]
-                mass_j = self._masses[j]
-                displacement = position_j - position_i
-                distance = np.linalg.norm(displacement)
-                force = (self._g * mass_i * mass_j / (distance ** 3)) * \
-                    displacement
-                forces[i, j, :] = force
-                forces[j, i, :] = -force
-
-            acceleration = forces[i, ...].sum(axis=0) / mass_i
-            d_y[n_obj_by_dims + i * self._dims:
-                n_obj_by_dims + (i + 1) * self._dims] = acceleration
-
-        return d_y
+        return self._calculate_d_y_over_d_t(y)
 
     def fipy_terms(
             self,
@@ -388,7 +364,61 @@ class NBodyGravitationalEquation(DifferentialEquation):
             x: Tensor,
             y: Tensor
     ) -> Union[Tensor, Sequence[Tensor]]:
-        raise NotImplementedError
+        # DeepXDE (0.8.3) does not support converting the tensors to NumPy
+        # arrays due to the undefined placeholders.
+        y_array = y.eval(session=tf.compat.v1.Session())
+        expected_d_y_over_d_t = tf.convert_to_tensor(
+            self._calculate_d_y_over_d_t(y_array))
+        return [
+            tf.gradients(y[:, y_ind:y_ind + 1], x)[0] -
+            expected_d_y_over_d_t[:, y_ind:y_ind + 1]
+            for y_ind in range(self.y_dimension)
+        ]
+
+    def _calculate_d_y_over_d_t(self, y: np.ndarray) -> np.ndarray:
+        """
+        Calculates the time derivatives of the positions and velocities of the
+        objects along each dimension.
+
+        :param y: the array specifying the positions and velocities of the
+        objects; it can either be a 1D array specifying the positions and
+        velocities at a single time point or a 2D array specifying them at
+        multiple time points
+        :return: the time derivatives of the positions and velocities of the
+        objects; same shape as y
+        """
+        assert 1 <= len(y.shape) <= 2
+        assert y.shape[-1] == self.y_dimension
+
+        n_obj_by_dims = self._n_objects * self._dims
+
+        d_y = np.empty(y.shape)
+        d_y[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
+
+        forces_shape = (y.shape[0],) if len(y.shape) == 2 else ()
+        forces_shape += (self._n_objects, self._n_objects, self._dims)
+        forces = np.zeros(forces_shape)
+
+        for i in range(self._n_objects):
+            position_i = y[..., i * self._dims:(i + 1) * self._dims]
+            mass_i = self._masses[i]
+
+            for j in range(i + 1, self._n_objects):
+                position_j = y[..., j * self._dims:(j + 1) * self._dims]
+                mass_j = self._masses[j]
+                displacement = position_j - position_i
+                distance = np.sqrt(np.power(displacement, 2).sum(axis=-1))
+                force = (self._g * mass_i * mass_j / np.power(distance, 3)) * \
+                    displacement
+                forces[..., i, j, :] = force
+                forces[..., j, i, :] = -force
+
+            acceleration = forces[..., i, :, :] \
+                .sum(axis=len(y.shape) - 1) / mass_i
+            d_y[..., n_obj_by_dims + i * self._dims:
+                n_obj_by_dims + (i + 1) * self._dims] = acceleration
+
+        return d_y
 
 
 class DiffusionEquation(DifferentialEquation):
