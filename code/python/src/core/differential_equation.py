@@ -304,11 +304,11 @@ class NBodyGravitationalEquation(DifferentialEquation):
     def __init__(
             self,
             dims: int,
-            masses: Tuple[float, ...],
+            masses: Sequence[float],
             g: float = 6.6743e-11):
         """
-        :param dims: the spatial the motion of the objects is to be considered
-        in (must be either 2 or 3)
+        :param dims: the spatial dimensionality the motion of the objects is to
+        be considered in (must be either 2 or 3)
         :param masses: a list of the masses of the objects (kg)
         :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
         """
@@ -318,7 +318,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
         for mass in masses:
             assert mass > 0
         self._dims = dims
-        self._masses = copy(masses)
+        self._masses = tuple(masses)
         self._n_objects = len(masses)
         self._g = g
 
@@ -329,6 +329,18 @@ class NBodyGravitationalEquation(DifferentialEquation):
     @property
     def y_dimension(self) -> int:
         return 2 * self._n_objects * self._dims
+
+    @property
+    def spatial_dimension(self) -> int:
+        return self._dims
+
+    @property
+    def masses(self) -> Tuple[float, ...]:
+        return copy(self._masses)
+
+    @property
+    def n_objects(self) -> int:
+        return self._n_objects
 
     def d_y_over_d_t(
             self,
@@ -344,7 +356,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
         d_y = np.empty(self.y_dimension)
         d_y[:n_obj_by_dims] = y[n_obj_by_dims:]
 
-        forces = np.empty((self._n_objects, self._n_objects, self._dims))
+        forces = np.zeros((self._n_objects, self._n_objects, self._dims))
         for i in range(self._n_objects):
             position_i = y[i * self._dims:(i + 1) * self._dims]
             mass_i = self._masses[i]
@@ -356,12 +368,12 @@ class NBodyGravitationalEquation(DifferentialEquation):
                 distance = np.linalg.norm(displacement)
                 force = (self._g * mass_i * mass_j / (distance ** 3)) * \
                     displacement
-                forces[i, j] = force
-                forces[j, i] = -force
+                forces[i, j, :] = force
+                forces[j, i, :] = -force
 
-            acceleration = forces[i, ...].sum(axis=1) / mass_i
-            d_y[n_obj_by_dims + i * self._n_objects:
-                n_obj_by_dims + (i + 1) * self._n_objects] = acceleration
+            acceleration = forces[i, ...].sum(axis=0) / mass_i
+            d_y[n_obj_by_dims + i * self._dims:
+                n_obj_by_dims + (i + 1) * self._dims] = acceleration
 
         return d_y
 
