@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#SBATCH --job-name=s1984842-parareal-ml
+#SBATCH --time=0:30:0
+#SBATCH --exclusive
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=36
+#SBATCH --cpus-per-task=1
+
+#SBATCH --account=d171-s1984842
+#SBATCH --partition=standard
+#SBATCH --qos=standard
+
+module load mpt
+
+cd $SLURM_SUBMIT_DIR
+
+export OMP_NUM_THREADS=1
+
+make install
+
+srun python3 -m mpi4py -m src.main
