@@ -67,7 +67,7 @@ class Parareal:
             coarse_ivp = InitialValueProblem(
                 bvp,
                 (t, time_slices[i + 1]),
-                DiscreteInitialCondition(y[i]))
+                DiscreteInitialCondition(bvp, y[i]))
             y[i + 1] = self._g.trace(coarse_ivp)[-1]
 
         my_y_trajectory = None
@@ -76,7 +76,7 @@ class Parareal:
             my_ivp = InitialValueProblem(
                 bvp,
                 (time_slices[comm.rank], time_slices[comm.rank + 1]),
-                DiscreteInitialCondition(y[comm.rank]))
+                DiscreteInitialCondition(bvp, y[comm.rank]))
 
             my_y_trajectory = self._f.trace(my_ivp)
             my_f_value = my_y_trajectory[-1]
@@ -96,7 +96,7 @@ class Parareal:
                 coarse_ivp = InitialValueProblem(
                     bvp,
                     (t, time_slices[j + 1]),
-                    DiscreteInitialCondition(y[j]))
+                    DiscreteInitialCondition(bvp, y[j]))
                 new_g_value = self._g.trace(coarse_ivp)[-1]
                 new_g_values[j] = new_g_value
 
