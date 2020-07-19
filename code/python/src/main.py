@@ -1,18 +1,25 @@
 from deepxde.maps import FNN
-from fipy import LinearCGSSolver
+from fipy import LinearLUSolver
 from mpi4py import MPI
 
+from src.core.boundary_condition import NeumannCondition, DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
-from src.core.differential_equation import NBodyGravitationalEquation
+from src.core.differential_equation import DiffusionEquation
+from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import FVMOperator, PINNOperator, ODEOperator
+from src.core.integrator import RK4
+from src.core.mesh import UniformGrid
+from src.core.operator import FVMOperator, PINNOperator, FDMOperator
 from src.core.parareal import Parareal
 from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
-f = FVMOperator(LinearCGSSolver(), .005)
-g = ODEOperator('DOP853', .001)
+f = FVMOperator(LinearLUSolver(), .05)
+g = FDMOperator(
+    RK4(),
+    ThreePointCentralFiniteDifferenceMethod(),
+    .0025)
 g_ml = PINNOperator(.01)
 
 parareal = Parareal(f, g)
@@ -23,14 +30,21 @@ threshold = .1
 
 @time
 def create_ivp():
-    diff_eq = NBodyGravitationalEquation(3, [5e10, 5e12, 5e10])
-    bvp = BoundaryValueProblem(diff_eq)
+    diff_eq = DiffusionEquation(2)
+    mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
+    bvp = BoundaryValueProblem(
+        diff_eq,
+        mesh,
+        ((DirichletCondition(lambda x: (1.,)),
+          DirichletCondition(lambda x: (-1.,))),
+         (NeumannCondition(lambda x: (.1,)),
+          NeumannCondition(lambda x: (.1,)))))
     ic = ContinuousInitialCondition(
-        bvp, lambda _: (-10., 0., 5.) + (0., 0., 0.) + (10., 0., -5.) +
-        (0., .25, 0.) + (0., 5., 0.) + (0., -.25, .0))
+        bvp,
+        lambda _: (0.,))
     return InitialValueProblem(
         bvp,
-        (0., 20.),
+        (0., 5.),
         ic)
 
 
@@ -92,6 +106,6 @@ def plot_solution(solve_func):
 # plot_solution(solve_serial_coarse_ml)
 # plot_solution(solve_parallel_ml)
 
-# plot_solution(solve_serial_fine)
+plot_solution(solve_serial_fine)
 plot_solution(solve_serial_coarse)
-# plot_solution(solve_parallel)
+plot_solution(solve_parallel)
