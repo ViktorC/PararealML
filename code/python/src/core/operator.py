@@ -47,16 +47,20 @@ class Operator(ABC):
         :return: the discretised solution of the IVP
         """
 
-    def _discretise_time_domain(self, t: TemporalDomainInterval) -> np.ndarray:
+    @staticmethod
+    def _discretise_time_domain(
+            t: TemporalDomainInterval,
+            d_t: float
+    ) -> np.ndarray:
         """
-        Returns a discretisation of the interval [t_a, t_b^) using the temporal
-        step size of the operator d_t, where t_b^ = t_a + n * d_t and n E Z,
+        Returns a discretisation of the interval [t_a, t_b^) using the provided
+        temporal step size d_t, where t_b^ = t_a + n * d_t and n E Z,
         n = argmin |t_b^ - t_b|.
 
         :param t: the time interval to discretise
+        :param d_t: the temporal step size
         :return: the array containing the discretised temporal domain
         """
-        d_t = self.d_t
         t_0 = t[0]
         steps = round((t[1] - t_0) / d_t)
         t_1 = t_0 + steps * d_t
@@ -91,7 +95,7 @@ class ODEOperator(Operator):
         assert diff_eq.x_dimension == 0
 
         t_interval = ivp.t_interval
-        time_steps = self._discretise_time_domain(t_interval)
+        time_steps = self._discretise_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_steps[0], time_steps[-1])
 
         result = solve_ivp(
@@ -144,7 +148,8 @@ class FDMOperator(Operator):
                 d_y_boundary_constraints,
                 y_constraints)
 
-        time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
+        time_steps = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         y_i = ivp.initial_condition.discrete_y_0
@@ -198,7 +203,8 @@ class FVMOperator(Operator):
 
         fipy_terms = diff_eq.fipy_terms(fipy_vars)
 
-        time_steps = self._discretise_time_domain(ivp.t_interval)[:-1]
+        time_steps = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)[:-1]
 
         y = np.empty((len(time_steps),) + bvp.y_shape)
         for i, t_i in enumerate(time_steps):
@@ -220,12 +226,17 @@ class MLOperator(Operator, ABC):
     differential equations
     """
 
-    def __init__(self, d_t: float):
+    def __init__(self, d_t: float, batch_mode: bool = True):
         """
         :param d_t: the temporal step size to use
+        :param batch_mode: whether the operator is to perform a single
+        prediction to evaluate the solution at all coordinates using input
+        batching; this can be very memory intensive depending on the temporal
+        step size
         """
         assert d_t > 0.
         self._d_t = d_t
+        self._batch_mode = batch_mode
         self._model: Optional[Union[Regressor, Model]] = None
 
     @property
@@ -246,16 +257,45 @@ class MLOperator(Operator, ABC):
         bvp = ivp.boundary_value_problem
 
         x = self._create_input_placeholder(bvp)
-        time_steps = self._discretise_time_domain(ivp.t_interval)[1:]
+        time_steps = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)[1:]
 
         y_shape = bvp.y_shape
-        y = np.empty((len(time_steps),) + bvp.y_shape)
-        for i, t_i in enumerate(time_steps):
-            x[:, -1] = t_i
-            y_hat = self._model.predict(x)
-            y[i, ...] = y_hat.reshape(y_shape)
+        all_y_shape = (len(time_steps),) + y_shape
+
+        if self._batch_mode:
+            x_batch = self._create_input_batch(x, time_steps)
+            y_hat_batch = self._model.predict(x_batch)
+            y = y_hat_batch.reshape(all_y_shape)
+        else:
+            y = np.empty(all_y_shape)
+            for i, t_i in enumerate(time_steps):
+                x[:, -1] = t_i
+                y_hat = self._model.predict(x)
+                y[i, ...] = y_hat.reshape(y_shape)
 
         return y
+
+    @staticmethod
+    def _create_input_batch(
+            input_placeholder: np.ndarray,
+            discretised_time_domain: np.ndarray) -> np.ndarray:
+        """
+        Creates a 2D array of inputs with a shape of
+        (n_mesh_points * n_time_points, x_dimension + 1).
+
+        :param input_placeholder: the placeholder array for the inputs
+        :param discretised_time_domain: the discretised time domain of the IVP
+        to create inputs for
+        :return: a batch of all inputs
+        """
+        n_mesh_points = input_placeholder.shape[0]
+
+        x = np.repeat(input_placeholder, len(discretised_time_domain), axis=0)
+        t = np.repeat(discretised_time_domain, n_mesh_points)
+        x[:, -1] = t
+
+        return x
 
     @staticmethod
     def _create_input_placeholder(bvp: BoundaryValueProblem) -> np.ndarray:
@@ -305,19 +345,16 @@ class RegressionOperator(MLOperator):
         :param oracle: the operator providing the training data
         :param model: the model to fit to the training data
         """
+        t = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
         x = self._create_input_placeholder(ivp.boundary_value_problem)
-        t = self._discretise_time_domain(ivp.t_interval)
-
-        x = np.repeat(x, len(t), axis=0)
-        t = np.repeat(t, np.prod(ivp.boundary_value_problem.mesh.shape))
-        x[:, -1] = t
+        x_batch = self._create_input_batch(x, t)
 
         y_0 = ivp.initial_condition.discrete_y_0.reshape(
             1, *ivp.boundary_value_problem.y_shape)
-        y = np.concatenate((y_0, oracle.trace(ivp)), axis=0)
-        y = y.reshape((-1, y.shape[-1]))
+        y_batch = np.concatenate((y_0, oracle.trace(ivp)), axis=0)
+        y_batch = y_batch.reshape((-1, y_batch.shape[-1]))
 
-        model.fit(x, y)
+        model.fit(x_batch, y_batch)
 
         self._model = model
 
