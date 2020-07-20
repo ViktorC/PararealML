@@ -358,6 +358,8 @@ class RegressionOperator(MLOperator):
         y_batch = np.concatenate((y_0, oracle.trace(ivp)), axis=0)
         y_batch = y_batch.reshape((-1, y_batch.shape[-1]))
 
+        # TODO: shuffle data
+
         model.fit(x_batch, y_batch)
 
         self._model = model
