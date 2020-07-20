@@ -191,10 +191,11 @@ class FVMOperator(Operator):
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
-        mesh = bvp.mesh
 
         assert 1 <= diff_eq.x_dimension <= 3
 
+        mesh = bvp.mesh
+        y_constraints = bvp.y_constraints
         y_0 = ivp.initial_condition.discrete_y_0
 
         fipy_vars = bvp.fipy_vars
@@ -215,7 +216,10 @@ class FVMOperator(Operator):
                     var=fipy_var,
                     dt=self._d_t,
                     solver=self._solver)
-                y[i, ..., j] = fipy_var.value.reshape(mesh.shape)
+                y_i_j = fipy_var.value.reshape(mesh.shape)
+                y_constraints[j].apply(y_i_j)
+                fipy_var.setValue(y_i_j.flatten())
+                y[i, ..., j] = y_i_j
 
         return y
 
