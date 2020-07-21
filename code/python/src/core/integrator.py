@@ -87,18 +87,16 @@ class RK4(Integrator):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraints: Optional[Sequence[Constraint]] = None
     ) -> np.ndarray:
-        k1 = apply_constraints_along_last_axis(
-            y_constraints,
-            d_t * d_y_over_d_t(t, y))
-        k2 = apply_constraints_along_last_axis(
-            y_constraints,
-            d_t * d_y_over_d_t(t + d_t / 2., y + k1 / 2.))
-        k3 = apply_constraints_along_last_axis(
-            y_constraints,
-            d_t * d_y_over_d_t(t + d_t / 2., y + k2 / 2.))
-        k4 = apply_constraints_along_last_axis(
-            y_constraints,
-            d_t * d_y_over_d_t(t + d_t, y + k3))
+        k1 = d_t * d_y_over_d_t(t, y)
+        k2 = d_t * d_y_over_d_t(
+            t + d_t / 2.,
+            apply_constraints_along_last_axis(y_constraints, y + k1 / 2.))
+        k3 = d_t * d_y_over_d_t(
+            t + d_t / 2.,
+            apply_constraints_along_last_axis(y_constraints, y + k2 / 2.))
+        k4 = d_t * d_y_over_d_t(
+            t + d_t,
+            apply_constraints_along_last_axis(y_constraints, y + k3))
         return apply_constraints_along_last_axis(
             y_constraints,
             y + (k1 + 2 * k2 + 2 * k3 + k4) / 6)
