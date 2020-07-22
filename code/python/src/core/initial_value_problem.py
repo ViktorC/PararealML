@@ -25,8 +25,12 @@ class InitialValueProblem:
             bvp: BoundaryValueProblem,
             t_interval: TemporalDomainInterval,
             initial_condition: InitialCondition,
-            exact_y: Optional[Callable[
-                [InitialValueProblem, float, np.ndarray], np.ndarray]] = None):
+            exact_y: Optional[
+                Callable[
+                    [InitialValueProblem, float, Sequence[float]],
+                    Sequence[float]
+                ]
+            ] = None):
         """
         :param bvp: the boundary value problem instance
         :param t_interval: the bounds of the time domain of the initial value
@@ -123,8 +127,8 @@ class InitialValueProblem:
     def exact_y(
             self,
             t: float,
-            x: Optional[np.ndarray] = None
-    ) -> Optional[np.ndarray]:
+            x: Optional[Sequence[float]] = None
+    ) -> Optional[Sequence[float]]:
         """
         Returns the exact value of y(t, x).
 
