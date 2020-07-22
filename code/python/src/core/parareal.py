@@ -24,6 +24,7 @@ class Parareal:
         """
         assert f.vertex_oriented == g.vertex_oriented or \
             (f.vertex_oriented is None or g.vertex_oriented is None)
+        assert np.isclose(g.d_t, f.d_t * round(g.d_t / f.d_t))
 
         self._f = f
         self._g = g
