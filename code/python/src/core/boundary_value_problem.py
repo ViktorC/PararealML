@@ -179,13 +179,14 @@ class BoundaryValueProblem:
         """
         return copy(self._fipy_vars)
 
-    def y_shape(self, vertex_oriented: bool):
+    def y_shape(self, vertex_oriented: Optional[bool] = None):
         """
         Returns the shape of the array of the array representing the
         discretised solution to the BVP.
 
         :param vertex_oriented: whether the solution is to be evaluated at the
-        vertices or the cells of the discretised spatial domain
+        vertices or the cells of the discretised spatial domain; if the BVP is
+        an ODE, it can be None
         :return: the shape of result evaluated at the vertices or the cells
         """
         return copy(
