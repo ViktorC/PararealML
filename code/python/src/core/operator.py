@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Union
 
 import numpy as np
-from deepxde import Model, IC
+from deepxde import Model as PINNModel, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
@@ -18,11 +18,11 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
 from src.core.integrator import Integrator
 
-SKLearnRegressor = Union[
+SKLearnRegressionModel = Union[
     tuple([_class for name, _class in all_estimators()
            if issubclass(_class, RegressorMixin)])
 ]
-Regressor = Union[SKLearnRegressor, KerasRegressor]
+RegressionModel = Union[SKLearnRegressionModel, KerasRegressor]
 
 
 class Operator(ABC):
@@ -36,6 +36,15 @@ class Operator(ABC):
     def d_t(self) -> float:
         """
         Returns the temporal step size of the operator.
+        """
+
+    @property
+    @abstractmethod
+    def vertex_oriented(self) -> Optional[bool]:
+        """
+        Returns whether the operator evaluates the solutions at the vertices
+        of the spatial mesh or at the cell centers. If the operator is only an
+        ODE solver, it can return None.
         """
 
     @abstractmethod
@@ -88,6 +97,10 @@ class ODEOperator(Operator):
     def d_t(self) -> float:
         return self._d_t
 
+    @property
+    def vertex_oriented(self) -> Optional[bool]:
+        return None
+
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
@@ -101,7 +114,7 @@ class ODEOperator(Operator):
         result = solve_ivp(
             diff_eq.d_y_over_d_t,
             adjusted_t_interval,
-            ivp.initial_condition.discrete_y_0,
+            ivp.initial_condition.discrete_y_0(True),
             self._method,
             time_steps[1:])
         y = np.ascontiguousarray(result.y.T)
@@ -132,12 +145,16 @@ class FDMOperator(Operator):
     def d_t(self) -> float:
         return self._d_t
 
+    @property
+    def vertex_oriented(self) -> Optional[bool]:
+        return True
+
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
         d_x = bvp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = bvp.y_constraints
-        d_y_boundary_constraints = bvp.d_y_boundary_constraints
+        y_constraints = bvp.y_vertex_constraints
+        d_y_boundary_constraints = bvp.d_y_boundary_vertex_constraints
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return diff_eq.d_y_over_d_t(
@@ -151,8 +168,8 @@ class FDMOperator(Operator):
         time_steps = self._discretise_time_domain(
             ivp.t_interval, self._d_t)[:-1]
 
-        y = np.empty((len(time_steps),) + bvp.y_shape)
-        y_i = ivp.initial_condition.discrete_y_0
+        y = np.empty((len(time_steps),) + bvp.y_vertices_shape)
+        y_i = ivp.initial_condition.discrete_y_0(True)
 
         for i, t_i in enumerate(time_steps):
             y_i = self._integrator.integral(
@@ -188,6 +205,10 @@ class FVMOperator(Operator):
     def d_t(self) -> float:
         return self._d_t
 
+    @property
+    def vertex_oriented(self) -> Optional[bool]:
+        return False
+
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
@@ -195,8 +216,8 @@ class FVMOperator(Operator):
         assert 1 <= diff_eq.x_dimension <= 3
 
         mesh = bvp.mesh
-        y_constraints = bvp.y_constraints
-        y_0 = ivp.initial_condition.discrete_y_0
+        mesh_shape = mesh.shape(False)
+        y_0 = ivp.initial_condition.discrete_y_0(False)
 
         fipy_vars = bvp.fipy_vars
         for i, fipy_var in enumerate(fipy_vars):
@@ -207,7 +228,7 @@ class FVMOperator(Operator):
         time_steps = self._discretise_time_domain(
             ivp.t_interval, self._d_t)[:-1]
 
-        y = np.empty((len(time_steps),) + bvp.y_shape)
+        y = np.empty((len(time_steps),) + bvp.y_cells_shape)
         for i, t_i in enumerate(time_steps):
             for fipy_var in fipy_vars:
                 fipy_var.updateOld()
@@ -216,10 +237,7 @@ class FVMOperator(Operator):
                     var=fipy_var,
                     dt=self._d_t,
                     solver=self._solver)
-                y_i_j = fipy_var.value.reshape(mesh.shape)
-                y_constraints[j].apply(y_i_j)
-                fipy_var.setValue(y_i_j.flatten())
-                y[i, ..., j] = y_i_j
+                y[i, ..., j] = fipy_var.value.reshape(mesh_shape)
 
         return y
 
@@ -230,9 +248,14 @@ class MLOperator(Operator, ABC):
     differential equations
     """
 
-    def __init__(self, d_t: float, batch_mode: bool = True):
+    def __init__(
+            self,
+            d_t: float,
+            vertex_oriented: bool,
+            batch_mode: bool = True):
         """
         :param d_t: the temporal step size to use
+        :param vertex_oriented:
         :param batch_mode: whether the operator is to perform a single
         prediction to evaluate the solution at all coordinates using input
         batching; this can be very memory intensive depending on the temporal
@@ -240,19 +263,24 @@ class MLOperator(Operator, ABC):
         """
         assert d_t > 0.
         self._d_t = d_t
+        self._vertex_oriented = vertex_oriented
         self._batch_mode = batch_mode
-        self._model: Optional[Union[Regressor, Model]] = None
+        self._model: Optional[Union[RegressionModel, PINNModel]] = None
 
     @property
     def d_t(self) -> float:
         return self._d_t
 
     @property
-    def model(self) -> Optional[Union[Regressor, Model]]:
+    def vertex_oriented(self) -> Optional[bool]:
+        return self._vertex_oriented
+
+    @property
+    def model(self) -> Optional[Union[RegressionModel, PINNModel]]:
         return self._model
 
     @model.setter
-    def model(self, model: Optional[Union[Regressor, Model]]):
+    def model(self, model: Optional[Union[RegressionModel, PINNModel]]):
         self._model = model
 
     def trace(self, ivp: InitialValueProblem) -> np.ndarray:
@@ -264,7 +292,7 @@ class MLOperator(Operator, ABC):
         time_steps = self._discretise_time_domain(
             ivp.t_interval, self._d_t)[1:]
 
-        y_shape = bvp.y_shape
+        y_shape = bvp.y_shape(self._vertex_oriented)
         all_y_shape = (len(time_steps),) + y_shape
 
         if self._batch_mode:
@@ -280,10 +308,40 @@ class MLOperator(Operator, ABC):
 
         return y
 
+    def _create_input_placeholder(
+            self,
+            bvp: BoundaryValueProblem
+    ) -> np.ndarray:
+        """
+        Creates a placeholder array for the ML model inputs. If the BVP is an
+        ODE, it returns an empty array of shape (1, 1) into which t can be
+        substituted to create x. If the BVP is a PDE, it returns an array of
+        shape (n_mesh_points, x_dimension + 1) whose each row is populated with
+        the spatial coordinates of the corresponding mesh point in addition to
+        an empty column for t.
+
+        :param bvp: the boundary value problem to base the
+        :return: the placeholder array for the ML inputs
+        """
+        diff_eq = bvp.differential_equation
+
+        if diff_eq.x_dimension:
+            mesh = bvp.mesh
+            mesh_shape = mesh.shape(self._vertex_oriented)
+            n_points = np.prod(mesh_shape)
+            x = np.empty((n_points, diff_eq.x_dimension + 1))
+            for row_ind, index in enumerate(np.ndindex(mesh_shape)):
+                x[row_ind, :-1] = mesh.x(index, self._vertex_oriented)
+        else:
+            x = np.empty((1, 1))
+
+        return x
+
     @staticmethod
     def _create_input_batch(
             input_placeholder: np.ndarray,
-            discretised_time_domain: np.ndarray) -> np.ndarray:
+            discretised_time_domain: np.ndarray
+    ) -> np.ndarray:
         """
         Creates a 2D array of inputs with a shape of
         (n_mesh_points * n_time_points, x_dimension + 1).
@@ -301,33 +359,6 @@ class MLOperator(Operator, ABC):
 
         return x
 
-    @staticmethod
-    def _create_input_placeholder(bvp: BoundaryValueProblem) -> np.ndarray:
-        """
-        Creates a placeholder array for the ML model inputs. If the BVP is an
-        ODE, it returns an empty array of shape (1, 1) into which t can be
-        substituted to create x. If the BVP is a PDE, it returns an array of
-        shape (n_mesh_points, x_dimension + 1) whose each row is populated with
-        the spatial coordinates of the corresponding mesh point in addition to
-        an empty column for t.
-
-        :param bvp: the boundary value problem to base the
-        :return: the placeholder array for the ML inputs
-        """
-        diff_eq = bvp.differential_equation
-
-        if diff_eq.x_dimension:
-            mesh = bvp.mesh
-            mesh_shape = mesh.shape
-            n_points = np.prod(mesh_shape)
-            x = np.empty((n_points, diff_eq.x_dimension + 1))
-            for row_ind, index in enumerate(np.ndindex(mesh_shape)):
-                x[row_ind, :-1] = mesh.x(index)
-        else:
-            x = np.empty((1, 1))
-
-        return x
-
 
 class RegressionOperator(MLOperator):
     """
@@ -339,7 +370,7 @@ class RegressionOperator(MLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: Regressor):
+            model: RegressionModel):
         """
         Fits a regression model to training data generated by the solving the
         provided IVP using the oracle. It keeps the fitted model for use by the
@@ -353,8 +384,8 @@ class RegressionOperator(MLOperator):
         x = self._create_input_placeholder(ivp.boundary_value_problem)
         x_batch = self._create_input_batch(x, t)
 
-        y_0 = ivp.initial_condition.discrete_y_0.reshape(
-            1, *ivp.boundary_value_problem.y_shape)
+        y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        y_0 = y_0.reshape((1,) + y_0.shape)
         y_batch = np.concatenate((y_0, oracle.trace(ivp)), axis=0)
         y_batch = y_batch.reshape((-1, y_batch.shape[-1]))
 
@@ -424,7 +455,7 @@ class PINNOperator(MLOperator):
                 train_distribution=sample_distribution,
                 solution=solution_function)
 
-        self._model = Model(data, network)
+        self._model = PINNModel(data, network)
 
         optimiser = training_config['optimiser']
         learning_rate = training_config.get('learning_rate', None)

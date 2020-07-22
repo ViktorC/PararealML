@@ -19,7 +19,7 @@ def test_1d_continuous_initial_condition():
             bvp,
             lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
 
-    y_0 = initial_condition.discrete_y_0
+    y_0 = initial_condition.discrete_y_0(True)
 
     assert y_0[0, 0] == 0.
     assert y_0[-1, 0] == 1.5
@@ -39,7 +39,8 @@ def test_2d_discrete_initial_condition():
           DirichletCondition(lambda x: (4., 2.)))))
     initial_condition = DiscreteInitialCondition(
         bvp,
-        np.zeros((3, 3, 2)))
+        np.zeros((3, 3, 2)),
+        True)
 
     y = initial_condition.y_0((1.5, .5))
 

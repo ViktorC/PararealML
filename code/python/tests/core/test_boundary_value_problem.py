@@ -15,11 +15,13 @@ def test_bvp_with_ode():
     bvp = BoundaryValueProblem(diff_eq)
 
     assert bvp.mesh is None
-    assert bvp.y_constraints is None
-    assert bvp.y_boundary_constraints is None
-    assert bvp.d_y_boundary_constraints is None
+    assert bvp.y_vertex_constraints is None
+    assert bvp.y_boundary_vertex_constraints is None
+    assert bvp.y_boundary_cell_constraints is None
+    assert bvp.d_y_boundary_vertex_constraints is None
+    assert bvp.d_y_boundary_cell_constraints is None
     assert bvp.boundary_conditions is None
-    assert bvp.y_shape == (diff_eq.y_dimension,)
+    assert bvp.y_shape(True) == bvp.y_shape(False) == (diff_eq.y_dimension,)
 
 
 def test_2d_bvp():
@@ -35,8 +37,8 @@ def test_2d_bvp():
          (NeumannCondition(lambda x: (-x[0], None)),
           DirichletCondition(lambda x: (x[0], -999.)))))
 
-    y = np.full(bvp.y_shape, 13.)
-    apply_constraints_along_last_axis(bvp.y_constraints, y)
+    y = np.full(bvp.y_shape(True), 13.)
+    apply_constraints_along_last_axis(bvp.y_vertex_constraints, y)
 
     assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
     assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)
@@ -47,9 +49,9 @@ def test_2d_bvp():
         np.linspace(0, (y.shape[0] - 1) * mesh.d_x[0], y.shape[0])).all()
     assert np.all(y[:, y.shape[1] - 1, 1] == -999.)
 
-    y = np.zeros(bvp.y_shape)
+    y = np.zeros(bvp.y_shape(True))
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_y_boundary_constraints = bvp.d_y_boundary_constraints
+    d_y_boundary_constraints = bvp.d_y_boundary_vertex_constraints
 
     d_y_0_d_x_0 = diff.derivative(
         y, mesh.d_x[0], 0, 0, d_y_boundary_constraints[0, 0])
@@ -85,7 +87,7 @@ def test_3d_bvp():
 
     fipy_mesh: UniformGrid3D = mesh.fipy_mesh
 
-    assert fipy_mesh.shape[::-1] == mesh.shape == (41, 31, 5)
+    assert fipy_mesh.shape[::-1] == mesh.shape(False) == (40, 30, 4)
 
     diff_eq = DiffusionEquation(3)
     bvp = BoundaryValueProblem(

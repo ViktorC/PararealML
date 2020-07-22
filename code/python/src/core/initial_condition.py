@@ -14,13 +14,6 @@ class InitialCondition(ABC):
     A base class for initial conditions.
     """
 
-    @property
-    @abstractmethod
-    def discrete_y_0(self) -> np.ndarray:
-        """
-        Returns the discretised initial values of y over a spatial mesh.
-        """
-
     @abstractmethod
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         """
@@ -29,6 +22,17 @@ class InitialCondition(ABC):
 
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
+        """
+
+    @abstractmethod
+    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+        """
+        Returns the discretised initial values of y evaluated at the vertices
+        or cell centers of the spatial mesh.
+
+        :param vertex_oriented: whether the initial conditions are to be
+        evaluated at the vertices or cell centers of the spatial mesh
+        :return: the discretised initial values
         """
 
 
@@ -41,28 +45,32 @@ class DiscreteInitialCondition(InitialCondition):
             self,
             bvp: BoundaryValueProblem,
             y_0: np.ndarray,
+            vertex_oriented: bool,
             interpolation_method: str = 'linear'):
         """
         :param bvp: the boundary value problem to turn into an initial value
         problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
         mesh (which may be 0 dimensional in case of an ODE)
+        :param vertex_oriented: whether the initial conditions are evaluated at
+        the vertices or cell centers of the spatial mesh; it the BVP is an ODE,
+        it is disregarded
         :param interpolation_method: the interpolation method to use to
         calculate values that do not exactly fall on points of the y_0 grid; if
         the BVP is that of an ODE, it is disregarded
         """
-        assert y_0.shape == bvp.y_shape
+        assert y_0.shape == bvp.y_shape(vertex_oriented)
 
         self._bvp = bvp
         self._y_0 = np.copy(y_0)
-        apply_constraints_along_last_axis(bvp.y_constraints, self._y_0)
+        if vertex_oriented:
+            apply_constraints_along_last_axis(
+                bvp.y_vertex_constraints, self._y_0)
 
+        self._vertex_oriented = vertex_oriented
         self._interpolation_method = interpolation_method
-        self._x_coordinates = self._create_x_coordinates()
 
-    @property
-    def discrete_y_0(self) -> np.ndarray:
-        return np.copy(self._y_0)
+        self._x_coordinates = bvp.mesh.coordinates(vertex_oriented)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         x_dimension = self._bvp.differential_equation.x_dimension
@@ -78,22 +86,27 @@ class DiscreteInitialCondition(InitialCondition):
         else:
             return np.copy(self._y_0)
 
-    def _create_x_coordinates(self) -> Tuple[np.ndarray, ...]:
-        """
-        Creates a tuple of arrays representing the coordinates along each axis
-        of the mesh.
-        """
+    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+        if (self._bvp.differential_equation.x_dimension == 0) \
+                or (self._vertex_oriented == vertex_oriented):
+            return np.copy(self._y_0)
+
+        if not self._vertex_oriented and vertex_oriented:
+            raise ValueError('can\'t extrapolate from cell oriented discrete '
+                             'y_0 to vertex oriented discrete y_0')
+
         mesh = self._bvp.mesh
-        mesh_shape = mesh.shape
-        x_intervals = mesh.x_intervals
 
-        x = []
-        for axis in range(self._bvp.differential_equation.x_dimension):
-            x_interval = x_intervals[axis]
-            x.append(
-                np.linspace(x_interval[0], x_interval[1], mesh_shape[axis]))
+        y_0 = np.empty(self._bvp.y_shape(not self._vertex_oriented))
+        for index in np.ndindex(y_0.shape[:-1]):
+            y_0[(*index, slice(None))] = self.y_0(
+                mesh.x(index, vertex_oriented))
 
-        return tuple(x)
+        if vertex_oriented:
+            apply_constraints_along_last_axis(
+                self._bvp.y_vertex_constraints, y_0)
+
+        return y_0
 
 
 class ContinuousInitialCondition(InitialCondition):
@@ -115,29 +128,38 @@ class ContinuousInitialCondition(InitialCondition):
         """
         self._bvp = bvp
         self._y_0_func = y_0_func
-        self._discrete_y_0 = self._create_discrete_y_0()
-
-    @property
-    def discrete_y_0(self) -> np.ndarray:
-        return np.copy(self._discrete_y_0)
+        self._discrete_y_0_vertices = self._create_discrete_y_0(True)
+        self._discrete_y_0_cells = self._create_discrete_y_0(False)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_func(x)
 
-    def _create_discrete_y_0(self) -> np.ndarray:
+    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+        return np.copy(
+            self._discrete_y_0_vertices if vertex_oriented
+            else self._discrete_y_0_cells)
+
+    def _create_discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
         """
-        Creates the discretised initial values of y over the spatial mesh of
-        the BVP associated with the initial condition.
+        Creates the discretised initial values of y evaluated at the vertices
+        or cell centers of the spatial mesh.
+
+        :param vertex_oriented: whether the initial conditions are to be
+        evaluated at the vertices or cell centers of the spatial mesh
+        :return: the discretised initial values
         """
         diff_eq = self._bvp.differential_equation
         if diff_eq.x_dimension:
             mesh = self._bvp.mesh
 
-            y_0 = np.empty(self._bvp.y_shape)
-            for index in np.ndindex(mesh.shape):
-                y_0[(*index, slice(None))] = self._y_0_func(mesh.x(index))
+            y_0 = np.empty(self._bvp.y_shape(vertex_oriented))
+            for index in np.ndindex(y_0.shape[:-1]):
+                y_0[(*index, slice(None))] = self._y_0_func(
+                    mesh.x(index, vertex_oriented))
 
-            apply_constraints_along_last_axis(self._bvp.y_constraints, y_0)
+            if vertex_oriented:
+                apply_constraints_along_last_axis(
+                    self._bvp.y_vertex_constraints, y_0)
         else:
             y_0 = self._y_0_func(None)
 

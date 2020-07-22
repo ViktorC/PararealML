@@ -22,6 +22,9 @@ class Parareal:
         :param f: the fine operator
         :param g: the coarse operator
         """
+        assert f.vertex_oriented == g.vertex_oriented or \
+            (f.vertex_oriented is None or g.vertex_oriented is None)
+
         self._f = f
         self._g = g
 
@@ -48,8 +51,9 @@ class Parareal:
         """
         comm = MPI.COMM_WORLD
 
+        vertex_oriented = self._f.vertex_oriented
         bvp = ivp.boundary_value_problem
-        y_shape = bvp.y_shape
+        y_shape = bvp.y_shape(vertex_oriented)
 
         t_interval = ivp.t_interval
         time_slices = np.linspace(
@@ -62,12 +66,12 @@ class Parareal:
         g_values = np.empty((comm.size, *y_shape))
         new_g_values = np.empty((comm.size, *y_shape))
 
-        y[0] = ivp.initial_condition.discrete_y_0
+        y[0] = ivp.initial_condition.discrete_y_0(vertex_oriented)
         for i, t in enumerate(time_slices[:-1]):
             coarse_ivp = InitialValueProblem(
                 bvp,
                 (t, time_slices[i + 1]),
-                DiscreteInitialCondition(bvp, y[i]))
+                DiscreteInitialCondition(bvp, y[i], vertex_oriented))
             y[i + 1] = self._g.trace(coarse_ivp)[-1]
 
         my_y_trajectory = None
@@ -76,7 +80,7 @@ class Parareal:
             my_ivp = InitialValueProblem(
                 bvp,
                 (time_slices[comm.rank], time_slices[comm.rank + 1]),
-                DiscreteInitialCondition(bvp, y[comm.rank]))
+                DiscreteInitialCondition(bvp, y[comm.rank], vertex_oriented))
 
             my_y_trajectory = self._f.trace(my_ivp)
             my_f_value = my_y_trajectory[-1]
@@ -96,7 +100,7 @@ class Parareal:
                 coarse_ivp = InitialValueProblem(
                     bvp,
                     (t, time_slices[j + 1]),
-                    DiscreteInitialCondition(bvp, y[j]))
+                    DiscreteInitialCondition(bvp, y[j], vertex_oriented))
                 new_g_value = self._g.trace(coarse_ivp)[-1]
                 new_g_values[j] = new_g_value
 

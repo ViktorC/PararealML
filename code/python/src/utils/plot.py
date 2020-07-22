@@ -14,13 +14,16 @@ def plot_y_against_t(
         ivp: InitialValueProblem,
         y: np.ndarray,
         file_name: str):
+    diff_eq = ivp.boundary_value_problem.differential_equation
+    assert not diff_eq.x_dimension
+
     t = np.linspace(*ivp.t_interval, len(y))
 
     plt.xlabel('t')
     plt.ylabel('y')
     plt.axis('scaled')
 
-    if ivp.boundary_value_problem.differential_equation.y_dimension == 1:
+    if diff_eq.y_dimension == 1:
         plt.plot(t, y)
     else:
         for i in range(y.shape[1]):
@@ -184,22 +187,24 @@ def plot_n_body_simulation(
 def plot_evolution_of_y(
         ivp: InitialValueProblem,
         y: np.ndarray,
+        vertex_oriented: bool,
         time_steps_between_updates: int,
         interval: int,
         file_name: str,
         three_d: bool = True):
-    x_intervals = ivp.boundary_value_problem.mesh.x_intervals
+    bvp = ivp.boundary_value_problem
+    coordinates = bvp.mesh.coordinates(vertex_oriented)
 
     v_min = np.min(y)
     v_max = np.max(y)
 
-    if len(x_intervals) == 1:
+    if bvp.differential_equation.x_dimension == 1:
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.axis('scaled')
 
-        x = np.linspace(*x_intervals[0], y.shape[1])
+        x = coordinates[0]
         plot, = ax.plot(x, y[0, ...])
 
         plt.ylim(v_min, v_max)
@@ -211,8 +216,8 @@ def plot_evolution_of_y(
         x0_label = 'x 0'
         x1_label = 'x 1'
 
-        x_0 = np.linspace(*x_intervals[0], y.shape[1])
-        x_1 = np.linspace(*x_intervals[1], y.shape[2])
+        x_0 = coordinates[0]
+        x_1 = coordinates[1]
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
         if three_d:
@@ -270,6 +275,7 @@ def plot_evolution_of_y(
 def plot_ivp_solution(
         ivp: InitialValueProblem,
         y: np.ndarray,
+        vertex_oriented: bool,
         solution_name: str):
     diff_eq = ivp.boundary_value_problem.differential_equation
     if diff_eq.x_dimension:
@@ -277,6 +283,7 @@ def plot_ivp_solution(
             plot_evolution_of_y(
                 ivp,
                 y[..., i],
+                vertex_oriented,
                 math.ceil(y.shape[0] / 20.),
                 100,
                 f'evolution_{solution_name}_{i}',

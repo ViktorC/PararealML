@@ -35,9 +35,34 @@ class Mesh(ABC):
 
     @property
     @abstractmethod
-    def shape(self) -> Tuple[int, ...]:
+    def vertices_shape(self) -> Tuple[int, ...]:
         """
-        Returns the shape of the discretised domain.
+        Returns the shape of the array of the vertices of the discretised
+        domain.
+        """
+
+    @property
+    @abstractmethod
+    def cells_shape(self) -> Tuple[int, ...]:
+        """
+        Returns the shape of the array of the cell centers of the discretised
+        domain.
+        """
+
+    @property
+    @abstractmethod
+    def vertex_coordinates(self) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of the coordinates of the vertices of the mesh along
+        each axis.
+        """
+
+    @property
+    @abstractmethod
+    def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of the coordinates of the cell centers of the mesh
+        along each axis.
         """
 
     @property
@@ -56,14 +81,38 @@ class Mesh(ABC):
         """
 
     @abstractmethod
-    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
+    def x(self, index: Tuple[int, ...], vertex: bool) -> Tuple[float, ...]:
         """
         Returns the coordinates of the point in the domain corresponding to the
-        vertex of the mesh specified by the provided index.
+        vertex or cell center of the mesh specified by the provided index.
 
-        :param index: the index of a vertex of the mesh
+        :param index: the index of a vertex or cell center of the mesh
+        :param vertex: whether the point is a vertex or a cell center
         :return: the coordinates of the corresponding point of the domain
         """
+
+    def shape(self, vertex_oriented: bool):
+        """
+        Returns the shape of the array of the discretised domain.
+
+        :param vertex_oriented: whether the shape of the vertices or the cells
+        of the mesh is to be returned
+        :return: the shape of the vertices or the cells
+        """
+        return self.vertices_shape if vertex_oriented else self.cells_shape
+
+    def coordinates(self, vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of the coordinates of the vertices or cell centers
+        of the mesh along each axis.
+
+        :param vertex_oriented: whether the coordinates of the vertices or the
+        cells of the mesh is to be returned
+        :return: a tuple of arrays each representing the coordinates along the
+        corresponding axis
+        """
+        return self.vertex_coordinates if vertex_oriented \
+            else self.cell_center_coordinates
 
 
 class UniformGrid(Mesh):
@@ -88,9 +137,17 @@ class UniformGrid(Mesh):
             assert interval[1] > interval[0]
 
         self._x_intervals = deepcopy(x_intervals)
-        self._shape = self._calculate_shape(d_x)
-        self._x_offset = np.array([interval[0] for interval in x_intervals])
+        self._vertices_shape = self._calculate_shape(d_x, True)
+        self._cells_shape = self._calculate_shape(d_x, False)
         self._d_x = np.array(copy(d_x))
+        self._vertex_coordinates = self._calculate_coordinates(True)
+        self._cell_center_coordinates = self._calculate_coordinates(False)
+
+        self._x_vertex_offset = np.array(
+            [coordinates[0] for coordinates in self._vertex_coordinates])
+        self._x_cell_center_offset = np.array(
+            [coordinates[0] for coordinates in self._cell_center_coordinates])
+
         self._fipy_mesh = self._create_fipy_mesh()
         self._deepxde_geometry = self._create_deepxde_geometry()
 
@@ -103,8 +160,20 @@ class UniformGrid(Mesh):
         return tuple(self._d_x)
 
     @property
-    def shape(self) -> Tuple[int, ...]:
-        return copy(self._shape)
+    def vertices_shape(self) -> Tuple[int, ...]:
+        return copy(self._vertices_shape)
+
+    @property
+    def cells_shape(self) -> Tuple[int, ...]:
+        return copy(self._cells_shape)
+
+    @property
+    def vertex_coordinates(self) -> Tuple[np.ndarray, ...]:
+        return deepcopy(self._vertex_coordinates)
+
+    @property
+    def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
+        return deepcopy(self._cell_center_coordinates)
 
     @property
     def fipy_mesh(self) -> FiPyAbstractMesh:
@@ -114,23 +183,63 @@ class UniformGrid(Mesh):
     def deepxde_geometry(self) -> Geometry:
         return self._deepxde_geometry
 
-    def x(self, index: Tuple[int, ...]) -> Tuple[float, ...]:
-        assert len(index) == len(self._shape)
-        return tuple(self._x_offset + self._d_x * index)
+    def x(self, index: Tuple[int, ...], vertex: bool) -> Tuple[float, ...]:
+        assert len(index) == len(self._x_intervals)
+        offset = self._x_vertex_offset if vertex \
+            else self._x_cell_center_offset
+        return tuple(offset + self._d_x * index)
 
-    def _calculate_shape(self, d_x: Tuple[float, ...]) -> Tuple[int, ...]:
+    def _calculate_shape(
+            self,
+            d_x: Tuple[float, ...],
+            vertex_oriented: bool
+    ) -> Tuple[int, ...]:
         """
         Calculates the shape of the mesh.
 
         :param d_x: the step sizes to use for each axis of the domain
+        :param vertex_oriented: whether the shape of the vertices or the cell
+        centers of the mesh are to be calculated
         :return: a tuple representing the shape of the mesh
         """
         shape = []
         for i in range(len(self._x_intervals)):
             x_interval = self._x_intervals[i]
-            shape.append(round((x_interval[1] - x_interval[0]) / d_x[i] + 1))
+            shape.append(round(
+                (x_interval[1] - x_interval[0]) / d_x[i] + vertex_oriented))
 
         return tuple(shape)
+
+    def _calculate_coordinates(
+            self,
+            vertex_oriented: bool
+    ) -> Tuple[np.ndarray, ...]:
+        """
+        Calculates a tuple of the coordinates of the vertices or cell centers
+        of the mesh along each axis.
+
+        :param vertex_oriented: whether the coordinates of the vertices or the
+        cell centers of the mesh are to be calculated
+        :return: a tuple of arrays each representing the coordinates along the
+        corresponding axis
+        """
+        mesh_shape = self._vertices_shape if vertex_oriented \
+            else self._cells_shape
+
+        coordinates = []
+        for i, x_interval in enumerate(self._x_intervals):
+            x_low = x_interval[0]
+            x_high = x_interval[1]
+
+            if not vertex_oriented:
+                half_space_step = self._d_x[i] / 2.
+                x_low += half_space_step
+                x_high -= half_space_step
+
+            coordinates.append(
+                np.linspace(x_low, x_high, mesh_shape[i]))
+
+        return tuple(coordinates)
 
     def _create_fipy_mesh(self) -> FiPyAbstractMesh:
         """
@@ -140,36 +249,24 @@ class UniformGrid(Mesh):
         if x_dimension == 1:
             mesh = FiPyUniformGrid1D(
                 dx=self._d_x[0],
-                nx=self._shape[0])
-            mesh += np.flip(self._x_offset).reshape(1, 1)
-            mesh -= (
-                (self._d_x[0] / 2.,),
-            )
+                nx=self._cells_shape[0])
+            mesh += np.flip(self._x_vertex_offset).reshape(1, 1)
         elif x_dimension == 2:
             mesh = FiPyUniformGrid2D(
                 dx=self._d_x[1],
                 dy=self._d_x[0],
-                nx=self._shape[1],
-                ny=self._shape[0])
-            mesh += np.flip(self._x_offset).reshape(2, 1)
-            mesh -= (
-                (self._d_x[1] / 2.,),
-                (self._d_x[0] / 2.,)
-            )
+                nx=self._cells_shape[1],
+                ny=self._cells_shape[0])
+            mesh += np.flip(self._x_vertex_offset).reshape(2, 1)
         elif x_dimension == 3:
             mesh = FiPyUniformGrid3D(
                 dx=self._d_x[2],
                 dy=self._d_x[1],
                 dz=self._d_x[0],
-                nx=self._shape[2],
-                ny=self._shape[1],
-                nz=self._shape[0])
-            mesh += np.flip(self._x_offset).reshape(3, 1)
-            mesh -= (
-                (self._d_x[2] / 2.,),
-                (self._d_x[1] / 2.,),
-                (self._d_x[0] / 2.,)
-            )
+                nx=self._cells_shape[2],
+                ny=self._cells_shape[1],
+                nz=self._cells_shape[0])
+            mesh += np.flip(self._x_vertex_offset).reshape(3, 1)
         else:
             raise NotImplementedError
 
