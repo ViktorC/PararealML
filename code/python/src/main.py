@@ -17,8 +17,8 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
-f = FVMOperator(LinearLUSolver(), .0025)
-g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
+f = FVMOperator(LinearLUSolver(), .001)
+g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
 g_reg = RegressionOperator(.05, f.vertex_oriented)
 g_pinn = PINNOperator(.05, f.vertex_oriented)
 
@@ -32,7 +32,7 @@ parareal_pinn = Parareal(f, g_pinn, threshold)
 @time
 def create_ivp():
     diff_eq = DiffusionEquation(2)
-    mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
+    mesh = UniformGrid(((0., 1.), (0., 1.)), (.1, .1))
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
