@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, Tuple
 
 import numpy as np
 from deepxde import Model as PINNModel, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
+from deepxde.model import TrainState, LossHistory
 from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
 from sklearn.base import RegressorMixin
@@ -426,7 +427,8 @@ class PINNOperator(MLOperator):
             self,
             ivp: InitialValueProblem,
             network: Map,
-            training_config: Dict[str, Any]):
+            training_config: Dict[str, Any]
+    ) -> Tuple[LossHistory, TrainState]:
         """
         Trains a PINN model on the provided IVP and keeps it for use by the
         operator.
@@ -434,6 +436,7 @@ class PINNOperator(MLOperator):
         :param ivp: the IVP to train the PINN on
         :param network: the PINN to use
         :param training_config: a dictionary of training configurations
+        :return: a tuple of the loss history and the training state
         """
         diff_eq = ivp.boundary_value_problem.differential_equation
 
@@ -483,9 +486,12 @@ class PINNOperator(MLOperator):
 
         n_epochs = training_config['n_epochs']
         batch_size = training_config.get('batch_size', None)
-        self._model.train(epochs=n_epochs, batch_size=batch_size)
+        loss_history, train_state = self._model.train(
+            epochs=n_epochs, batch_size=batch_size)
 
         scipy_optimiser = training_config.get('scipy_optimiser', None)
         if scipy_optimiser is not None:
             self._model.compile(scipy_optimiser)
-            self._model.train()
+            loss_history, train_state = self._model.train()
+
+        return loss_history, train_state
