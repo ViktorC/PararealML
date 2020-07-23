@@ -18,9 +18,9 @@ from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
 f = FVMOperator(LinearLUSolver(), .001)
-g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
-g_reg = RegressionOperator(.05, f.vertex_oriented)
-g_pinn = PINNOperator(.05, f.vertex_oriented)
+g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
+g_reg = RegressionOperator(.25, f.vertex_oriented)
+g_pinn = PINNOperator(.25, f.vertex_oriented)
 
 threshold = .1
 
@@ -45,7 +45,7 @@ def create_ivp():
         lambda _: (0.,))
     return InitialValueProblem(
         bvp,
-        (0., 1.),
+        (0., 9.),
         ic)
 
 
