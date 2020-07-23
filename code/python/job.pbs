@@ -4,7 +4,7 @@
 #SBATCH --time=0:30:0
 #SBATCH --exclusive
 #SBATCH --nodes=1
-#SBATCH --tasks-per-node=36
+#SBATCH --tasks-per-node=4
 #SBATCH --cpus-per-task=1
 
 #SBATCH --account=d171-s1984842
@@ -12,11 +12,12 @@
 #SBATCH --qos=standard
 
 module load mpt
+module load anaconda/python3
 
 cd $SLURM_SUBMIT_DIR
 
 export OMP_NUM_THREADS=1
 
-make install
+source activate s1984842
 
 srun python3 -m mpi4py -m src.main
