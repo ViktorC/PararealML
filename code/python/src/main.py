@@ -1,3 +1,6 @@
+import cProfile
+from pstats import SortKey
+
 from deepxde.maps import FNN
 from fipy import LinearLUSolver
 from mpi4py import MPI
@@ -69,10 +72,10 @@ def train_coarse_pinn():
         ivp,
         FNN([x_dim] + [50] * 4 + [y_dim], "tanh", "Glorot normal"),
         {
-            'n_domain': 100,
-            'n_initial': 10,
-            'n_boundary': 10,
-            'n_test': 50,
+            'n_domain': 2000,
+            'n_initial': 200,
+            'n_boundary': 100,
+            'n_test': 400,
             'n_epochs': 5000,
             'optimiser': 'adam',
             'learning_rate': .001,
@@ -121,6 +124,10 @@ def plot_solution(solve_func):
         plot_ivp_solution(ivp, y, solve_func.__name__)
 
 
+def profile_train_coarse_pinn():
+    cProfile.run('train_coarse_pinn()', sort=SortKey.CUMULATIVE)
+
+
 train_coarse_reg()
 plot_solution(solve_serial_coarse_reg)
 plot_solution(solve_parallel_reg)
@@ -132,3 +139,5 @@ plot_solution(solve_parallel_pinn)
 plot_solution(solve_serial_fine)
 plot_solution(solve_serial_coarse)
 plot_solution(solve_parallel)
+
+# profile_train_coarse_pinn()
