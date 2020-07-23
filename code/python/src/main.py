@@ -17,7 +17,7 @@ from src.core.parareal import Parareal
 from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
-f = FVMOperator(LinearLUSolver(), .001)
+f = FVMOperator(LinearLUSolver(), .0025)
 g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
 g_reg = RegressionOperator(.25, f.vertex_oriented)
 g_pinn = PINNOperator(.25, f.vertex_oriented)
