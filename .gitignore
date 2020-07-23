@@ -1,4 +1,4 @@
-code/c/simulate
+*__pycache__*
 code/python/*.pdf
 code/python/*.gif
 *.o
