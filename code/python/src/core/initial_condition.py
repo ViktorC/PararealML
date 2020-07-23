@@ -3,10 +3,10 @@ from copy import deepcopy, copy
 from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
-from scipy.interpolate import interpn
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
+from src.core.solution import Solution
 
 
 class InitialCondition(ABC):
@@ -25,7 +25,10 @@ class InitialCondition(ABC):
         """
 
     @abstractmethod
-    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+    def discrete_y_0(
+            self,
+            vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
         """
         Returns the discretised initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
@@ -45,8 +48,8 @@ class DiscreteInitialCondition(InitialCondition):
             self,
             bvp: BoundaryValueProblem,
             y_0: np.ndarray,
-            vertex_oriented: bool,
-            interpolation_method: str = 'linear'):
+            vertex_oriented: Optional[bool] = None,
+            interpolation_method: Optional[str] = None):
         """
         :param bvp: the boundary value problem to turn into an initial value
         problem by providing the initial conditions for it
@@ -54,59 +57,31 @@ class DiscreteInitialCondition(InitialCondition):
         mesh (which may be 0 dimensional in case of an ODE)
         :param vertex_oriented: whether the initial conditions are evaluated at
         the vertices or cell centers of the spatial mesh; it the BVP is an ODE,
-        it is disregarded
+        it can be None
         :param interpolation_method: the interpolation method to use to
         calculate values that do not exactly fall on points of the y_0 grid; if
-        the BVP is that of an ODE, it is disregarded
+        the BVP is that of an ODE, it can be None
         """
-        assert y_0.shape == bvp.y_shape(vertex_oriented)
-
-        self._bvp = bvp
-        self._y_0 = np.copy(y_0)
-        if vertex_oriented:
-            apply_constraints_along_last_axis(
-                bvp.y_vertex_constraints, self._y_0)
-
-        self._vertex_oriented = vertex_oriented
         self._interpolation_method = interpolation_method
 
-        self._x_coordinates = bvp.mesh.coordinates(vertex_oriented)
-
-    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
-        x_dimension = self._bvp.differential_equation.x_dimension
-        if x_dimension:
-            assert x is not None
-            assert len(x) == x_dimension
-
-            return interpn(
-                self._x_coordinates,
-                self._y_0,
-                np.asarray(x),
-                method=self._interpolation_method)[0, ...]
-        else:
-            return np.copy(self._y_0)
-
-    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
-        if (self._bvp.differential_equation.x_dimension == 0) \
-                or (self._vertex_oriented == vertex_oriented):
-            return np.copy(self._y_0)
-
-        if not self._vertex_oriented and vertex_oriented:
-            raise ValueError('can\'t extrapolate from cell oriented discrete '
-                             'y_0 to vertex oriented discrete y_0')
-
-        mesh = self._bvp.mesh
-
-        y_0 = np.empty(self._bvp.y_shape(not self._vertex_oriented))
-        for index in np.ndindex(y_0.shape[:-1]):
-            y_0[(*index, slice(None))] = self.y_0(
-                mesh.x(index, vertex_oriented))
-
+        y_0_copy = np.copy(y_0)
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._bvp.y_vertex_constraints, y_0)
+                bvp.y_vertex_constraints, y_0_copy)
+        y_0_copy = y_0_copy.reshape((1,) + y_0_copy.shape)
 
-        return y_0
+        self._y_0_solution = Solution(
+            bvp, np.zeros(1), y_0_copy, vertex_oriented)
+
+    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+        return self._y_0_solution.y(np.asarray(x), self._interpolation_method)
+
+    def discrete_y_0(
+            self,
+            vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
+        return self._y_0_solution.discrete_y(
+            vertex_oriented, self._interpolation_method)[0]
 
 
 class ContinuousInitialCondition(InitialCondition):
@@ -134,7 +109,10 @@ class ContinuousInitialCondition(InitialCondition):
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_func(x)
 
-    def discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+    def discrete_y_0(
+            self,
+            vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
         return np.copy(
             self._discrete_y_0_vertices if vertex_oriented
             else self._discrete_y_0_cells)

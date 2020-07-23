@@ -41,9 +41,9 @@ class Constraint:
         :param array: the array to constrain
         :return: the constrained array
         """
-        assert array.shape == self._mask.shape
+        assert array.shape[-len(self._mask.shape):] == self._mask.shape
 
-        array[self._mask] = self._value
+        array[..., self._mask] = self._value
         return array
 
     def multiply_and_add(
@@ -66,11 +66,12 @@ class Constraint:
         :return: the constrained result array
         """
         assert addend.shape == result.shape
-        assert addend.shape == self._mask.shape
+        assert addend.shape[-len(self._mask.shape):] == self._mask.shape
         assert isinstance(multiplier, float) \
             or multiplier.shape == self._value.shape
 
-        result[self._mask] = addend[self._mask] + multiplier * self._value
+        result[..., self._mask] = addend[..., self._mask] + \
+            multiplier * self._value
         return result
 
 

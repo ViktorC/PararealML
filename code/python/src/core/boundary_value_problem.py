@@ -189,6 +189,7 @@ class BoundaryValueProblem:
         an ODE, it can be None
         :return: the shape of result evaluated at the vertices or the cells
         """
+        assert (not self._diff_eq.x_dimension) or (vertex_oriented is not None)
         return copy(
             self._y_vertices_shape if vertex_oriented else self._y_cells_shape)
 

@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 import numpy as np
 from mpi4py import MPI
@@ -6,9 +7,10 @@ from mpi4py import MPI
 from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import Operator
+from src.core.solution import Solution
 
 
-class Parareal:
+class Parareal(Operator):
     """
     A parallel-in-time differential equation solver framework based on the
     Parareal algorithm.
@@ -17,29 +19,12 @@ class Parareal:
     def __init__(
             self,
             f: Operator,
-            g: Operator):
+            g: Operator,
+            tol: float,
+            max_iterations: int = sys.maxsize):
         """
         :param f: the fine operator
         :param g: the coarse operator
-        """
-        assert f.vertex_oriented == g.vertex_oriented or \
-            (f.vertex_oriented is None or g.vertex_oriented is None)
-        assert np.isclose(g.d_t, f.d_t * round(g.d_t / f.d_t))
-
-        self._f = f
-        self._g = g
-
-    def solve(
-            self,
-            ivp: InitialValueProblem,
-            tol: float,
-            max_iterations: int = sys.maxsize
-    ) -> np.ndarray:
-        """
-        Runs the Parareal solver and returns the discretised solution of the
-        differential equation.
-
-        :param ivp: the initial value problem to solve
         :param tol: the minimum absolute value of the largest update to
         the solution required to perform another corrective iteration; if all
         updates are smaller than this threshold, the solution is considered
@@ -47,9 +32,23 @@ class Parareal:
         :param max_iterations: the maximum number of iterations to perform
         (effective only if it is less than the number of executing processes
         and the accuracy requirements are not satisfied in fewer iterations)
-        :return: the discretised trajectory of the differential equation's
-        solution
         """
+        assert np.isclose(g.d_t, f.d_t * round(g.d_t / f.d_t))
+
+        self._f = f
+        self._g = g
+        self._tol = tol
+        self._max_iterations = max_iterations
+
+    @property
+    def d_t(self) -> float:
+        return self._f.d_t
+
+    @property
+    def vertex_oriented(self) -> Optional[bool]:
+        return self._f.vertex_oriented
+
+    def solve(self, ivp: InitialValueProblem) -> Solution:
         comm = MPI.COMM_WORLD
 
         vertex_oriented = self._f.vertex_oriented
@@ -73,22 +72,25 @@ class Parareal:
                 bvp,
                 (t, time_slices[i + 1]),
                 DiscreteInitialCondition(bvp, y[i], vertex_oriented))
-            y[i + 1] = self._g.trace(coarse_ivp)[-1]
+            coarse_solution = self._g.solve(coarse_ivp)
+            y[i + 1] = coarse_solution.discrete_y(vertex_oriented)[-1]
 
         my_y_trajectory = None
 
-        for i in range(min(comm.size, max_iterations)):
+        for i in range(min(comm.size, self._max_iterations)):
             my_ivp = InitialValueProblem(
                 bvp,
                 (time_slices[comm.rank], time_slices[comm.rank + 1]),
                 DiscreteInitialCondition(bvp, y[comm.rank], vertex_oriented))
 
-            my_y_trajectory = self._f.trace(my_ivp)
+            fine_solution = self._f.solve(my_ivp)
+            my_y_trajectory = fine_solution.discrete_y(vertex_oriented)
             my_f_value = my_y_trajectory[-1]
             comm.Allgather(
                 [my_f_value, MPI.DOUBLE], [f_values, MPI.DOUBLE])
 
-            my_g_value = self._g.trace(my_ivp)[-1]
+            coarse_solution = self._g.solve(my_ivp)
+            my_g_value = coarse_solution.discrete_y(vertex_oriented)[-1]
             comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
 
             max_update = 0.
@@ -102,7 +104,9 @@ class Parareal:
                     bvp,
                     (t, time_slices[j + 1]),
                     DiscreteInitialCondition(bvp, y[j], vertex_oriented))
-                new_g_value = self._g.trace(coarse_ivp)[-1]
+                new_coarse_solution = self._g.solve(coarse_ivp)
+                new_g_value = new_coarse_solution.discrete_y(
+                    vertex_oriented)[-1]
                 new_g_values[j] = new_g_value
 
                 new_y_next = new_g_value + correction
@@ -113,7 +117,7 @@ class Parareal:
 
                 y[j + 1] = new_y_next
 
-            if max_update < tol:
+            if max_update < self._tol:
                 break
 
         y_length = comm.size * int(
@@ -124,4 +128,8 @@ class Parareal:
             [my_y_trajectory, MPI.DOUBLE],
             [y_trajectory, MPI.DOUBLE])
 
-        return y_trajectory
+        return Solution(
+            bvp,
+            self._discretise_time_domain(ivp.t_interval, self._f.d_t)[1:],
+            y_trajectory,
+            vertex_oriented)

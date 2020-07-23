@@ -8,16 +8,18 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation
 from src.core.initial_value_problem import InitialValueProblem
+from src.core.solution import Solution
 
 
 def plot_y_against_t(
         ivp: InitialValueProblem,
-        y: np.ndarray,
+        solution: Solution,
         file_name: str):
     diff_eq = ivp.boundary_value_problem.differential_equation
     assert not diff_eq.x_dimension
 
-    t = np.linspace(*ivp.t_interval, len(y))
+    t = solution.t_coordinates
+    y = solution.discrete_y(solution.vertex_oriented)
 
     plt.xlabel('t')
     plt.ylabel('y')
@@ -33,7 +35,9 @@ def plot_y_against_t(
     plt.clf()
 
 
-def plot_phase_space(y: np.ndarray, file_name: str):
+def plot_phase_space(solution: Solution, file_name: str):
+    y = solution.discrete_y(solution.vertex_oriented)
+
     assert len(y.shape) == 2
     assert 2 <= y.shape[1] <= 3
 
@@ -58,7 +62,7 @@ def plot_phase_space(y: np.ndarray, file_name: str):
 
 def plot_n_body_simulation(
         ivp: InitialValueProblem,
-        y: np.ndarray,
+        solution: Solution,
         time_steps_between_updates: int,
         interval: int,
         smallest_marker_size: int,
@@ -78,6 +82,8 @@ def plot_n_body_simulation(
     marker_sizes = np.power(radii, 2) * np.pi
 
     colors = cm.rainbow(np.linspace(0., 1., diff_eq.n_objects))
+
+    y = solution.discrete_y(solution.vertex_oriented)
 
     if diff_eq.spatial_dimension == 2:
         fig, ax = plt.subplots()
@@ -186,14 +192,16 @@ def plot_n_body_simulation(
 
 def plot_evolution_of_y(
         ivp: InitialValueProblem,
-        y: np.ndarray,
-        vertex_oriented: bool,
+        solution: Solution,
+        y_ind: int,
         time_steps_between_updates: int,
         interval: int,
         file_name: str,
         three_d: bool = True):
     bvp = ivp.boundary_value_problem
-    coordinates = bvp.mesh.coordinates(vertex_oriented)
+
+    x_coordinates = solution.x_coordinates(solution.vertex_oriented)
+    y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
 
     v_min = np.min(y)
     v_max = np.max(y)
@@ -204,7 +212,7 @@ def plot_evolution_of_y(
         ax.set_ylabel('y')
         plt.axis('scaled')
 
-        x = coordinates[0]
+        x = x_coordinates[0]
         plot, = ax.plot(x, y[0, ...])
 
         plt.ylim(v_min, v_max)
@@ -216,8 +224,8 @@ def plot_evolution_of_y(
         x0_label = 'x 0'
         x1_label = 'x 1'
 
-        x_0 = coordinates[0]
-        x_1 = coordinates[1]
+        x_0 = x_coordinates[0]
+        x_1 = x_coordinates[1]
         x_0, x_1 = np.meshgrid(x_0, x_1)
 
         if three_d:
@@ -274,26 +282,25 @@ def plot_evolution_of_y(
 
 def plot_ivp_solution(
         ivp: InitialValueProblem,
-        y: np.ndarray,
-        vertex_oriented: bool,
+        solution: Solution,
         solution_name: str):
     diff_eq = ivp.boundary_value_problem.differential_equation
     if diff_eq.x_dimension:
-        for i in range(diff_eq.y_dimension):
+        for y_ind in range(diff_eq.y_dimension):
             plot_evolution_of_y(
                 ivp,
-                y[..., i],
-                vertex_oriented,
-                math.ceil(y.shape[0] / 20.),
+                solution,
+                y_ind,
+                math.ceil(len(solution.t_coordinates) / 20.),
                 100,
-                f'evolution_{solution_name}_{i}',
+                f'evolution_{solution_name}_{y_ind}',
                 True)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             plot_n_body_simulation(
                 ivp,
-                y,
-                math.ceil(y.shape[0] / 100.),
+                solution,
+                math.ceil(len(solution.t_coordinates) / 100.),
                 100,
                 8,
                 f'nbody_{solution_name}')
@@ -301,4 +308,4 @@ def plot_ivp_solution(
             plot_y_against_t(ivp, y, solution_name)
 
             if 2 <= diff_eq.y_dimension <= 3:
-                plot_phase_space(y, f'phase_space_{solution_name}')
+                plot_phase_space(solution, f'phase_space_{solution_name}')
