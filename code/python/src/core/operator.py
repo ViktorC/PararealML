@@ -10,7 +10,8 @@ from deepxde.model import TrainState, LossHistory
 from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
 from sklearn.base import RegressorMixin
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV, \
+    RandomizedSearchCV
 from sklearn.utils import all_estimators
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
@@ -377,7 +378,7 @@ class RegressionOperator(MLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: RegressionModel,
+            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             test_size: float = .2
     ) -> float:
         """
@@ -412,9 +413,13 @@ class RegressionOperator(MLOperator):
             test_size=test_size)
 
         model.fit(x_train, y_train)
-        self._model = model
 
-        loss = model.score(x_test, y_test)
+        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
+            self._model = model.best_estimator_
+        else:
+            self._model = model
+
+        loss = self._model.score(x_test, y_test)
         return loss
 
 
