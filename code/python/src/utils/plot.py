@@ -305,7 +305,7 @@ def plot_ivp_solution(
                 8,
                 f'nbody_{solution_name}')
         else:
-            plot_y_against_t(ivp, y, solution_name)
+            plot_y_against_t(ivp, solution, solution_name)
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')
