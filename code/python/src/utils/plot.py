@@ -283,7 +283,11 @@ def plot_evolution_of_y(
 def plot_ivp_solution(
         ivp: InitialValueProblem,
         solution: Solution,
-        solution_name: str):
+        solution_name: str,
+        n_images: int = 20,
+        interval: int = 100,
+        smallest_marker_size: int = 8,
+        three_d: bool = True):
     diff_eq = ivp.boundary_value_problem.differential_equation
     if diff_eq.x_dimension:
         for y_ind in range(diff_eq.y_dimension):
@@ -291,18 +295,18 @@ def plot_ivp_solution(
                 ivp,
                 solution,
                 y_ind,
-                math.ceil(len(solution.t_coordinates) / 20.),
-                100,
+                math.ceil(len(solution.t_coordinates) / float(n_images)),
+                interval,
                 f'evolution_{solution_name}_{y_ind}',
-                True)
+                three_d)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             plot_n_body_simulation(
                 ivp,
                 solution,
-                math.ceil(len(solution.t_coordinates) / 100.),
-                100,
-                8,
+                math.ceil(len(solution.t_coordinates) / float(n_images)),
+                interval,
+                smallest_marker_size,
                 f'nbody_{solution_name}')
         else:
             plot_y_against_t(ivp, solution, solution_name)
