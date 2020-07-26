@@ -74,7 +74,8 @@ class DiscreteInitialCondition(InitialCondition):
             bvp, np.zeros(1), y_0_copy, vertex_oriented)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
-        return self._y_0_solution.y(np.asarray(x), self._interpolation_method)
+        return self._y_0_solution.y(
+            np.asarray(x), self._interpolation_method)[0]
 
     def discrete_y_0(
             self,
