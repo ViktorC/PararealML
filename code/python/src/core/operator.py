@@ -306,9 +306,9 @@ class MLOperator(Operator, ABC):
         if self._batch_mode:
             x_batch = self._create_input_batch(x, time_steps)
             y_hat_batch = self._model.predict(x_batch)
-            y = y_hat_batch \
-                .reshape(all_y_shape) \
-                .astype(np.float, casting='safe')
+            y = np.ascontiguousarray(
+                y_hat_batch.reshape(all_y_shape),
+                dtype=np.float)
         else:
             y = np.empty(all_y_shape)
             for i, t_i in enumerate(time_steps):
