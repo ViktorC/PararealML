@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=s1984842-parareal-ml
-#SBATCH --time=0:30:0
+#SBATCH --time=0:60:0
 #SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=36
