@@ -10,7 +10,7 @@ from src.core.operator import Operator
 from src.core.solution import Solution
 
 
-class Parareal(Operator):
+class PararealOperator(Operator):
     """
     A parallel-in-time differential equation solver framework based on the
     Parareal algorithm.
