@@ -450,7 +450,7 @@ class PINNOperator(MLOperator):
             self,
             ivp: InitialValueProblem,
             network: Map,
-            training_config: Dict[str, Any]
+            **training_config: Union[int, float, str]
     ) -> Tuple[LossHistory, TrainState]:
         """
         Trains a PINN model on the provided IVP and keeps it for use by the
@@ -458,7 +458,7 @@ class PINNOperator(MLOperator):
 
         :param ivp: the IVP to train the PINN on
         :param network: the PINN to use
-        :param training_config: a dictionary of training configurations
+        :param training_config: keyworded training configuration arguments
         :return: a tuple of the loss history and the training state
         """
         diff_eq = ivp.boundary_value_problem.differential_equation
