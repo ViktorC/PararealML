@@ -1,22 +1,22 @@
 import math
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from matplotlib.animation import FuncAnimation
+from mpi4py import MPI
 from mpl_toolkits.mplot3d import Axes3D
 
-from src.core.differential_equation import NBodyGravitationalEquation
+from src.core.differential_equation import NBodyGravitationalEquation, \
+    WaveEquation, DiffusionEquation
 from src.core.solution import Solution
 
 
 def plot_y_against_t(
         solution: Solution,
         file_name: str):
-    diff_eq = solution \
-        .initial_value_problem \
-        .boundary_value_problem \
-        .differential_equation
+    diff_eq = solution.boundary_value_problem.differential_equation
     assert not diff_eq.x_dimension
 
     t = solution.t_coordinates
@@ -67,8 +67,8 @@ def plot_n_body_simulation(
         interval: int,
         smallest_marker_size: int,
         file_name: str):
-    bvp = solution.initial_value_problem.boundary_value_problem
-    diff_eq: NBodyGravitationalEquation = bvp.differential_equation
+    diff_eq: NBodyGravitationalEquation = \
+        solution.boundary_value_problem.differential_equation
 
     assert isinstance(diff_eq, NBodyGravitationalEquation)
 
@@ -196,29 +196,27 @@ def plot_evolution_of_y(
         frames_between_updates: int,
         interval: int,
         file_name: str,
-        three_d: bool = True):
-    bvp = solution.initial_value_problem.boundary_value_problem
-
+        three_d: bool = False):
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
 
     v_min = np.min(y)
     v_max = np.max(y)
 
-    if bvp.differential_equation.x_dimension == 1:
+    if solution.boundary_value_problem.differential_equation.x_dimension == 1:
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.axis('scaled')
 
         x = x_coordinates[0]
-        plot, = ax.plot(x, y[0, ...])
+        line_plot, = ax.plot(x, y[0, ...])
 
         plt.ylim(v_min, v_max)
 
         def update_plot(time_step: int):
-            plot.set_ydata(y[time_step, ...])
-            return plot, ax
+            line_plot.set_ydata(y[time_step, ...])
+            return line_plot, ax
     else:
         x0_label = 'x 0'
         x1_label = 'x 1'
@@ -241,7 +239,7 @@ def plot_evolution_of_y(
                 'linewidth': 0,
                 'antialiased': False,
                 'cmap': cm.coolwarm}
-            plot = ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
+            ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
             ax.set_zlim(v_min, v_max)
 
             def update_plot(time_step: int):
@@ -285,13 +283,13 @@ def plot_ivp_solution(
         n_images: int = 20,
         interval: int = 100,
         smallest_marker_size: int = 8,
-        three_d: bool = True):
-    diff_eq = solution \
-        .initial_value_problem \
-        .boundary_value_problem \
-        .differential_equation
+        three_d: Optional[bool] = None):
+    diff_eq = solution.boundary_value_problem.differential_equation
     
     if diff_eq.x_dimension:
+        if three_d is None:
+            three_d = isinstance(diff_eq, (DiffusionEquation, WaveEquation))
+
         for y_ind in range(diff_eq.y_dimension):
             plot_evolution_of_y(
                 solution,
@@ -313,3 +311,27 @@ def plot_ivp_solution(
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')
+
+
+def plot(
+        n_images: int = 20,
+        interval: int = 100,
+        smallest_marker_size: int = 8,
+        three_d: Optional[bool] = None):
+    def decorator(function):
+        def wrapper(*args, **kwargs):
+            solution = function(*args, **kwargs)
+            if MPI.COMM_WORLD.rank == 0:
+                plot_ivp_solution(
+                    solution,
+                    function.__name__,
+                    n_images,
+                    interval,
+                    smallest_marker_size,
+                    three_d)
+
+            return solution
+
+        return wrapper
+
+    return decorator

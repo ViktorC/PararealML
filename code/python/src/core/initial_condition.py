@@ -6,7 +6,6 @@ import numpy as np
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
-from src.core.initial_value_problem import InitialValueProblem
 from src.core.solution import Solution
 
 
@@ -71,12 +70,8 @@ class DiscreteInitialCondition(InitialCondition):
                 bvp.y_vertex_constraints, y_0_copy)
         y_0_copy = y_0_copy.reshape((1,) + y_0_copy.shape)
 
-        ivp = InitialValueProblem(
-            bvp,
-            (0., 0.),
-            self._DummyInitialCondition())
         self._y_0_solution = Solution(
-            ivp, np.zeros(1), y_0_copy, vertex_oriented)
+            bvp, np.zeros(1), y_0_copy, vertex_oriented)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_solution.y(
@@ -88,20 +83,6 @@ class DiscreteInitialCondition(InitialCondition):
     ) -> np.ndarray:
         return self._y_0_solution.discrete_y(
             vertex_oriented, self._interpolation_method)[0]
-
-    class _DummyInitialCondition(InitialCondition):
-        """
-        A dummy initial condition that just raises NotImplementedErrors.
-        """
-
-        def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
-            raise NotImplementedError
-
-        def discrete_y_0(
-                self,
-                vertex_oriented: Optional[bool] = None
-        ) -> np.ndarray:
-            raise NotImplementedError
 
 
 class ContinuousInitialCondition(InitialCondition):

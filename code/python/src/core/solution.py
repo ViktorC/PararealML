@@ -3,8 +3,8 @@ from typing import Optional, Sequence
 import numpy as np
 from scipy.interpolate import interpn
 
+from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
-from src.core.initial_value_problem import InitialValueProblem
 
 
 class Solution:
@@ -14,12 +14,13 @@ class Solution:
 
     def __init__(
             self,
-            ivp: InitialValueProblem,
+            bvp: BoundaryValueProblem,
             t_coordinates: np.ndarray,
             discrete_y: np.ndarray,
             vertex_oriented: Optional[bool] = None):
         """
-        :param ivp: the initial value problem solved
+        :param bvp: the boundary value problem that the initial value problem
+        solved is based on
         :param t_coordinates: the time steps at which the solution is evaluated
         :param discrete_y: the solution to the IVP at the specified time steps
         :param vertex_oriented: whether the solution is vertex or cell oriented
@@ -27,22 +28,21 @@ class Solution:
         """
         assert len(t_coordinates.shape) == 1
         assert len(t_coordinates) > 0
-        assert discrete_y.shape == (
-                (len(t_coordinates),) +
-                ivp.boundary_value_problem.y_shape(vertex_oriented)
-        )
+        assert discrete_y.shape == \
+            ((len(t_coordinates),) + bvp.y_shape(vertex_oriented))
 
-        self._ivp = ivp
+        self._bvp = bvp
         self._t_coordinates = t_coordinates
         self._discrete_y = discrete_y
         self._vertex_oriented = vertex_oriented
 
     @property
-    def initial_value_problem(self) -> InitialValueProblem:
+    def boundary_value_problem(self):
         """
-        Returns the IVP this object represents a solution to.
+        Returns the BVP that the IVP whose solution this object represents is
+        based on.
         """
-        return self._ivp
+        return self._bvp
 
     @property
     def vertex_oriented(self) -> Optional[bool]:
@@ -73,10 +73,7 @@ class Solution:
         :return: a tuple of arrays each representing the coordinates along the
         corresponding axis
         """
-        return self._ivp \
-            .boundary_value_problem \
-            .mesh \
-            .coordinates(vertex_oriented)
+        return self._bvp.mesh.coordinates(vertex_oriented)
 
     def y(
             self,
@@ -96,15 +93,14 @@ class Solution:
         if interpolation_method is None:
             interpolation_method = 'linear'
 
-        bvp = self._ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
+        diff_eq = self._bvp.differential_equation
 
         if diff_eq.x_dimension:
             assert x is not None
             assert x.shape[-1] == diff_eq.x_dimension
 
             y = interpn(
-                bvp.mesh.coordinates(self._vertex_oriented),
+                self._bvp.mesh.coordinates(self._vertex_oriented),
                 np.moveaxis(self._discrete_y, 0, -2),
                 x,
                 method=interpolation_method,
@@ -139,19 +135,17 @@ class Solution:
         None, linear interpolation is used
         :return: the discrete solution
         """
-        bvp = self._ivp.boundary_value_problem
-
-        if (bvp.differential_equation.x_dimension == 0) \
+        if (self._bvp.differential_equation.x_dimension == 0) \
                 or (self._vertex_oriented == vertex_oriented):
             return np.copy(self._discrete_y)
 
-        coordinate_system = bvp.mesh.coordinates(vertex_oriented)
+        coordinate_system = self._bvp.mesh.coordinates(vertex_oriented)
         mesh_grid = np.meshgrid(*coordinate_system, indexing='ij')
         coordinates = np.stack(mesh_grid, axis=-1)
         discrete_y = self.y(coordinates, interpolation_method)
 
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                bvp.y_vertex_constraints, discrete_y)
+                self._bvp.y_vertex_constraints, discrete_y)
 
         return discrete_y
