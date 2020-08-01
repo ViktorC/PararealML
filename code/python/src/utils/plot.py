@@ -313,25 +313,12 @@ def plot_ivp_solution(
                 plot_phase_space(solution, f'phase_space_{solution_name}')
 
 
-def plot(
-        n_images: int = 20,
-        interval: int = 100,
-        smallest_marker_size: int = 8,
-        three_d: Optional[bool] = None):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            solution = function(*args, **kwargs)
-            if MPI.COMM_WORLD.rank == 0:
-                plot_ivp_solution(
-                    solution,
-                    function.__name__,
-                    n_images,
-                    interval,
-                    smallest_marker_size,
-                    three_d)
+def plot(function):
+    def wrapper(*args, **kwargs):
+        solution = function(*args, **kwargs)
+        if MPI.COMM_WORLD.rank == 0:
+            plot_ivp_solution(solution, function.__name__,)
 
-            return solution
+        return solution
 
-        return wrapper
-
-    return decorator
+    return wrapper
