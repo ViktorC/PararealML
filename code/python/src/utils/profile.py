@@ -3,16 +3,16 @@ import functools
 from pstats import SortKey
 
 
-def profile(func):
-    @functools.wraps(func)
-    def wrapped_func(*args, **kwargs):
-        def no_arg_func():
-            func(*args, **kwargs)
+def profile(function):
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        def no_arg_function():
+            function(*args, **kwargs)
 
         cProfile.runctx(
-            'no_arg_func()',
+            'no_arg_function()',
             globals(),
             locals(),
             sort=SortKey.TIME)
 
-    return wrapped_func
+    return wrapper
