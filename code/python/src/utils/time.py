@@ -5,7 +5,7 @@ from mpi4py import MPI
 
 def time(func):
     @functools.wraps(func)
-    def wrapper_timer(*args, **kwargs):
+    def wrapped_func(*args, **kwargs):
         comm = MPI.COMM_WORLD
         comm.barrier()
         start_time = MPI.Wtime()
@@ -21,4 +21,4 @@ def time(func):
 
         return value
 
-    return wrapper_timer
+    return wrapped_func
