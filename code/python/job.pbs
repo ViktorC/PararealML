@@ -20,4 +20,4 @@ export OMP_NUM_THREADS=1
 
 source activate s1984842
 
-srun python3 -m mpi4py -m src.main
+srun python3 -m mpi4py -m src.cahn_hilliard

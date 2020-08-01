@@ -12,4 +12,4 @@ test:
 	pytest -sv tests/
 
 run:
-	mpiexec -n 4 python -m mpi4py -m src.main
+	mpiexec -n 4 python -m mpi4py -m src.$(script)
