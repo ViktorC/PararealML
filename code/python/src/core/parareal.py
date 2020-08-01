@@ -129,7 +129,7 @@ class PararealOperator(Operator):
             [y_trajectory, MPI.DOUBLE])
 
         return Solution(
-            bvp,
+            ivp,
             self._discretise_time_domain(ivp.t_interval, self._f.d_t)[1:],
             y_trajectory,
             vertex_oriented)

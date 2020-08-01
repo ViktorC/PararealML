@@ -125,7 +125,7 @@ class ODEOperator(Operator):
             time_steps[1:])
         y = np.ascontiguousarray(result.y.T)
 
-        return Solution(bvp, time_steps[1:], y)
+        return Solution(ivp, time_steps[1:], y)
 
 
 class FDMOperator(Operator):
@@ -187,7 +187,7 @@ class FDMOperator(Operator):
                 y_constraints)
             y[i] = y_i
 
-        return Solution(bvp, time_steps[1:], y, True)
+        return Solution(ivp, time_steps[1:], y, True)
 
 
 class FVMOperator(Operator):
@@ -246,7 +246,7 @@ class FVMOperator(Operator):
                     solver=self._solver)
                 y[i, ..., j] = fipy_var.value.reshape(mesh_shape)
 
-        return Solution(bvp, time_steps[1:], y, False)
+        return Solution(ivp, time_steps[1:], y, False)
 
 
 class MLOperator(Operator, ABC):
@@ -316,7 +316,7 @@ class MLOperator(Operator, ABC):
                 y_hat = self._model.predict(x)
                 y[i, ...] = y_hat.reshape(y_shape)
 
-        return Solution(bvp, time_steps, y, self._vertex_oriented)
+        return Solution(ivp, time_steps, y, self._vertex_oriented)
 
     def _create_input_placeholder(
             self,

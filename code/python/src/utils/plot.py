@@ -7,15 +7,16 @@ from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation
-from src.core.initial_value_problem import InitialValueProblem
 from src.core.solution import Solution
 
 
 def plot_y_against_t(
-        ivp: InitialValueProblem,
         solution: Solution,
         file_name: str):
-    diff_eq = ivp.boundary_value_problem.differential_equation
+    diff_eq = solution \
+        .initial_value_problem \
+        .boundary_value_problem \
+        .differential_equation
     assert not diff_eq.x_dimension
 
     t = solution.t_coordinates
@@ -61,13 +62,12 @@ def plot_phase_space(solution: Solution, file_name: str):
 
 
 def plot_n_body_simulation(
-        ivp: InitialValueProblem,
         solution: Solution,
-        time_steps_between_updates: int,
+        frames_between_updates: int,
         interval: int,
         smallest_marker_size: int,
         file_name: str):
-    bvp = ivp.boundary_value_problem
+    bvp = solution.initial_value_problem.boundary_value_problem
     diff_eq: NBodyGravitationalEquation = bvp.differential_equation
 
     assert isinstance(diff_eq, NBodyGravitationalEquation)
@@ -184,21 +184,20 @@ def plot_n_body_simulation(
     animation = FuncAnimation(
         fig,
         update_plot,
-        frames=range(0, y.shape[0], time_steps_between_updates),
+        frames=range(0, y.shape[0], frames_between_updates),
         interval=interval)
     animation.save(f'{file_name}.gif', writer='imagemagick')
     plt.clf()
 
 
 def plot_evolution_of_y(
-        ivp: InitialValueProblem,
         solution: Solution,
         y_ind: int,
-        time_steps_between_updates: int,
+        frames_between_updates: int,
         interval: int,
         file_name: str,
         three_d: bool = True):
-    bvp = ivp.boundary_value_problem
+    bvp = solution.initial_value_problem.boundary_value_problem
 
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
@@ -274,25 +273,27 @@ def plot_evolution_of_y(
     animation = FuncAnimation(
         fig,
         update_plot,
-        frames=range(0, y.shape[0], time_steps_between_updates),
+        frames=range(0, y.shape[0], frames_between_updates),
         interval=interval)
     animation.save(f'{file_name}.gif', writer='imagemagick')
     plt.clf()
 
 
 def plot_ivp_solution(
-        ivp: InitialValueProblem,
         solution: Solution,
         solution_name: str,
         n_images: int = 20,
         interval: int = 100,
         smallest_marker_size: int = 8,
         three_d: bool = True):
-    diff_eq = ivp.boundary_value_problem.differential_equation
+    diff_eq = solution \
+        .initial_value_problem \
+        .boundary_value_problem \
+        .differential_equation
+    
     if diff_eq.x_dimension:
         for y_ind in range(diff_eq.y_dimension):
             plot_evolution_of_y(
-                ivp,
                 solution,
                 y_ind,
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
@@ -302,14 +303,13 @@ def plot_ivp_solution(
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             plot_n_body_simulation(
-                ivp,
                 solution,
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
                 interval,
                 smallest_marker_size,
                 f'nbody_{solution_name}')
         else:
-            plot_y_against_t(ivp, solution, solution_name)
+            plot_y_against_t(solution, solution_name)
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')
