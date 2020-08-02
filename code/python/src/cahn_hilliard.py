@@ -11,8 +11,8 @@ from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator, FDMOperator, \
-    SolutionRegressionOperator, PINNOperator, OperatorRegressionOperator
+from src.core.operator import FVMOperator, FDMOperator, PINNOperator, \
+    SolutionRegressionOperator, OperatorRegressionOperator
 
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
