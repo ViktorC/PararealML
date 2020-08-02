@@ -19,6 +19,7 @@ from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differentiator import Differentiator
+from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
 from src.core.integrator import Integrator
@@ -114,18 +115,18 @@ class ODEOperator(Operator):
         assert diff_eq.x_dimension == 0
 
         t_interval = ivp.t_interval
-        time_steps = self._discretise_time_domain(t_interval, self._d_t)
-        adjusted_t_interval = (time_steps[0], time_steps[-1])
+        time_points = self._discretise_time_domain(t_interval, self._d_t)
+        adjusted_t_interval = (time_points[0], time_points[-1])
 
         result = solve_ivp(
             diff_eq.d_y_over_d_t,
             adjusted_t_interval,
             ivp.initial_condition.discrete_y_0(),
             self._method,
-            time_steps[1:])
+            time_points[1:])
         y = np.ascontiguousarray(result.y.T)
 
-        return Solution(bvp, time_steps[1:], y)
+        return Solution(bvp, time_points[1:], y)
 
 
 class FDMOperator(Operator):
@@ -172,13 +173,13 @@ class FDMOperator(Operator):
                 d_y_boundary_constraints,
                 y_constraints)
 
-        time_steps = self._discretise_time_domain(
+        time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
-        y = np.empty((len(time_steps) - 1,) + bvp.y_vertices_shape)
+        y = np.empty((len(time_points) - 1,) + bvp.y_vertices_shape)
         y_i = ivp.initial_condition.discrete_y_0(True)
 
-        for i, t_i in enumerate(time_steps[:-1]):
+        for i, t_i in enumerate(time_points[:-1]):
             y_i = self._integrator.integral(
                 y_i,
                 t_i,
@@ -187,7 +188,7 @@ class FDMOperator(Operator):
                 y_constraints)
             y[i] = y_i
 
-        return Solution(bvp, time_steps[1:], y, True)
+        return Solution(bvp, time_points[1:], y, True)
 
 
 class FVMOperator(Operator):
@@ -232,11 +233,11 @@ class FVMOperator(Operator):
 
         fipy_terms = diff_eq.fipy_terms(fipy_vars)
 
-        time_steps = self._discretise_time_domain(
+        time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
-        y = np.empty((len(time_steps) - 1,) + bvp.y_cells_shape)
-        for i, t_i in enumerate(time_steps[:-1]):
+        y = np.empty((len(time_points) - 1,) + bvp.y_cells_shape)
+        for i, t_i in enumerate(time_points[:-1]):
             for fipy_var in fipy_vars:
                 fipy_var.updateOld()
             for j, fipy_var in enumerate(fipy_vars):
@@ -246,20 +247,20 @@ class FVMOperator(Operator):
                     solver=self._solver)
                 y[i, ..., j] = fipy_var.value.reshape(mesh_shape)
 
-        return Solution(bvp, time_steps[1:], y, False)
+        return Solution(bvp, time_points[1:], y, False)
 
 
 class MLOperator(Operator, ABC):
     """
-    A base class for machine learning accelerated operators for solving
-    differential equations
+    A base class for machine learning operators for solving differential
+    equations.
     """
 
     def __init__(
             self,
             d_t: float,
             vertex_oriented: bool,
-            batch_mode: bool = True):
+            batch_mode: Optional[bool] = None):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
@@ -291,33 +292,6 @@ class MLOperator(Operator, ABC):
     def model(self, model: Optional[Union[RegressionModel, PINNModel]]):
         self._model = model
 
-    def solve(self, ivp: InitialValueProblem) -> Solution:
-        assert self._model is not None
-
-        bvp = ivp.boundary_value_problem
-
-        x = self._create_input_placeholder(bvp)
-        time_steps = self._discretise_time_domain(
-            ivp.t_interval, self._d_t)[1:]
-
-        y_shape = bvp.y_shape(self._vertex_oriented)
-        all_y_shape = (len(time_steps),) + y_shape
-
-        if self._batch_mode:
-            x_batch = self._create_input_batch(x, time_steps)
-            y_hat_batch = self._model.predict(x_batch)
-            y = np.ascontiguousarray(
-                y_hat_batch.reshape(all_y_shape),
-                dtype=np.float)
-        else:
-            y = np.empty(all_y_shape)
-            for i, t_i in enumerate(time_steps):
-                x[:, -1] = t_i
-                y_hat = self._model.predict(x)
-                y[i, ...] = y_hat.reshape(y_shape)
-
-        return Solution(bvp, time_steps, y, self._vertex_oriented)
-
     def _create_input_placeholder(
             self,
             bvp: BoundaryValueProblem
@@ -330,7 +304,7 @@ class MLOperator(Operator, ABC):
         the spatial coordinates of the corresponding mesh point in addition to
         an empty column for t.
 
-        :param bvp: the boundary value problem to base the
+        :param bvp: the boundary value problem to base the inputs on
         :return: the placeholder array for the ML inputs
         """
         diff_eq = bvp.differential_equation
@@ -347,103 +321,85 @@ class MLOperator(Operator, ABC):
 
         return x
 
-    @staticmethod
     def _create_input_batch(
-            input_placeholder: np.ndarray,
-            discretised_time_domain: np.ndarray
+            self,
+            bvp: BoundaryValueProblem,
+            time_points: np.ndarray
     ) -> np.ndarray:
         """
         Creates a 2D array of inputs with a shape of
         (n_mesh_points * n_time_points, x_dimension + 1).
 
-        :param input_placeholder: the placeholder array for the inputs
-        :param discretised_time_domain: the discretised time domain of the IVP
-        to create inputs for
+        :param bvp: the boundary value problem to base the inputs on
+        :param time_points: the discretised time domain of the IVP to create
+        inputs for
         :return: a batch of all inputs
         """
+        input_placeholder = self._create_input_placeholder(bvp)
         n_mesh_points = input_placeholder.shape[0]
 
-        x = np.tile(input_placeholder, (len(discretised_time_domain), 1))
-        t = np.repeat(discretised_time_domain, n_mesh_points)
-        x[:, -1] = t
+        x = np.tile(input_placeholder, (len(time_points), 1))
+        t = np.repeat(time_points, n_mesh_points)
+        x[:, bvp.differential_equation.x_dimension] = t
 
         return x
 
 
-class RegressionOperator(MLOperator):
+class SolutionModelOperator(MLOperator, ABC):
     """
-    A machine learning accelerated operator that uses a regression model to
-    solve differential equations.
+    A base class for machine learning operators modelling the solution of
+    initial value problems.
     """
 
-    def train(
+    def __init__(
             self,
-            ivp: InitialValueProblem,
-            oracle: Operator,
-            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
-            test_size: float = .2,
-            subsampling_factor: float = None
-    ) -> float:
+            d_t: float,
+            vertex_oriented: bool,
+            batch_mode: bool = True):
         """
-        Fits a regression model to training data generated by the solving the
-        provided IVP using the oracle. It keeps the fitted model for use by the
-        operator.
-
-        :param ivp: the IVP to train the regression model on
-        :param oracle: the operator providing the training data
-        :param model: the model to fit to the training data
-        :param test_size: the fraction of all data points that should be used
-        for testing
-        :param subsampling_factor: the fraction of all data points that should
-        be sampled for training; it has to be greater than 0 and less than or
-        equal to 1; if it is None, all data points will be used
-        :return: the loss of the trained model on the test data set
+        :param d_t: the temporal step size to use
+        :param vertex_oriented: whether the operator is to evaluate the
+        solutions of IVPs at the vertices or cell centers of the spatial meshes
+        :param batch_mode: whether the operator is to perform a single
+        prediction to evaluate the solution at all coordinates using input
+        batching; this can be very memory intensive depending on the temporal
+        step size
         """
-        assert 0. <= test_size < 1.
-        train_size = 1. - test_size
+        super(SolutionModelOperator, self).__init__(d_t, vertex_oriented)
+        self._batch_mode = batch_mode
 
-        assert subsampling_factor is None or 0. < subsampling_factor <= 1.
+    def solve(self, ivp: InitialValueProblem) -> Solution:
+        assert self._model is not None
 
-        t = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
-        x = self._create_input_placeholder(ivp.boundary_value_problem)
-        x_batch = self._create_input_batch(x, t)
+        bvp = ivp.boundary_value_problem
 
-        y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
-        y_0 = y_0.reshape((1,) + y_0.shape)
-        y = oracle.solve(ivp).discrete_y(self._vertex_oriented)
-        y_batch = np.concatenate((y_0, y), axis=0)
-        y_batch = y_batch.reshape((-1, y_batch.shape[-1]))
+        time_points = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)[1:]
 
-        if subsampling_factor is not None and subsampling_factor < 1.:
-            n_data_points = x_batch.shape[0]
-            indices = np.random.randint(
-                0,
-                n_data_points,
-                size=math.ceil(subsampling_factor * n_data_points))
-            x_batch = x_batch[indices, :]
-            y_batch = y_batch[indices, :]
+        y_shape = bvp.y_shape(self._vertex_oriented)
+        all_y_shape = (len(time_points),) + y_shape
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            x_batch,
-            y_batch,
-            train_size=train_size,
-            test_size=test_size)
-
-        model.fit(x_train, y_train)
-
-        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
-            self._model = model.best_estimator_
+        if self._batch_mode:
+            x_batch = self._create_input_batch(bvp, time_points)
+            y_hat_batch = self._model.predict(x_batch)
+            y = np.ascontiguousarray(
+                y_hat_batch.reshape(all_y_shape),
+                dtype=np.float)
         else:
-            self._model = model
+            x = self._create_input_placeholder(bvp)
+            y = np.empty(all_y_shape)
+            for i, t_i in enumerate(time_points):
+                x[:, -1] = t_i
+                y_hat = self._model.predict(x)
+                y[i, ...] = y_hat.reshape(y_shape)
 
-        loss = self._model.score(x_test, y_test)
-        return loss
+        return Solution(bvp, time_points, y, self._vertex_oriented)
 
 
-class PINNOperator(MLOperator):
+class PINNOperator(SolutionModelOperator):
     """
-    A physics informed neural network (PINN) based differential equation solver
-    using the DeepXDE library.
+    A physics informed neural network based unsupervised machine learning
+    operator for solving initial value problems using the DeepXDE library.
     """
 
     def train(
@@ -518,3 +474,189 @@ class PINNOperator(MLOperator):
             loss_history, train_state = self._model.train()
 
         return loss_history, train_state
+
+
+class SolutionRegressionOperator(SolutionModelOperator):
+    """
+    A supervised machine learning operator that uses regression to model the
+    solution of initial value problems.
+    """
+
+    def train(
+            self,
+            ivp: InitialValueProblem,
+            oracle: Operator,
+            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            test_size: float = .2,
+            subsampling_factor: float = None
+    ) -> float:
+        """
+        Fits a regression model to training data generated by the solving the
+        provided IVP using the oracle. It keeps the fitted model for use by the
+        operator.
+
+        :param ivp: the IVP to train the regression model on
+        :param oracle: the operator providing the training data
+        :param model: the model to fit to the training data
+        :param test_size: the fraction of all data points that should be used
+        for testing
+        :param subsampling_factor: the fraction of all data points that should
+        be sampled for training; it has to be greater than 0 and less than or
+        equal to 1; if it is None, all data points will be used
+        :return: the loss of the trained model on the test data set
+        """
+        assert 0. <= test_size < 1.
+        train_size = 1. - test_size
+
+        assert subsampling_factor is None or 0. < subsampling_factor <= 1.
+
+        time_steps = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
+        x_batch = self._create_input_batch(
+            ivp.boundary_value_problem,
+            time_steps)
+
+        y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        y_0 = y_0.reshape((1,) + y_0.shape)
+        y = oracle.solve(ivp).discrete_y(self._vertex_oriented)
+        y_batch = np.concatenate((y_0, y), axis=0)
+        y_batch = y_batch.reshape((-1, y_batch.shape[-1]))
+
+        if subsampling_factor is not None and subsampling_factor < 1.:
+            n_data_points = x_batch.shape[0]
+            indices = np.random.randint(
+                0,
+                n_data_points,
+                size=math.ceil(subsampling_factor * n_data_points))
+            x_batch = x_batch[indices, :]
+            y_batch = y_batch[indices, :]
+
+        x_train, x_test, y_train, y_test = train_test_split(
+            x_batch,
+            y_batch,
+            train_size=train_size,
+            test_size=test_size)
+
+        model.fit(x_train, y_train)
+
+        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
+            self._model = model.best_estimator_
+        else:
+            self._model = model
+
+        loss = self._model.score(x_test, y_test)
+        return loss
+
+
+class OperatorRegressionOperator(MLOperator):
+    """
+    A supervised machine learning operator that uses regression to model a
+    conventional operator for solving initial value problems.
+    """
+
+    def solve(self, ivp: InitialValueProblem) -> Solution:
+        assert self._model is not None
+
+        bvp = ivp.boundary_value_problem
+        diff_eq = bvp.differential_equation
+
+        time_points = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)
+
+        y_shape = bvp.y_shape(self._vertex_oriented)
+
+        x = self._create_input_placeholder(bvp)
+        x = np.concatenate(
+            (x, np.empty((x.shape[0], diff_eq.y_dimension))),
+            axis=-1)
+        y = np.empty((len(time_points),) + y_shape)
+
+        y_i = ivp \
+            .initial_condition \
+            .discrete_y_0(self._vertex_oriented) \
+            .reshape(-1, diff_eq.y_dimension)
+
+        for i, t_i in enumerate(time_points[:-1]):
+            x[:, diff_eq.x_dimension] = t_i
+            x[:, diff_eq.x_dimension + 1:] = y_i
+            y_i = self._model.predict(x)
+            y[i, ...] = y_i.reshape(y_shape)
+
+        return Solution(bvp, time_points[1:], y, self._vertex_oriented)
+
+    def train(
+            self,
+            ivp: InitialValueProblem,
+            oracle: Operator,
+            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            iterations: int,
+            noise_sd: float,
+            test_size: float = .2
+    ) -> float:
+        """
+        Fits a regression model to training data generated by the oracle. The
+        inputs of the model are spatio-temporal coordinates and the value of
+        the solution at the coordinates and its outputs are the value of the
+        solution at the next time step. The training data is generated by
+        using the oracle to solve sub-IVPs with randomised initial conditions
+        and a time domain extent matching the step size of this operator.
+
+        :param ivp: the IVP to train the regression model on
+        :param oracle: the operator providing the training data
+        :param model: the model to fit to the training data
+        :param iterations: the number of data generation iterations
+        :param noise_sd: the standard deviation of the Gaussian noise to add to
+        the initial conditions of the sub-IVPs
+        :param test_size: the fraction of all data points that should be used
+        for testing
+        :return: the loss of the trained model on the test data set
+        """
+        assert 0. <= test_size < 1.
+        assert iterations > 0
+        assert noise_sd > 0.
+
+        bvp = ivp.boundary_value_problem
+        diff_eq = bvp.differential_equation
+
+        train_size = 1. - test_size
+
+        n_spatial_points = np.prod(bvp.mesh.shape(self._vertex_oriented))
+
+        time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
+        x_batch = self._create_input_batch(bvp, time_points[:-1])
+        all_x = np.tile(x_batch, (iterations, 1))
+
+        y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        all_y = np.empty((all_x.shape[0], diff_eq.y_dimension))
+
+        for epoch in range(iterations):
+            offset = epoch * x_batch.shape[0]
+            y_i = y_0
+            for i, t_i in enumerate(time_points[:-1]):
+                y_i += np.random.normal(scale=noise_sd, size=y_i.shape)
+                all_x[offset:offset + n_spatial_points,
+                      :-diff_eq.y_dimension] = \
+                    y_i.reshape((-1, diff_eq.y_dimension))
+                sub_ivp = InitialValueProblem(
+                    bvp,
+                    (t_i, t_i + self._d_t),
+                    DiscreteInitialCondition(bvp, y_i))
+                solution = oracle.solve(sub_ivp)
+                y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
+                all_y[offset:offset + n_spatial_points, :] = \
+                    y_i.reshape((-1, diff_eq.y_dimension))
+
+        x_train, x_test, y_train, y_test = train_test_split(
+            all_x,
+            all_y,
+            train_size=train_size,
+            test_size=test_size)
+
+        model.fit(x_train, y_train)
+
+        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
+            self._model = model.best_estimator_
+        else:
+            self._model = model
+
+        loss = self._model.score(x_test, y_test)
+        return loss
