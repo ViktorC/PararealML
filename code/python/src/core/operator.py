@@ -614,7 +614,8 @@ class OperatorRegressionOperator(MLOperator):
 
         train_size = 1. - test_size
 
-        n_spatial_points = np.prod(bvp.mesh.shape(self._vertex_oriented))
+        n_spatial_points = np.prod(bvp.mesh.shape(self._vertex_oriented)) \
+            if diff_eq.x_dimension else 1
 
         time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
         x_batch = self._create_input_batch(bvp, time_points[:-1])
@@ -630,8 +631,9 @@ class OperatorRegressionOperator(MLOperator):
             offset = epoch * x_batch.shape[0]
             y_i = y_0
             for i, t_i in enumerate(time_points[:-1]):
+                time_point_offset = offset + i * n_spatial_points
                 y_i += np.random.normal(scale=noise_sd, size=y_i.shape)
-                all_x[offset:offset + n_spatial_points,
+                all_x[time_point_offset:time_point_offset + n_spatial_points,
                       -diff_eq.y_dimension:] = \
                     y_i.reshape((-1, diff_eq.y_dimension))
                 sub_ivp = InitialValueProblem(
@@ -640,8 +642,8 @@ class OperatorRegressionOperator(MLOperator):
                     DiscreteInitialCondition(bvp, y_i, self._vertex_oriented))
                 solution = oracle.solve(sub_ivp)
                 y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
-                all_y[offset:offset + n_spatial_points, :] = \
-                    y_i.reshape((-1, diff_eq.y_dimension))
+                all_y[time_point_offset:time_point_offset + n_spatial_points,
+                      :] = y_i.reshape((-1, diff_eq.y_dimension))
 
         x_train, x_test, y_train, y_test = train_test_split(
             all_x,
