@@ -120,16 +120,12 @@ class PararealOperator(Operator):
             if max_update < self._tol:
                 break
 
-        y_length = comm.size * int(
-            (time_slices[-1] - time_slices[0]) / (comm.size * self._f.d_t))
-        y_trajectory = np.empty((y_length, *y_shape))
+        time_points = self._discretise_time_domain(
+            ivp.t_interval, self._f.d_t)[1:]
+        y_trajectory = np.empty((len(time_points), *y_shape))
         my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
         comm.Allgather(
             [my_y_trajectory, MPI.DOUBLE],
             [y_trajectory, MPI.DOUBLE])
 
-        return Solution(
-            bvp,
-            self._discretise_time_domain(ivp.t_interval, self._f.d_t)[1:],
-            y_trajectory,
-            vertex_oriented)
+        return Solution(bvp, time_points, y_trajectory, vertex_oriented)
