@@ -544,6 +544,7 @@ class SolutionRegressionOperator(SolutionModelOperator):
             self._model = model
 
         loss = self._model.score(x_test, y_test)
+        print(f'Model loss: {loss}')
         return loss
 
 
@@ -568,7 +569,7 @@ class OperatorRegressionOperator(MLOperator):
         x = np.concatenate(
             (x, np.empty((x.shape[0], diff_eq.y_dimension))),
             axis=-1)
-        y = np.empty((len(time_points),) + y_shape)
+        y = np.empty((len(time_points) - 1,) + y_shape)
 
         y_i = ivp \
             .initial_condition \
@@ -623,6 +624,9 @@ class OperatorRegressionOperator(MLOperator):
 
         time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
         x_batch = self._create_input_batch(bvp, time_points[:-1])
+        x_batch = np.concatenate(
+            (x_batch, np.empty((x_batch.shape[0], diff_eq.y_dimension))),
+            axis=-1)
         all_x = np.tile(x_batch, (iterations, 1))
 
         y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
@@ -634,12 +638,12 @@ class OperatorRegressionOperator(MLOperator):
             for i, t_i in enumerate(time_points[:-1]):
                 y_i += np.random.normal(scale=noise_sd, size=y_i.shape)
                 all_x[offset:offset + n_spatial_points,
-                      :-diff_eq.y_dimension] = \
+                      -diff_eq.y_dimension:] = \
                     y_i.reshape((-1, diff_eq.y_dimension))
                 sub_ivp = InitialValueProblem(
                     bvp,
                     (t_i, t_i + self._d_t),
-                    DiscreteInitialCondition(bvp, y_i))
+                    DiscreteInitialCondition(bvp, y_i, self._vertex_oriented))
                 solution = oracle.solve(sub_ivp)
                 y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
                 all_y[offset:offset + n_spatial_points, :] = \
@@ -659,4 +663,5 @@ class OperatorRegressionOperator(MLOperator):
             self._model = model
 
         loss = self._model.score(x_test, y_test)
+        print(f'Model loss: {loss}')
         return loss
