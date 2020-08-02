@@ -66,7 +66,7 @@ experiment.solve_parallel_sol_reg()
 
 experiment.train_coarse_op_reg(
     RandomForestRegressor(),
-    iterations=10,
-    noise_sd=1e-5)
+    iterations=20,
+    noise_sd=.01)
 experiment.solve_serial_coarse_op_reg()
 experiment.solve_parallel_op_reg()
