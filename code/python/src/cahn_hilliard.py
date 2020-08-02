@@ -11,9 +11,8 @@ from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator, PINNOperator, RegressionOperator, \
-    FDMOperator
-
+from src.core.operator import FVMOperator, FDMOperator, \
+    SolutionRegressionOperator, PINNOperator, OperatorRegressionOperator
 
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
@@ -30,22 +29,22 @@ ic = DiscreteInitialCondition(
     False)
 ivp = InitialValueProblem(
     bvp,
-    (0., 18.),
+    (0., 2.),
     ic)
 
 f = FVMOperator(LinearCGSSolver(), .01)
 g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-g_reg = RegressionOperator(.5, f.vertex_oriented)
 g_pinn = PINNOperator(.5, f.vertex_oriented)
+g_sol_reg = SolutionRegressionOperator(.5, f.vertex_oriented)
+g_op_reg = OperatorRegressionOperator(.5, f.vertex_oriented)
+
 threshold = .1
 
-experiment = Experiment(ivp, f, g, g_reg, g_pinn, threshold)
+experiment = Experiment(ivp, f, g, g_pinn, g_sol_reg, g_op_reg, threshold)
 
-experiment.train_coarse_reg(
-    RandomForestRegressor(),
-    subsampling_factor=.01)
-experiment.solve_serial_coarse_reg()
-experiment.solve_parallel_reg()
+experiment.solve_serial_fine()
+experiment.solve_serial_coarse()
+experiment.solve_parallel()
 
 experiment.train_coarse_pinn(
     (50,) * 4, 'tanh', 'Glorot normal',
@@ -59,6 +58,15 @@ experiment.train_coarse_pinn(
 experiment.solve_serial_coarse_pinn()
 experiment.solve_parallel_pinn()
 
-experiment.solve_serial_fine()
-experiment.solve_serial_coarse()
-experiment.solve_parallel()
+experiment.train_coarse_sol_reg(
+    RandomForestRegressor(),
+    subsampling_factor=.01)
+experiment.solve_serial_coarse_sol_reg()
+experiment.solve_parallel_sol_reg()
+
+experiment.train_coarse_op_reg(
+    RandomForestRegressor(),
+    iterations=10,
+    noise_sd=1e-5)
+experiment.solve_serial_coarse_op_reg()
+experiment.solve_parallel_op_reg()

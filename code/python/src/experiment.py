@@ -4,11 +4,12 @@ from deepxde.maps import FNN
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
 from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import Operator, RegressionOperator, PINNOperator, \
-    RegressionModel
+from src.core.operator import Operator, PINNOperator, \
+    SolutionRegressionOperator, OperatorRegressionOperator, RegressionModel
 from src.core.parareal import PararealOperator
 from src.core.solution import Solution
 from src.utils.plot import plot
+from src.utils.print import suppress_stdout
 from src.utils.profile import profile
 from src.utils.time import time
 
@@ -24,57 +25,38 @@ class Experiment:
             ivp: InitialValueProblem,
             f: Operator,
             g: Operator,
-            g_reg: RegressionOperator,
             g_pinn: PINNOperator,
+            g_sol_reg: SolutionRegressionOperator,
+            g_op_reg: OperatorRegressionOperator,
             tol: float):
         """
         :param ivp: the initial value problem to solve
         :param f: the fine operator
         :param g: the coarse operator
-        :param g_reg: the regression model based coarse operator
         :param g_pinn: the PINN based coarse operator
+        :param g_sol_reg: the solution regression model based coarse operator
+        :param g_op_reg: the operator regression model based coarse operator
         :param tol: the convergence tolerance of the Parareal framework
         """
         assert ivp is not None
         assert f is not None
         assert g is not None
-        assert g_reg is not None
         assert g_pinn is not None
+        assert g_sol_reg is not None
+        assert g_op_reg is not None
         assert tol > 0.
 
         self._ivp = ivp
         self._f = f
         self._g = g
-        self._g_reg = g_reg
         self._g_pinn = g_pinn
+        self._g_sol_reg = g_sol_reg
+        self._g_op_reg = g_op_reg
 
         self._parareal = PararealOperator(f, g, tol)
-        self._parareal_reg = PararealOperator(f, g_reg, tol)
         self._parareal_pinn = PararealOperator(f, g_pinn, tol)
-
-    @profile
-    @time
-    def train_coarse_reg(
-            self,
-            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
-            test_size: float = .2,
-            subsampling_factor: Optional[float] = None):
-        """
-        Trains the regression model based coarse operator.
-
-        :param model: the regression model
-        :param test_size: the fraction of all data points that should be used
-        for testing
-        :param subsampling_factor: the fraction of all data points that should
-        be sampled for training; it has to be greater than 0 and less than or
-        equal to 1; if it is None, all data points will be used
-        """
-        self._g_reg.train(
-            self._ivp,
-            self._g,
-            model,
-            test_size=test_size,
-            subsampling_factor=subsampling_factor)
+        self._parareal_sol_reg = PararealOperator(f, g_sol_reg, tol)
+        self._parareal_op_reg = PararealOperator(f, g_op_reg, tol)
 
     @profile
     @time
@@ -102,6 +84,56 @@ class Experiment:
                 initialisation),
             **training_config)
 
+    @profile
+    @time
+    def train_coarse_sol_reg(
+            self,
+            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            subsampling_factor: Optional[float] = None,
+            test_size: float = .2):
+        """
+        Trains the solution regression model based coarse operator.
+
+        :param model: the regression model
+        :param subsampling_factor: the fraction of all data points that should
+        be sampled for training; it has to be greater than 0 and less than or
+        equal to 1; if it is None, all data points will be used
+        :param test_size: the fraction of all data points that should be used
+        for testing
+        """
+        self._g_sol_reg.train(
+            self._ivp,
+            self._g,
+            model,
+            test_size=test_size,
+            subsampling_factor=subsampling_factor)
+
+    @profile
+    @time
+    def train_coarse_op_reg(
+            self,
+            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            iterations: int,
+            noise_sd: float,
+            test_size: float = .2):
+        """
+        Trains the operator regression model based coarse operator.
+
+        :param model: the regression model
+        :param iterations: the number of data generation iterations
+        :param noise_sd: the standard deviation of the Gaussian noise to add to
+        the initial conditions of the sub-IVPs
+        :param test_size: the fraction of all data points that should be used
+        for testing
+        """
+        self._g_op_reg.train(
+            self._ivp,
+            self._g,
+            model,
+            iterations=iterations,
+            noise_sd=noise_sd,
+            test_size=test_size)
+
     @plot
     @time
     def solve_serial_fine(self) -> Solution:
@@ -120,20 +152,30 @@ class Experiment:
 
     @plot
     @time
-    def solve_serial_coarse_reg(self) -> Solution:
-        """
-        Solves the IVP serially using the regression model based coarse
-        operator.
-        """
-        return self._g_reg.solve(self._ivp)
-
-    @plot
-    @time
+    @suppress_stdout
     def solve_serial_coarse_pinn(self) -> Solution:
         """
         Solves the IVP serially using the PINN based coarse operator.
         """
         return self._g_pinn.solve(self._ivp)
+
+    @plot
+    @time
+    def solve_serial_coarse_sol_reg(self) -> Solution:
+        """
+        Solves the IVP serially using the solution regression model based
+        coarse operator.
+        """
+        return self._g_sol_reg.solve(self._ivp)
+
+    @plot
+    @time
+    def solve_serial_coarse_op_reg(self) -> Solution:
+        """
+        Solves the IVP serially using the operator regression model based
+        coarse operator.
+        """
+        return self._g_op_reg.solve(self._ivp)
 
     @plot
     @time
@@ -146,18 +188,28 @@ class Experiment:
 
     @plot
     @time
-    def solve_parallel_reg(self) -> Solution:
-        """
-        Solves the IVP using the Parareal framework on top of the fine operator
-        and the regression model based coarse operator
-        """
-        return self._parareal_reg.solve(self._ivp)
-
-    @plot
-    @time
+    @suppress_stdout
     def solve_parallel_pinn(self) -> Solution:
         """
         Solves the IVP using the Parareal framework on top of the fine operator
         and the PINN based coarse operator
         """
         return self._parareal_pinn.solve(self._ivp)
+
+    @plot
+    @time
+    def solve_parallel_sol_reg(self) -> Solution:
+        """
+        Solves the IVP using the Parareal framework on top of the fine operator
+        and the solution regression model based coarse operator
+        """
+        return self._parareal_sol_reg.solve(self._ivp)
+
+    @plot
+    @time
+    def solve_parallel_op_reg(self) -> Solution:
+        """
+        Solves the IVP using the Parareal framework on top of the fine operator
+        and the operator regression model based coarse operator
+        """
+        return self._parareal_op_reg.solve(self._ivp)
