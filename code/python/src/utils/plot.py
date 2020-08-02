@@ -24,10 +24,9 @@ def plot_y_against_t(
 
     plt.xlabel('t')
     plt.ylabel('y')
-    plt.axis('scaled')
 
     if diff_eq.y_dimension == 1:
-        plt.plot(t, y)
+        plt.plot(t, y[..., 0])
     else:
         for i in range(y.shape[1]):
             plt.plot(t, y[:, i])
@@ -45,9 +44,10 @@ def plot_phase_space(solution: Solution, file_name: str):
     if y.shape[1] == 2:
         plt.xlabel('y 0')
         plt.ylabel('y 1')
-        plt.axis('scaled')
 
         plt.plot(y[:, 0], y[:, 1])
+
+        plt.axis('scaled')
     elif y.shape[1] == 3:
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -89,7 +89,6 @@ def plot_n_body_simulation(
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.axis('scaled')
 
         x_coordinates = y[:, :n_obj_by_dims:2]
         y_coordinates = y[:, 1:n_obj_by_dims:2]
@@ -108,18 +107,20 @@ def plot_n_body_simulation(
         y_max += span_scaling_factor * y_span
         y_min -= span_scaling_factor * y_span
 
-        plot = ax.scatter(
+        scatter_plot = ax.scatter(
             x_coordinates[0, :],
             y_coordinates[0, :],
             s=marker_sizes,
             c=colors)
 
+        plt.axis('scaled')
+
         plt.xlim(x_min, x_max)
         plt.ylim(y_min, y_max)
 
         def update_plot(time_step: int):
-            plot.set_offsets(coordinates[time_step, ...])
-            return plot, ax
+            scatter_plot.set_offsets(coordinates[time_step, ...])
+            return scatter_plot, ax
     else:
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -161,7 +162,7 @@ def plot_n_body_simulation(
         z_max += span_scaling_factor * z_span
         z_min -= span_scaling_factor * z_span
 
-        plot = ax.scatter(
+        scatter_plot = ax.scatter(
             x_coordinates[0, :],
             y_coordinates[0, :],
             z_coordinates[0, :],
@@ -174,12 +175,12 @@ def plot_n_body_simulation(
         ax.set_zlim(z_min, z_max)
 
         def update_plot(time_step: int):
-            plot._offsets3d = (
+            scatter_plot._offsets3d = (
                 x_coordinates[time_step, ...],
                 y_coordinates[time_step, ...],
                 z_coordinates[time_step, ...]
             )
-            return plot, ax
+            return scatter_plot, ax
 
     animation = FuncAnimation(
         fig,
@@ -207,12 +208,12 @@ def plot_evolution_of_y(
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.axis('scaled')
 
         x = x_coordinates[0]
         line_plot, = ax.plot(x, y[0, ...])
 
         plt.ylim(v_min, v_max)
+        plt.axis('scaled')
 
         def update_plot(time_step: int):
             line_plot.set_ydata(y[time_step, ...])
