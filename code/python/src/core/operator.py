@@ -259,21 +259,15 @@ class MLOperator(Operator, ABC):
     def __init__(
             self,
             d_t: float,
-            vertex_oriented: bool,
-            batch_mode: Optional[bool] = None):
+            vertex_oriented: bool):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
         solutions of IVPs at the vertices or cell centers of the spatial meshes
-        :param batch_mode: whether the operator is to perform a single
-        prediction to evaluate the solution at all coordinates using input
-        batching; this can be very memory intensive depending on the temporal
-        step size
         """
         assert d_t > 0.
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
-        self._batch_mode = batch_mode
         self._model: Optional[Union[RegressionModel, PINNModel]] = None
 
     @property
