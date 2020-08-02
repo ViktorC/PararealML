@@ -632,7 +632,9 @@ class OperatorRegressionOperator(MLOperator):
             y_i = y_0
             for i, t_i in enumerate(time_points[:-1]):
                 time_point_offset = offset + i * n_spatial_points
-                y_i += np.random.normal(scale=noise_sd, size=y_i.shape)
+                y_i += np.random.normal(
+                    scale=noise_sd,
+                    size=y_i.shape).astype(y_i.dtype)
                 all_x[time_point_offset:time_point_offset + n_spatial_points,
                       -diff_eq.y_dimension:] = \
                     y_i.reshape((-1, diff_eq.y_dimension))
