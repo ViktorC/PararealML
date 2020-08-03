@@ -8,10 +8,10 @@ from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import ODEOperator, PINNOperator, \
     SolutionRegressionOperator, OperatorRegressionOperator
 
-diff_eq = PopulationGrowthEquation(1e-7)
+diff_eq = PopulationGrowthEquation(2e-2)
 bvp = BoundaryValueProblem(diff_eq)
-ic = ContinuousInitialCondition(bvp, lambda _: (1e7,))
-ivp = InitialValueProblem(bvp, (0., 1.), ic)
+ic = ContinuousInitialCondition(bvp, lambda _: (100,))
+ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
 f = ODEOperator('DOP853', 1e-5)
 g = ODEOperator('RK23', 1e-4)
@@ -47,7 +47,7 @@ experiment.solve_parallel_sol_reg()
 
 experiment.train_coarse_op_reg(
     RandomForestRegressor(),
-    iterations=10,
-    noise_sd=1e-5)
+    iterations=20,
+    noise_sd=5.)
 experiment.solve_serial_coarse_op_reg()
 experiment.solve_parallel_op_reg()
