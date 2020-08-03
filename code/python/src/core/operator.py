@@ -91,14 +91,23 @@ class ODEOperator(Operator):
     def __init__(
             self,
             method: Union[str, OdeSolver],
-            d_t: float):
+            d_t: float,
+            atol: float = 1e-6,
+            rtol: float = 1e-3):
         """
         :param method: the ODE solver to use
         :param d_t: the temporal step size to use
+        :param atol: the absolute error tolerance
+        :param rtol: the relative error tolerance
         """
         assert d_t > 0.
+        assert atol > 0.
+        assert rtol > 0.
+
         self._method = method
         self._d_t = d_t
+        self._atol = atol
+        self._rtol = rtol
 
     @property
     def d_t(self) -> float:
@@ -123,7 +132,11 @@ class ODEOperator(Operator):
             adjusted_t_interval,
             ivp.initial_condition.discrete_y_0(),
             self._method,
-            time_points[1:])
+            time_points[1:],
+            atol=self._atol,
+            rtol=self._rtol,
+            dense_output=False,
+            vectorized=False)
 
         assert result.success, \
             f'status code: {result.status}, message: {result.message}'
