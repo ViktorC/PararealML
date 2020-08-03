@@ -30,7 +30,7 @@ experiment.solve_parallel()
 experiment.train_coarse_pinn(
     (50,) * 1, 'tanh', 'Glorot normal',
     n_domain=400,
-    n_initial=50,
+    n_initial=1,
     n_test=100,
     n_epochs=5000,
     optimiser='adam',
