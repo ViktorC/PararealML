@@ -1,7 +1,6 @@
+import math
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union, Tuple
-
-import math
 
 import numpy as np
 from deepxde import Model as PINNModel, IC
@@ -24,6 +23,7 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
 from src.core.integrator import Integrator
 from src.core.solution import Solution
+from src.utils.print import suppress_stdout
 
 SKLearnRegressionModel = Union[
     tuple([_class for name, _class in all_estimators()
@@ -365,6 +365,7 @@ class SolutionModelOperator(MLOperator, ABC):
         super(SolutionModelOperator, self).__init__(d_t, vertex_oriented)
         self._batch_mode = batch_mode
 
+    @suppress_stdout
     def solve(self, ivp: InitialValueProblem) -> Solution:
         assert self._model is not None
 

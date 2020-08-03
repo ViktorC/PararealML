@@ -9,8 +9,6 @@ from src.core.operator import Operator, PINNOperator, \
 from src.core.parareal import PararealOperator
 from src.core.solution import Solution
 from src.utils.plot import plot
-from src.utils.print import suppress_stdout
-from src.utils.profile import profile
 from src.utils.time import time
 
 
@@ -149,7 +147,6 @@ class Experiment:
 
     @plot
     @time
-    @suppress_stdout
     def solve_serial_coarse_pinn(self) -> Solution:
         """
         Solves the IVP serially using the PINN based coarse operator.
@@ -185,7 +182,6 @@ class Experiment:
 
     @plot
     @time
-    @suppress_stdout
     def solve_parallel_pinn(self) -> Solution:
         """
         Solves the IVP using the Parareal framework on top of the fine operator
