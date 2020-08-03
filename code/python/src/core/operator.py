@@ -124,8 +124,11 @@ class ODEOperator(Operator):
             ivp.initial_condition.discrete_y_0(),
             self._method,
             time_points[1:])
-        y = np.ascontiguousarray(result.y.T)
 
+        assert result.success, \
+            f'status code: {result.status}, message: {result.message}'
+
+        y = np.ascontiguousarray(result.y.T)
         return Solution(bvp, time_points[1:], y)
 
 
