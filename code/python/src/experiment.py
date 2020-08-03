@@ -58,7 +58,6 @@ class Experiment:
         self._parareal_sol_reg = PararealOperator(f, g_sol_reg, tol)
         self._parareal_op_reg = PararealOperator(f, g_op_reg, tol)
 
-    @profile
     @time
     def train_coarse_pinn(
             self,
@@ -84,7 +83,6 @@ class Experiment:
                 initialisation),
             **training_config)
 
-    @profile
     @time
     def train_coarse_sol_reg(
             self,
@@ -108,7 +106,6 @@ class Experiment:
             test_size=test_size,
             subsampling_factor=subsampling_factor)
 
-    @profile
     @time
     def train_coarse_op_reg(
             self,
