@@ -2,15 +2,11 @@
 
 #SBATCH --job-name=s1984842-parareal-ml
 #SBATCH --time=0:60:0
-#SBATCH --exclusive
-#SBATCH --nodes=1
 #SBATCH --partition=gpu-cascade
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:1
 
 #SBATCH --account=d171-s1984842
-#SBATCH --partition=standard
-#SBATCH --qos=standard
 
 module load nvidia/cuda-10.2
 module load anaconda/python3
