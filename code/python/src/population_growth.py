@@ -13,11 +13,11 @@ bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(bvp, lambda _: (100,))
 ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
-f = ODEOperator('DOP853', 1e-5)
-g = ODEOperator('RK23', 1e-4)
-g_pinn = PINNOperator(10., True)
-g_sol_reg = SolutionRegressionOperator(10., True)
-g_op_reg = OperatorRegressionOperator(10., True)
+f = ODEOperator('DOP853', 1e-6)
+g = ODEOperator('RK45', 1e-4)
+g_pinn = PINNOperator(25., True)
+g_sol_reg = SolutionRegressionOperator(25., True)
+g_op_reg = OperatorRegressionOperator(25., True)
 
 threshold = .1
 
@@ -29,25 +29,25 @@ experiment.solve_parallel()
 
 experiment.train_coarse_pinn(
     (50,) * 1, 'tanh', 'Glorot normal',
-    n_domain=400,
+    n_domain=500,
     n_initial=1,
     n_test=100,
     n_epochs=5000,
     optimiser='adam',
-    learning_rate=.001,
+    learning_rate=.0001,
     scipy_optimiser='L-BFGS-B')
 experiment.solve_serial_coarse_pinn()
 experiment.solve_parallel_pinn()
 
 experiment.train_coarse_sol_reg(
     RandomForestRegressor(),
-    subsampling_factor=.5)
+    subsampling_factor=.1)
 experiment.solve_serial_coarse_sol_reg()
 experiment.solve_parallel_sol_reg()
 
 experiment.train_coarse_op_reg(
     RandomForestRegressor(),
-    iterations=20,
-    noise_sd=5.)
+    iterations=100,
+    noise_sd=(0., 50.))
 experiment.solve_serial_coarse_op_reg()
 experiment.solve_parallel_op_reg()

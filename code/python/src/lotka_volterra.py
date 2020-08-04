@@ -13,11 +13,11 @@ bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(bvp, lambda _: (100., 15.))
 ivp = InitialValueProblem(bvp, (0., 10.), ic)
 
-f = ODEOperator('DOP853', 1e-4)
-g = ODEOperator('RK23', 1e-3)
-g_pinn = PINNOperator(1., True)
-g_sol_reg = SolutionRegressionOperator(1., True)
-g_op_reg = OperatorRegressionOperator(1., True)
+f = ODEOperator('DOP853', 1e-7)
+g = ODEOperator('RK23', 1e-4)
+g_pinn = PINNOperator(2.5, True)
+g_sol_reg = SolutionRegressionOperator(2.5, True)
+g_op_reg = OperatorRegressionOperator(2.5, True)
 
 threshold = .1
 
@@ -41,13 +41,13 @@ experiment.solve_parallel_pinn()
 
 experiment.train_coarse_sol_reg(
     RandomForestRegressor(),
-    subsampling_factor=.5)
+    subsampling_factor=.1)
 experiment.solve_serial_coarse_sol_reg()
 experiment.solve_parallel_sol_reg()
 
 experiment.train_coarse_op_reg(
     RandomForestRegressor(),
-    iterations=10,
-    noise_sd=1.)
+    iterations=20,
+    noise_sd=(0., 10.))
 experiment.solve_serial_coarse_op_reg()
 experiment.solve_parallel_op_reg()
