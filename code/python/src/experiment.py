@@ -1,6 +1,7 @@
 from typing import Union, Optional, Tuple
 
 from deepxde.maps import FNN
+from deepxde.model import LossHistory, TrainState
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
 from src.core.initial_value_problem import InitialValueProblem
@@ -8,7 +9,6 @@ from src.core.operator import Operator, PINNOperator, \
     SolutionRegressionOperator, OperatorRegressionOperator, RegressionModel
 from src.core.parareal import PararealOperator
 from src.core.solution import Solution
-from src.utils.plot import plot
 from src.utils.time import time
 
 
@@ -62,18 +62,22 @@ class Experiment:
             hidden_layer_sizes: Tuple[int, ...],
             activation_function: str,
             initialisation: str,
-            **training_config: Union[int, float, str]):
+            **training_config: Union[int, float, str]
+    ) -> Tuple[LossHistory, TrainState]:
         """
+        Trains the PINN based coarse operator.
+
         :param hidden_layer_sizes: a tuple of ints representing the sizes of
         the hidden layers
         :param activation_function: the activation function to use
         :param initialisation: the initialisation to use
         :param training_config: the training configuration
+        :return: a tuple of the loss history and the training state
         """
         diff_eq = self._ivp.boundary_value_problem.differential_equation
         x_dim = diff_eq.x_dimension + 1
         y_dim = diff_eq.y_dimension
-        self._g_pinn.train(
+        return self._g_pinn.train(
             self._ivp,
             FNN(
                 (x_dim,) + hidden_layer_sizes + (y_dim,),
@@ -86,7 +90,8 @@ class Experiment:
             self,
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             subsampling_factor: Optional[float] = None,
-            test_size: float = .2):
+            test_size: float = .2
+    ) -> float:
         """
         Trains the solution regression model based coarse operator.
 
@@ -96,8 +101,9 @@ class Experiment:
         equal to 1; if it is None, all data points will be used
         :param test_size: the fraction of all data points that should be used
         for testing
+        :return: the training loss
         """
-        self._g_sol_reg.train(
+        return self._g_sol_reg.train(
             self._ivp,
             self._g,
             model,
@@ -110,7 +116,8 @@ class Experiment:
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             iterations: int,
             noise_sd: float,
-            test_size: float = .2):
+            test_size: float = .2
+    ) -> float:
         """
         Trains the operator regression model based coarse operator.
 
@@ -120,8 +127,9 @@ class Experiment:
         the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
         for testing
+        :return: the training loss
         """
-        self._g_op_reg.train(
+        return self._g_op_reg.train(
             self._ivp,
             self._g,
             model,
@@ -129,7 +137,6 @@ class Experiment:
             noise_sd=noise_sd,
             test_size=test_size)
 
-    @plot
     @time
     def solve_serial_fine(self) -> Solution:
         """
@@ -137,7 +144,6 @@ class Experiment:
         """
         return self._f.solve(self._ivp)
 
-    @plot
     @time
     def solve_serial_coarse(self) -> Solution:
         """
@@ -145,7 +151,6 @@ class Experiment:
         """
         return self._g.solve(self._ivp)
 
-    @plot
     @time
     def solve_serial_coarse_pinn(self) -> Solution:
         """
@@ -153,7 +158,6 @@ class Experiment:
         """
         return self._g_pinn.solve(self._ivp)
 
-    @plot
     @time
     def solve_serial_coarse_sol_reg(self) -> Solution:
         """
@@ -162,7 +166,6 @@ class Experiment:
         """
         return self._g_sol_reg.solve(self._ivp)
 
-    @plot
     @time
     def solve_serial_coarse_op_reg(self) -> Solution:
         """
@@ -171,7 +174,6 @@ class Experiment:
         """
         return self._g_op_reg.solve(self._ivp)
 
-    @plot
     @time
     def solve_parallel(self) -> Solution:
         """
@@ -180,7 +182,6 @@ class Experiment:
         """
         return self._parareal.solve(self._ivp)
 
-    @plot
     @time
     def solve_parallel_pinn(self) -> Solution:
         """
@@ -189,7 +190,6 @@ class Experiment:
         """
         return self._parareal_pinn.solve(self._ivp)
 
-    @plot
     @time
     def solve_parallel_sol_reg(self) -> Solution:
         """
@@ -198,7 +198,6 @@ class Experiment:
         """
         return self._parareal_sol_reg.solve(self._ivp)
 
-    @plot
     @time
     def solve_parallel_op_reg(self) -> Solution:
         """
