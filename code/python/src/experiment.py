@@ -90,7 +90,8 @@ class Experiment:
             self,
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             subsampling_factor: Optional[float] = None,
-            test_size: float = .2
+            test_size: float = .2,
+            oracle: Optional[Operator] = None
     ) -> float:
         """
         Trains the solution regression model based coarse operator.
@@ -101,11 +102,16 @@ class Experiment:
         equal to 1; if it is None, all data points will be used
         :param test_size: the fraction of all data points that should be used
         for testing
+        :param oracle: the operator providing the training data; if None the
+        coarse operator `g` is used
         :return: the training loss
         """
+        if oracle is None:
+            oracle = self._g
+
         return self._g_sol_reg.train(
             self._ivp,
-            self._g,
+            oracle,
             model,
             test_size=test_size,
             subsampling_factor=subsampling_factor)
@@ -116,7 +122,8 @@ class Experiment:
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             iterations: int,
             noise_sd: Union[float, Tuple[float, float]],
-            test_size: float = .2
+            test_size: float = .2,
+            oracle: Optional[Operator] = None
     ) -> float:
         """
         Trains the operator regression model based coarse operator.
@@ -127,11 +134,16 @@ class Experiment:
         the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
         for testing
+        :param oracle: the operator providing the training data; if None the
+        coarse operator `g` is used
         :return: the training loss
         """
+        if oracle is None:
+            oracle = self._g
+
         return self._g_op_reg.train(
             self._ivp,
-            self._g,
+            oracle,
             model,
             iterations=iterations,
             noise_sd=noise_sd,
