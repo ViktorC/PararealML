@@ -4,11 +4,9 @@
 #SBATCH --time=0:60:0
 #SBATCH --exclusive
 #SBATCH --nodes=1
-#SBATCH --tasks-per-node=4
-#SBATCH --cpus-per-task=1
 #SBATCH --partition=gpu-cascade
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 
 #SBATCH --account=d171-s1984842
 #SBATCH --partition=standard
