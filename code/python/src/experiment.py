@@ -115,7 +115,7 @@ class Experiment:
             self,
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             iterations: int,
-            noise_sd: float,
+            noise_sd: Union[float, Tuple[float, float]],
             test_size: float = .2
     ) -> float:
         """

@@ -601,7 +601,7 @@ class OperatorRegressionOperator(MLOperator):
             oracle: Operator,
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             iterations: int,
-            noise_sd: float,
+            noise_sd: Union[float, Tuple[float, float]],
             test_size: float = .2
     ) -> float:
         """
@@ -617,14 +617,30 @@ class OperatorRegressionOperator(MLOperator):
         :param model: the model to fit to the training data
         :param iterations: the number of data generation iterations
         :param noise_sd: the standard deviation of the Gaussian noise to add to
-        the initial conditions of the sub-IVPs
+        the initial conditions of the sub-IVPs. It can be either a scalar, in
+        which case the noise is sampled from the same distribution for each
+        sub-IVP, or a tuple of two values. The first value of the tuple is the
+        standard deviation of the distribution from which the noise added to
+        the first sub-IVP is sampled and the second value of the tuple is the
+        standard deviation of the distribution from which the noise added to
+        the last sub-IVP is sampled. The standard deviations of the
+        distribution associated with the sub-IVPs in between are calculated
+        using linear interpolation.
         :param test_size: the fraction of all data points that should be used
         for testing
         :return: the loss of the trained model on the test data set
         """
         assert 0. <= test_size < 1.
         assert iterations > 0
-        assert noise_sd > 0.
+
+        if isinstance(noise_sd, tuple):
+            assert len(noise_sd) == 2
+            assert noise_sd[0] >= 0. and noise_sd[1] >= 0.
+        else:
+            assert isinstance(noise_sd, float)
+            assert noise_sd >= 0.
+
+            noise_sd = (noise_sd, noise_sd)
 
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
@@ -635,6 +651,8 @@ class OperatorRegressionOperator(MLOperator):
             if diff_eq.x_dimension else 1
 
         time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
+        last_sub_ivp_start_time_point = len(time_points) - 2
+
         x_batch = self._create_input_batch(bvp, time_points[:-1])
         x_batch = np.concatenate(
             (x_batch, np.empty((x_batch.shape[0], diff_eq.y_dimension))),
@@ -648,18 +666,24 @@ class OperatorRegressionOperator(MLOperator):
             offset = epoch * x_batch.shape[0]
             y_i = y_0
             for i, t_i in enumerate(time_points[:-1]):
-                time_point_offset = offset + i * n_spatial_points
+                interpolated_noise_sd = \
+                    (noise_sd[0] * (last_sub_ivp_start_time_point - i) +
+                     noise_sd[1] * i) / last_sub_ivp_start_time_point
                 y_i += np.random.normal(
-                    scale=noise_sd,
+                    scale=interpolated_noise_sd,
                     size=y_i.shape).astype(y_i.dtype)
+
+                time_point_offset = offset + i * n_spatial_points
                 all_x[time_point_offset:time_point_offset + n_spatial_points,
                       -diff_eq.y_dimension:] = \
                     y_i.reshape((-1, diff_eq.y_dimension))
+
                 sub_ivp = InitialValueProblem(
                     bvp,
                     (t_i, t_i + self._d_t),
                     DiscreteInitialCondition(bvp, y_i, self._vertex_oriented))
                 solution = oracle.solve(sub_ivp)
+
                 y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
                 all_y[time_point_offset:time_point_offset + n_spatial_points,
                       :] = y_i.reshape((-1, diff_eq.y_dimension))
