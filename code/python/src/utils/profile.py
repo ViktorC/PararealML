@@ -28,7 +28,7 @@ def profile(function):
                 locals(),
                 sort=SortKey.TIME)
 
-            return value
+            return value[0]
 
         return function(*args, **kwargs)
 
