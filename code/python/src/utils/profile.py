@@ -6,18 +6,30 @@ from mpi4py import MPI
 
 
 def profile(function):
+    """
+    Returns a wrapped version of a function that profiles the original
+    function's execution and prints the profiling results sorted by total time.
+
+    :param function: the function to wrap
+    :return: the wrapped function
+    """
+
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         if MPI.COMM_WORLD.rank == 0:
+            value = []
+
             def no_arg_function():
-                function(*args, **kwargs)
+                value.append(function(*args, **kwargs))
 
             cProfile.runctx(
                 'no_arg_function()',
                 globals(),
                 locals(),
                 sort=SortKey.TIME)
-        else:
-            function(*args, **kwargs)
+
+            return value
+
+        return function(*args, **kwargs)
 
     return wrapper

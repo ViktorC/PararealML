@@ -1,4 +1,3 @@
-import functools
 import math
 from typing import Optional
 
@@ -6,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from matplotlib.animation import FuncAnimation
-from mpi4py import MPI
 from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation, \
@@ -17,6 +15,12 @@ from src.core.solution import Solution
 def plot_y_against_t(
         solution: Solution,
         file_name: str):
+    """
+    Plots the value of y against t.
+
+    :param solution: a solution to an IVP
+    :param file_name: the name of the file to save the plot to
+    """
     diff_eq = solution.boundary_value_problem.differential_equation
     assert not diff_eq.x_dimension
 
@@ -37,6 +41,12 @@ def plot_y_against_t(
 
 
 def plot_phase_space(solution: Solution, file_name: str):
+    """
+    Creates a phase-space plot.
+
+    :param solution: a solution to an IVP
+    :param file_name: the name of the file to save the plot to
+    """
     y = solution.discrete_y(solution.vertex_oriented)
 
     assert len(y.shape) == 2
@@ -68,6 +78,17 @@ def plot_n_body_simulation(
         interval: int,
         smallest_marker_size: int,
         file_name: str):
+    """
+    Plots an n-body gravitational simulation in the form of a GIF.
+
+    :param solution: the solution of an n-body gravitational IVP
+    :param frames_between_updates: the number of frames to skip in between
+    plotted frames
+    :param interval: the number of milliseconds between each frame of the GIF
+    :param smallest_marker_size: the size of the marker representing the
+    smallest mass
+    :param file_name: the name of the file to save the plot to
+    """
     diff_eq: NBodyGravitationalEquation = \
         solution.boundary_value_problem.differential_equation
 
@@ -199,6 +220,20 @@ def plot_evolution_of_y(
         interval: int,
         file_name: str,
         three_d: bool = False):
+    """
+    Plots the solution of an IVP based on a PDE in 1 or 2 spatial dimensions as
+    a GIF.
+
+    :param solution: a solution to an IVP based on a PDE in 1 or 2 spatial
+    dimensions
+    :param y_ind: the component of y to plot (in case y is vector-valued)
+    :param frames_between_updates: the number of frames to skip in between
+    plotted frames
+    :param interval: the number of milliseconds between each frame of the GIF
+    :param file_name: the name of the file to save the plot to
+    :param three_d: whether a 3D surface plot or a 2D contour plot should be
+    used for IVPs based on PDEs in 2 spatial dimensions
+    """
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
 
@@ -286,6 +321,22 @@ def plot_ivp_solution(
         interval: int = 100,
         smallest_marker_size: int = 8,
         three_d: Optional[bool] = None):
+    """
+    Plots the solution of an IVP. The kind of plot generated depends on the
+    type of the differential equation the IVP is based on.
+
+    :param solution: a solution to an IVP
+    :param solution_name: the name of the solution prepended to the name of the
+    file the plot is saved to
+    :param n_images: the number of frames to generate for the GIF if the IVP is
+    based on an n-body problem or a PDE in 2 spatial dimensions
+    :param interval: the number of milliseconds between each frame of the GIF
+    if the IVP is based on an n-body problem or a PDE in 2 spatial dimensions
+    :param smallest_marker_size: the size of the marker representing the
+    smallest mass if the IVP is based on an n-body proble
+    :param three_d: whether a 3D surface plot or a 2D contour plot should be
+    used for IVPs based on PDEs in 2 spatial dimensions
+    """
     diff_eq = solution.boundary_value_problem.differential_equation
     
     if diff_eq.x_dimension:
@@ -313,15 +364,3 @@ def plot_ivp_solution(
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')
-
-
-def plot(function):
-    @functools.wraps(function)
-    def wrapper(*args, **kwargs):
-        solution = function(*args, **kwargs)
-        if MPI.COMM_WORLD.rank == 0:
-            plot_ivp_solution(solution, function.__name__,)
-
-        return solution
-
-    return wrapper

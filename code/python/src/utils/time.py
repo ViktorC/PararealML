@@ -4,6 +4,14 @@ from mpi4py import MPI
 
 
 def time(function):
+    """
+    Returns a wrapped version of a function that times the execution of the
+    function and prints it.
+
+    :param function: the function to wrap
+    :return: the wrapped function
+    """
+
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         comm = MPI.COMM_WORLD
