@@ -665,6 +665,7 @@ class OperatorRegressionOperator(MLOperator):
         for epoch in range(iterations):
             offset = epoch * x_batch.shape[0]
             y_i = y_0
+
             for i, t_i in enumerate(time_points[:-1]):
                 interpolated_noise_sd = \
                     (noise_sd[0] * (last_sub_ivp_start_time_point - i) +
