@@ -1,3 +1,4 @@
+import functools
 import math
 from typing import Optional
 
@@ -315,6 +316,7 @@ def plot_ivp_solution(
 
 
 def plot(function):
+    @functools.wraps(function)
     def wrapper(*args, **kwargs):
         solution = function(*args, **kwargs)
         if MPI.COMM_WORLD.rank == 0:
