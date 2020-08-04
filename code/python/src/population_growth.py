@@ -15,9 +15,9 @@ ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
 f = ODEOperator('DOP853', 1e-5)
 g = ODEOperator('RK23', 1e-4)
-g_pinn = PINNOperator(.05, True)
-g_sol_reg = SolutionRegressionOperator(.05, True)
-g_op_reg = OperatorRegressionOperator(.05, True)
+g_pinn = PINNOperator(10., True)
+g_sol_reg = SolutionRegressionOperator(10., True)
+g_op_reg = OperatorRegressionOperator(10., True)
 
 threshold = .1
 
