@@ -4,14 +4,17 @@
 #SBATCH --time=0:60:0
 #SBATCH --exclusive
 #SBATCH --nodes=1
-#SBATCH --tasks-per-node=36
+#SBATCH --tasks-per-node=4
 #SBATCH --cpus-per-task=1
+#SBATCH --partition=gpu-cascade
+#SBATCH --qos=gpu
+#SBATCH --gres=gpu:4
 
 #SBATCH --account=d171-s1984842
 #SBATCH --partition=standard
 #SBATCH --qos=standard
 
-module load mpt
+module load nvidia/cuda-10.2
 module load anaconda/python3
 
 cd $SLURM_SUBMIT_DIR
@@ -20,4 +23,4 @@ export OMP_NUM_THREADS=1
 
 source activate s1984842
 
-srun python3 -m mpi4py -m src.cahn_hilliard
+srun python3 -m mpi4py -m src.population_growth
