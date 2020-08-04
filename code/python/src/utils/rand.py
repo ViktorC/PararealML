@@ -28,7 +28,7 @@ SEEDS = [
 
 def set_random_seed(seed: int):
     """
-    Sets the NumPy and Tensorflow random seeds to the provided value
+    Sets the NumPy and Tensorflow random seeds to the provided value.
 
     :param seed: the random seed value to use
     """
