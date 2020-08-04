@@ -9,6 +9,7 @@ from src.core.operator import Operator, PINNOperator, \
     SolutionRegressionOperator, OperatorRegressionOperator, RegressionModel
 from src.core.parareal import PararealOperator
 from src.core.solution import Solution
+from src.utils.print import suppress_stdout
 from src.utils.time import time
 
 
@@ -56,6 +57,7 @@ class Experiment:
         self._parareal_sol_reg = PararealOperator(f, g_sol_reg, tol)
         self._parareal_op_reg = PararealOperator(f, g_op_reg, tol)
 
+    @suppress_stdout
     @time
     def train_coarse_pinn(
             self,
