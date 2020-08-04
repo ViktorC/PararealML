@@ -1,5 +1,6 @@
 import numpy as np
 from fipy import LinearCGSSolver
+from mpi4py import MPI
 from sklearn.ensemble import RandomForestRegressor
 
 from src.experiment import Experiment
@@ -32,11 +33,15 @@ ivp = InitialValueProblem(
     (0., 2.),
     ic)
 
+ml_operator_step_size = \
+    (ivp.t_interval[1] - ivp.t_interval[0]) / MPI.COMM_WORLD.size
+
 f = FVMOperator(LinearCGSSolver(), .01)
 g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-g_pinn = PINNOperator(.5, f.vertex_oriented)
-g_sol_reg = SolutionRegressionOperator(.5, f.vertex_oriented)
-g_op_reg = OperatorRegressionOperator(.5, f.vertex_oriented)
+g_pinn = PINNOperator(ml_operator_step_size, f.vertex_oriented)
+g_sol_reg = SolutionRegressionOperator(
+    ml_operator_step_size, f.vertex_oriented)
+g_op_reg = OperatorRegressionOperator(ml_operator_step_size, f.vertex_oriented)
 
 threshold = .1
 
@@ -67,6 +72,6 @@ experiment.solve_parallel_sol_reg()
 experiment.train_coarse_op_reg(
     RandomForestRegressor(),
     iterations=20,
-    noise_sd=.01)
+    noise_sd=(0., .1))
 experiment.solve_serial_coarse_op_reg()
 experiment.solve_parallel_op_reg()

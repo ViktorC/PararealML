@@ -1,3 +1,4 @@
+from mpi4py import MPI
 from sklearn.ensemble import RandomForestRegressor
 
 from src.experiment import Experiment
@@ -7,17 +8,21 @@ from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import ODEOperator, PINNOperator, \
     SolutionRegressionOperator, OperatorRegressionOperator
+from src.utils.rand import set_random_seed, SEEDS
 
 diff_eq = PopulationGrowthEquation(2e-2)
 bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(bvp, lambda _: (100,))
 ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
+ml_operator_step_size = \
+    (ivp.t_interval[1] - ivp.t_interval[0]) / MPI.COMM_WORLD.size
+
 f = ODEOperator('DOP853', 1e-6)
 g = ODEOperator('RK45', 1e-4)
-g_pinn = PINNOperator(25., True)
-g_sol_reg = SolutionRegressionOperator(25., True)
-g_op_reg = OperatorRegressionOperator(25., True)
+g_pinn = PINNOperator(ml_operator_step_size, True)
+g_sol_reg = SolutionRegressionOperator(ml_operator_step_size, True)
+g_op_reg = OperatorRegressionOperator(ml_operator_step_size, True)
 
 threshold = .1
 
