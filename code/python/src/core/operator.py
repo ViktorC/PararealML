@@ -555,7 +555,6 @@ class SolutionRegressionOperator(SolutionModelOperator):
             self._model = model
 
         loss = self._model.score(x_test, y_test)
-        print(f'Model loss: {loss}')
         return loss
 
 
@@ -703,5 +702,4 @@ class OperatorRegressionOperator(MLOperator):
             self._model = model
 
         loss = self._model.score(x_test, y_test)
-        print(f'Model loss: {loss}')
         return loss
