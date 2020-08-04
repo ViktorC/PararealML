@@ -326,7 +326,7 @@ def plot_ivp_solution(
     type of the differential equation the IVP is based on.
 
     :param solution: a solution to an IVP
-    :param solution_name: the name of the solution prepended to the name of the
+    :param solution_name: the name of the solution appended to the name of the
     file the plot is saved to
     :param n_images: the number of frames to generate for the GIF if the IVP is
     based on an n-body problem or a PDE in 2 spatial dimensions
