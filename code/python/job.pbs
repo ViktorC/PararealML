@@ -8,6 +8,7 @@
 
 #SBATCH --account=d171-s1984842
 
+module load mpt
 module load nvidia/cuda-10.2
 module load anaconda/python3
 
