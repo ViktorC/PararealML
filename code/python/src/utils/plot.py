@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from matplotlib.animation import FuncAnimation
+from matplotlib.colors import Colormap
 from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation, \
-    WaveEquation, DiffusionEquation
+    WaveEquation, DiffusionEquation, NavierStokesEquation
 from src.core.solution import Solution
 
 
@@ -219,7 +220,8 @@ def plot_evolution_of_y(
         frames_between_updates: int,
         interval: int,
         file_name: str,
-        three_d: bool = False):
+        three_d: bool = False,
+        color_map: Colormap = cm.viridis):
     """
     Plots the solution of an IVP based on a PDE in 1 or 2 spatial dimensions as
     a GIF.
@@ -233,6 +235,8 @@ def plot_evolution_of_y(
     :param file_name: the name of the file to save the plot to
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
     used for IVPs based on PDEs in 2 spatial dimensions
+    :param color_map: the color map to use for IVPs based on PDEs in 2 spatial
+    dimensions
     """
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
@@ -275,7 +279,9 @@ def plot_evolution_of_y(
                 'cstride': 1,
                 'linewidth': 0,
                 'antialiased': False,
-                'cmap': cm.coolwarm}
+                'camp': color_map
+            }
+
             ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
             ax.set_zlim(v_min, v_max)
 
@@ -291,7 +297,13 @@ def plot_evolution_of_y(
                 return _plot,
         else:
             fig, ax = plt.subplots(1, 1)
-            ax.contourf(x_0, x_1, y[0, ...].T, vmin=v_min, vmax=v_max)
+            ax.contourf(
+                x_0,
+                x_1,
+                y[0, ...].T,
+                vmin=v_min,
+                vmax=v_max,
+                cmap=color_map)
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)
             plt.axis('scaled')
@@ -303,7 +315,12 @@ def plot_evolution_of_y(
 
             def update_plot(time_step: int):
                 return plt.contourf(
-                    x_0, x_1, y[time_step, ...].T, vmin=v_min, vmax=v_max)
+                    x_0,
+                    x_1,
+                    y[time_step, ...].T,
+                    vmin=v_min,
+                    vmax=v_max,
+                    cmap=color_map)
 
     animation = FuncAnimation(
         fig,
@@ -320,7 +337,8 @@ def plot_ivp_solution(
         n_images: int = 20,
         interval: int = 100,
         smallest_marker_size: int = 8,
-        three_d: Optional[bool] = None):
+        three_d: Optional[bool] = None,
+        color_map: Optional[Colormap] = None):
     """
     Plots the solution of an IVP. The kind of plot generated depends on the
     type of the differential equation the IVP is based on.
@@ -336,12 +354,22 @@ def plot_ivp_solution(
     smallest mass if the IVP is based on an n-body proble
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
     used for IVPs based on PDEs in 2 spatial dimensions
+    :param color_map: the color map to use for IVPs based on PDEs in 2 spatial
+    dimensions
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     
     if diff_eq.x_dimension:
         if three_d is None:
             three_d = isinstance(diff_eq, (DiffusionEquation, WaveEquation))
+
+        if color_map is None:
+            if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
+                color_map = cm.coolwarm
+            elif isinstance(diff_eq, NavierStokesEquation):
+                color_map = cm.cool
+            else:
+                color_map = cm.viridis
 
         for y_ind in range(diff_eq.y_dimension):
             plot_evolution_of_y(
@@ -350,7 +378,8 @@ def plot_ivp_solution(
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
                 interval,
                 f'evolution_{solution_name}_{y_ind}',
-                three_d)
+                three_d,
+                color_map)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             plot_n_body_simulation(
