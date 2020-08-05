@@ -43,7 +43,7 @@ def plot_y_against_t(
         if legend_location is not None:
             plt.legend(loc=legend_location)
 
-    plt.savefig(f'{file_name}.pdf')
+    plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
 
@@ -75,7 +75,7 @@ def plot_phase_space(solution: Solution, file_name: str):
 
         ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
 
-    plt.savefig(f'{file_name}.pdf')
+    plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
 
