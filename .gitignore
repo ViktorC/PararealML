@@ -1,5 +1,6 @@
 *__pycache__*
 code/python/**/*.pdf
+code/python/**/*.jpg
 code/python/**/*.gif
 *.o
 *.pytest_cache
