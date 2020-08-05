@@ -312,7 +312,7 @@ def plot_evolution_of_y(
                 'cstride': 1,
                 'linewidth': 0,
                 'antialiased': False,
-                'cmp': color_map
+                'cmap': color_map
             }
 
             ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
