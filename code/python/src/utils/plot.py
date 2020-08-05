@@ -77,8 +77,12 @@ def plot_n_body_simulation(
         solution: Solution,
         frames_between_updates: int,
         interval: int,
-        smallest_marker_size: int,
-        file_name: str):
+        file_name: str,
+        color_map: Colormap = cm.cividis,
+        smallest_marker_size: int = 10,
+        draw_trajectory: bool = True,
+        trajectory_line_style: str = ':',
+        trajectory_line_width: float = .5):
     """
     Plots an n-body gravitational simulation in the form of a GIF.
 
@@ -86,16 +90,22 @@ def plot_n_body_simulation(
     :param frames_between_updates: the number of frames to skip in between
     plotted frames
     :param interval: the number of milliseconds between each frame of the GIF
+    :param file_name: the name of the file to save the plot to
+    :param color_map: the color map to use for coloring the planetary objects
     :param smallest_marker_size: the size of the marker representing the
     smallest mass
-    :param file_name: the name of the file to save the plot to
+    :param draw_trajectory: whether the trajectory of the objects should be
+    plotted as well
+    :param trajectory_line_style: the style of the trajectory line
+    :param trajectory_line_width: the width of the trajectory line
     """
     diff_eq: NBodyGravitationalEquation = \
         solution.boundary_value_problem.differential_equation
 
     assert isinstance(diff_eq, NBodyGravitationalEquation)
 
-    n_obj_by_dims = diff_eq.n_objects * diff_eq.spatial_dimension
+    n_obj = diff_eq.n_objects
+    n_obj_by_dims = n_obj * diff_eq.spatial_dimension
 
     span_scaling_factor = .25
 
@@ -104,9 +114,11 @@ def plot_n_body_simulation(
     radii = np.power(3. * scaled_masses / (4 * np.pi), 1. / 3.)
     marker_sizes = np.power(radii, 2) * np.pi
 
-    colors = cm.rainbow(np.linspace(0., 1., diff_eq.n_objects))
+    colors = color_map(np.linspace(0., 1., n_obj))
 
     y = solution.discrete_y(solution.vertex_oriented)
+
+    plt.style.use('dark_background')
 
     if diff_eq.spatial_dimension == 2:
         fig, ax = plt.subplots()
@@ -142,6 +154,15 @@ def plot_n_body_simulation(
         plt.ylim(y_min, y_max)
 
         def update_plot(time_step: int):
+            if draw_trajectory:
+                for i in range(n_obj):
+                    ax.plot(
+                        x_coordinates[:time_step + 1, i],
+                        y_coordinates[:time_step + 1, i],
+                        color=colors[i],
+                        linestyle=trajectory_line_style,
+                        linewidth=trajectory_line_width)
+
             scatter_plot.set_offsets(coordinates[time_step, ...])
             return scatter_plot, ax
     else:
@@ -198,6 +219,16 @@ def plot_n_body_simulation(
         ax.set_zlim(z_min, z_max)
 
         def update_plot(time_step: int):
+            if draw_trajectory:
+                for i in range(n_obj):
+                    ax.plot(
+                        x_coordinates[:time_step + 1, i],
+                        y_coordinates[:time_step + 1, i],
+                        z_coordinates[:time_step + 1, i],
+                        color=colors[i],
+                        linestyle=trajectory_line_style,
+                        linewidth=trajectory_line_width)
+
             scatter_plot._offsets3d = (
                 x_coordinates[time_step, ...],
                 y_coordinates[time_step, ...],
@@ -212,6 +243,8 @@ def plot_n_body_simulation(
         interval=interval)
     animation.save(f'{file_name}.gif', writer='imagemagick')
     plt.clf()
+
+    plt.style.use('default')
 
 
 def plot_evolution_of_y(
@@ -336,7 +369,10 @@ def plot_ivp_solution(
         solution_name: str,
         n_images: int = 20,
         interval: int = 100,
-        smallest_marker_size: int = 8,
+        smallest_marker_size: int = 10,
+        draw_trajectory: bool = True,
+        trajectory_line_style: str = ':',
+        trajectory_line_width: float = .5,
         three_d: Optional[bool] = None,
         color_map: Optional[Colormap] = None):
     """
@@ -351,11 +387,17 @@ def plot_ivp_solution(
     :param interval: the number of milliseconds between each frame of the GIF
     if the IVP is based on an n-body problem or a PDE in 2 spatial dimensions
     :param smallest_marker_size: the size of the marker representing the
-    smallest mass if the IVP is based on an n-body proble
+    smallest mass if the IVP is based on an n-body problem
+    :param draw_trajectory: whether the trajectory of the objects should be
+    plotted as well for IVPs based on n-body problems
+    :param trajectory_line_style: the style of the trajectory line for IVPs
+    based on n-body problems
+    :param trajectory_line_width: the width of the trajectory line for IVPs
+    based on n-body problems
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
     used for IVPs based on PDEs in 2 spatial dimensions
-    :param color_map: the color map to use for IVPs based on PDEs in 2 spatial
-    dimensions
+    :param color_map: the color map to use for IVPs based on n-body problems or
+    PDEs in 2 spatial dimensions
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     
@@ -367,7 +409,7 @@ def plot_ivp_solution(
             if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
                 color_map = cm.coolwarm
             elif isinstance(diff_eq, NavierStokesEquation):
-                color_map = cm.twilight
+                color_map = cm.winter
             else:
                 color_map = cm.viridis
 
@@ -378,16 +420,23 @@ def plot_ivp_solution(
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
                 interval,
                 f'evolution_{solution_name}_{y_ind}',
-                three_d,
-                color_map)
+                three_d=three_d,
+                color_map=color_map)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
+            if color_map is None:
+                color_map = cm.plasma
+
             plot_n_body_simulation(
                 solution,
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
                 interval,
-                smallest_marker_size,
-                f'nbody_{solution_name}')
+                f'nbody_{solution_name}',
+                color_map=color_map,
+                smallest_marker_size=smallest_marker_size,
+                draw_trajectory=draw_trajectory,
+                trajectory_line_style=trajectory_line_style,
+                trajectory_line_width=trajectory_line_width)
         else:
             plot_y_against_t(solution, solution_name)
 
