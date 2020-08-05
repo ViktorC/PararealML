@@ -308,7 +308,7 @@ def plot_evolution_of_y(
             ax.set_ylabel(x1_label)
             plt.axis('scaled')
 
-            mappable = plt.cm.ScalarMappable()
+            mappable = plt.cm.ScalarMappable(cmap=color_map)
             mappable.set_array(y[0, ...])
             mappable.set_clim(v_min, v_max)
             plt.colorbar(mappable)
@@ -367,7 +367,7 @@ def plot_ivp_solution(
             if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
                 color_map = cm.coolwarm
             elif isinstance(diff_eq, NavierStokesEquation):
-                color_map = cm.cool
+                color_map = cm.twilight
             else:
                 color_map = cm.viridis
 
