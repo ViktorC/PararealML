@@ -409,7 +409,7 @@ def plot_ivp_solution(
             if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
                 color_map = cm.coolwarm
             elif isinstance(diff_eq, NavierStokesEquation):
-                color_map = cm.winter
+                color_map = cm.ocean
             else:
                 color_map = cm.viridis
 
