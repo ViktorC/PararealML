@@ -601,6 +601,7 @@ class OperatorRegressionOperator(MLOperator):
             model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
             iterations: int,
             noise_sd: Union[float, Tuple[float, float]],
+            relative_noise: bool = False,
             test_size: float = .2
     ) -> float:
         """
@@ -625,6 +626,8 @@ class OperatorRegressionOperator(MLOperator):
         the last sub-IVP is sampled. The standard deviations of the
         distribution associated with the sub-IVPs in between are calculated
         using linear interpolation.
+        :param relative_noise: whether the noise standard deviation is relative
+        to the value of the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
         for testing
         :return: the loss of the trained model on the test data set
@@ -669,7 +672,11 @@ class OperatorRegressionOperator(MLOperator):
                 interpolated_noise_sd = \
                     (noise_sd[0] * (last_sub_ivp_start_time_point - i) +
                      noise_sd[1] * i) / last_sub_ivp_start_time_point
+                if relative_noise:
+                    interpolated_noise_sd = y_i * interpolated_noise_sd
+
                 y_i += np.random.normal(
+                    loc=0.,
                     scale=interpolated_noise_sd,
                     size=y_i.shape).astype(y_i.dtype)
 
