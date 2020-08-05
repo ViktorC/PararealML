@@ -29,6 +29,9 @@ threshold = .1
 
 experiment = Experiment(ivp, f, g, g_pinn, g_sol_reg, g_op_reg, threshold)
 
+sol_reg_models = [RandomForestRegressor()]
+op_reg_models = [RandomForestRegressor()]
+
 for i in range(5):
     seed = SEEDS[i]
 
@@ -52,15 +55,17 @@ for i in range(5):
     experiment.solve_serial_coarse_pinn()
     experiment.solve_parallel_pinn()
 
-    experiment.train_coarse_sol_reg(
-        RandomForestRegressor(),
-        subsampling_factor=.1)
-    experiment.solve_serial_coarse_sol_reg()
-    experiment.solve_parallel_sol_reg()
+    for j, model in enumerate(sol_reg_models):
+        print(f'Solution regression model {j}')
 
-    experiment.train_coarse_op_reg(
-        RandomForestRegressor(),
-        iterations=20,
-        noise_sd=(0., 10.))
-    experiment.solve_serial_coarse_op_reg()
-    experiment.solve_parallel_op_reg()
+        experiment.train_coarse_sol_reg(model, subsampling_factor=.1)
+        experiment.solve_serial_coarse_sol_reg()
+        experiment.solve_parallel_sol_reg()
+
+    for j, model in enumerate(op_reg_models):
+        print(f'Operator regression model {j}')
+
+        experiment.train_coarse_op_reg(
+            model, iterations=20, noise_sd=(0., 10.))
+        experiment.solve_serial_coarse_op_reg()
+        experiment.solve_parallel_op_reg()
