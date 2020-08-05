@@ -15,12 +15,15 @@ from src.core.solution import Solution
 
 def plot_y_against_t(
         solution: Solution,
-        file_name: str):
+        file_name: str,
+        legend_location: Optional[str] = None):
     """
     Plots the value of y against t.
 
     :param solution: a solution to an IVP
     :param file_name: the name of the file to save the plot to
+    :param legend_location: the location of the legend in case y is
+    vector-valued
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     assert not diff_eq.x_dimension
@@ -35,7 +38,10 @@ def plot_y_against_t(
         plt.plot(t, y[..., 0])
     else:
         for i in range(y.shape[1]):
-            plt.plot(t, y[:, i])
+            plt.plot(t, y[:, i], label=f'y {i}')
+
+        if legend_location is not None:
+            plt.legend(loc=legend_location)
 
     plt.savefig(f'{file_name}.pdf')
     plt.clf()
@@ -374,7 +380,8 @@ def plot_ivp_solution(
         trajectory_line_style: str = ':',
         trajectory_line_width: float = .5,
         three_d: Optional[bool] = None,
-        color_map: Optional[Colormap] = None):
+        color_map: Optional[Colormap] = None,
+        legend_location: Optional[str] = None):
     """
     Plots the solution of an IVP. The kind of plot generated depends on the
     type of the differential equation the IVP is based on.
@@ -398,6 +405,8 @@ def plot_ivp_solution(
     used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on n-body problems or
     PDEs in 2 spatial dimensions
+    :param legend_location: the location of the legend for IVPs based on
+    systems of ODEs
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     
@@ -438,7 +447,7 @@ def plot_ivp_solution(
                 trajectory_line_style=trajectory_line_style,
                 trajectory_line_width=trajectory_line_width)
         else:
-            plot_y_against_t(solution, solution_name)
+            plot_y_against_t(solution, solution_name, legend_location)
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')

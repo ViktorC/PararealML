@@ -11,8 +11,8 @@ bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(
     bvp,
     lambda _: (10., 28., 8. / 3.))
-ivp = InitialValueProblem(bvp,  (0., 50.), ic)
+ivp = InitialValueProblem(bvp,  (0., 20.), ic)
 
 solver = ODEOperator('DOP853', 1e-4)
 solution = time(solver.solve)(ivp)
-plot_ivp_solution(solution, 'lorenz', 50)
+plot_ivp_solution(solution, 'lorenz', 50, legend_location='upper right')
