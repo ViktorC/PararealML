@@ -3,7 +3,6 @@ from src.core.differential_equation import NBodyGravitationalEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import ODEOperator
-from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
 diff_eq = NBodyGravitationalEquation(3, [5e10, 5e12, 5e10])
@@ -16,4 +15,4 @@ ivp = InitialValueProblem(bvp, (0., 10.), ic)
 
 solver = ODEOperator('DOP853', 1e-4)
 solution = time(solver.solve)(ivp)
-plot_ivp_solution(solution, 'fine', 20, smallest_marker_size=20)
+solution.plot('fine', n_images=20, smallest_marker_size=20)

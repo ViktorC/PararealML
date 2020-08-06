@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Any
 
 import numpy as np
 from scipy.interpolate import interpn
@@ -150,3 +150,16 @@ class Solution:
                 self._bvp.y_vertex_constraints, discrete_y)
 
         return discrete_y
+
+    def plot(self, solution_name: str, **kwargs: Any):
+        """
+        Plots the solution and saves it to a file.
+
+        :param solution_name: the name of the solution; this is included in the
+            file name of the saved plot
+        :param kwargs: plotting configuration;
+            see :func:`~src.utils.plot.plot_ivp_solution`
+        """
+        from src.utils.plot import plot_ivp_solution
+
+        plot_ivp_solution(self, solution_name, **kwargs)

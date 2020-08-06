@@ -7,7 +7,6 @@ from src.core.initial_value_problem import InitialValueProblem
 from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
 from src.core.operator import FDMOperator
-from src.utils.plot import plot_ivp_solution
 from src.utils.time import time
 
 diff_eq = NavierStokesEquation(2, 5000.)
@@ -24,4 +23,4 @@ ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .02)
 solution = time(solver.solve)(ivp)
-plot_ivp_solution(solution, 'navier_stokes', 50)
+solution.plot('navier_stokes', n_images=50)
