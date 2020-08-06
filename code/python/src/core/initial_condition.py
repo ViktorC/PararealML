@@ -34,7 +34,7 @@ class InitialCondition(ABC):
         or cell centers of the spatial mesh.
 
         :param vertex_oriented: whether the initial conditions are to be
-        evaluated at the vertices or cell centers of the spatial mesh
+            evaluated at the vertices or cell centers of the spatial mesh
         :return: the discretised initial values
         """
 

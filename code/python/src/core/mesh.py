@@ -96,7 +96,7 @@ class Mesh(ABC):
         Returns the shape of the array of the discretised domain.
 
         :param vertex_oriented: whether the shape of the vertices or the cells
-        of the mesh is to be returned
+            of the mesh is to be returned
         :return: the shape of the vertices or the cells
         """
         return self.vertices_shape if vertex_oriented else self.cells_shape
