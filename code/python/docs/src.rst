@@ -10,18 +10,6 @@ Subpackages
    src.core
    src.utils
 
-Submodules
-----------
-
-src.experiment module
----------------------
-
-.. automodule:: src.experiment
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 Module contents
 ---------------
 
