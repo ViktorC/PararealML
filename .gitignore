@@ -5,3 +5,4 @@ code/python/**/*.gif
 *.o
 *.pytest_cache
 *.mypy_cache
+code/python/docs/_build
