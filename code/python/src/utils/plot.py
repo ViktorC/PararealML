@@ -410,7 +410,7 @@ def plot_ivp_solution(
         systems of ODEs
     """
     diff_eq = solution.boundary_value_problem.differential_equation
-    
+
     if diff_eq.x_dimension:
         if three_d is None:
             three_d = isinstance(diff_eq, (DiffusionEquation, WaveEquation))
