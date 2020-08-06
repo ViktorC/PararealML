@@ -23,7 +23,7 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
 from src.core.integrator import Integrator
 from src.core.solution import Solution
-from src.utils.print import suppress_stdout
+from src.utils.io import suppress_stdout
 
 SKLearnRegressionModel = Union[
     tuple([_class for name, _class in all_estimators()

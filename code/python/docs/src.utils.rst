@@ -4,18 +4,26 @@ src.utils package
 Submodules
 ----------
 
-src.utils.plot module
----------------------
+src.utils.experiment module
+---------------------------
 
-.. automodule:: src.utils.plot
+.. automodule:: src.utils.experiment
    :members:
    :undoc-members:
    :show-inheritance:
 
-src.utils.print module
-----------------------
+src.utils.io module
+-------------------
 
-.. automodule:: src.utils.print
+.. automodule:: src.utils.io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+src.utils.plot module
+---------------------
+
+.. automodule:: src.utils.plot
    :members:
    :undoc-members:
    :show-inheritance:
