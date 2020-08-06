@@ -20,21 +20,18 @@ from src.utils.time import time_with_name
 
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
-bvp = BoundaryValueProblem(
-    diff_eq,
-    mesh,
-    ((NeumannCondition(lambda x: (0., 0.)),
-      NeumannCondition(lambda x: (0., 0.))),
-     (NeumannCondition(lambda x: (0., 0.)),
-      NeumannCondition(lambda x: (0., 0.)))))
+bcs = (
+    (NeumannCondition(lambda x: (0., 0.)),
+     NeumannCondition(lambda x: (0., 0.))),
+    (NeumannCondition(lambda x: (0., 0.)),
+     NeumannCondition(lambda x: (0., 0.)))
+)
+bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     bvp,
     .05 * np.random.uniform(-1., 1., bvp.y_shape(False)),
     False)
-ivp = InitialValueProblem(
-    bvp,
-    (0., 2.),
-    ic)
+ivp = InitialValueProblem(bvp, (0., 5.), ic)
 
 ml_operator_step_size = \
     (ivp.t_interval[1] - ivp.t_interval[0]) / MPI.COMM_WORLD.size
