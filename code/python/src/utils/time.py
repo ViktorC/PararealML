@@ -1,5 +1,5 @@
 import functools
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 from mpi4py import MPI
 
@@ -47,7 +47,7 @@ def _get_wrapper(
         function_name = f'{function.__name__!r}'
 
     @functools.wraps(function)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         comm = MPI.COMM_WORLD
         comm.barrier()
         start_time = MPI.Wtime()
@@ -59,7 +59,7 @@ def _get_wrapper(
 
         if comm.rank == 0:
             run_time = end_time - start_time
-            print(f'Function {function_name} completed in {run_time}s')
+            print(f'{function_name} completed in {run_time}s')
 
         return value
 

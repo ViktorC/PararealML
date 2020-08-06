@@ -1,11 +1,12 @@
 import cProfile
 import functools
 from pstats import SortKey
+from typing import Callable, Any
 
 from mpi4py import MPI
 
 
-def profile(function):
+def profile(function: Callable) -> Callable:
     """
     Returns a wrapped version of a function that profiles the original
     function's execution and prints the profiling results sorted by total time.
@@ -15,7 +16,7 @@ def profile(function):
     """
 
     @functools.wraps(function)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         if MPI.COMM_WORLD.rank == 0:
             value = []
 

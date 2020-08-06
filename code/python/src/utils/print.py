@@ -1,10 +1,11 @@
 import functools
 import sys
+from typing import Callable, Any
 
 from mpi4py import MPI
 
 
-def suppress_stdout(function):
+def suppress_stdout(function: Callable) -> Callable:
     """
     Returns a wrapped version of a function with the stdout stream temporarily
     redirected to a dummy stream for the duration of the execution of the
@@ -19,14 +20,14 @@ def suppress_stdout(function):
         A dummy stream with no-op write and flush methods.
         """
 
-        def write(self, x):
+        def write(self, x: Any):
             pass
 
         def flush(self):
             pass
 
     @functools.wraps(function)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         stdout = sys.stdout
         sys.stdout = DummyStream()
 
@@ -39,7 +40,7 @@ def suppress_stdout(function):
     return wrapper
 
 
-def print_with_rank_info(*args):
+def print_with_rank_info(*args: Any):
     """
     Prints the arguments with the MPI rank information prepended to them.
 
@@ -48,7 +49,7 @@ def print_with_rank_info(*args):
     print(f'RANK {MPI.COMM_WORLD.rank}:', *args)
 
 
-def print_on_first_rank(*args):
+def print_on_first_rank(*args: Any):
     """
     Prints the arguments if the rank of this node is 0.
 
