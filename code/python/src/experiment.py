@@ -70,7 +70,7 @@ class Experiment:
         Trains the PINN based coarse operator.
 
         :param hidden_layer_sizes: a tuple of ints representing the sizes of
-        the hidden layers
+            the hidden layers
         :param activation_function: the activation function to use
         :param initialisation: the initialisation to use
         :param training_config: the training configuration
@@ -100,12 +100,12 @@ class Experiment:
 
         :param model: the regression model
         :param subsampling_factor: the fraction of all data points that should
-        be sampled for training; it has to be greater than 0 and less than or
-        equal to 1; if it is None, all data points will be used
+            be sampled for training; it has to be greater than 0 and less than
+            or equal to 1; if it is None, all data points will be used
         :param test_size: the fraction of all data points that should be used
-        for testing
+            for testing
         :param oracle: the operator providing the training data; if None the
-        coarse operator `g` is used
+            coarse operator `g` is used
         :return: the training loss
         """
         if oracle is None:
@@ -133,11 +133,11 @@ class Experiment:
         :param model: the regression model
         :param iterations: the number of data generation iterations
         :param noise_sd: the standard deviation of the Gaussian noise to add to
-        the initial conditions of the sub-IVPs
+            the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
-        for testing
+            for testing
         :param oracle: the operator providing the training data; if None the
-        coarse operator `g` is used
+            coarse operator `g` is used
         :return: the training loss
         """
         if oracle is None:

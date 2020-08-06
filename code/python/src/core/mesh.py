@@ -107,9 +107,9 @@ class Mesh(ABC):
         of the mesh along each axis.
 
         :param vertex_oriented: whether the coordinates of the vertices or the
-        cells of the mesh is to be returned
+            cells of the mesh is to be returned
         :return: a tuple of arrays each representing the coordinates along the
-        corresponding axis
+            corresponding axis
         """
         return self.vertex_coordinates if vertex_oriented \
             else self.cell_center_coordinates
@@ -128,7 +128,7 @@ class UniformGrid(Mesh):
         """
         :param x_intervals: the bounds of each axis of the domain
         :param d_x: the step sizes to use for each axis of the domain to create
-        the mesh
+            the mesh
         """
         assert len(x_intervals) > 0
         assert len(x_intervals) == len(d_x)
@@ -199,7 +199,7 @@ class UniformGrid(Mesh):
 
         :param d_x: the step sizes to use for each axis of the domain
         :param vertex_oriented: whether the shape of the vertices or the cell
-        centers of the mesh are to be calculated
+            centers of the mesh are to be calculated
         :return: a tuple representing the shape of the mesh
         """
         shape = []
@@ -219,9 +219,9 @@ class UniformGrid(Mesh):
         of the mesh along each axis.
 
         :param vertex_oriented: whether the coordinates of the vertices or the
-        cell centers of the mesh are to be calculated
+            cell centers of the mesh are to be calculated
         :return: a tuple of arrays each representing the coordinates along the
-        corresponding axis
+            corresponding axis
         """
         mesh_shape = self._vertices_shape if vertex_oriented \
             else self._cells_shape

@@ -34,11 +34,11 @@ class InitialValueProblem:
         """
         :param bvp: the boundary value problem instance
         :param t_interval: the bounds of the time domain of the initial value
-        problem
+            problem
         :param initial_condition: the initial condition of the problem
         :param exact_y: the function returning the exact solution to the
-        initial value problem at time step t and point x. If it is None, the
-        problem is assumed to have no analytical solution.
+            initial value problem at time step t and point x. If it is None,
+            the problem is assumed to have no analytical solution.
         """
         assert bvp is not None
         self._bvp = bvp
@@ -134,7 +134,7 @@ class InitialValueProblem:
 
         :param t: the point in the temporal domain
         :param x: the point in the non-temporal domain. If the differential
-        equation is an ODE, it is None.
+            equation is an ODE, it is None.
         :return: the value of y(t, x) or y(t) if it is an ODE.
         """
         return self._exact_y(self, t, x)
@@ -200,14 +200,14 @@ class InitialValueProblem:
         them to the list of boundary conditions.
 
         :param has_condition: whether there is an organic boundary condition
-        specified
+            specified
         :param condition_function: the organic boundary condition
         :param deepxde_boundary_condition_type: the DeepXDE equivalent of the
-        type of the organic boundary condition
+            type of the organic boundary condition
         :param fixed_axis: the axis normal to the boundary
         :param boundary_value: the value along the fixed axis at the boundary
         :param boundary_conditions: the list of DeepXDE boundary conditions to
-        append the created boundary conditions to
+            append the created boundary conditions to
         """
         if has_condition:
             deepxde_condition_functions = \
@@ -246,12 +246,12 @@ class InitialValueProblem:
         conditions.
 
         :param condition_function: a condition function in the format of the
-        y_0 function of well defined initial conditions or the y_condition or
-        d_y_condition functions of boundary conditions
+            y_0 function of well defined initial conditions or the y_condition
+            or d_y_condition functions of boundary conditions
         :param fixed_axis: the fixed axis in case the condition function is
-        a boundary condition function
+            a boundary condition function
         :return: a list of DeepXDE condition functions with an element for each
-        component of the output array of the organic condition function
+            component of the output array of the organic condition function
         """
         deepxde_condition_functions = []
         for y_ind in range(self._bvp.differential_equation.y_dimension):

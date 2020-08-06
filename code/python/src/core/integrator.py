@@ -29,7 +29,7 @@ class Integrator(ABC):
         :param d_t: the amount of increase in t
         :param d_y_over_d_t: the value of y'(t)
         :param y_constraints:  a sequence of constraints on the values of the
-        solution containing a constraint for each element of y
+            solution containing a constraint for each element of y
         :return: the value of y(t + d_t).
         """
 
@@ -138,7 +138,7 @@ class CrankNicolsonMethod(Integrator):
     def __init__(self, a: float = .5):
         """
         :param a: the weight of the backward Euler term of the update; the
-        forward Euler term's weight is 1 - a
+            forward Euler term's weight is 1 - a
         """
         assert 0. <= a <= 1.
         self._a = a

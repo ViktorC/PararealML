@@ -279,7 +279,8 @@ class MLOperator(Operator, ABC):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
-        solutions of IVPs at the vertices or cell centers of the spatial meshes
+            solutions of IVPs at the vertices or cell centers of the spatial
+            meshes
         """
         assert d_t > 0.
         self._d_t = d_t
@@ -342,7 +343,7 @@ class MLOperator(Operator, ABC):
 
         :param bvp: the boundary value problem to base the inputs on
         :param time_points: the discretised time domain of the IVP to create
-        inputs for
+            inputs for
         :return: a batch of all inputs
         """
         input_placeholder = self._create_input_placeholder(bvp)
@@ -369,11 +370,12 @@ class SolutionModelOperator(MLOperator, ABC):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
-        solutions of IVPs at the vertices or cell centers of the spatial meshes
+            solutions of IVPs at the vertices or cell centers of the spatial
+            meshes
         :param batch_mode: whether the operator is to perform a single
-        prediction to evaluate the solution at all coordinates using input
-        batching; this can be very memory intensive depending on the temporal
-        step size
+            prediction to evaluate the solution at all coordinates using input
+            batching; this can be very memory intensive depending on the
+            temporal step size
         """
         super(SolutionModelOperator, self).__init__(d_t, vertex_oriented)
         self._batch_mode = batch_mode
@@ -510,10 +512,10 @@ class SolutionRegressionOperator(SolutionModelOperator):
         :param oracle: the operator providing the training data
         :param model: the model to fit to the training data
         :param subsampling_factor: the fraction of all data points that should
-        be sampled for training; it has to be greater than 0 and less than or
-        equal to 1; if it is None, all data points will be used
+            be sampled for training; it has to be greater than 0 and less than
+            or equal to 1; if it is None, all data points will be used
         :param test_size: the fraction of all data points that should be used
-        for testing
+            for testing
         :return: the loss of the trained model on the test data set
         """
         assert 0. <= test_size < 1.
@@ -617,19 +619,19 @@ class OperatorRegressionOperator(MLOperator):
         :param model: the model to fit to the training data
         :param iterations: the number of data generation iterations
         :param noise_sd: the standard deviation of the Gaussian noise to add to
-        the initial conditions of the sub-IVPs. It can be either a scalar, in
-        which case the noise is sampled from the same distribution for each
-        sub-IVP, or a tuple of two values. The first value of the tuple is the
-        standard deviation of the distribution from which the noise added to
-        the first sub-IVP is sampled and the second value of the tuple is the
-        standard deviation of the distribution from which the noise added to
-        the last sub-IVP is sampled. The standard deviations of the
-        distribution associated with the sub-IVPs in between are calculated
-        using linear interpolation.
+            the initial conditions of the sub-IVPs. It can be either a scalar,
+            in which case the noise is sampled from the same distribution for
+            each sub-IVP, or a tuple of two values. The first value of the
+            tuple is the standard deviation of the distribution from which the
+            noise added to the first sub-IVP is sampled and the second value of
+            the tuple is the standard deviation of the distribution from which
+            the noise added to the last sub-IVP is sampled. The standard
+            deviations of the distribution associated with the sub-IVPs in
+            between are calculated using linear interpolation.
         :param relative_noise: whether the noise standard deviation is relative
-        to the value of the initial conditions of the sub-IVPs
+            to the value of the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
-        for testing
+            for testing
         :return: the loss of the trained model on the test data set
         """
         assert 0. <= test_size < 1.

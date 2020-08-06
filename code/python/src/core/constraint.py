@@ -12,7 +12,7 @@ class Constraint:
         """
         :param value: the constraint values
         :param mask: the mask denoting which elements of the array are to be
-        constrained to the provided values
+            constrained to the provided values
         """
         assert value.size == mask.sum()
         self._value = np.copy(value)
@@ -59,9 +59,9 @@ class Constraint:
         result array.
 
         :param addend: the array whose values selected by the mask are to be
-        added to the multiplied constraint values
+            added to the multiplied constraint values
         :param multiplier: the factor by which the constraint values are to be
-        multiplied
+            multiplied
         :param result: the array to constrain by the result of the operation
         :return: the constrained result array
         """

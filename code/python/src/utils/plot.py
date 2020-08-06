@@ -23,7 +23,7 @@ def plot_y_against_t(
     :param solution: a solution to an IVP
     :param file_name: the name of the file to save the plot to
     :param legend_location: the location of the legend in case y is
-    vector-valued
+        vector-valued
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     assert not diff_eq.x_dimension
@@ -94,14 +94,14 @@ def plot_n_body_simulation(
 
     :param solution: the solution of an n-body gravitational IVP
     :param frames_between_updates: the number of frames to skip in between
-    plotted frames
+        plotted frames
     :param interval: the number of milliseconds between each frame of the GIF
     :param file_name: the name of the file to save the plot to
     :param color_map: the color map to use for coloring the planetary objects
     :param smallest_marker_size: the size of the marker representing the
-    smallest mass
+        smallest mass
     :param draw_trajectory: whether the trajectory of the objects should be
-    plotted as well
+        plotted as well
     :param trajectory_line_style: the style of the trajectory line
     :param trajectory_line_width: the width of the trajectory line
     """
@@ -266,16 +266,16 @@ def plot_evolution_of_y(
     a GIF.
 
     :param solution: a solution to an IVP based on a PDE in 1 or 2 spatial
-    dimensions
+        dimensions
     :param y_ind: the component of y to plot (in case y is vector-valued)
     :param frames_between_updates: the number of frames to skip in between
-    plotted frames
+        plotted frames
     :param interval: the number of milliseconds between each frame of the GIF
     :param file_name: the name of the file to save the plot to
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
-    used for IVPs based on PDEs in 2 spatial dimensions
+        used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on PDEs in 2 spatial
-    dimensions
+        dimensions
     """
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
@@ -388,25 +388,26 @@ def plot_ivp_solution(
 
     :param solution: a solution to an IVP
     :param solution_name: the name of the solution appended to the name of the
-    file the plot is saved to
+        file the plot is saved to
     :param n_images: the number of frames to generate for the GIF if the IVP is
-    based on an n-body problem or a PDE in 2 spatial dimensions
+        based on an n-body problem or a PDE in 2 spatial dimensions
     :param interval: the number of milliseconds between each frame of the GIF
-    if the IVP is based on an n-body problem or a PDE in 2 spatial dimensions
+        if the IVP is based on an n-body problem or a PDE in 2 spatial
+        dimensions
     :param smallest_marker_size: the size of the marker representing the
-    smallest mass if the IVP is based on an n-body problem
+        smallest mass if the IVP is based on an n-body problem
     :param draw_trajectory: whether the trajectory of the objects should be
-    plotted as well for IVPs based on n-body problems
+        plotted as well for IVPs based on n-body problems
     :param trajectory_line_style: the style of the trajectory line for IVPs
-    based on n-body problems
+        based on n-body problems
     :param trajectory_line_width: the width of the trajectory line for IVPs
-    based on n-body problems
+        based on n-body problems
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
-    used for IVPs based on PDEs in 2 spatial dimensions
+        used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on n-body problems or
-    PDEs in 2 spatial dimensions
+        PDEs in 2 spatial dimensions
     :param legend_location: the location of the legend for IVPs based on
-    systems of ODEs
+        systems of ODEs
     """
     diff_eq = solution.boundary_value_problem.differential_equation
     

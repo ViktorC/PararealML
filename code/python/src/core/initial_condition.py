@@ -52,15 +52,15 @@ class DiscreteInitialCondition(InitialCondition):
             interpolation_method: Optional[str] = None):
         """
         :param bvp: the boundary value problem to turn into an initial value
-        problem by providing the initial conditions for it
+            problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
-        mesh (which may be 0 dimensional in case of an ODE)
+            mesh (which may be 0 dimensional in case of an ODE)
         :param vertex_oriented: whether the initial conditions are evaluated at
-        the vertices or cell centers of the spatial mesh; it the BVP is an ODE,
-        it can be None
+            the vertices or cell centers of the spatial mesh; it the BVP is an
+            ODE, it can be None
         :param interpolation_method: the interpolation method to use to
-        calculate values that do not exactly fall on points of the y_0 grid; if
-        the BVP is that of an ODE, it can be None
+            calculate values that do not exactly fall on points of the y_0
+            grid; if the BVP is based on an ODE, it can be None
         """
         self._interpolation_method = interpolation_method
 
@@ -97,10 +97,10 @@ class ContinuousInitialCondition(InitialCondition):
             Callable[[Optional[Sequence[float]]], Sequence[float]]):
         """
         :param bvp: the boundary value problem to turn into an initial value
-        problem by providing the initial conditions for it
+            problem by providing the initial conditions for it
         :param y_0_func: the initial value function that returns an array
-        containing the values of y at the spatial coordinates defined by
-        its input
+            containing the values of y at the spatial coordinates defined by
+            its input
         """
         self._bvp = bvp
         self._y_0_func = y_0_func
@@ -124,7 +124,7 @@ class ContinuousInitialCondition(InitialCondition):
         or cell centers of the spatial mesh.
 
         :param vertex_oriented: whether the initial conditions are to be
-        evaluated at the vertices or cell centers of the spatial mesh
+            evaluated at the vertices or cell centers of the spatial mesh
         :return: the discretised initial values
         """
         diff_eq = self._bvp.differential_equation
@@ -157,12 +157,12 @@ class GaussianInitialCondition(ContinuousInitialCondition):
             multipliers: Optional[Sequence[float]] = None):
         """
         :param bvp: the boundary value problem to turn into an initial value
-        problem by providing the initial conditions for it
+            problem by providing the initial conditions for it
         :param means_and_covs: a tuple of mean vectors and covariance matrices
-        defining the multivariate Gaussian PDFs corresponding to each element
-        of y_0
+            defining the multivariate Gaussian PDFs corresponding to each
+            element of y_0
         :param multipliers: an array of multipliers for each element of the
-        initial y values
+            initial y values
         """
         diff_eq = bvp.differential_equation
         assert diff_eq.x_dimension

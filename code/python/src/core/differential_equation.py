@@ -50,21 +50,21 @@ class DifferentialEquation(ABC):
         as well.
 
         :param t: the time step at which the time derivative is to be
-        calculated
+            calculated
         :param y: the estimate of y at t
         :param d_x: a tuple of step sizes corresponding to each spatial
-        dimension
+            dimension
         :param differentiator: a differentiator instance that allows for
-        calculating various differential terms of y with respect to x given
-        an estimate of y over the spatial mesh, y(t)
+            calculating various differential terms of y with respect to x given
+            an estimate of y over the spatial mesh, y(t)
         :param derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary value constraint pairs that represent the
-        lower and upper boundary conditions of the spatial derivative of y
-        normal to the boundaries evaluated on the boundaries of the
-        corresponding axes of the spatial domain
+            y dimension) of boundary value constraint pairs that represent the
+            lower and upper boundary conditions of the spatial derivative of y
+            normal to the boundaries evaluated on the boundaries of the
+            corresponding axes of the spatial domain
         :param solution_constraints: a 1D array (y dimension) of solution
-        constraints that represent the boundary conditions of y evaluated on
-        the entire spatial domain
+            constraints that represent the boundary conditions of y evaluated
+            on the entire spatial domain
         :return: an array representing y'(t)
         """
 
@@ -79,7 +79,7 @@ class DifferentialEquation(ABC):
 
         :param variables: the FiPy cell variables denoting the elements of y
         :return: a sequence of FiPy terms representing the differential
-        equation (system)
+            equation (system)
         """
 
     @abstractmethod
@@ -93,12 +93,12 @@ class DifferentialEquation(ABC):
         DeepXDE equivalent of the differential equation.
 
         :param x: the input of the PINN; a rank-two tensor whose each row
-        represents a point in the spatiotemporal domain
+            represents a point in the spatiotemporal domain
         :param y: the output of the PINN; the current estimates of y at the
-        points
+            points
         :return: the tensor operation or sequence of tensor operations
-        (depending on whether the differential equation's solution is
-        vector-valued) representing the differential equation
+            (depending on whether the differential equation's solution is
+            vector-valued) representing the differential equation
         """
 
 
@@ -308,7 +308,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
             g: float = 6.6743e-11):
         """
         :param dims: the spatial dimensionality the motion of the objects is to
-        be considered in (must be either 2 or 3)
+            be considered in (must be either 2 or 3)
         :param masses: a list of the masses of the objects (kg)
         :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
         """
@@ -381,11 +381,11 @@ class NBodyGravitationalEquation(DifferentialEquation):
         objects along each dimension.
 
         :param y: the array specifying the positions and velocities of the
-        objects; it can either be a 1D array specifying the positions and
-        velocities at a single time point or a 2D array specifying them at
-        multiple time points
+            objects; it can either be a 1D array specifying the positions and
+            velocities at a single time point or a 2D array specifying them at
+            multiple time points
         :return: the time derivatives of the positions and velocities of the
-        objects; same shape as y
+            objects; same shape as y
         """
         assert 1 <= len(y.shape) <= 2
         assert y.shape[-1] == self.y_dimension
@@ -432,7 +432,7 @@ class DiffusionEquation(DifferentialEquation):
             d: float = 1.):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
-        differential equation's solution
+            differential equation's solution
         :param d: the diffusion coefficient
         """
         assert x_dimension > 0
@@ -495,7 +495,7 @@ class WaveEquation(DifferentialEquation):
             c: float = 1.):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
-        differential equation's solution
+            differential equation's solution
         :param c: the propagation speed coefficient
         """
         assert x_dimension > 0
@@ -586,7 +586,7 @@ class CahnHilliardEquation(DifferentialEquation):
             gamma: float):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
-        differential equation's solution
+            differential equation's solution
         :param d: the potential diffusion coefficient
         :param gamma: the concentration diffusion coefficient
         """
@@ -701,11 +701,12 @@ class NavierStokesEquation(DifferentialEquation):
             tol: float = 1e-3):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
-        differential equation's solution
+            differential equation's solution
         :param re: the Reynolds number
         :param tol: the stopping criterion for the Poisson solver; once the
-        second norm of the difference of the estimate and the updated estimate
-        drops below this threshold, the equation is considered to be solved
+            second norm of the difference of the estimate and the updated
+            estimate drops below this threshold, the equation is considered to
+            be solved
         """
         assert x_dimension == 2 or x_dimension == 3
 
@@ -794,14 +795,14 @@ class NavierStokesEquation(DifferentialEquation):
 
         :param stream_function: the stream function scalar field
         :param d_x: a tuple of step sizes corresponding to each spatial
-        dimension
+            dimension
         :param differentiator: a differentiator instance that allows for
-        calculating various differential terms of y with respect to x
+            calculating various differential terms of y with respect to x
         :param derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary value constraint pairs that represent the
-        lower and upper boundary conditions of the spatial derivative of y
-        normal to the boundaries evaluated on the boundaries of the
-        corresponding axes of the spatial domain
+            y dimension) of boundary value constraint pairs that represent the
+            lower and upper boundary conditions of the spatial derivative of y
+            normal to the boundaries evaluated on the boundaries of the
+            corresponding axes of the spatial domain
         :return: the velocity vector field
         """
         if self._x_dimension == 2:

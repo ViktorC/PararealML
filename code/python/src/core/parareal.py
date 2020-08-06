@@ -26,12 +26,13 @@ class PararealOperator(Operator):
         :param f: the fine operator
         :param g: the coarse operator
         :param tol: the minimum absolute value of the largest update to
-        the solution required to perform another corrective iteration; if all
-        updates are smaller than this threshold, the solution is considered
-        accurate enough
+            the solution required to perform another corrective iteration; if
+            all updates are smaller than this threshold, the solution is
+            considered accurate enough
         :param max_iterations: the maximum number of iterations to perform
-        (effective only if it is less than the number of executing processes
-        and the accuracy requirements are not satisfied in fewer iterations)
+            (effective only if it is less than the number of executing
+            processes and the accuracy requirements are not satisfied in fewer
+            iterations)
         """
         assert np.isclose(g.d_t, f.d_t * round(g.d_t / f.d_t))
 

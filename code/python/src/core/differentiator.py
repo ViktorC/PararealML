@@ -35,15 +35,15 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step size of the mesh along the specified axis
         :param x_axis: the spatial dimension that the y_ind-th element of y is
-        to be differentiated with respect to
+            to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
-        is vector-valued)
+            is vector-valued)
         :param derivative_boundary_constraint_pair: a boundary constraint pair
-        that allows for applying constraints to the calculated first
-        derivatives at the boundaries normal to the axis that y is
-        differentiated with respect to
+            that allows for applying constraints to the calculated first
+            derivatives at the boundaries normal to the axis that y is
+            differentiated with respect to
         :return: the derivative of the y_ind-th element of y with respect to
-        the spatial dimension defined by x_axis
+            the spatial dimension defined by x_axis
         """
 
     @abstractmethod
@@ -65,21 +65,21 @@ class Differentiator(ABC):
 
         :param y: the values of y at every point of the mesh
         :param d_x1: the step size of the mesh along the axis defined by
-        x_axis1
+            x_axis1
         :param d_x2: the step size of the mesh along the axis defined by
-        x_axis2
+            x_axis2
         :param x_axis1: the first spatial dimension that the y_ind-th element
-        of y is to be differentiated with respect to
+            of y is to be differentiated with respect to
         :param x_axis2: the second spatial dimension that the y_ind-th element
-        of y is to be differentiated with respect to
+            of y is to be differentiated with respect to
         :param y_ind: the index of the element of y to differentiate (in case y
-        is vector-valued)
+            is vector-valued)
         :param first_derivative_boundary_constraint_pair: a boundary constraint
-        pair that allows for applying constraints to the calculated first
-        derivatives at the boundaries normal to the first axis of
-        differentiation before computing the second derivatives
+            pair that allows for applying constraints to the calculated first
+            derivatives at the boundaries normal to the first axis of
+            differentiation before computing the second derivatives
         :return: the second derivative of the y_ind-th element of y with
-        respect to the spatial dimensions defined by x_axis1 and x_axis2
+            respect to the spatial dimensions defined by x_axis1 and x_axis2
         """
 
     @abstractmethod
@@ -95,11 +95,11 @@ class Differentiator(ABC):
         improved estimate.
 
         :param y_hat: the current estimated values of the anti-derivative at
-        every point of the mesh
+            every point of the mesh
         :param derivative: the derivative of y with respect to the spatial
-        dimension defined by x_axis
+            dimension defined by x_axis
         :param x_axis: the spatial dimension that the anti-derivative is to be
-        calculated with respect to
+            calculated with respect to
         :param d_x: the step size of the mesh along the specified axis
         :return: an improved estimate of the anti-derivative
         """
@@ -117,12 +117,12 @@ class Differentiator(ABC):
         estimate.
 
         :param y_hat: the current estimated values of the solution at every
-        point of the mesh
+            point of the mesh
         :param laplacian: the Laplacian for which y is to be determined
         :param d_x: the step sizes of the mesh along the spatial axes
         :param first_derivative_boundary_constraints: an optional 2D array
-        (x dimension, y dimension) of boundary constraint pairs that specify
-        constraints on the first derivatives of the solution
+            (x dimension, y dimension) of boundary constraint pairs that
+            specify constraints on the first derivatives of the solution
         :return: an improved estimate of y_hat
         """
 
@@ -139,8 +139,8 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary constraint pairs that allow for applying
-        constraints to the calculated first derivatives
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives
         :return: the Jacobian of y
         """
         assert len(y.shape) > 1
@@ -176,9 +176,9 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary constraint pairs that allow for applying
-        constraints to the calculated first derivatives before using them to
-        compute the divergence
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the divergence
         :return: the divergence of y
         """
         assert len(y.shape) > 1
@@ -210,9 +210,9 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary constraint pairs that allow for applying
-        constraints to the calculated first derivatives before using them to
-        compute the curl
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the curl
         :return: the curl of y
         """
         assert y.shape[-1] == 2 or y.shape[-1] == 3
@@ -268,9 +268,9 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param first_derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary constraint pairs that allow for applying
-        constraints to the calculated first derivatives before using them to
-        compute the second derivatives and the Hessian
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the second derivatives and the Hessian
         :return: the Hessian of y
         """
         assert len(y.shape) > 1
@@ -313,9 +313,9 @@ class Differentiator(ABC):
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
         :param first_derivative_boundary_constraints: a 2D array (x dimension,
-        y dimension) of boundary constraint pairs that allow for applying
-        constraints to the calculated first derivatives before using them to
-        compute the second derivatives and the Laplacian
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
         assert len(y.shape) > 1
@@ -355,15 +355,17 @@ class Differentiator(ABC):
 
         :param derivative: the right-hand side of the equation
         :param x_axis: the spatial dimension that the anti-derivative is to be
-        calculated with respect to
+            calculated with respect to
         :param d_x: the step sizes of the mesh along the spatial axes
         :param tol: the stopping criterion for the Jacobi algorithm; once the
-        second norm of the difference of the estimate and the updated estimate
-        drops below this threshold, the equation is considered to be solved
+            second norm of the difference of the estimate and the updated
+            estimate drops below this threshold, the equation is considered to
+            be solved
         :param y_constraint: a constraint on the values of y that allows for
-        solving for the anti-derivative; it must constrain the boundary values
+            solving for the anti-derivative; it must constrain the boundary
+            values
         :param y_init: an optional initial estimate of the solution; if it is
-        None, a random array is used
+            None, a random array is used
         :return: the array representing the solution
         """
         assert y_constraint is not None
@@ -391,19 +393,20 @@ class Differentiator(ABC):
         :param laplacian: the right-hand side of the equation
         :param d_x: the step sizes of the mesh along the spatial axes
         :param tol: the stopping criterion for the Jacobi algorithm; once the
-        second norm of the difference of the estimate and the updated estimate
-        drops below this threshold, the equation is considered to be solved
+            second norm of the difference of the estimate and the updated
+            estimate drops below this threshold, the equation is considered to
+            be solved
         :param y_constraints: a sequence of constraints on the values of the
-        solution containing a constraint for each element of y; each constraint
-        must constrain the boundary values of corresponding element of y for
-        the system to be solvable
+            solution containing a constraint for each element of y; each
+            constraint must constrain the boundary values of corresponding
+            element of y for the system to be solvable
         :param first_derivative_boundary_constraints: an optional 2D array
-        (x dimension, y dimension) of boundary constraint pairs that specify
-        constraints on the first derivatives of the solution
+            (x dimension, y dimension) of boundary constraint pairs that
+            specify constraints on the first derivatives of the solution
         :param y_init: an optional initial estimate of the solution; if it is
-        None, a random array is used
+            None, a random array is used
         :return: the array representing the solution to Poisson's equation at
-        every point of the mesh
+            every point of the mesh
         """
         assert y_constraints is not None
         assert len(y_constraints) == laplacian.shape[-1]
@@ -435,15 +438,16 @@ class Differentiator(ABC):
         method.
 
         :param update_func: the function to calculate the updated
-        anti-differential
+            anti-differential
         :param y_shape: the shape of the solution
         :param tol: the stopping criterion for the Jacobi algorithm; once the
-        second norm of the difference of the estimate and the updated estimate
-        drops below this threshold, the equation is considered to be solved
+            second norm of the difference of the estimate and the updated
+            estimate drops below this threshold, the equation is considered to
+            be solved
         :param y_init: an optional initial estimate of the solution; if it is
-        None, a random array is used
+            None, a random array is used
         :param y_constraints: a sequence of constraints on the values of the
-        solution containing a constraint for each element of y
+            solution containing a constraint for each element of y
         :return: the inverse of the differential operation
         """
         assert len(y_shape) > 1
@@ -479,11 +483,11 @@ class Differentiator(ABC):
         shape and returns that.
 
         :param derivative_boundary_constraints: a potentially None 2D array
-        (x dimension, y dimension) of derivative boundary constraint pairs
+            (x dimension, y dimension) of derivative boundary constraint pairs
         :param y_shape: the shape of the array representing the discretised y
-        which is to be differentiated
+            which is to be differentiated
         :return: an array of derivative boundary constraint pairs or empty
-        objects depending on whether the input array is None
+            objects depending on whether the input array is None
         """
         if derivative_boundary_constraints is not None:
             assert derivative_boundary_constraints.shape == \

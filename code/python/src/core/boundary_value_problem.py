@@ -28,9 +28,9 @@ class BoundaryValueProblem:
         """
         :param diff_eq: the differential equation of the boundary value problem
         :param mesh: the mesh over which the boundary value problem is to be
-        solved
+            solved
         :param boundary_conditions: the boundary conditions on the boundary
-        value problem's non-temporal domain
+            value problem's non-temporal domain
         """
         assert diff_eq is not None
         self._diff_eq = diff_eq
@@ -185,8 +185,8 @@ class BoundaryValueProblem:
         discretised solution to the BVP.
 
         :param vertex_oriented: whether the solution is to be evaluated at the
-        vertices or the cells of the discretised spatial domain; if the BVP is
-        an ODE, it can be None
+            vertices or the cells of the discretised spatial domain; if the BVP
+            is an ODE, it can be None
         :return: the shape of result evaluated at the vertices or the cells
         """
         assert (not self._diff_eq.x_dimension) or (vertex_oriented is not None)
@@ -204,9 +204,9 @@ class BoundaryValueProblem:
         on the boundaries of the corresponding axes of the mesh.
 
         :param vertex_oriented: whether the constraints are to be evaluated at
-        the boundary vertices or the exterior faces of the boundary cells
+            the boundary vertices or the exterior faces of the boundary cells
         :return: a tuple of two 2D arrays of y and d y boundary value
-        constraint pairs
+            constraint pairs
         """
         y_boundary_constraints = np.empty(
             (self._diff_eq.x_dimension, self._diff_eq.y_dimension),
@@ -251,11 +251,11 @@ class BoundaryValueProblem:
 
         :param boundary_condition_pair: the boundary condition pair to evaluate
         :param boundary_shape: the shape of the boundary of the axis of the
-        mesh
+            mesh
         :param d_x_arr: a 1D array of the step sizes of all the other spatial
-        axes
+            axes
         :param vertex_oriented: whether the constraints are to be evaluated at
-        the boundary vertices or the exterior faces of the boundary cells
+            the boundary vertices or the exterior faces of the boundary cells
         :return: two 1D arrays of boundary constraint pairs
         """
         y_boundary_constraints = []
@@ -308,9 +308,9 @@ class BoundaryValueProblem:
         :param condition_function: the boundary condition function
         :param boundary_shape: the shape of the boundary
         :param d_x_arr: a 1D array of the step sizes of all the other spatial
-        axes
+            axes
         :param vertex_oriented: whether the constraints are to be evaluated at
-        the boundary vertices or the exterior faces of the boundary cells
+            the boundary vertices or the exterior faces of the boundary cells
         :return: a sequence of boundary constraints
         """
         if not has_condition:

@@ -24,7 +24,7 @@ class Solution:
         :param t_coordinates: the time steps at which the solution is evaluated
         :param discrete_y: the solution to the IVP at the specified time steps
         :param vertex_oriented: whether the solution is vertex or cell oriented
-        along the spatial domain; if the IVP is an ODE, it can be None
+            along the spatial domain; if the IVP is an ODE, it can be None
         """
         assert len(t_coordinates.shape) == 1
         assert len(t_coordinates) > 0
@@ -69,9 +69,9 @@ class Solution:
         call this function with the value of the vertex_oriented property.
 
         :param vertex_oriented: whether the coordinates of the vertices or the
-        cell centers of the spatial mesh are to be returned
+            cell centers of the spatial mesh are to be returned
         :return: a tuple of arrays each representing the coordinates along the
-        corresponding axis
+            corresponding axis
         """
         return self._bvp.mesh.coordinates(vertex_oriented)
 
@@ -86,9 +86,9 @@ class Solution:
 
         :param x: the spatial coordinates with a shape of (..., x_dimension)
         :param interpolation_method: the interpolation method to use; if it is
-        None, linear interpolation is used
+            None, linear interpolation is used
         :return: the interpolated value of y at the provided spatial
-        coordinates at every time step
+            coordinates at every time step
         """
         if interpolation_method is None:
             interpolation_method = 'linear'
@@ -128,11 +128,12 @@ class Solution:
         centers of the spatial mesh.
 
         :param vertex_oriented: whether the solution returned should be
-        evaluated at the vertices or the cell centers of the spatial mesh; only
-        interpolation is supported, therefore, it is not possible to evaluate
-        the solution at the vertices based on a cell-oriented solution
+            evaluated at the vertices or the cell centers of the spatial mesh;
+            only interpolation is supported, therefore, it is not possible to
+            evaluate the solution at the vertices based on a cell-oriented
+            solution
         :param interpolation_method: the interpolation method to use; if it is
-        None, linear interpolation is used
+            None, linear interpolation is used
         :return: the discrete solution
         """
         if (self._bvp.differential_equation.x_dimension == 0) \
