@@ -1,4 +1,6 @@
-from typing import Optional, Sequence, Any
+from __future__ import annotations
+
+from typing import Optional, Sequence, Any, NamedTuple
 
 import numpy as np
 from scipy.interpolate import interpn
@@ -151,6 +153,62 @@ class Solution:
 
         return discrete_y
 
+    def diff(
+            self,
+            solutions: Sequence[Solution],
+            atol: float = 1e-8
+    ) -> Diffs:
+        """
+        Calculates and returns the difference between the provided solutions
+        and this solution at every matching time point across all solutions.
+
+        :param solutions: the solutions to compare to
+        :param atol: the maximum absolute difference between two time points
+            considered to be matching
+        :return: a tuple of an array of the matching time points and a sequence
+            of arrays representing the differences with each of the provided
+            solutions at the matching time point
+        """
+        assert len(solutions) > 0
+
+        matching_time_points = []
+        diffs = []
+
+        other_time_points = []
+        other_discrete_ys = []
+        other_indices = []
+        for solution in solutions:
+            diffs.append([])
+            other_time_points.append(solution.t_coordinates)
+            other_discrete_ys.append(solution.discrete_y(
+                self._vertex_oriented))
+            other_indices.append(0)
+
+        for i, t in enumerate(self._t_coordinates):
+
+            all_match = True
+
+            for j in range(len(solutions)):
+                other_t = other_time_points[j][other_indices[j]]
+
+                while not np.isclose(t, other_t, atol=atol, rtol=0.):
+                    other_indices[j] += 1
+                    other_t = other_time_points[j][other_indices[j]]
+
+                all_match = all_match and \
+                    np.isclose(t, other_t, atol=atol, rtol=0.)
+
+            if all_match:
+                matching_time_points.append(t)
+
+                for j in range(len(solutions)):
+                    diffs[j].append(
+                        other_discrete_ys[j][other_indices[j]] -
+                        self._discrete_y[i])
+
+        diff_arrays = [np.array(diff) for diff in diffs]
+        return Diffs(matching_time_points, diff_arrays)
+
     def plot(self, solution_name: str, **kwargs: Any):
         """
         Plots the solution and saves it to a file.
@@ -163,3 +221,12 @@ class Solution:
         from src.utils.plot import plot_ivp_solution
 
         plot_ivp_solution(self, solution_name, **kwargs)
+
+
+class Diffs(NamedTuple):
+    """
+    A representation of the difference between a solution and one or more other
+    solutions at time points that match across all solutions.
+    """
+    matching_time_points: Sequence[float]
+    differences: Sequence[np.ndarray]
