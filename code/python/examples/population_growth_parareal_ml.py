@@ -1,5 +1,7 @@
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
+from tensorflow.python.keras import Input
+from tensorflow.python.keras.layers import Dense
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import PopulationGrowthEquation
@@ -9,6 +11,7 @@ from src.core.operator import ODEOperator, StatefulRegressionOperator
 from src.core.parareal import PararealOperator
 from src.utils.experiment import run_parareal_ml_experiment, \
     calculate_coarse_ml_operator_step_size
+from src.utils.ml import create_keras_regressor
 from src.utils.rand import SEEDS
 
 diff_eq = PopulationGrowthEquation(2e-2)
@@ -26,7 +29,37 @@ threshold = .1
 parareal = PararealOperator(f, g, threshold)
 parareal_ml = PararealOperator(f, g_ml, threshold)
 
-models = [LinearRegression(), RandomForestRegressor()]
+models = [
+    LinearRegression(),
+    RandomForestRegressor(n_estimators=10),
+    RandomForestRegressor(n_estimators=100),
+    RandomForestRegressor(n_estimators=250),
+    GradientBoostingRegressor(n_estimators=50),
+    GradientBoostingRegressor(n_estimators=100),
+    GradientBoostingRegressor(n_estimators=250),
+    create_keras_regressor([
+        Input(shape=g_ml.model_input_shape(ivp)),
+        Dense(50, activation='relu'),
+        Dense(g_ml.model_output_shape(ivp)[0])
+    ]),
+    create_keras_regressor([
+        Dense(50, activation='relu'),
+        Dense(50, activation='relu'),
+        Dense(g_ml.model_output_shape(ivp)[0])
+    ])
+]
+
+model_names = [
+    'lr',
+    'rf10',
+    'rf100',
+    'rf250',
+    'bt50',
+    'bt100',
+    'bt250',
+    'fnn1',
+    'fnn2'
+]
 
 run_parareal_ml_experiment(
     'population_growth',
@@ -36,7 +69,7 @@ run_parareal_ml_experiment(
     g_ml,
     models,
     threshold,
-    SEEDS[:5],
+    SEEDS[:10],
     iterations=100,
     noise_sd=(0., 50.),
-    model_names=['linear regression', 'random forest'])
+    model_names=model_names)
