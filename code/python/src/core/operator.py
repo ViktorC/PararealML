@@ -138,8 +138,9 @@ class ODEOperator(Operator):
             dense_output=False,
             vectorized=False)
 
-        assert result.success, \
-            f'status code: {result.status}, message: {result.message}'
+        if not result.success:
+            raise ValueError(
+                f'status code: {result.status}, message: {result.message}')
 
         y = np.ascontiguousarray(result.y.T)
         return Solution(bvp, time_points[1:], y)
@@ -256,6 +257,7 @@ class FVMOperator(Operator):
         for i, t_i in enumerate(time_points[:-1]):
             for fipy_var in fipy_vars:
                 fipy_var.updateOld()
+
             for j, fipy_var in enumerate(fipy_vars):
                 fipy_terms[j].solve(
                     var=fipy_var,
@@ -356,7 +358,7 @@ class MLOperator(Operator, ABC):
         return x
 
 
-class SolutionModelOperator(MLOperator, ABC):
+class StatelessMLOperator(MLOperator, ABC):
     """
     A base class for machine learning operators modelling the solution of
     initial value problems.
@@ -377,7 +379,7 @@ class SolutionModelOperator(MLOperator, ABC):
             batching; this can be very memory intensive depending on the
             temporal step size
         """
-        super(SolutionModelOperator, self).__init__(d_t, vertex_oriented)
+        super(StatelessMLOperator, self).__init__(d_t, vertex_oriented)
         self._batch_mode = batch_mode
 
     @suppress_stdout
@@ -409,7 +411,7 @@ class SolutionModelOperator(MLOperator, ABC):
         return Solution(bvp, time_points, y, self._vertex_oriented)
 
 
-class PINNOperator(SolutionModelOperator):
+class PINNOperator(StatelessMLOperator):
     """
     A physics informed neural network based unsupervised machine learning
     operator for solving initial value problems using the DeepXDE library.
@@ -489,7 +491,7 @@ class PINNOperator(SolutionModelOperator):
         return loss_history, train_state
 
 
-class SolutionRegressionOperator(SolutionModelOperator):
+class StatelessRegressionOperator(StatelessMLOperator):
     """
     A supervised machine learning operator that uses regression to model the
     solution of initial value problems.
@@ -560,10 +562,10 @@ class SolutionRegressionOperator(SolutionModelOperator):
         return loss
 
 
-class OperatorRegressionOperator(MLOperator):
+class StatefulRegressionOperator(MLOperator):
     """
-    A supervised machine learning operator that uses regression to model a
-    conventional operator for solving initial value problems.
+    A supervised machine learning operator that uses regression to model
+    another operator for solving initial value problems.
     """
 
     def solve(self, ivp: InitialValueProblem) -> Solution:
