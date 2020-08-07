@@ -64,6 +64,9 @@ def create_keras_regressor(
         layers: Sequence[Layer],
         optimiser: str = 'adam',
         loss: str = 'mse',
+        epochs: int = 1000,
+        batch_size: int = 64,
+        verbose: int = 0,
         **kwargs: Any,
 ) -> KerasRegressor:
     """
@@ -72,6 +75,10 @@ def create_keras_regressor(
     :param layers: the layers of the neural network
     :param optimiser: the optimiser to use
     :param loss: the loss function to use
+    :param epochs: the number of training epochs
+    :param batch_size: the training batch size
+    :param verbose: whether training information should be printed to the
+        stdout stream
     :param kwargs: additional parameters to the Keras regression model
     :return: the regression model
     """
@@ -80,4 +87,9 @@ def create_keras_regressor(
         model.compile(optimizer=optimiser, loss=loss)
         return model
 
-    return KerasRegressor(build_fn=build_model, **kwargs)
+    return KerasRegressor(
+        build_fn=build_model,
+        epochs=epochs,
+        batch_size=batch_size,
+        verbose=verbose,
+        **kwargs)
