@@ -1,4 +1,4 @@
-from typing import Union, Callable, Tuple, Sequence
+from typing import Union, Callable, Tuple, Sequence, Any
 
 import numpy as np
 from sklearn.base import RegressorMixin
@@ -63,7 +63,8 @@ def train_regression_model(
 def create_keras_regressor(
         layers: Sequence[Layer],
         optimiser: str = 'adam',
-        loss: str = 'mse'
+        loss: str = 'mse',
+        **kwargs: Any,
 ) -> KerasRegressor:
     """
     Creates a Keras regression model.
@@ -71,8 +72,12 @@ def create_keras_regressor(
     :param layers: the layers of the neural network
     :param optimiser: the optimiser to use
     :param loss: the loss function to use
+    :param kwargs: additional parameters to the Keras regression model
     :return: the regression model
     """
-    model = Sequential(layers)
-    model.compile(optimizer=optimiser, loss=loss)
-    return KerasRegressor(model)
+    def build_model():
+        model = Sequential(layers)
+        model.compile(optimizer=optimiser, loss=loss)
+        return model
+
+    return KerasRegressor(build_fn=build_model, **kwargs)
