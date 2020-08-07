@@ -165,49 +165,74 @@ class Solution:
         :param solutions: the solutions to compare to
         :param atol: the maximum absolute difference between two time points
             considered to be matching
-        :return: a tuple of an array of the matching time points and a sequence
-            of arrays representing the differences with each of the provided
-            solutions at the matching time point
+        :return: a `Diffs` instance containing a 1D array
+            representing the matching time points and a sequence of sequence of
+            arrays representing the differences between this solution and each
+            of the provided solutions at the matching time points
         """
         assert len(solutions) > 0
 
         matching_time_points = []
-        diffs = []
+        all_diffs = []
 
-        other_time_points = []
+        all_time_points = [self._t_coordinates]
         other_discrete_ys = []
-        other_indices = []
         for solution in solutions:
-            diffs.append([])
-            other_time_points.append(solution.t_coordinates)
-            other_discrete_ys.append(solution.discrete_y(
-                self._vertex_oriented))
-            other_indices.append(0)
+            all_diffs.append([])
+            all_time_points.append(solution.t_coordinates)
+            other_discrete_ys.append(
+                solution.discrete_y(self._vertex_oriented))
 
-        for i, t in enumerate(self._t_coordinates):
+        fewest_time_points_ind = 0
+        fewest_time_points = None
+        for i, time_points in enumerate(all_time_points):
+            n_time_points = len(time_points)
+            if fewest_time_points is None \
+                    or n_time_points < fewest_time_points:
+                fewest_time_points = n_time_points
+                fewest_time_points_ind = i
 
+        for i, t in enumerate(all_time_points[fewest_time_points_ind]):
             all_match = True
+            indices_of_time_points = []
 
-            for j in range(len(solutions)):
-                other_t = other_time_points[j][other_indices[j]]
+            for j, time_points in enumerate(all_time_points):
+                if time_points is None:
+                    continue
 
-                while not np.isclose(t, other_t, atol=atol, rtol=0.):
-                    other_indices[j] += 1
-                    other_t = other_time_points[j][other_indices[j]]
+                if i == j:
+                    indices_of_time_points.append(i)
+                    continue
 
-                all_match = all_match and \
-                    np.isclose(t, other_t, atol=atol, rtol=0.)
+                insertion_ind = np.searchsorted(time_points, t)
+                next_ind = min(len(time_points) - 1, insertion_ind + 1)
+
+                if insertion_ind == next_ind:
+                    all_time_points[j] = None
+                else:
+                    all_time_points[j] = all_time_points[j][next_ind:]
+
+                if np.isclose(
+                        t, time_points[insertion_ind], atol=atol, rtol=0.):
+                    indices_of_time_points.append(insertion_ind)
+                elif np.isclose(
+                        t, time_points[next_ind], atol=atol, rtol=0.):
+                    indices_of_time_points.append(next_ind)
+                else:
+                    all_match = False
+                    break
 
             if all_match:
-                matching_time_points.append(t)
+                matching_time_points.append(
+                    self._t_coordinates[indices_of_time_points[0]])
+                for j, discrete_y in enumerate(other_discrete_ys):
+                    all_diffs[j].append(
+                        discrete_y[indices_of_time_points[j + 1]] -
+                        self._discrete_y[indices_of_time_points[0]])
 
-                for j in range(len(solutions)):
-                    diffs[j].append(
-                        other_discrete_ys[j][other_indices[j]] -
-                        self._discrete_y[i])
-
-        diff_arrays = [np.array(diff) for diff in diffs]
-        return Diffs(matching_time_points, diff_arrays)
+        matching_time_point_array = np.array(matching_time_points)
+        diff_arrays = [np.array(diff) for diff in all_diffs]
+        return Diffs(matching_time_point_array, diff_arrays)
 
     def plot(self, solution_name: str, **kwargs: Any):
         """
@@ -228,5 +253,5 @@ class Diffs(NamedTuple):
     A representation of the difference between a solution and one or more other
     solutions at time points that match across all solutions.
     """
-    matching_time_points: Sequence[float]
+    matching_time_points: np.ndarray
     differences: Sequence[np.ndarray]
