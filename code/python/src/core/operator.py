@@ -10,12 +10,7 @@ from deepxde.maps.map import Map
 from deepxde.model import TrainState, LossHistory
 from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
-from sklearn.base import RegressorMixin
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split, GridSearchCV, \
-    RandomizedSearchCV
-from sklearn.utils import all_estimators
-from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differentiator import Differentiator
@@ -25,12 +20,7 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
 from src.core.integrator import Integrator
 from src.core.solution import Solution
 from src.utils.io import suppress_stdout
-
-SKLearnRegressionModel = Union[
-    tuple([_class for name, _class in all_estimators()
-           if issubclass(_class, RegressorMixin)])
-]
-RegressionModel = Union[SKLearnRegressionModel, KerasRegressor]
+from src.utils.ml import train_regression_model, RegressionModel, SearchCV
 
 
 class Operator(ABC):
@@ -541,7 +531,7 @@ class StatelessRegressionOperator(StatelessMLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            model: Union[RegressionModel, SearchCV],
             subsampling_factor: Optional[float] = None,
             test_size: float = .2,
             score_func: Callable[[np.ndarray, np.ndarray], float] =
@@ -601,7 +591,7 @@ class StatefulRegressionOperator(StatefulMLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+            model: Union[RegressionModel, SearchCV],
             iterations: int,
             noise_sd: Union[float, Tuple[float, float]],
             relative_noise: bool = False,
@@ -702,44 +692,3 @@ class StatefulRegressionOperator(StatefulMLOperator):
             model, all_x, all_y, test_size, score_func)
 
         return train_score, test_score
-
-
-def train_regression_model(
-        model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
-        x: np.ndarray,
-        y: np.ndarray,
-        test_size: float,
-        score_func: Callable[[np.ndarray, np.ndarray], float]
-) -> Tuple[RegressionModel, float, float]:
-    """
-    Fits the regression model to the training share of the provided data points
-    using random splitting and it returns the loss of the model evaluated on
-    both the training and test data sets.
-
-    :param model: the regression model to train
-    :param x: the inputs
-    :param y: the target outputs
-    :param test_size: the fraction of all data points that should be used
-        for testing
-    :param score_func: the prediction scoring function to use
-    :return: the fitted model, the training loss, and the test loss
-    """
-    assert 0. <= test_size < 1.
-    train_size = 1. - test_size
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        train_size=train_size,
-        test_size=test_size)
-
-    model.fit(x_train, y_train)
-
-    if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
-        model = model.best_estimator_
-
-    y_train_hat = model.predict(x_train)
-    y_test_hat = model.predict(x_test)
-    train_score = score_func(y_train, y_train_hat)
-    test_score = score_func(y_test, y_test_hat)
-    return model, train_score, test_score
