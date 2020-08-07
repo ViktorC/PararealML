@@ -10,7 +10,7 @@ from src.core.parareal import PararealOperator
 from src.utils.io import print_on_first_rank
 from src.utils.plot import plot_model_losses
 from src.utils.rand import set_random_seed
-from src.utils.time import time_with_name
+from src.utils.time import time_with_args
 
 
 def calculate_coarse_ml_operator_step_size(ivp: InitialValueProblem) -> float:
@@ -63,8 +63,16 @@ def run_parareal_ml_experiment(
     parareal = PararealOperator(f, g, threshold)
     parareal_ml = PararealOperator(f, g_ml, threshold)
 
-    train_losses = np.empty((len(models), len(seeds)))
-    test_losses = np.empty(train_losses.shape)
+    fine_times = np.empty(len(seeds))
+    coarse_times = np.empty(fine_times.shape)
+    parareal_times = np.empty(fine_times.shape)
+    train_times = np.empty((len(models), len(seeds)))
+    coarse_ml_times = np.empty(train_times.shape)
+    parareal_ml_times = np.empty(train_times.shape)
+
+    train_losses = np.empty(train_times.shape)
+    test_losses = np.empty(train_times.shape)
+
     diffs = []
 
     print_on_first_rank(f'Experiment: {experiment_name}')
@@ -74,42 +82,60 @@ def run_parareal_ml_experiment(
 
         print_on_first_rank(f'Round {i}; seed: {seed}')
 
-        fine_solution = time_with_name('Fine solver')(f.solve)(ivp)
+        fine_solution, fine_time = \
+            time_with_args(True, 'Fine solver')(f.solve)(ivp)
+        fine_times[i] = fine_time
 
-        coarse_solution = time_with_name('Coarse solver')(g.solve)(ivp)
+        coarse_solution, coarse_time = \
+            time_with_args(True, 'Coarse solver')(g.solve)(ivp)
         coarse_solutions = [coarse_solution]
+        coarse_times[i] = coarse_time
 
-        time_with_name('Parareal solver')(parareal.solve)(ivp)
+        parareal_times[i] = \
+            time_with_args(True, 'Parareal solver')(parareal.solve)(ivp)[1]
 
         for j, model in enumerate(models):
             model_name = model_names[j]
 
-            train_loss, test_loss = time_with_name(
-                f'ML {model_name} training')(g_ml.train)(
+            (train_loss, test_loss), train_time = time_with_args(
+                True, f'ML {model_name} training')(g_ml.train)(
                 ivp, g, model, **training_config)
             print_on_first_rank(f'ML {model_name} train loss: {train_loss}')
             print_on_first_rank(f'ML {model_name} test loss: {test_loss}')
             train_losses[j, i] = train_loss
             test_losses[j, i] = test_loss
+            train_times[j, i] = train_time
 
-            coarse_ml_solution = time_with_name(f'ML {model_name} solver')(
-                g_ml.solve)(ivp)
+            coarse_ml_solution, coarse_ml_time = time_with_args(
+                True, f'ML {model_name} solver')(g_ml.solve)(ivp)
             coarse_solutions.append(coarse_ml_solution)
+            coarse_ml_times[j, i] = coarse_ml_time
 
-            time_with_name(f'Parareal ML {model_name} solver')(
-                parareal_ml.solve)(ivp)
+            parareal_ml_times[j, i] = \
+                time_with_args(True, f'Parareal ML {model_name} solver')(
+                    parareal_ml.solve)(ivp)[1]
 
         diffs.append(fine_solution.diff(coarse_solutions))
 
-    train_losses_mean = train_losses.mean(axis=1)
-    train_losses_sd = train_losses.std(axis=1)
-    print_on_first_rank(f'Mean train losses: {train_losses_mean}')
-    print_on_first_rank(f'Train loss standard deviations: {train_losses_sd}')
+    print_on_first_rank(f'Mean fine solving time: {fine_times.mean()}s; '
+                        f'standard deviation: {fine_times.std()}s')
+    print_on_first_rank(f'Mean coarse solving time: {coarse_times.mean()}s; '
+                        f'standard deviation: {coarse_times.std()}s')
+    print_on_first_rank(
+        f'Mean Parareal solving time: {parareal_times.mean()}s; '
+        f'standard deviation: {parareal_times.std()}s')
 
-    test_losses_mean = test_losses.mean(axis=1)
-    test_losses_sd = test_losses.std(axis=1)
-    print_on_first_rank(f'Mean test losses: {test_losses_mean}')
-    print_on_first_rank(f'Test loss standard deviations: {test_losses_sd}')
+    print_on_first_rank(
+        f'Mean coarse ML solving time: {coarse_ml_times.mean(axis=1)}; '
+        f'standard deviations: {coarse_ml_times.std(axis=1)}')
+    print_on_first_rank(
+        f'Mean Parareal ML solving time: {parareal_ml_times.mean(axis=1)}; '
+        f'standard deviations: {parareal_ml_times.std(axis=1)}')
+
+    print_on_first_rank(f'Mean train losses: {train_losses.mean(axis=1)}; '
+                        f'standard deviations: {train_losses.std(axis=1)}')
+    print_on_first_rank(f'Mean test losses: {test_losses.mean(axis=1)}; '
+                        f'standard deviations: {test_losses.std(axis=1)}')
 
     plot_model_losses(
         train_losses,
