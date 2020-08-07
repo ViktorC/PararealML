@@ -412,6 +412,45 @@ class StatelessMLOperator(MLOperator, ABC):
         return Solution(bvp, time_points, y, self._vertex_oriented)
 
 
+class StatefulMLOperator(MLOperator, ABC):
+    """
+    A base class for machine learning operators that model the solution of an
+    initial value problem at the next time step given its solution at the
+    current time step.
+    """
+
+    @suppress_stdout
+    def solve(self, ivp: InitialValueProblem) -> Solution:
+        assert self._model is not None
+
+        bvp = ivp.boundary_value_problem
+        diff_eq = bvp.differential_equation
+
+        time_points = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)
+
+        y_shape = bvp.y_shape(self._vertex_oriented)
+
+        x = self._create_input_placeholder(bvp)
+        x = np.concatenate(
+            (x, np.empty((x.shape[0], diff_eq.y_dimension))),
+            axis=-1)
+        y = np.empty((len(time_points) - 1,) + y_shape)
+
+        y_i = ivp \
+            .initial_condition \
+            .discrete_y_0(self._vertex_oriented) \
+            .reshape(-1, diff_eq.y_dimension)
+
+        for i, t_i in enumerate(time_points[:-1]):
+            x[:, diff_eq.x_dimension] = t_i
+            x[:, diff_eq.x_dimension + 1:] = y_i
+            y_i = self._model.predict(x)
+            y[i, ...] = y_i.reshape(y_shape)
+
+        return Solution(bvp, time_points[1:], y, self._vertex_oriented)
+
+
 class PINNOperator(StatelessMLOperator):
     """
     A physics informed neural network based unsupervised machine learning
@@ -521,12 +560,9 @@ class StatelessRegressionOperator(StatelessMLOperator):
             or equal to 1; if it is None, all data points will be used
         :param test_size: the fraction of all data points that should be used
             for testing
-        :param score_func: the test prediction scoring function to use
+        :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert 0. <= test_size < 1.
-        train_size = 1. - test_size
-
         assert subsampling_factor is None or 0. < subsampling_factor <= 1.
 
         time_steps = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
@@ -549,61 +585,17 @@ class StatelessRegressionOperator(StatelessMLOperator):
             x_batch = x_batch[indices, :]
             y_batch = y_batch[indices, :]
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            x_batch,
-            y_batch,
-            train_size=train_size,
-            test_size=test_size)
+        self._model, train_score, test_score = train_regression_model(
+            model, x_batch, y_batch, test_size, score_func)
 
-        model.fit(x_train, y_train)
-
-        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
-            self._model = model.best_estimator_
-        else:
-            self._model = model
-
-        y_train_hat = self._model.predict(x_train)
-        y_test_hat = self._model.predict(x_test)
-        train_score = score_func(y_train, y_train_hat)
-        test_score = score_func(y_test, y_test_hat)
         return train_score, test_score
 
 
-class StatefulRegressionOperator(MLOperator):
+class StatefulRegressionOperator(StatefulMLOperator):
     """
     A supervised machine learning operator that uses regression to model
     another operator for solving initial value problems.
     """
-
-    def solve(self, ivp: InitialValueProblem) -> Solution:
-        assert self._model is not None
-
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
-
-        time_points = self._discretise_time_domain(
-            ivp.t_interval, self._d_t)
-
-        y_shape = bvp.y_shape(self._vertex_oriented)
-
-        x = self._create_input_placeholder(bvp)
-        x = np.concatenate(
-            (x, np.empty((x.shape[0], diff_eq.y_dimension))),
-            axis=-1)
-        y = np.empty((len(time_points) - 1,) + y_shape)
-
-        y_i = ivp \
-            .initial_condition \
-            .discrete_y_0(self._vertex_oriented) \
-            .reshape(-1, diff_eq.y_dimension)
-
-        for i, t_i in enumerate(time_points[:-1]):
-            x[:, diff_eq.x_dimension] = t_i
-            x[:, diff_eq.x_dimension + 1:] = y_i
-            y_i = self._model.predict(x)
-            y[i, ...] = y_i.reshape(y_shape)
-
-        return Solution(bvp, time_points[1:], y, self._vertex_oriented)
 
     def train(
             self,
@@ -643,10 +635,9 @@ class StatefulRegressionOperator(MLOperator):
             to the value of the initial conditions of the sub-IVPs
         :param test_size: the fraction of all data points that should be used
             for testing
-        :param score_func: the test prediction scoring function to use
+        :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert 0. <= test_size < 1.
         assert iterations > 0
 
         if isinstance(noise_sd, tuple):
@@ -660,8 +651,6 @@ class StatefulRegressionOperator(MLOperator):
 
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
-
-        train_size = 1. - test_size
 
         n_spatial_points = np.prod(bvp.mesh.shape(self._vertex_oriented)) \
             if diff_eq.x_dimension else 1
@@ -709,21 +698,48 @@ class StatefulRegressionOperator(MLOperator):
                 all_y[time_point_offset:time_point_offset + n_spatial_points,
                       :] = y_i.reshape((-1, diff_eq.y_dimension))
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            all_x,
-            all_y,
-            train_size=train_size,
-            test_size=test_size)
+        self._model, train_score, test_score = train_regression_model(
+            model, all_x, all_y, test_size, score_func)
 
-        model.fit(x_train, y_train)
-
-        if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
-            self._model = model.best_estimator_
-        else:
-            self._model = model
-
-        y_train_hat = self._model.predict(x_train)
-        y_test_hat = self._model.predict(x_test)
-        train_score = score_func(y_train, y_train_hat)
-        test_score = score_func(y_test, y_test_hat)
         return train_score, test_score
+
+
+def train_regression_model(
+        model: Union[RegressionModel, GridSearchCV, RandomizedSearchCV],
+        x: np.ndarray,
+        y: np.ndarray,
+        test_size: float,
+        score_func: Callable[[np.ndarray, np.ndarray], float]
+) -> Tuple[RegressionModel, float, float]:
+    """
+    Fits the regression model to the training share of the provided data points
+    using random splitting and it returns the loss of the model evaluated on
+    both the training and test data sets.
+
+    :param model: the regression model to train
+    :param x: the inputs
+    :param y: the target outputs
+    :param test_size: the fraction of all data points that should be used
+        for testing
+    :param score_func: the prediction scoring function to use
+    :return: the fitted model, the training loss, and the test loss
+    """
+    assert 0. <= test_size < 1.
+    train_size = 1. - test_size
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        x,
+        y,
+        train_size=train_size,
+        test_size=test_size)
+
+    model.fit(x_train, y_train)
+
+    if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
+        model = model.best_estimator_
+
+    y_train_hat = model.predict(x_train)
+    y_test_hat = model.predict(x_test)
+    train_score = score_func(y_train, y_train_hat)
+    test_score = score_func(y_test, y_test_hat)
+    return model, train_score, test_score
