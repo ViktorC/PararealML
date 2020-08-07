@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation, \
     WaveEquation, DiffusionEquation, NavierStokesEquation
-from src.core.solution import Solution, Diffs
+from src.core.solution import Solution
 
 
 def plot_y_against_t(
@@ -43,6 +43,7 @@ def plot_y_against_t(
         if legend_location is not None:
             plt.legend(loc=legend_location)
 
+    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
@@ -75,6 +76,7 @@ def plot_phase_space(solution: Solution, file_name: str):
 
         ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
 
+    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
@@ -512,5 +514,54 @@ def plot_model_losses(
     plt.clf()
 
 
-def plot_solution_diffs(all_diffs: Sequence[Diffs]):
-    ...
+def plot_squared_solution_diffs(
+        matching_time_points: np.ndarray,
+        mean_squared_diffs: np.ndarray,
+        sd_squared_diffs: np.ndarray,
+        labels: Sequence[str],
+        file_name: str,
+        legend_location: str = 'upper left',
+        alpha: float = .5):
+    """
+    Plots the squared solution differences.
+
+    :param matching_time_points: the matching time points
+    :param mean_squared_diffs: an array of mean squared differences
+    :param sd_squared_diffs: an array of the standard deviations of the squared
+        differences
+    :param labels: a sequence of labels
+    :param file_name: the name of the file to save the plot to
+    :param legend_location: the location of the legend
+    :param alpha: the transparency of the filled area representing the mean +/-
+        one standard deviation
+    """
+    assert mean_squared_diffs.shape == sd_squared_diffs.shape
+    assert len(mean_squared_diffs) == len(labels)
+
+    plt.figure()
+
+    plt.xlabel('t')
+    plt.ylabel('squared error')
+
+    for i in range(len(labels)):
+        mean_squared_diff = mean_squared_diffs[i]
+        sd_squared_diff = sd_squared_diffs[i]
+
+        lines = plt.plot(
+            matching_time_points,
+            mean_squared_diff,
+            label=labels[i])
+        color = lines[0].get_color()
+
+        plt.fill_between(
+            matching_time_points,
+            mean_squared_diff + sd_squared_diff,
+            mean_squared_diff - sd_squared_diff,
+            facecolor=color,
+            alpha=alpha)
+
+    plt.legend(loc=legend_location)
+
+    plt.tight_layout()
+    plt.savefig(f'{file_name}.jpg')
+    plt.clf()

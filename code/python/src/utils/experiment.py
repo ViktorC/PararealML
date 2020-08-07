@@ -7,8 +7,9 @@ from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import Operator, StatefulRegressionOperator, \
     RegressionModel
 from src.core.parareal import PararealOperator
+from src.core.solution import Diffs
 from src.utils.io import print_on_first_rank
-from src.utils.plot import plot_model_losses
+from src.utils.plot import plot_model_losses, plot_squared_solution_diffs
 from src.utils.rand import set_random_seed
 from src.utils.time import time_with_args
 
@@ -73,7 +74,7 @@ def run_parareal_ml_experiment(
     train_losses = np.empty(train_times.shape)
     test_losses = np.empty(train_times.shape)
 
-    diffs = []
+    all_squared_diffs = []
 
     print_on_first_rank(f'Experiment: {experiment_name}')
 
@@ -115,12 +116,46 @@ def run_parareal_ml_experiment(
                 time_with_args(True, f'Parareal ML {model_name} solver')(
                     parareal_ml.solve)(ivp)[1]
 
-        diffs.append(fine_solution.diff(coarse_solutions))
+        all_squared_diffs.append(
+            fine_solution.diff(coarse_solutions, mean_squared=True))
 
+    _print_aggregate_execution_times(
+        fine_times,
+        coarse_times,
+        parareal_times,
+        coarse_ml_times,
+        parareal_ml_times)
+
+    _print_and_plot_aggregate_model_losses(
+        train_losses, test_losses, model_names, experiment_name)
+
+    _print_and_plot_aggregate_operator_errors(
+        all_squared_diffs,
+        ['coarse operator'] + list(model_names),
+        experiment_name)
+
+
+def _print_aggregate_execution_times(
+        fine_times: np.ndarray,
+        coarse_times: np.ndarray,
+        parareal_times: np.ndarray,
+        coarse_ml_times: np.ndarray,
+        parareal_ml_times: np.ndarray):
+    """
+    Prints the means and standard deviations of the execution times.
+
+    :param fine_times: the execution times of the fine operator
+    :param coarse_times: the execution times of the coarse operator
+    :param parareal_times: the execution times of the Parareal operator
+    :param coarse_ml_times: the execution times of the coarse ML operator with
+        each model
+    :param parareal_ml_times: the execution times of the Parareal ML operator
+        with each model
+    """
     print_on_first_rank(f'Mean fine solving time: {fine_times.mean()}s; '
-                        f'standard deviation: {fine_times.std()}s')
+    f'standard deviation: {fine_times.std()}s')
     print_on_first_rank(f'Mean coarse solving time: {coarse_times.mean()}s; '
-                        f'standard deviation: {coarse_times.std()}s')
+    f'standard deviation: {coarse_times.std()}s')
     print_on_first_rank(
         f'Mean Parareal solving time: {parareal_times.mean()}s; '
         f'standard deviation: {parareal_times.std()}s')
@@ -132,14 +167,56 @@ def run_parareal_ml_experiment(
         f'Mean Parareal ML solving time: {parareal_ml_times.mean(axis=1)}; '
         f'standard deviations: {parareal_ml_times.std(axis=1)}')
 
+
+def _print_and_plot_aggregate_model_losses(
+        train_losses: np.ndarray,
+        test_losses: np.ndarray,
+        model_names: Sequence[str],
+        experiment_name: str):
+    """
+    Prints and plots the means and standard deviations of the model losses.
+
+    :param train_losses: the training losses
+    :param test_losses: the test losses
+    :param model_names: the names of the models
+    :param experiment_name: the name of the experiment
+    """
     print_on_first_rank(f'Mean train losses: {train_losses.mean(axis=1)}; '
                         f'standard deviations: {train_losses.std(axis=1)}')
     print_on_first_rank(f'Mean test losses: {test_losses.mean(axis=1)}; '
                         f'standard deviations: {test_losses.std(axis=1)}')
-
     plot_model_losses(
         train_losses,
         test_losses,
         model_names,
         'loss',
         f'{experiment_name}_model_losses')
+
+
+def _print_and_plot_aggregate_operator_errors(
+        all_squared_diffs: Sequence[Diffs],
+        operator_names: Sequence[str],
+        experiment_name: str):
+    """
+    Prints and plots the means and standard deviations of the squared errors
+    of the solutions of the coarse operators compared to that of the fine
+    operator.
+
+    :param all_squared_diffs: all squared differences
+    :param operator_names: the names of the operators
+    :param experiment_name: the name of the experiment
+    """
+    all_squared_differences = np.array(
+        [diffs.differences for diffs in all_squared_diffs])
+    mean_squared_differences = all_squared_differences.mean(axis=0)
+    sd_squared_differences = all_squared_differences.std(axis=0)
+    print_on_first_rank(
+        'Mean squared solution errors compared to the fine operator: '
+        f'{mean_squared_differences}; standard deviations: '
+        f'{sd_squared_differences}')
+    plot_squared_solution_diffs(
+        all_squared_diffs[0].matching_time_points,
+        mean_squared_differences,
+        sd_squared_differences,
+        operator_names,
+        f'{experiment_name}_operator_accuracy')
