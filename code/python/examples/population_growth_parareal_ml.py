@@ -1,4 +1,5 @@
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import PopulationGrowthEquation
@@ -25,7 +26,7 @@ threshold = .1
 parareal = PararealOperator(f, g, threshold)
 parareal_ml = PararealOperator(f, g_ml, threshold)
 
-models = [RandomForestRegressor()]
+models = [LinearRegression(), RandomForestRegressor()]
 
 run_parareal_ml_experiment(
     'population_growth',
@@ -37,4 +38,5 @@ run_parareal_ml_experiment(
     threshold,
     SEEDS[:5],
     iterations=100,
-    noise_sd=(0., 50.))
+    noise_sd=(0., 50.),
+    model_names=['linear regression', 'random forest'])

@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from src.core.differential_equation import NBodyGravitationalEquation, \
     WaveEquation, DiffusionEquation, NavierStokesEquation
-from src.core.solution import Solution
+from src.core.solution import Solution, Diffs
 
 
 def plot_y_against_t(
@@ -455,26 +455,62 @@ def plot_ivp_solution(
 
 
 def plot_model_losses(
-        losses: np.ndarray,
+        train_losses: np.ndarray,
+        test_losses: np.ndarray,
         model_names: Sequence[str],
         loss_name: str,
         file_name: str):
     """
-    Plots the losses of multiple models over several trials using box plots.
+    Plots the losses of multiple models over several trials.
 
-    :param losses: a 2D array of losses where the rows represent trials and the
-        columns represent different models
+    :param train_losses: a 2D array of training losses where the rows represent
+        different models and the columns represent trials
+    :param test_losses: a 2D array of test losses where the rows represent
+        different models and the columns represent trials
     :param model_names: the names of the models
     :param loss_name: the loss type
     :param file_name: the name of the file to save the plot to
     """
-    assert len(losses.shape) == 2
-    assert losses.shape[1] == len(model_names)
+    assert len(train_losses.shape) == 2
+    assert train_losses.shape[0] == len(model_names)
+    assert train_losses.shape == test_losses.shape
 
-    fig, ax = plt.subplots()
-    ax.boxplot([losses[:, i] for i in range(losses.shape[1])])
-    ax.set_xticklabels(model_names)
+    def set_box_color(box_plot: Any, color: str):
+        plt.setp(box_plot['boxes'], color=color)
+        plt.setp(box_plot['whiskers'], color=color)
+        plt.setp(box_plot['caps'], color=color)
+        plt.setp(box_plot['medians'], color=color)
+
+    train_color = 'red'
+    test_color = 'blue'
+
+    plt.figure()
+
+    train_box_plot = plt.boxplot(
+        [train_losses[i] for i in range(train_losses.shape[0])],
+        positions=np.arange(train_losses.shape[0]) * 2.0 - 0.4,
+        sym='',
+        widths=0.6)
+    test_box_plot = plt.boxplot(
+        [test_losses[i] for i in range(test_losses.shape[0])],
+        positions=np.arange(test_losses.shape[0]) * 2.0 + 0.4,
+        sym='',
+        widths=0.6)
+    set_box_color(train_box_plot, train_color)
+    set_box_color(test_box_plot, test_color)
+
+    plt.plot([], c=train_color, label='train')
+    plt.plot([], c=test_color, label='test')
+    plt.legend()
+
+    plt.xticks(range(0, len(model_names) * 2, 2), model_names)
+    plt.xlim(-2, len(model_names) * 2)
     plt.ylabel(loss_name)
 
+    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
+
+
+def plot_solution_diffs(all_diffs: Sequence[Diffs]):
+    ...
