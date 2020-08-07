@@ -296,6 +296,24 @@ class MLOperator(Operator, ABC):
     def model(self, model: Optional[Union[RegressionModel, PINNModel]]):
         self._model = model
 
+    @abstractmethod
+    def model_input_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        """
+        Returns the shape of the input of the model for the provided IVP.
+
+        :param ivp: the initial value problem to solve
+        :return: the expected input shape
+        """
+
+    @abstractmethod
+    def model_output_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        """
+        Returns the shape of the output of the model for the provided IVP.
+
+        :param ivp: the initial value problem to solve
+        :return: the expected output shape
+        """
+
     def _create_input_placeholder(
             self,
             bvp: BoundaryValueProblem
@@ -373,6 +391,14 @@ class StatelessMLOperator(MLOperator, ABC):
         super(StatelessMLOperator, self).__init__(d_t, vertex_oriented)
         self._batch_mode = batch_mode
 
+    def model_input_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        diff_eq = ivp.boundary_value_problem.differential_equation
+        return diff_eq.x_dimension + 1,
+
+    def model_output_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        diff_eq = ivp.boundary_value_problem.differential_equation
+        return diff_eq.y_dimension,
+
     @suppress_stdout
     def solve(self, ivp: InitialValueProblem) -> Solution:
         assert self._model is not None
@@ -408,6 +434,14 @@ class StatefulMLOperator(MLOperator, ABC):
     initial value problem at the next time step given its solution at the
     current time step.
     """
+
+    def model_input_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        diff_eq = ivp.boundary_value_problem.differential_equation
+        return diff_eq.x_dimension + 1 + diff_eq.y_dimension,
+
+    def model_output_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
+        diff_eq = ivp.boundary_value_problem.differential_equation
+        return diff_eq.y_dimension,
 
     @suppress_stdout
     def solve(self, ivp: InitialValueProblem) -> Solution:
