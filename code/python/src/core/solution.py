@@ -156,7 +156,8 @@ class Solution:
     def diff(
             self,
             solutions: Sequence[Solution],
-            atol: float = 1e-8
+            atol: float = 1e-8,
+            mean_squared: bool = False
     ) -> Diffs:
         """
         Calculates and returns the difference between the provided solutions
@@ -165,10 +166,13 @@ class Solution:
         :param solutions: the solutions to compare to
         :param atol: the maximum absolute difference between two time points
             considered to be matching
-        :return: a `Diffs` instance containing a 1D array
-            representing the matching time points and a sequence of sequence of
-            arrays representing the differences between this solution and each
-            of the provided solutions at the matching time points
+        :param mean_squared: whether the differences at each matching time
+            point should be calculated as the mean squared error between
+            this solution and the other provided solutions
+        :return: a `Diffs` instance containing a 1D array representing the
+            matching time points and a sequence of sequence of arrays
+            representing the differences between this solution and each of the
+            provided solutions at the matching time points
         """
         assert len(solutions) > 0
 
@@ -223,12 +227,15 @@ class Solution:
                     break
 
             if all_match:
-                matching_time_points.append(
-                    self._t_coordinates[indices_of_time_points[0]])
+                matching_time_points.append(t)
+
                 for j, discrete_y in enumerate(other_discrete_ys):
-                    all_diffs[j].append(
-                        discrete_y[indices_of_time_points[j + 1]] -
-                        self._discrete_y[indices_of_time_points[0]])
+                    diff = discrete_y[indices_of_time_points[j + 1]] - \
+                        self._discrete_y[indices_of_time_points[0]]
+                    if mean_squared:
+                        diff = np.square(diff).mean()
+
+                    all_diffs[j].append(diff)
 
         matching_time_point_array = np.array(matching_time_points)
         diff_arrays = [np.array(diff) for diff in all_diffs]
