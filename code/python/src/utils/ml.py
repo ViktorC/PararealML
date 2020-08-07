@@ -62,18 +62,17 @@ def train_regression_model(
 
 def create_keras_regressor(
         layers: Sequence[Layer],
-        optimiser: str = 'adam'
+        optimiser: str = 'adam',
+        loss: str = 'mse'
 ) -> KerasRegressor:
     """
     Creates a Keras regression model.
 
     :param layers: the layers of the neural network
     :param optimiser: the optimiser to use
+    :param loss: the loss function to use
     :return: the regression model
     """
-    model = Sequential()
-    for layer in layers:
-        model.add(layer)
-
-    model.compile(optimizer=optimiser, loss='mse')
+    model = Sequential(layers)
+    model.compile(optimizer=optimiser, loss=loss)
     return KerasRegressor(model)
