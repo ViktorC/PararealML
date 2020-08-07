@@ -1,5 +1,5 @@
 import math
-from typing import Optional
+from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -335,7 +335,7 @@ def plot_evolution_of_y(
                 ax.set_zlim(v_min, v_max)
                 return _plot,
         else:
-            fig, ax = plt.subplots(1, 1)
+            fig, ax = plt.subplots()
             ax.contourf(
                 x_0,
                 x_1,
@@ -452,3 +452,29 @@ def plot_ivp_solution(
 
             if 2 <= diff_eq.y_dimension <= 3:
                 plot_phase_space(solution, f'phase_space_{solution_name}')
+
+
+def plot_model_losses(
+        losses: np.ndarray,
+        model_names: Sequence[str],
+        loss_name: str,
+        file_name: str):
+    """
+    Plots the losses of multiple models over several trials using box plots.
+
+    :param losses: a 2D array of losses where the rows represent trials and the
+        columns represent different models
+    :param model_names: the names of the models
+    :param loss_name: the loss type
+    :param file_name: the name of the file to save the plot to
+    """
+    assert len(losses.shape) == 2
+    assert losses.shape[1] == len(model_names)
+
+    fig, ax = plt.subplots()
+    ax.boxplot([losses[:, i] for i in range(losses.shape[1])])
+    ax.set_xticklabels(model_names)
+    plt.ylabel(loss_name)
+
+    plt.savefig(f'{file_name}.jpg')
+    plt.clf()
