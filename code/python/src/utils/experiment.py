@@ -1,4 +1,4 @@
-from typing import Sequence, Any
+from typing import Sequence, Any, Optional
 
 import numpy as np
 from mpi4py import MPI
@@ -8,6 +8,7 @@ from src.core.operator import Operator, StatefulRegressionOperator, \
     RegressionModel
 from src.core.parareal import PararealOperator
 from src.utils.io import print_on_first_rank
+from src.utils.plot import plot_model_losses
 from src.utils.rand import set_random_seed
 from src.utils.time import time_with_name
 
@@ -32,6 +33,7 @@ def run_parareal_ml_experiment(
         models: Sequence[RegressionModel],
         threshold: float,
         seeds: Sequence[int],
+        model_names: Optional[Sequence[str]] = None,
         **training_config: Any):
     """
     Runs an experiment comparing the execution time and accuracy of a stateful
@@ -47,37 +49,46 @@ def run_parareal_ml_experiment(
         operator
     :param threshold: the accuracy threshold of the Parareal framework
     :param seeds: the random seeds to use; for each seed an entire trial is run
+    :param model_names: the names of the models
     :param training_config: arguments to the training of the machine learning
         operator;
         see :func:`~src.core.operator.StatefulRegressionOperator.train`
     :return:
     """
+    if model_names is None:
+        model_names = [f'model {i}' for i in range(len(models))]
+    else:
+        assert len(model_names) == len(models)
+
     parareal = PararealOperator(f, g, threshold)
     parareal_ml = PararealOperator(f, g_ml, threshold)
 
     losses = np.empty((len(seeds), len(models)))
     diffs = []
 
+    print_on_first_rank(f'Experiment: {experiment_name}')
+
     for i, seed in enumerate(seeds):
         set_random_seed(seed)
 
-        print_on_first_rank(f'Round {i}; seed = {seed}')
+        print_on_first_rank(f'Round {i}; seed: {seed}')
 
-        fine_solution = time_with_name('fine_solve')(f.solve)(ivp)
-        coarse_solution = time_with_name('coarse_solve')(g.solve)(ivp)
-        time_with_name('parareal_solve')(parareal.solve)(ivp)
+        fine_solution = time_with_name('Fine solver')(f.solve)(ivp)
+        coarse_solution = time_with_name('Coarse solver')(g.solve)(ivp)
+        time_with_name('Parareal solver')(parareal.solve)(ivp)
 
         coarse_solutions = [coarse_solution]
 
         for j, model in enumerate(models):
-            loss = time_with_name(f'ml_{j}_train')(g_ml.train)(
+            model_name = model_names[j]
+            loss = time_with_name(f'ML {model_name} training')(g_ml.train)(
                 ivp, g, model, **training_config)
             losses[i, j] = loss
-            print_on_first_rank(f'ml_{j} loss = {loss}')
+            print_on_first_rank(f'ML {model_name} loss: {loss}')
 
-            coarse_ml_solution = time_with_name(f'ml_{j}_solve')(g_ml.solve)(
-                ivp)
-            time_with_name(f'parareal_ml_{j}_solve')(
+            coarse_ml_solution = time_with_name(f'ML {model_name} solver')(
+                g_ml.solve)(ivp)
+            time_with_name(f'Parareal ML {model_name} solver')(
                 parareal_ml.solve)(ivp)
 
             coarse_solutions.append(coarse_ml_solution)
@@ -88,3 +99,9 @@ def run_parareal_ml_experiment(
     losses_sd = losses.std(axis=0)
     print_on_first_rank(f'Mean test losses: {losses_mean}')
     print_on_first_rank(f'Test loss standard deviations: {losses_sd}')
+
+    plot_model_losses(
+        losses,
+        model_names,
+        'test loss',
+        f'{experiment_name}_model_losses')
