@@ -69,7 +69,7 @@ run_parareal_ml_experiment(
     g_ml,
     models,
     threshold,
-    SEEDS[:10],
+    SEEDS[:20],
     iterations=100,
     noise_sd=(0., 50.),
     model_names=model_names)
