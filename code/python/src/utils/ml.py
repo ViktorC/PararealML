@@ -1,6 +1,8 @@
 from typing import Union, Callable, Tuple, Sequence, Any
 
 import numpy as np
+import tensorflow as tf
+from mpi4py import MPI
 from sklearn.base import RegressorMixin
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
@@ -97,3 +99,15 @@ def create_keras_regressor(
         batch_size=batch_size,
         verbose=verbose,
         **kwargs)
+
+
+def limit_visible_gpus():
+    """
+    If there are GPUs available, it sets the GPU corresponding to the MPI rank
+    of the process as the only device visible to Tensorflow.
+    """
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        comm = MPI.COMM_WORLD
+        assert len(gpus) == comm.size
+        tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')

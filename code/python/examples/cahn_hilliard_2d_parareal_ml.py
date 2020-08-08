@@ -19,8 +19,10 @@ from src.core.operator import FVMOperator, FDMOperator, \
 from src.core.parareal import PararealOperator
 from src.utils.experiment import calculate_coarse_ml_operator_step_size, \
     run_parareal_ml_experiment
-from src.utils.ml import create_keras_regressor
+from src.utils.ml import create_keras_regressor, limit_visible_gpus
 from src.utils.rand import SEEDS
+
+limit_visible_gpus()
 
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
