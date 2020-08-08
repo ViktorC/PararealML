@@ -4,7 +4,7 @@
 #SBATCH --time=8:00:0
 #SBATCH --partition=gpu-cascade
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:4
 
 #SBATCH --account=d171-s1984842
 
