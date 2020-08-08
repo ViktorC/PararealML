@@ -78,7 +78,8 @@ def run_parareal_ml_experiment(
 
     all_squared_diffs = []
 
-    print_on_first_rank(f'Experiment: {experiment_name}')
+    print_on_first_rank(f'Experiment: {experiment_name}; '
+                        f'processes: {MPI.COMM_WORLD.size}')
 
     for i, seed in enumerate(seeds):
         set_random_seed(seed)
