@@ -9,7 +9,7 @@ from src.core.operator import Operator, StatefulRegressionOperator, \
 from src.core.parareal import PararealOperator
 from src.core.solution import Diffs
 from src.utils.io import print_on_first_rank
-from src.utils.plot import plot_model_losses, plot_squared_solution_diffs, \
+from src.utils.plot import plot_model_losses, plot_rms_solution_diffs, \
     plot_execution_times
 from src.utils.rand import set_random_seed
 from src.utils.time import time_with_args
@@ -76,7 +76,7 @@ def run_parareal_ml_experiment(
     train_losses = np.empty(train_times.shape)
     test_losses = np.empty(train_times.shape)
 
-    all_squared_diffs = []
+    all_diffs = []
 
     print_on_first_rank(f'Experiment: {experiment_name}; '
                         f'processes: {MPI.COMM_WORLD.size}')
@@ -119,8 +119,7 @@ def run_parareal_ml_experiment(
                 time_with_args(True, f'Parareal ML {model_name} solver')(
                     parareal_ml.solve)(ivp)[1]
 
-        all_squared_diffs.append(
-            fine_solution.diff(coarse_solutions, mean_squared=True))
+        all_diffs.append(fine_solution.diff(coarse_solutions))
 
     _print_and_plot_aggregate_execution_times(
         fine_times,
@@ -137,7 +136,7 @@ def run_parareal_ml_experiment(
         train_losses, test_losses, model_names, experiment_name)
 
     _print_and_plot_aggregate_operator_errors(
-        all_squared_diffs, model_names, experiment_name)
+        all_diffs, model_names, experiment_name)
 
 
 def _print_and_plot_aggregate_execution_times(
@@ -237,34 +236,38 @@ def _print_and_plot_aggregate_model_losses(
         train_losses,
         test_losses,
         model_names,
-        'loss',
+        'RMSE',
         f'{experiment_name}_model_losses')
 
 
 def _print_and_plot_aggregate_operator_errors(
-        all_squared_diffs: Sequence[Diffs],
+        all_diffs: Sequence[Diffs],
         model_names: Sequence[str],
         experiment_name: str):
     """
-    Prints and plots the means and standard deviations of the squared errors
-    of the solutions of the coarse operators compared to that of the fine
-    operator.
+    Prints and plots the means and standard deviations of the root mean square
+    errors of the solutions of the coarse operators compared to that of the
+    fine operator.
 
-    :param all_squared_diffs: all squared differences
+    :param all_diffs: all differences
     :param model_names: the names of the ML models
     :param experiment_name: the name of the experiment
     """
-    all_squared_differences = np.array(
-        [diffs.differences for diffs in all_squared_diffs])
-    mean_squared_differences = all_squared_differences.mean(axis=0)
-    sd_squared_differences = all_squared_differences.std(axis=0)
+    all_differences = np.stack(
+        [np.stack(diffs.differences, axis=0) for diffs in all_diffs],
+        axis=0)
+    rms_differences = np.sqrt(
+        np.square(all_differences).mean(
+            axis=tuple(range(3, all_differences.ndim))))
+    mean_rms_differences = rms_differences.mean(axis=0)
+    sd_rms_differences = rms_differences.std(axis=0)
     print_on_first_rank(
-        'Mean squared solution errors compared to the fine operator: '
-        f'{mean_squared_differences}; standard deviations: '
-        f'{sd_squared_differences}')
-    plot_squared_solution_diffs(
-        all_squared_diffs[0].matching_time_points,
-        mean_squared_differences,
-        sd_squared_differences,
+        'RMS solution errors compared to the fine operator: '
+        f'{mean_rms_differences}; standard deviations: '
+        f'{sd_rms_differences}')
+    plot_rms_solution_diffs(
+        all_diffs[0].matching_time_points,
+        mean_rms_differences,
+        sd_rms_differences,
         ['c_conv'] + list(model_names),
         f'{experiment_name}_operator_accuracy')

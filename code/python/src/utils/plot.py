@@ -518,20 +518,20 @@ def plot_model_losses(
     plt.clf()
 
 
-def plot_squared_solution_diffs(
+def plot_rms_solution_diffs(
         matching_time_points: np.ndarray,
-        mean_squared_diffs: np.ndarray,
-        sd_squared_diffs: np.ndarray,
+        mean_rms_diffs: np.ndarray,
+        sd_rms_diffs: np.ndarray,
         labels: Sequence[str],
         file_name: str,
         legend_location: str = 'upper left',
-        alpha: float = .4):
+        alpha: float = .25):
     """
-    Plots the squared solution differences.
+    Plots the root mean square solution differences.
 
     :param matching_time_points: the matching time points
-    :param mean_squared_diffs: an array of mean squared differences
-    :param sd_squared_diffs: an array of the standard deviations of the squared
+    :param mean_rms_diffs: an array of mean RMS differences
+    :param sd_rms_diffs: an array of the standard deviations of the RMS
         differences
     :param labels: a sequence of labels
     :param file_name: the name of the file to save the plot to
@@ -539,36 +539,35 @@ def plot_squared_solution_diffs(
     :param alpha: the transparency of the filled area representing the mean +/-
         one standard deviation
     """
-    assert mean_squared_diffs.shape == sd_squared_diffs.shape
-    assert len(mean_squared_diffs) == len(labels)
+    assert mean_rms_diffs.shape == sd_rms_diffs.shape
+    assert len(mean_rms_diffs) == len(labels)
 
     plt.figure()
 
     plt.xlabel('t')
-    plt.ylabel('squared error')
+    plt.ylabel('RMSE')
 
     for i in range(len(labels)):
-        mean_squared_diff = mean_squared_diffs[i]
-        sd_squared_diff = sd_squared_diffs[i]
+        mean_rms_diff = mean_rms_diffs[i]
+        sd_rms_diff = sd_rms_diffs[i]
 
         lines = plt.plot(
             matching_time_points,
-            mean_squared_diff,
+            mean_rms_diff,
             label=labels[i],
-            linestyle='--',
             marker='o')
         color = lines[0].get_color()
 
         plt.fill_between(
             matching_time_points,
-            mean_squared_diff + sd_squared_diff,
-            mean_squared_diff - sd_squared_diff,
+            mean_rms_diff + sd_rms_diff,
+            mean_rms_diff - sd_rms_diff,
             facecolor=color,
             alpha=alpha)
 
-    plt.ylim(bottom=0)
-
     plt.legend(loc=legend_location)
+
+    plt.ylim(bottom=0)
 
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
