@@ -55,6 +55,14 @@ models = [
         Dense(50, activation='relu'),
         Dense(50, activation='relu'),
         Dense(g_ml.model_output_shape(ivp)[0])
+    ]),
+    create_keras_regressor([
+        Input(shape=g_ml.model_input_shape(ivp)),
+        Dense(50, activation='relu'),
+        Dense(50, activation='relu'),
+        Dense(50, activation='relu'),
+        Dense(50, activation='relu'),
+        Dense(g_ml.model_output_shape(ivp)[0])
     ])
 ]
 
@@ -68,7 +76,8 @@ model_names = [
     'bt250',
     'fnn1',
     'fnn2',
-    'fnn3'
+    'fnn3',
+    'fnn4'
 ]
 
 run_parareal_ml_experiment(
@@ -80,6 +89,6 @@ run_parareal_ml_experiment(
     models,
     threshold,
     SEEDS[:10],
-    iterations=20,
-    noise_sd=(0., 10.),
+    iterations=200,
+    noise_sd=(0., 2.5),
     model_names=model_names)
