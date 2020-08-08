@@ -565,3 +565,32 @@ def plot_squared_solution_diffs(
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
+
+
+def plot_execution_times(
+        all_execution_times: Sequence[np.ndarray],
+        labels: Sequence[str],
+        file_name: str,
+        y_label: str = 'execution time (s)'):
+    """
+    Plots the execution times.
+
+    :param all_execution_times: a sequence of 1D arrays representing the
+        execution times
+    :param labels: the labels associated with the execution times
+    :param file_name: the name of the file to save the plot to
+    :param y_label: the text along the y axis
+    """
+    assert len(all_execution_times) == len(labels)
+
+    positions = np.array(range(len(all_execution_times))) + 1
+
+    plt.figure()
+
+    plt.boxplot(all_execution_times, positions=positions)
+    plt.xticks(positions, labels, rotation=60)
+    plt.ylabel(y_label)
+
+    plt.tight_layout()
+    plt.savefig(f'{file_name}.jpg')
+    plt.clf()

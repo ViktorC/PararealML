@@ -9,7 +9,8 @@ from src.core.operator import Operator, StatefulRegressionOperator, \
 from src.core.parareal import PararealOperator
 from src.core.solution import Diffs
 from src.utils.io import print_on_first_rank
-from src.utils.plot import plot_model_losses, plot_squared_solution_diffs
+from src.utils.plot import plot_model_losses, plot_squared_solution_diffs, \
+    plot_execution_times
 from src.utils.rand import set_random_seed
 from src.utils.time import time_with_args
 
@@ -67,6 +68,7 @@ def run_parareal_ml_experiment(
     fine_times = np.empty(len(seeds))
     coarse_times = np.empty(fine_times.shape)
     parareal_times = np.empty(fine_times.shape)
+
     train_times = np.empty((len(models), len(seeds)))
     coarse_ml_times = np.empty(train_times.shape)
     parareal_ml_times = np.empty(train_times.shape)
@@ -119,30 +121,34 @@ def run_parareal_ml_experiment(
         all_squared_diffs.append(
             fine_solution.diff(coarse_solutions, mean_squared=True))
 
-    _print_aggregate_execution_times(
+    _print_and_plot_aggregate_execution_times(
         fine_times,
         coarse_times,
         parareal_times,
         coarse_ml_times,
-        parareal_ml_times)
+        parareal_ml_times,
+        model_names,
+        experiment_name)
+
+    _print_and_plot_training_times(train_times, model_names, experiment_name)
 
     _print_and_plot_aggregate_model_losses(
         train_losses, test_losses, model_names, experiment_name)
 
     _print_and_plot_aggregate_operator_errors(
-        all_squared_diffs,
-        ['coarse operator'] + list(model_names),
-        experiment_name)
+        all_squared_diffs, model_names, experiment_name)
 
 
-def _print_aggregate_execution_times(
+def _print_and_plot_aggregate_execution_times(
         fine_times: np.ndarray,
         coarse_times: np.ndarray,
         parareal_times: np.ndarray,
         coarse_ml_times: np.ndarray,
-        parareal_ml_times: np.ndarray):
+        parareal_ml_times: np.ndarray,
+        model_names: Sequence[str],
+        experiment_name: str):
     """
-    Prints the means and standard deviations of the execution times.
+    Prints and plots the means and standard deviations of the execution times.
 
     :param fine_times: the execution times of the fine operator
     :param coarse_times: the execution times of the coarse operator
@@ -151,6 +157,8 @@ def _print_aggregate_execution_times(
         each model
     :param parareal_ml_times: the execution times of the Parareal ML operator
         with each model
+    :param model_names: the names of the models
+    :param experiment_name: the name of the experiment
     """
     print_on_first_rank(f'Mean fine solving time: {fine_times.mean()}s; '
                         f'standard deviation: {fine_times.std()}s')
@@ -161,11 +169,50 @@ def _print_aggregate_execution_times(
         f'standard deviation: {parareal_times.std()}s')
 
     print_on_first_rank(
-        f'Mean coarse ML solving time: {coarse_ml_times.mean(axis=1)}; '
+        f'Mean coarse ML solving times: {coarse_ml_times.mean(axis=1)}; '
         f'standard deviations: {coarse_ml_times.std(axis=1)}')
     print_on_first_rank(
-        f'Mean Parareal ML solving time: {parareal_ml_times.mean(axis=1)}; '
+        f'Mean Parareal ML solving times: {parareal_ml_times.mean(axis=1)}; '
         f'standard deviations: {parareal_ml_times.std(axis=1)}')
+
+    coarse_execution_times = [coarse_times] + \
+        [coarse_ml_times[i] for i in range(coarse_ml_times.shape[0])]
+    coarse_operator_labels = ['c_conv'] + list(model_names)
+    plot_execution_times(
+        coarse_execution_times,
+        coarse_operator_labels,
+        f'{experiment_name}_coarse_times')
+
+    fine_execution_times = [fine_times, parareal_times] + \
+        [parareal_ml_times[i] for i in range(parareal_ml_times.shape[0])]
+    fine_operator_lables = ['f_conv', 'p_conv'] + \
+        [f'p_{model_name}' for model_name in model_names]
+    plot_execution_times(
+        fine_execution_times,
+        fine_operator_lables,
+        f'{experiment_name}_fine_times')
+
+
+def _print_and_plot_training_times(
+        training_times: np.ndarray,
+        model_names: Sequence[str],
+        experiment_name: str):
+    """
+    Prints and plots the means and standard deviations of the training times.
+
+    :param training_times: the model training times
+    :param model_names: the names of the models
+    :param experiment_name: the name of the experiment
+    """
+    print_on_first_rank(
+        f'Mean coarse ML training times: {training_times.mean(axis=1)}; '
+        f'standard deviations: {training_times.std(axis=1)}')
+
+    plot_execution_times(
+        [training_times[i] for i in range(training_times.shape[0])],
+        model_names,
+        f'{experiment_name}_training_times',
+        'training time (s)')
 
 
 def _print_and_plot_aggregate_model_losses(
@@ -195,7 +242,7 @@ def _print_and_plot_aggregate_model_losses(
 
 def _print_and_plot_aggregate_operator_errors(
         all_squared_diffs: Sequence[Diffs],
-        operator_names: Sequence[str],
+        model_names: Sequence[str],
         experiment_name: str):
     """
     Prints and plots the means and standard deviations of the squared errors
@@ -203,7 +250,7 @@ def _print_and_plot_aggregate_operator_errors(
     operator.
 
     :param all_squared_diffs: all squared differences
-    :param operator_names: the names of the operators
+    :param model_names: the names of the ML models
     :param experiment_name: the name of the experiment
     """
     all_squared_differences = np.array(
@@ -218,5 +265,5 @@ def _print_and_plot_aggregate_operator_errors(
         all_squared_diffs[0].matching_time_points,
         mean_squared_differences,
         sd_squared_differences,
-        operator_names,
+        ['c_conv'] + list(model_names),
         f'{experiment_name}_operator_accuracy')
