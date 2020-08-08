@@ -518,7 +518,7 @@ def plot_rms_solution_diffs(
         labels: Sequence[str],
         file_name: str,
         legend_location: str = 'upper left',
-        alpha: float = .25,
+        alpha: float = .1,
         color_map: Colormap = cm.tab20):
     """
     Plots the root mean square solution differences.
