@@ -129,4 +129,9 @@ class PararealOperator(Operator):
             [my_y_trajectory, MPI.DOUBLE],
             [y_trajectory, MPI.DOUBLE])
 
-        return Solution(bvp, time_points, y_trajectory, vertex_oriented)
+        return Solution(
+            bvp,
+            time_points,
+            y_trajectory,
+            vertex_oriented=vertex_oriented,
+            d_t=self._f.d_t)

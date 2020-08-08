@@ -19,7 +19,8 @@ class Solution:
             bvp: BoundaryValueProblem,
             t_coordinates: np.ndarray,
             discrete_y: np.ndarray,
-            vertex_oriented: Optional[bool] = None):
+            vertex_oriented: Optional[bool] = None,
+            d_t: Optional[float] = None):
         """
         :param bvp: the boundary value problem that the initial value problem
         solved is based on
@@ -27,6 +28,9 @@ class Solution:
         :param discrete_y: the solution to the IVP at the specified time steps
         :param vertex_oriented: whether the solution is vertex or cell oriented
             along the spatial domain; if the IVP is an ODE, it can be None
+        :param d_t: the temporal step size of the solution; if it is None, it
+            is inferred from the `t_coordinates` (which may lead to floating
+            point issues)
         """
         assert t_coordinates.ndim == 1
         assert len(t_coordinates) > 0
@@ -37,6 +41,11 @@ class Solution:
         self._t_coordinates = t_coordinates
         self._discrete_y = discrete_y
         self._vertex_oriented = vertex_oriented
+
+        if d_t is None:
+            d_t = 0. if len(t_coordinates) == 1 \
+                else t_coordinates[1] - t_coordinates[0]
+        self._d_t = d_t
 
     @property
     def boundary_value_problem(self):
@@ -53,6 +62,13 @@ class Solution:
         spatial domain. If the solution is that of an ODE, it returns None.
         """
         return self._vertex_oriented
+
+    @property
+    def d_t(self) -> float:
+        """
+        Returns the temporal step size of the solution.
+        """
+        return self._d_t
 
     @property
     def t_coordinates(self) -> np.ndarray:
@@ -176,10 +192,12 @@ class Solution:
         all_diffs = []
 
         all_time_points = [self._t_coordinates]
+        all_time_steps = [self._d_t]
         other_discrete_ys = []
         for solution in solutions:
             all_diffs.append([])
             all_time_points.append(solution.t_coordinates)
+            all_time_steps.append(solution.d_t)
             other_discrete_ys.append(
                 solution.discrete_y(self._vertex_oriented))
 
@@ -197,27 +215,19 @@ class Solution:
             indices_of_time_points = []
 
             for j, time_points in enumerate(all_time_points):
-                if time_points is None:
-                    continue
-
-                if i == j:
+                if fewest_time_points_ind == j:
                     indices_of_time_points.append(i)
                     continue
 
-                insertion_ind = np.searchsorted(time_points, t)
-                next_ind = min(len(time_points) - 1, insertion_ind + 1)
-
-                if insertion_ind == next_ind:
-                    all_time_points[j] = None
-                else:
-                    all_time_points[j] = all_time_points[j][next_ind:]
-
-                if np.isclose(
-                        t, time_points[insertion_ind], atol=atol, rtol=0.):
-                    indices_of_time_points.append(insertion_ind)
-                elif np.isclose(
-                        t, time_points[next_ind], atol=atol, rtol=0.):
-                    indices_of_time_points.append(next_ind)
+                index_of_time_point = int(round(
+                    (t - time_points[0]) / all_time_steps[j]))
+                if (0 <= index_of_time_point < len(time_points)) \
+                        and np.isclose(
+                            t,
+                            time_points[index_of_time_point],
+                            atol=atol,
+                            rtol=0.):
+                    indices_of_time_points.append(index_of_time_point)
                 else:
                     all_match = False
                     break

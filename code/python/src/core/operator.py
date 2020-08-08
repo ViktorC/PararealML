@@ -134,7 +134,7 @@ class ODEOperator(Operator):
                 f'status code: {result.status}, message: {result.message}')
 
         y = np.ascontiguousarray(result.y.T)
-        return Solution(bvp, time_points[1:], y)
+        return Solution(bvp, time_points[1:], y, d_t=self._d_t)
 
 
 class FDMOperator(Operator):
@@ -196,7 +196,8 @@ class FDMOperator(Operator):
                 y_constraints)
             y[i] = y_i
 
-        return Solution(bvp, time_points[1:], y, True)
+        return Solution(
+            bvp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
 
 class FVMOperator(Operator):
@@ -256,7 +257,8 @@ class FVMOperator(Operator):
                     solver=self._solver)
                 y[i, ..., j] = fipy_var.value.reshape(mesh_shape)
 
-        return Solution(bvp, time_points[1:], y, False)
+        return Solution(
+            bvp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
 
 
 class MLOperator(Operator, ABC):
@@ -425,7 +427,11 @@ class StatelessMLOperator(MLOperator, ABC):
                 y_hat = self._model.predict(x)
                 y[i, ...] = y_hat.reshape(y_shape)
 
-        return Solution(bvp, time_points, y, self._vertex_oriented)
+        return Solution(
+            bvp,
+            time_points,
+            y, vertex_oriented=self._vertex_oriented,
+            d_t=self._d_t)
 
 
 class StatefulMLOperator(MLOperator, ABC):
@@ -472,7 +478,12 @@ class StatefulMLOperator(MLOperator, ABC):
             y_i = self._model.predict(x)
             y[i, ...] = y_i.reshape(y_shape)
 
-        return Solution(bvp, time_points[1:], y, self._vertex_oriented)
+        return Solution(
+            bvp,
+            time_points[1:],
+            y,
+            vertex_oriented=self._vertex_oriented,
+            d_t=self._d_t)
 
 
 class PINNOperator(StatelessMLOperator):
