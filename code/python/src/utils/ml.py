@@ -27,43 +27,16 @@ RegressionModel = Union[
 ]
 
 
-def train_regression_model(
-        model: RegressionModel,
-        x: np.ndarray,
-        y: np.ndarray,
-        test_size: float = .2,
-        score_func: Callable[[np.ndarray, np.ndarray], float] =
-        mean_squared_error
-) -> Tuple[float, float]:
+def limit_visible_gpus():
     """
-    Fits the regression model to the training share of the provided data points
-    using random splitting and it returns the loss of the model evaluated on
-    both the training and test data sets.
-
-    :param model: the regression model to train
-    :param x: the inputs
-    :param y: the target outputs
-    :param test_size: the fraction of all data points that should be used
-        for testing
-    :param score_func: the prediction scoring function to use
-    :return: the training and test losses
+    If there are GPUs available, it sets the GPU corresponding to the MPI rank
+    of the process as the only device visible to Tensorflow.
     """
-    assert 0. <= test_size < 1.
-    train_size = 1. - test_size
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        train_size=train_size,
-        test_size=test_size)
-
-    model.fit(x_train, y_train)
-
-    y_train_hat = model.predict(x_train)
-    y_test_hat = model.predict(x_test)
-    train_score = score_func(y_train, y_train_hat)
-    test_score = score_func(y_test, y_test_hat)
-    return train_score, test_score
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        comm = MPI.COMM_WORLD
+        assert len(gpus) == comm.size
+        tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
 
 
 def create_keras_regressor(
@@ -101,13 +74,54 @@ def create_keras_regressor(
         **kwargs)
 
 
-def limit_visible_gpus():
+def root_mean_squared_error(
+        y_true: np.ndarray,
+        y_pred: np.ndarray
+) -> Union[float, np.ndarray]:
     """
-    If there are GPUs available, it sets the GPU corresponding to the MPI rank
-    of the process as the only device visible to Tensorflow.
+    Calculates the root mean squared error.
+
+    :param y_true: the target values
+    :param y_pred: the predictions
+    :return: the root mean squared error
     """
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        comm = MPI.COMM_WORLD
-        assert len(gpus) == comm.size
-        tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
+    return mean_squared_error(y_true, y_pred, squared=False)
+
+
+def train_regression_model(
+        model: RegressionModel,
+        x: np.ndarray,
+        y: np.ndarray,
+        test_size: float = .2,
+        score_func: Callable[[np.ndarray, np.ndarray], float] =
+        root_mean_squared_error
+) -> Tuple[float, float]:
+    """
+    Fits the regression model to the training share of the provided data points
+    using random splitting and it returns the loss of the model evaluated on
+    both the training and test data sets.
+
+    :param model: the regression model to train
+    :param x: the inputs
+    :param y: the target outputs
+    :param test_size: the fraction of all data points that should be used
+        for testing
+    :param score_func: the prediction scoring function to use
+    :return: the training and test losses
+    """
+    assert 0. <= test_size < 1.
+    train_size = 1. - test_size
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        x,
+        y,
+        train_size=train_size,
+        test_size=test_size)
+
+    model.fit(x_train, y_train)
+
+    y_train_hat = model.predict(x_train)
+    y_test_hat = model.predict(x_test)
+    train_score = score_func(y_train, y_train_hat)
+    test_score = score_func(y_test, y_test_hat)
+    return train_score, test_score
