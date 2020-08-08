@@ -156,8 +156,7 @@ class Solution:
     def diff(
             self,
             solutions: Sequence[Solution],
-            atol: float = 1e-8,
-            mean_squared: bool = False
+            atol: float = 1e-8
     ) -> Diffs:
         """
         Calculates and returns the difference between the provided solutions
@@ -166,9 +165,6 @@ class Solution:
         :param solutions: the solutions to compare to
         :param atol: the maximum absolute difference between two time points
             considered to be matching
-        :param mean_squared: whether the differences at each matching time
-            point should be calculated as the mean squared error between
-            this solution and the other provided solutions
         :return: a `Diffs` instance containing a 1D array representing the
             matching time points and a sequence of sequence of arrays
             representing the differences between this solution and each of the
@@ -232,8 +228,6 @@ class Solution:
                 for j, discrete_y in enumerate(other_discrete_ys):
                     diff = discrete_y[indices_of_time_points[j + 1]] - \
                         self._discrete_y[indices_of_time_points[0]]
-                    if mean_squared:
-                        diff = np.square(diff).mean()
 
                     all_diffs[j].append(diff)
 
