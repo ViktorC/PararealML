@@ -459,59 +459,52 @@ def plot_ivp_solution(
 
 
 def plot_model_losses(
-        train_losses: np.ndarray,
-        test_losses: np.ndarray,
+        mean_train_losses: Sequence[float],
+        mean_test_losses: Sequence[float],
+        sd_train_losses: Sequence[float],
+        sd_test_losses: Sequence[float],
         model_names: Sequence[str],
         loss_name: str,
         file_name: str):
     """
-    Plots the losses of multiple models over several trials.
+    Plots the losses of multiple models.
 
-    :param train_losses: a 2D array of training losses where the rows represent
-        different models and the columns represent trials
-    :param test_losses: a 2D array of test losses where the rows represent
-        different models and the columns represent trials
+    :param mean_train_losses: a sequence of mean training losses
+    :param mean_test_losses: a sequence of mean test losses
+    :param sd_train_losses: a sequence of training loss standard deviations
+    :param sd_test_losses: a sequence of test loss standard deviations
     :param model_names: the names of the models
     :param loss_name: the loss type
     :param file_name: the name of the file to save the plot to
     """
-    assert train_losses.ndim == 2
-    assert train_losses.shape[0] == len(model_names)
-    assert train_losses.shape == test_losses.shape
+    assert len(mean_train_losses) == len(mean_test_losses)
+    assert len(mean_train_losses) == len(sd_train_losses)
+    assert len(mean_train_losses) == len(sd_test_losses)
+    assert len(mean_train_losses) == len(model_names)
 
-    def set_box_color(box_plot: Any, color: str):
-        plt.setp(box_plot['boxes'], color=color)
-        plt.setp(box_plot['whiskers'], color=color)
-        plt.setp(box_plot['caps'], color=color)
-        plt.setp(box_plot['medians'], color=color)
-
-    train_color = 'red'
-    test_color = 'blue'
+    bar_width = .35
+    train_positions = np.arange(len(mean_train_losses))
+    test_positions = train_positions + bar_width
 
     plt.figure()
 
-    train_box_plot = plt.boxplot(
-        [train_losses[i] for i in range(train_losses.shape[0])],
-        positions=np.arange(train_losses.shape[0]) * 2.0 - 0.4,
-        sym='',
-        widths=0.6)
-    test_box_plot = plt.boxplot(
-        [test_losses[i] for i in range(test_losses.shape[0])],
-        positions=np.arange(test_losses.shape[0]) * 2.0 + 0.4,
-        sym='',
-        widths=0.6)
-    set_box_color(train_box_plot, train_color)
-    set_box_color(test_box_plot, test_color)
+    train_bars = plt.bar(
+        train_positions,
+        mean_train_losses,
+        width=bar_width,
+        bottom=0.,
+        yerr=sd_train_losses)
+    test_bars = plt.bar(
+        test_positions,
+        mean_test_losses,
+        width=bar_width,
+        bottom=0.,
+        yerr=sd_test_losses)
 
-    plt.plot([], c=train_color, label='train')
-    plt.plot([], c=test_color, label='test')
-    plt.legend()
-
-    plt.xticks(range(0, len(model_names) * 2, 2), model_names)
-    plt.xlim(-2, len(model_names) * 2)
-
-    plt.ylim(bottom=0)
+    plt.xticks(train_positions + bar_width / 2., model_names, rotation=60)
+    plt.xlabel('model')
     plt.ylabel(loss_name)
+    plt.legend((train_bars[0], test_bars[0]), ('train', 'test'))
 
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
@@ -544,9 +537,6 @@ def plot_rms_solution_diffs(
 
     plt.figure()
 
-    plt.xlabel('t')
-    plt.ylabel('RMSE')
-
     for i in range(len(labels)):
         mean_rms_diff = mean_rms_diffs[i]
         sd_rms_diff = sd_rms_diffs[i]
@@ -565,9 +555,10 @@ def plot_rms_solution_diffs(
             facecolor=color,
             alpha=alpha)
 
-    plt.legend(loc=legend_location)
-
+    plt.xlabel('time')
+    plt.ylabel('RMSE')
     plt.ylim(bottom=0)
+    plt.legend(loc=legend_location)
 
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
@@ -575,29 +566,32 @@ def plot_rms_solution_diffs(
 
 
 def plot_execution_times(
-        all_execution_times: Sequence[np.ndarray],
+        mean_execution_times: Sequence[float],
+        sd_execution_times: Sequence[float],
         labels: Sequence[str],
-        file_name: str,
-        y_label: str = 'execution time (s)'):
+        x_label: str,
+        file_name: str):
     """
     Plots the execution times.
 
-    :param all_execution_times: a sequence of 1D arrays representing the
-        execution times
+    :param mean_execution_times: a sequence of mean execution times
+    :param sd_execution_times: a sequence of execution time standard deviations
     :param labels: the labels associated with the execution times
+    :param x_label: the text along the x axis
     :param file_name: the name of the file to save the plot to
-    :param y_label: the text along the y axis
     """
-    assert len(all_execution_times) == len(labels)
+    assert len(mean_execution_times) == len(sd_execution_times)
+    assert len(mean_execution_times) == len(labels)
 
-    positions = np.array(range(len(all_execution_times))) + 1
+    positions = np.arange(len(mean_execution_times))
 
     plt.figure()
 
-    plt.boxplot(all_execution_times, positions=positions)
-    plt.xticks(positions, labels, rotation=60)
-    plt.ylabel(y_label)
+    plt.bar(positions, mean_execution_times, yerr=sd_execution_times)
 
+    plt.xticks(positions, labels, rotation=60)
+    plt.xlabel(x_label)
+    plt.ylabel('time (s)')
     plt.ylim(bottom=0)
 
     plt.tight_layout()

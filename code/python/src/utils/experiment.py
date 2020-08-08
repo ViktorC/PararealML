@@ -160,36 +160,47 @@ def _print_and_plot_aggregate_execution_times(
     :param model_names: the names of the models
     :param experiment_name: the name of the experiment
     """
-    print_on_first_rank(f'Mean fine solving time: {fine_times.mean()}s; '
-                        f'standard deviation: {fine_times.std()}s')
-    print_on_first_rank(f'Mean coarse solving time: {coarse_times.mean()}s; '
-                        f'standard deviation: {coarse_times.std()}s')
-    print_on_first_rank(
-        f'Mean Parareal solving time: {parareal_times.mean()}s; '
-        f'standard deviation: {parareal_times.std()}s')
+    mean_fine_time = fine_times.mean()
+    mean_coarse_time = coarse_times.mean()
+    mean_parareal_time = parareal_times.mean()
+
+    sd_fine_time = fine_times.mean()
+    sd_coarse_time = coarse_times.mean()
+    sd_parareal_time = parareal_times.mean()
+
+    print_on_first_rank(f'Mean fine solving time: {mean_fine_time}s; '
+                        f'standard deviation: {sd_fine_time}s')
+    print_on_first_rank(f'Mean coarse solving time: {mean_coarse_time}s; '
+                        f'standard deviation: {sd_coarse_time}s')
+    print_on_first_rank(f'Mean Parareal solving time: {mean_parareal_time}s; '
+                        f'standard deviation: {sd_parareal_time}s')
+
+    mean_coarse_ml_times = coarse_ml_times.mean(axis=1)
+    mean_parareal_ml_times = parareal_ml_times.mean(axis=1)
+
+    sd_coarse_ml_times = coarse_ml_times.std(axis=1)
+    sd_parareal_ml_times = parareal_ml_times.std(axis=1)
 
     print_on_first_rank(
-        f'Mean coarse ML solving times: {coarse_ml_times.mean(axis=1)}; '
-        f'standard deviations: {coarse_ml_times.std(axis=1)}')
+        f'Mean coarse ML solving times: {mean_coarse_ml_times}; '
+        f'standard deviations: {sd_coarse_ml_times}')
     print_on_first_rank(
-        f'Mean Parareal ML solving times: {parareal_ml_times.mean(axis=1)}; '
-        f'standard deviations: {parareal_ml_times.std(axis=1)}')
+        f'Mean Parareal ML solving times: {mean_parareal_ml_times}; '
+        f'standard deviations: {sd_parareal_ml_times}')
 
-    coarse_execution_times = [coarse_times] + \
-        [coarse_ml_times[i] for i in range(coarse_ml_times.shape[0])]
-    coarse_operator_labels = ['c_conv'] + list(model_names)
     plot_execution_times(
-        coarse_execution_times,
-        coarse_operator_labels,
+        [mean_coarse_time] + mean_coarse_ml_times.tolist(),
+        [sd_coarse_time] + sd_coarse_ml_times.tolist(),
+        ['c_conv'] + [f'c_{model_name}' for model_name in model_names],
+        'coarse operator',
         f'{experiment_name}_coarse_times')
 
-    fine_execution_times = [fine_times, parareal_times] + \
-        [parareal_ml_times[i] for i in range(parareal_ml_times.shape[0])]
-    fine_operator_lables = ['f_conv', 'p_conv'] + \
-        [f'p_{model_name}' for model_name in model_names]
     plot_execution_times(
-        fine_execution_times,
-        fine_operator_lables,
+        [mean_fine_time, mean_parareal_time] + mean_parareal_ml_times.tolist(),
+        [sd_fine_time, sd_parareal_time] + sd_parareal_ml_times.tolist(),
+        ['f_conv', 'p_conv'] +
+        [f'p_{model_name}' for model_name in model_names],
+        'fine operator',
         f'{experiment_name}_fine_times')
 
 
@@ -204,15 +215,19 @@ def _print_and_plot_training_times(
     :param model_names: the names of the models
     :param experiment_name: the name of the experiment
     """
+    mean_training_times = training_times.mean(axis=1)
+    sd_training_times = training_times.std(axis=1)
+
     print_on_first_rank(
-        f'Mean coarse ML training times: {training_times.mean(axis=1)}; '
-        f'standard deviations: {training_times.std(axis=1)}')
+        f'Mean coarse ML training times: {mean_training_times}; '
+        f'standard deviations: {sd_training_times}')
 
     plot_execution_times(
-        [training_times[i] for i in range(training_times.shape[0])],
+        mean_training_times,
+        sd_training_times,
         model_names,
-        f'{experiment_name}_training_times',
-        'training time (s)')
+        'model',
+        f'{experiment_name}_training_times')
 
 
 def _print_and_plot_aggregate_model_losses(
@@ -228,13 +243,21 @@ def _print_and_plot_aggregate_model_losses(
     :param model_names: the names of the models
     :param experiment_name: the name of the experiment
     """
-    print_on_first_rank(f'Mean train losses: {train_losses.mean(axis=1)}; '
-                        f'standard deviations: {train_losses.std(axis=1)}')
-    print_on_first_rank(f'Mean test losses: {test_losses.mean(axis=1)}; '
-                        f'standard deviations: {test_losses.std(axis=1)}')
+    mean_train_losses = train_losses.mean(axis=1)
+    mean_test_losses = test_losses.mean(axis=1)
+
+    sd_train_losses = train_losses.std(axis=1)
+    sd_test_losses = test_losses.std(axis=1)
+
+    print_on_first_rank(f'Mean train losses: {mean_train_losses}; '
+                        f'standard deviations: {sd_train_losses}')
+    print_on_first_rank(f'Mean test losses: {mean_test_losses}; '
+                        f'standard deviations: {sd_test_losses}')
     plot_model_losses(
-        train_losses,
-        test_losses,
+        mean_train_losses,
+        mean_test_losses,
+        sd_train_losses,
+        sd_test_losses,
         model_names,
         'RMSE',
         f'{experiment_name}_model_losses')
@@ -261,13 +284,15 @@ def _print_and_plot_aggregate_operator_errors(
             axis=tuple(range(3, all_differences.ndim))))
     mean_rms_differences = rms_differences.mean(axis=0)
     sd_rms_differences = rms_differences.std(axis=0)
+
     print_on_first_rank(
         'RMS solution errors compared to the fine operator: '
         f'{mean_rms_differences}; standard deviations: '
         f'{sd_rms_differences}')
+
     plot_rms_solution_diffs(
         all_diffs[0].matching_time_points,
         mean_rms_differences,
         sd_rms_differences,
-        ['c_conv'] + list(model_names),
+        ['c_conv'] + [f'c_{model_name}' for model_name in model_names],
         f'{experiment_name}_operator_accuracy')
