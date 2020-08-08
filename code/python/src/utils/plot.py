@@ -521,7 +521,7 @@ def plot_squared_solution_diffs(
         labels: Sequence[str],
         file_name: str,
         legend_location: str = 'upper left',
-        alpha: float = .5):
+        alpha: float = .4):
     """
     Plots the squared solution differences.
 
@@ -550,7 +550,9 @@ def plot_squared_solution_diffs(
         lines = plt.plot(
             matching_time_points,
             mean_squared_diff,
-            label=labels[i])
+            label=labels[i],
+            linestyle='--',
+            marker='o')
         color = lines[0].get_color()
 
         plt.fill_between(
