@@ -83,7 +83,7 @@ def run_parareal_ml_experiment(
     for i, seed in enumerate(seeds):
         set_random_seed(seed)
 
-        print_on_first_rank(f'Round {i}; seed: {seed}')
+        print_on_first_rank(f'Round: {i}; seed: {seed}')
 
         fine_solution, fine_time = \
             time_with_args(True, 'Fine solver')(f.solve)(ivp)
