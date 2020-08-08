@@ -5,6 +5,8 @@
 #SBATCH --partition=gpu-cascade
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:1
+#SBATCH --tasks-per-node=10
+#SBATCH --cpus-per-task=1
 
 #SBATCH --account=d171-s1984842
 
