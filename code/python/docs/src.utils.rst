@@ -20,6 +20,14 @@ src.utils.io module
    :undoc-members:
    :show-inheritance:
 
+src.utils.ml module
+-------------------
+
+.. automodule:: src.utils.ml
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 src.utils.plot module
 ---------------------
 
