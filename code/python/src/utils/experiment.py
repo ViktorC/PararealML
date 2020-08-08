@@ -164,9 +164,9 @@ def _print_and_plot_aggregate_execution_times(
     mean_coarse_time = coarse_times.mean()
     mean_parareal_time = parareal_times.mean()
 
-    sd_fine_time = fine_times.mean()
-    sd_coarse_time = coarse_times.mean()
-    sd_parareal_time = parareal_times.mean()
+    sd_fine_time = fine_times.std()
+    sd_coarse_time = coarse_times.std()
+    sd_parareal_time = parareal_times.std()
 
     print_on_first_rank(f'Mean fine solving time: {mean_fine_time}s; '
                         f'standard deviation: {sd_fine_time}s')
