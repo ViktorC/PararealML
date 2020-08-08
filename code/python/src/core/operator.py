@@ -20,7 +20,7 @@ from src.core.initial_value_problem import TemporalDomainInterval, \
 from src.core.integrator import Integrator
 from src.core.solution import Solution
 from src.utils.io import suppress_stdout
-from src.utils.ml import train_regression_model, RegressionModel, SearchCV
+from src.utils.ml import train_regression_model, RegressionModel
 
 
 class Operator(ABC):
@@ -565,7 +565,7 @@ class StatelessRegressionOperator(StatelessMLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: Union[RegressionModel, SearchCV],
+            model: RegressionModel,
             subsampling_factor: Optional[float] = None,
             test_size: float = .2,
             score_func: Callable[[np.ndarray, np.ndarray], float] =
@@ -609,8 +609,9 @@ class StatelessRegressionOperator(StatelessMLOperator):
             x_batch = x_batch[indices, :]
             y_batch = y_batch[indices, :]
 
-        self._model, train_score, test_score = train_regression_model(
+        train_score, test_score = train_regression_model(
             model, x_batch, y_batch, test_size, score_func)
+        self._model = model
 
         return train_score, test_score
 
@@ -625,7 +626,7 @@ class StatefulRegressionOperator(StatefulMLOperator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: Union[RegressionModel, SearchCV],
+            model: RegressionModel,
             iterations: int,
             noise_sd: Union[float, Tuple[float, float]],
             relative_noise: bool = False,
@@ -722,7 +723,8 @@ class StatefulRegressionOperator(StatefulMLOperator):
                 all_y[time_point_offset:time_point_offset + n_spatial_points,
                       :] = y_i.reshape((-1, diff_eq.y_dimension))
 
-        self._model, train_score, test_score = train_regression_model(
+        train_score, test_score = train_regression_model(
             model, all_x, all_y, test_size, score_func)
+        self._model = model
 
         return train_score, test_score

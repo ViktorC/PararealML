@@ -5,6 +5,7 @@ from sklearn.base import RegressorMixin
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
     train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.utils import all_estimators
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.engine.base_layer import Layer
@@ -14,18 +15,24 @@ SKLearnRegressionModel = Union[
     tuple([_class for name, _class in all_estimators()
            if issubclass(_class, RegressorMixin)])
 ]
-RegressionModel = Union[SKLearnRegressionModel, KerasRegressor]
-SearchCV = Union[GridSearchCV, RandomizedSearchCV]
+
+RegressionModel = Union[
+    SKLearnRegressionModel,
+    KerasRegressor,
+    GridSearchCV,
+    RandomizedSearchCV,
+    Pipeline
+]
 
 
 def train_regression_model(
-        model: Union[RegressionModel, SearchCV],
+        model: RegressionModel,
         x: np.ndarray,
         y: np.ndarray,
         test_size: float = .2,
         score_func: Callable[[np.ndarray, np.ndarray], float] =
         mean_squared_error
-) -> Tuple[RegressionModel, float, float]:
+) -> Tuple[float, float]:
     """
     Fits the regression model to the training share of the provided data points
     using random splitting and it returns the loss of the model evaluated on
@@ -37,7 +44,7 @@ def train_regression_model(
     :param test_size: the fraction of all data points that should be used
         for testing
     :param score_func: the prediction scoring function to use
-    :return: the fitted model, the training loss, and the test loss
+    :return: the training and test losses
     """
     assert 0. <= test_size < 1.
     train_size = 1. - test_size
@@ -50,14 +57,11 @@ def train_regression_model(
 
     model.fit(x_train, y_train)
 
-    if isinstance(model, (GridSearchCV, RandomizedSearchCV)):
-        model = model.best_estimator_
-
     y_train_hat = model.predict(x_train)
     y_test_hat = model.predict(x_test)
     train_score = score_func(y_train, y_train_hat)
     test_score = score_func(y_test, y_test_hat)
-    return model, train_score, test_score
+    return train_score, test_score
 
 
 def create_keras_regressor(
