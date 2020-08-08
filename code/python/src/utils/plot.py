@@ -57,7 +57,7 @@ def plot_phase_space(solution: Solution, file_name: str):
     """
     y = solution.discrete_y(solution.vertex_oriented)
 
-    assert len(y.shape) == 2
+    assert y.ndim == 2
     assert 2 <= y.shape[1] <= 3
 
     if y.shape[1] == 2:
@@ -473,7 +473,7 @@ def plot_model_losses(
     :param loss_name: the loss type
     :param file_name: the name of the file to save the plot to
     """
-    assert len(train_losses.shape) == 2
+    assert train_losses.ndim == 2
     assert train_losses.shape[0] == len(model_names)
     assert train_losses.shape == test_losses.shape
 

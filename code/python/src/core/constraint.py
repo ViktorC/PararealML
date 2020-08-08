@@ -41,7 +41,7 @@ class Constraint:
         :param array: the array to constrain
         :return: the constrained array
         """
-        assert array.shape[-len(self._mask.shape):] == self._mask.shape
+        assert array.shape[-self._mask.ndim:] == self._mask.shape
 
         array[..., self._mask] = self._value
         return array
@@ -66,7 +66,7 @@ class Constraint:
         :return: the constrained result array
         """
         assert addend.shape == result.shape
-        assert addend.shape[-len(self._mask.shape):] == self._mask.shape
+        assert addend.shape[-self._mask.ndim:] == self._mask.shape
         assert isinstance(multiplier, float) \
             or multiplier.shape == self._value.shape
 
@@ -87,7 +87,7 @@ def apply_constraints_along_last_axis(
     :return: the constrained array
     """
     if constraints is not None:
-        assert len(array.shape) > 1
+        assert array.ndim > 1
         assert len(constraints) == array.shape[-1]
 
         for i, constraint in enumerate(constraints):

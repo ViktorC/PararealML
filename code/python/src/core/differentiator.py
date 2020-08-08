@@ -143,17 +143,17 @@ class Differentiator(ABC):
             constraints to the calculated first derivatives
         :return: the Jacobian of y
         """
-        assert len(y.shape) > 1
-        assert len(d_x) == len(y.shape) - 1
+        assert y.ndim > 1
+        assert len(d_x) == y.ndim - 1
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
                 derivative_boundary_constraints, y.shape)
 
-        jacobian = np.empty(y.shape + (len(y.shape) - 1,))
+        jacobian = np.empty(y.shape + (y.ndim - 1,))
 
         for y_ind in range(y.shape[-1]):
-            for axis in range(len(y.shape) - 1):
+            for axis in range(y.ndim - 1):
                 jacobian[..., y_ind, [axis]] = self.derivative(
                     y,
                     d_x[axis],
@@ -181,9 +181,9 @@ class Differentiator(ABC):
             to compute the divergence
         :return: the divergence of y
         """
-        assert len(y.shape) > 1
-        assert len(y.shape) - 1 == y.shape[-1]
-        assert len(d_x) == len(y.shape) - 1
+        assert y.ndim > 1
+        assert y.ndim - 1 == y.shape[-1]
+        assert len(d_x) == y.ndim - 1
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -216,8 +216,8 @@ class Differentiator(ABC):
         :return: the curl of y
         """
         assert y.shape[-1] == 2 or y.shape[-1] == 3
-        assert len(y.shape) - 1 == y.shape[-1]
-        assert len(d_x) == len(y.shape) - 1
+        assert y.ndim - 1 == y.shape[-1]
+        assert len(d_x) == y.ndim - 1
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -273,20 +273,20 @@ class Differentiator(ABC):
             to compute the second derivatives and the Hessian
         :return: the Hessian of y
         """
-        assert len(y.shape) > 1
-        assert len(d_x) == len(y.shape) - 1
+        assert y.ndim > 1
+        assert len(d_x) == y.ndim - 1
 
         first_derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
                 first_derivative_boundary_constraints, y.shape)
 
-        hessian = np.empty(y.shape + (len(y.shape) - 1,) * 2)
+        hessian = np.empty(y.shape + (y.ndim - 1,) * 2)
 
         for y_ind in range(y.shape[-1]):
-            for axis_1 in range(len(y.shape) - 1):
+            for axis_1 in range(y.ndim - 1):
                 constraint_function = \
                     first_derivative_boundary_constraints[axis_1, y_ind]
-                for axis_2 in range(len(y.shape) - 1):
+                for axis_2 in range(y.ndim - 1):
                     hessian[..., y_ind, axis_1, axis_2] = \
                         self.second_derivative(
                             y,
@@ -318,8 +318,8 @@ class Differentiator(ABC):
             to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
-        assert len(y.shape) > 1
-        assert len(d_x) == len(y.shape) - 1
+        assert y.ndim > 1
+        assert len(d_x) == y.ndim - 1
 
         first_derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -328,7 +328,7 @@ class Differentiator(ABC):
         laplacian = np.zeros(y.shape)
 
         for y_ind in range(y.shape[-1]):
-            for axis in range(len(y.shape) - 1):
+            for axis in range(y.ndim - 1):
                 laplacian[..., y_ind] += self.second_derivative(
                     y,
                     d_x[axis],
@@ -513,13 +513,13 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             Optional[BoundaryConstraintPair] = None
     ) -> np.ndarray:
         assert y.shape[x_axis] > 2
-        assert 0 <= x_axis < len(y.shape) - 1
+        assert 0 <= x_axis < y.ndim - 1
         assert 0 <= y_ind < y.shape[-1]
 
         derivative_shape = y.shape[:-1] + (1,)
         derivative = np.empty(derivative_shape)
 
-        y_slicer: Slicer = [slice(None)] * len(y.shape)
+        y_slicer: Slicer = [slice(None)] * y.ndim
         derivative_slicer: Slicer = [slice(None)] * len(derivative_shape)
 
         y_slicer[-1] = y_ind
@@ -540,7 +540,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_diff = y_next / two_d_x
 
         if lower_boundary_constraint is not None:
-            if len(y.shape) - 1 > 1:
+            if y.ndim - 1 > 1:
                 lower_boundary_constraint.apply(y_diff)
             elif lower_boundary_constraint.mask:
                 y_diff = lower_boundary_constraint.value
@@ -566,7 +566,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_diff = -y_prev / two_d_x
 
         if upper_boundary_constraint is not None:
-            if len(y.shape) - 1 > 1:
+            if y.ndim - 1 > 1:
                 upper_boundary_constraint.apply(y_diff)
             elif upper_boundary_constraint.mask:
                 y_diff = upper_boundary_constraint.value
@@ -587,9 +587,9 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             first_derivative_boundary_constraint_pair:
             Optional[BoundaryConstraintPair] = None
     ) -> np.ndarray:
-        assert len(y.shape) > 1
-        assert 0 <= x_axis1 < len(y.shape) - 1
-        assert 0 <= x_axis2 < len(y.shape) - 1
+        assert y.ndim > 1
+        assert 0 <= x_axis1 < y.ndim - 1
+        assert 0 <= x_axis2 < y.ndim - 1
         assert 0 <= y_ind < y.shape[-1]
 
         if x_axis1 != x_axis2:
@@ -604,7 +604,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         second_derivative_shape = y.shape[:-1] + (1,)
         second_derivative = np.empty(second_derivative_shape)
 
-        y_slicer: Slicer = [slice(None)] * len(y.shape)
+        y_slicer: Slicer = [slice(None)] * y.ndim
         second_derivative_slicer: Slicer = \
             [slice(None)] * len(second_derivative_shape)
 
@@ -630,7 +630,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_prev = .0
 
         if lower_boundary_constraint is not None:
-            if len(y.shape) - 1 > 1:
+            if y.ndim - 1 > 1:
                 y_prev = lower_boundary_constraint.multiply_and_add(
                     y_next, -2. * d_x1, np.zeros(y_next.shape))
             elif lower_boundary_constraint.mask:
@@ -663,7 +663,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_next = .0
 
         if upper_boundary_constraint is not None:
-            if len(y.shape) - 1 > 1:
+            if y.ndim - 1 > 1:
                 y_next = upper_boundary_constraint.multiply_and_add(
                     y_prev, 2. * d_x1, np.zeros(y_prev.shape))
             elif upper_boundary_constraint.mask:
@@ -684,13 +684,13 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             d_x: float
     ) -> np.ndarray:
         assert y_hat.shape[x_axis] > 2
-        assert 0 <= x_axis < len(y_hat.shape) - 1
+        assert 0 <= x_axis < y_hat.ndim - 1
         assert y_hat.shape == derivative.shape
         assert y_hat.shape[-1] == 1
 
         anti_derivative = np.empty(y_hat.shape)
 
-        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+        slicer: Slicer = [slice(None)] * y_hat.ndim
 
         two_d_x = 2. * d_x
 
@@ -727,16 +727,16 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             d_x: Tuple[float, ...],
             first_derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
-        assert len(y_hat.shape) > 1
+        assert y_hat.ndim > 1
         assert np.all(np.array(y_hat.shape[:-1]) > 2)
-        assert len(d_x) == len(y_hat.shape) - 1
+        assert len(d_x) == y_hat.ndim - 1
         assert laplacian.shape == y_hat.shape
 
         anti_laplacian = np.zeros(y_hat.shape)
 
         d_x_squared_arr = np.square(np.array(d_x))
 
-        slicer: Slicer = [slice(None)] * len(y_hat.shape)
+        slicer: Slicer = [slice(None)] * y_hat.ndim
 
         step_size_coefficient_sum = 0.
 
@@ -765,7 +765,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                         y_lower_halo = np.zeros(
                             y_lower_boundary_adjacent.shape)
 
-                    if len(y_hat.shape) - 1 > 1:
+                    if y_hat.ndim - 1 > 1:
                         lower_boundary_constraint.multiply_and_add(
                             y_lower_boundary_adjacent[..., y_ind],
                             -2. * d_x[axis],
@@ -781,7 +781,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                         y_upper_halo = np.zeros(
                             y_upper_boundary_adjacent.shape)
 
-                    if len(y_hat.shape) - 1 > 1:
+                    if y_hat.ndim - 1 > 1:
                         upper_boundary_constraint.multiply_and_add(
                             y_upper_boundary_adjacent[..., y_ind],
                             2. * d_x[axis],

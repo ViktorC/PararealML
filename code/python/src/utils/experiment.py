@@ -153,9 +153,9 @@ def _print_aggregate_execution_times(
         with each model
     """
     print_on_first_rank(f'Mean fine solving time: {fine_times.mean()}s; '
-    f'standard deviation: {fine_times.std()}s')
+                        f'standard deviation: {fine_times.std()}s')
     print_on_first_rank(f'Mean coarse solving time: {coarse_times.mean()}s; '
-    f'standard deviation: {coarse_times.std()}s')
+                        f'standard deviation: {coarse_times.std()}s')
     print_on_first_rank(
         f'Mean Parareal solving time: {parareal_times.mean()}s; '
         f'standard deviation: {parareal_times.std()}s')

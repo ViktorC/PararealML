@@ -387,7 +387,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
         :return: the time derivatives of the positions and velocities of the
             objects; same shape as y
         """
-        assert 1 <= len(y.shape) <= 2
+        assert 1 <= y.ndim <= 2
         assert y.shape[-1] == self.y_dimension
 
         n_obj_by_dims = self._n_objects * self._dims
@@ -395,7 +395,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
         d_y = np.empty(y.shape)
         d_y[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
 
-        forces_shape = (y.shape[0],) if len(y.shape) == 2 else ()
+        forces_shape = (y.shape[0],) if y.ndim == 2 else ()
         forces_shape += (self._n_objects, self._n_objects, self._dims)
         forces = np.zeros(forces_shape)
 
@@ -414,7 +414,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
                 forces[..., j, i, :] = -force
 
             acceleration = forces[..., i, :, :] \
-                .sum(axis=len(y.shape) - 1) / mass_i
+                .sum(axis=y.ndim - 1) / mass_i
             d_y[..., n_obj_by_dims + i * self._dims:
                 n_obj_by_dims + (i + 1) * self._dims] = acceleration
 
@@ -459,7 +459,7 @@ class DiffusionEquation(DifferentialEquation):
     ) -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
-        assert len(y.shape) - 1 == self._x_dimension
+        assert y.ndim - 1 == self._x_dimension
         assert y.shape[-1] == 1
 
         return self._d * differentiator.laplacian(
@@ -523,7 +523,7 @@ class WaveEquation(DifferentialEquation):
         assert d_x is not None
         assert differentiator is not None
         assert derivative_boundary_constraints is not None
-        assert len(y.shape) - 1 == self._x_dimension
+        assert y.ndim - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         d_y = np.empty(y.shape)
@@ -615,7 +615,7 @@ class CahnHilliardEquation(DifferentialEquation):
     ) -> np.ndarray:
         assert d_x is not None
         assert differentiator is not None
-        assert len(y.shape) - 1 == self._x_dimension
+        assert y.ndim - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         potential = y[..., [0]]
@@ -734,7 +734,7 @@ class NavierStokesEquation(DifferentialEquation):
         assert d_x is not None
         assert differentiator is not None
         assert derivative_boundary_constraints is not None
-        assert len(y.shape) - 1 == self._x_dimension
+        assert y.ndim - 1 == self._x_dimension
         assert y.shape[-1] == 2
 
         vorticity = y[..., [0]]

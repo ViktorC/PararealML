@@ -28,7 +28,7 @@ class Solution:
         :param vertex_oriented: whether the solution is vertex or cell oriented
             along the spatial domain; if the IVP is an ODE, it can be None
         """
-        assert len(t_coordinates.shape) == 1
+        assert t_coordinates.ndim == 1
         assert len(t_coordinates) > 0
         assert discrete_y.shape == \
             ((len(t_coordinates),) + bvp.y_shape(vertex_oriented))
