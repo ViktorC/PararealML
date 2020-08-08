@@ -43,6 +43,8 @@ def plot_y_against_t(
         if legend_location is not None:
             plt.legend(loc=legend_location)
 
+    plt.ylim(bottom=0)
+
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
@@ -507,6 +509,8 @@ def plot_model_losses(
 
     plt.xticks(range(0, len(model_names) * 2, 2), model_names)
     plt.xlim(-2, len(model_names) * 2)
+
+    plt.ylim(bottom=0)
     plt.ylabel(loss_name)
 
     plt.tight_layout()
@@ -562,6 +566,8 @@ def plot_squared_solution_diffs(
             facecolor=color,
             alpha=alpha)
 
+    plt.ylim(bottom=0)
+
     plt.legend(loc=legend_location)
 
     plt.tight_layout()
@@ -592,6 +598,8 @@ def plot_execution_times(
     plt.boxplot(all_execution_times, positions=positions)
     plt.xticks(positions, labels, rotation=60)
     plt.ylabel(y_label)
+
+    plt.ylim(bottom=0)
 
     plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
