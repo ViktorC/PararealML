@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=s1984842-parareal-ml
-#SBATCH --time=4:00:0
+#SBATCH --time=8:00:0
 #SBATCH --partition=gpu-cascade
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:1
