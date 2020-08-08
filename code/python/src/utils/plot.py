@@ -518,7 +518,8 @@ def plot_rms_solution_diffs(
         labels: Sequence[str],
         file_name: str,
         legend_location: str = 'upper left',
-        alpha: float = .25):
+        alpha: float = .25,
+        color_map: Colormap = cm.tab20):
     """
     Plots the root mean square solution differences.
 
@@ -531,6 +532,7 @@ def plot_rms_solution_diffs(
     :param legend_location: the location of the legend
     :param alpha: the transparency of the filled area representing the mean +/-
         one standard deviation
+    :param color_map: the color map to use for coloring the lines
     """
     assert mean_rms_diffs.shape == sd_rms_diffs.shape
     assert len(mean_rms_diffs) == len(labels)
@@ -541,12 +543,14 @@ def plot_rms_solution_diffs(
         mean_rms_diff = mean_rms_diffs[i]
         sd_rms_diff = sd_rms_diffs[i]
 
-        lines = plt.plot(
+        color = color_map(float(i) / len(labels))
+
+        plt.plot(
             matching_time_points,
             mean_rms_diff,
+            color=color,
             label=labels[i],
             marker='o')
-        color = lines[0].get_color()
 
         plt.fill_between(
             matching_time_points,
