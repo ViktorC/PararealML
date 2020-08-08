@@ -697,9 +697,12 @@ class StatefulRegressionOperator(StatefulMLOperator):
             y_i = y_0
 
             for i, t_i in enumerate(time_points[:-1]):
-                interpolated_noise_sd = \
-                    (noise_sd[0] * (last_sub_ivp_start_time_point - i) +
-                     noise_sd[1] * i) / last_sub_ivp_start_time_point
+                if len(time_points) > 2:
+                    interpolated_noise_sd = \
+                        (noise_sd[0] * (last_sub_ivp_start_time_point - i) +
+                         noise_sd[1] * i) / last_sub_ivp_start_time_point
+                else:
+                    interpolated_noise_sd = noise_sd[0]
                 if relative_noise:
                     interpolated_noise_sd = y_i * interpolated_noise_sd
 
