@@ -18,4 +18,4 @@ export OMP_NUM_THREADS=1
 
 source activate s1984842
 
-srun python3 -m mpi4py -m examples.population_growth_parareal_ml
+srun python3 -m mpi4py -m examples.lotka_volterra_parareal_ml
