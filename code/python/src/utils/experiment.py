@@ -123,6 +123,7 @@ def run_parareal_ml_experiment(
             for model_ind, model in enumerate(models):
                 model_name = model_names[model_ind]
 
+                g_ml.model = model
                 coarse_ml_solution, coarse_ml_time = time_with_args(
                     True, f'ML {model_name} solver')(g_ml.solve)(ivp)
                 coarse_solutions.append(coarse_ml_solution)
