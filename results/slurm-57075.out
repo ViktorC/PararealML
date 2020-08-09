@@ -1,0 +1,1451 @@
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+2020-08-09 19:57:05.812853: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-09 19:57:05.812851: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-09 19:57:05.812859: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-09 19:57:05.812857: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-09 19:57:06.034935: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.034938: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.034944: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.034935: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.038989: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.039021: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.039056: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.039085: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.042877: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.042946: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.043011: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.043077: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.046836: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.046931: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.046999: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.047027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 19:57:06.187577: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 19:57:06.187575: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 19:57:06.187578: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 19:57:06.187576: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 19:57:08.730267: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 19:57:08.730268: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 19:57:08.730270: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 19:57:08.730269: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 19:57:09.007359: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 19:57:09.007360: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 19:57:09.007360: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 19:57:09.007893: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 19:57:09.048668: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 19:57:09.048680: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 19:57:09.048683: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 19:57:09.048682: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 19:57:09.051593: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 19:57:09.051614: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 19:57:09.051769: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 19:57:09.051852: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 19:57:09.184893: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 19:57:09.184900: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 19:57:09.184901: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 19:57:09.184902: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 19:57:09.455965: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 19:57:09.455965: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 19:57:09.455965: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 19:57:09.456034: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 19:57:09.487472: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-09 19:57:09.487532: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-09 19:57:09.487625: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-09 19:57:09.487654: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-09 20:01:00.833308: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-09 20:01:00.833784: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+2020-08-09 20:01:00.833828: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-09 20:01:00.834881: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+2020-08-09 20:01:01.360022: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-09 20:01:01.360023: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-09 20:01:01.360025: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-09 20:01:01.360022: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-09 20:01:01.401759: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5615e63093e0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.401758: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5623fb319960 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.401759: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55f30f152a20 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.401765: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5597d839ae40 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.408290: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-09 20:01:01.408291: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-09 20:01:01.408288: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-09 20:01:01.408285: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-09 20:01:01.433497: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 20:01:01.433536: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 20:01:01.433569: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 20:01:01.433606: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.433599: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-09 20:01:01.433625: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:01.433622: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.433638: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 20:01:01.433641: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:01.433650: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 20:01:01.433663: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 20:01:01.433655: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.433671: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:01.433655: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 20:01:01.433671: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 20:01:01.433676: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 20:01:01.433689: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 20:01:01.433684: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 20:01:01.433696: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 20:01:01.433685: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 20:01:01.433700: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 20:01:01.433707: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 20:01:01.433697: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.433713: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:01.433720: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 20:01:01.433733: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 20:01:01.433726: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-09 20:01:01.433738: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-09 20:01:01.433714: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 20:01:01.433750: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-09 20:01:01.433763: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-09 20:01:01.433776: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-09 20:01:01.441602: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0
+2020-08-09 20:01:01.441667: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.441673: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 3
+2020-08-09 20:01:01.441727: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.441739: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 1
+2020-08-09 20:01:01.441778: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.441768: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 2
+2020-08-09 20:01:01.441817: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-09 20:01:01.801177: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-09 20:01:01.801227: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      2 
+2020-08-09 20:01:01.801239: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 2:   N 
+2020-08-09 20:01:01.804848: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-09 20:01:01.804876: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      1 
+2020-08-09 20:01:01.804885: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 1:   N 
+2020-08-09 20:01:01.806763: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-09 20:01:01.806799: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      3 
+2020-08-09 20:01:01.806809: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 3:   N 
+2020-08-09 20:01:01.807523: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 2, name: Tesla V100-SXM2-16GB, pci bus id: 0000:88:00.0, compute capability: 7.0)
+2020-08-09 20:01:01.810185: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-09 20:01:01.810213: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      0 
+2020-08-09 20:01:01.810224: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 0:   N 
+2020-08-09 20:01:01.813182: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 1, name: Tesla V100-SXM2-16GB, pci bus id: 0000:1c:00.0, compute capability: 7.0)
+2020-08-09 20:01:01.814524: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 3, name: Tesla V100-SXM2-16GB, pci bus id: 0000:8a:00.0, compute capability: 7.0)
+2020-08-09 20:01:01.816278: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 0, name: Tesla V100-SXM2-16GB, pci bus id: 0000:1a:00.0, compute capability: 7.0)
+2020-08-09 20:01:01.825400: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55f313b85fe0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.825424: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-09 20:01:01.825430: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5615ebeab760 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.825450: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-09 20:01:01.825443: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5624026bd5b0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.825464: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-09 20:01:01.825790: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5597da70cb60 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-09 20:01:01.825814: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-09 20:01:06.528031: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:06.528040: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:06.528041: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-09 20:01:06.528024: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+Using TensorFlow 2 backend.
+
+Experiment: lotka_volterra; processes: 4
+Round: 0; seed: 541016860
+Fine solver completed in 12.443538904190063s
+Coarse solver completed in 0.13988018035888672s
+Parareal solver completed in 5.3505699634552s
+ML lr training completed in 13.745680093765259s
+ML lr train loss: 1.8348942631839396
+ML lr test loss: 2.042873931905689
+ML lr solver completed in 0.00043702125549316406s
+Parareal ML lr solver completed in 14.357092142105103s
+ML rf10 training completed in 13.7103750705719s
+ML rf10 train loss: 0.8130643084155986
+ML rf10 test loss: 1.402532051730974
+ML rf10 solver completed in 0.003072977066040039s
+Parareal ML rf10 solver completed in 14.350889205932617s
+ML rf100 training completed in 13.804474115371704s
+ML rf100 train loss: 0.677415539820215
+ML rf100 test loss: 1.5660569947951515
+ML rf100 solver completed in 0.020174026489257812s
+Parareal ML rf100 solver completed in 14.450217008590698s
+ML rf250 training completed in 13.996982097625732s
+ML rf250 train loss: 0.6198737101781283
+ML rf250 test loss: 1.664452349872545
+ML rf250 solver completed in 0.048126935958862305s
+Parareal ML rf250 solver completed in 14.616374015808105s
+ML bt50 training completed in 13.692553997039795s
+ML bt50 train loss: 1.0861483440670994
+ML bt50 test loss: 1.7857625559782475
+ML bt50 solver completed in 0.0022819042205810547s
+Parareal ML bt50 solver completed in 14.400032043457031s
+ML bt100 training completed in 13.751865148544312s
+ML bt100 train loss: 0.5155862735846439
+ML bt100 test loss: 1.6814765463197865
+ML bt100 solver completed in 0.002395153045654297s
+Parareal ML bt100 solver completed in 14.375976085662842s
+ML bt250 training completed in 13.89047908782959s
+ML bt250 train loss: 0.15614290209473153
+ML bt250 test loss: 1.3209081497870285
+ML bt250 solver completed in 0.0025908946990966797s
+Parareal ML bt250 solver completed in 14.360559225082397s
+ML fnn1 training completed in 27.661500930786133s
+ML fnn1 train loss: 4.033456624632405
+ML fnn1 test loss: 3.12771592641511
+ML fnn1 solver completed in 0.05116009712219238s
+Parareal ML fnn1 solver completed in 14.64762806892395s
+ML fnn2 training completed in 20.004010915756226s
+ML fnn2 train loss: 3.9590979161785986
+ML fnn2 test loss: 4.527977277535215
+ML fnn2 solver completed in 0.024319887161254883s
+Parareal ML fnn2 solver completed in 14.462507009506226s
+ML fnn3 training completed in 19.579591989517212s
+ML fnn3 train loss: 3.5091851050497027
+ML fnn3 test loss: 3.802935307698811
+ML fnn3 solver completed in 0.004478931427001953s
+Parareal ML fnn3 solver completed in 14.487478971481323s
+ML fnn4 training completed in 19.96204400062561s
+ML fnn4 train loss: 3.111645689518429
+ML fnn4 test loss: 2.7347849407499694
+ML fnn4 solver completed in 0.004757881164550781s
+Parareal ML fnn4 solver completed in 14.43558406829834s
+Round: 1; seed: 434342745
+Fine solver completed in 11.983915090560913s
+Coarse solver completed in 0.14563894271850586s
+Parareal solver completed in 5.277141094207764s
+ML lr training completed in 13.73825216293335s
+ML lr train loss: 1.6563317248535052
+ML lr test loss: 2.167790381752659
+ML lr solver completed in 0.0004451274871826172s
+Parareal ML lr solver completed in 14.383084058761597s
+ML rf10 training completed in 13.737307071685791s
+ML rf10 train loss: 0.739091393681163
+ML rf10 test loss: 1.8051503072447936
+ML rf10 solver completed in 0.0032629966735839844s
+Parareal ML rf10 solver completed in 14.372696876525879s
+ML rf100 training completed in 13.879925012588501s
+ML rf100 train loss: 0.574825183706254
+ML rf100 test loss: 1.5376185988591464
+ML rf100 solver completed in 0.020081043243408203s
+Parareal ML rf100 solver completed in 14.528270959854126s
+ML rf250 training completed in 14.091782093048096s
+ML rf250 train loss: 0.644804595114086
+ML rf250 test loss: 1.7087463237816558
+ML rf250 solver completed in 0.04839920997619629s
+Parareal ML rf250 solver completed in 14.67256498336792s
+ML bt50 training completed in 13.753087997436523s
+ML bt50 train loss: 1.1267088328743011
+ML bt50 test loss: 2.157099902757687
+ML bt50 solver completed in 0.002313852310180664s
+Parareal ML bt50 solver completed in 14.401435852050781s
+ML bt100 training completed in 13.788282871246338s
+ML bt100 train loss: 0.47105510800659034
+ML bt100 test loss: 1.8931517879838458
+ML bt100 solver completed in 0.002424001693725586s
+Parareal ML bt100 solver completed in 14.415212154388428s
+ML bt250 training completed in 13.85730791091919s
+ML bt250 train loss: 0.1608374532139032
+ML bt250 test loss: 1.292517805354469
+ML bt250 solver completed in 0.0026900768280029297s
+Parareal ML bt250 solver completed in 14.39500093460083s
+ML fnn1 training completed in 18.85747981071472s
+ML fnn1 train loss: 3.6635257418086162
+ML fnn1 test loss: 3.377099572422973
+ML fnn1 solver completed in 0.004492044448852539s
+Parareal ML fnn1 solver completed in 14.405224084854126s
+ML fnn2 training completed in 19.37343192100525s
+ML fnn2 train loss: 2.4308906120541485
+ML fnn2 test loss: 2.845504022089722
+ML fnn2 solver completed in 0.004821062088012695s
+Parareal ML fnn2 solver completed in 14.5122230052948s
+ML fnn3 training completed in 19.854158878326416s
+ML fnn3 train loss: 1.1312544339929853
+ML fnn3 test loss: 0.9715365574965767
+ML fnn3 solver completed in 0.004887104034423828s
+Parareal ML fnn3 solver completed in 14.543705940246582s
+ML fnn4 training completed in 20.401122093200684s
+ML fnn4 train loss: 0.5074194976081287
+ML fnn4 test loss: 0.6038579134931652
+ML fnn4 solver completed in 0.005392789840698242s
+Parareal ML fnn4 solver completed in 14.372586965560913s
+Round: 2; seed: 1462316
+Fine solver completed in 11.972015142440796s
+Coarse solver completed in 0.13779902458190918s
+Parareal solver completed in 5.249673128128052s
+ML lr training completed in 13.68084192276001s
+ML lr train loss: 1.5165037077722656
+ML lr test loss: 1.8631511138795938
+ML lr solver completed in 0.000453948974609375s
+Parareal ML lr solver completed in 14.306992053985596s
+ML rf10 training completed in 13.688368082046509s
+ML rf10 train loss: 0.7868774275620023
+ML rf10 test loss: 1.4876659583655711
+ML rf10 solver completed in 0.0031409263610839844s
+Parareal ML rf10 solver completed in 14.32155990600586s
+ML rf100 training completed in 13.756102085113525s
+ML rf100 train loss: 0.7340880635472855
+ML rf100 test loss: 2.057459251980355
+ML rf100 solver completed in 0.019949913024902344s
+Parareal ML rf100 solver completed in 8.139211893081665s
+ML rf250 training completed in 13.981421947479248s
+ML rf250 train loss: 0.7334574844131725
+ML rf250 test loss: 2.283671367377347
+ML rf250 solver completed in 0.048471927642822266s
+Parareal ML rf250 solver completed in 14.61211085319519s
+ML bt50 training completed in 13.734309196472168s
+ML bt50 train loss: 0.9712284891509133
+ML bt50 test loss: 2.4638115536040583
+ML bt50 solver completed in 0.0023949146270751953s
+Parareal ML bt50 solver completed in 14.340792179107666s
+ML bt100 training completed in 13.782190084457397s
+ML bt100 train loss: 0.4876572418350794
+ML bt100 test loss: 2.0797306319572817
+ML bt100 solver completed in 0.002527952194213867s
+Parareal ML bt100 solver completed in 14.344162940979004s
+ML bt250 training completed in 13.814697027206421s
+ML bt250 train loss: 0.15464777884870373
+ML bt250 test loss: 1.2053700685126743
+ML bt250 solver completed in 0.0026988983154296875s
+Parareal ML bt250 solver completed in 14.349152088165283s
+ML fnn1 training completed in 19.218821048736572s
+ML fnn1 train loss: 2.943828219683516
+ML fnn1 test loss: 2.833059502644444
+ML fnn1 solver completed in 0.005316019058227539s
+Parareal ML fnn1 solver completed in 14.35466194152832s
+ML fnn2 training completed in 19.37200617790222s
+ML fnn2 train loss: 1.289544331260082
+ML fnn2 test loss: 1.5948949033908986
+ML fnn2 solver completed in 0.0051920413970947266s
+Parareal ML fnn2 solver completed in 14.388082027435303s
+ML fnn3 training completed in 20.029479026794434s
+ML fnn3 train loss: 0.5984175597886819
+ML fnn3 test loss: 0.5991304733356217
+ML fnn3 solver completed in 0.005414009094238281s
+Parareal ML fnn3 solver completed in 14.380701780319214s
+ML fnn4 training completed in 20.479553937911987s
+ML fnn4 train loss: 0.8718834911710048
+ML fnn4 test loss: 0.8967329965203893
+ML fnn4 solver completed in 0.005655050277709961s
+Parareal ML fnn4 solver completed in 14.428727865219116s
+Round: 3; seed: 746159945
+Fine solver completed in 12.006223201751709s
+Coarse solver completed in 0.1376509666442871s
+Parareal solver completed in 5.2769269943237305s
+ML lr training completed in 13.739421844482422s
+ML lr train loss: 1.3942239092286324
+ML lr test loss: 0.9937897658374499
+ML lr solver completed in 0.00043892860412597656s
+Parareal ML lr solver completed in 14.385015964508057s
+ML rf10 training completed in 13.763915061950684s
+ML rf10 train loss: 0.7253645023678431
+ML rf10 test loss: 1.3031258053505552
+ML rf10 solver completed in 0.0033087730407714844s
+Parareal ML rf10 solver completed in 14.404580116271973s
+ML rf100 training completed in 13.848026037216187s
+ML rf100 train loss: 0.5842902648740423
+ML rf100 test loss: 1.3046847961443981
+ML rf100 solver completed in 0.020102977752685547s
+Parareal ML rf100 solver completed in 14.514142990112305s
+ML rf250 training completed in 14.05463695526123s
+ML rf250 train loss: 0.6519402103491773
+ML rf250 test loss: 1.4840512736276814
+ML rf250 solver completed in 0.04826211929321289s
+Parareal ML rf250 solver completed in 14.692160844802856s
+ML bt50 training completed in 13.758923053741455s
+ML bt50 train loss: 1.0854328471563883
+ML bt50 test loss: 2.297575538444314
+ML bt50 solver completed in 0.002351999282836914s
+Parareal ML bt50 solver completed in 14.410588026046753s
+ML bt100 training completed in 13.795022010803223s
+ML bt100 train loss: 0.4615605995371015
+ML bt100 test loss: 1.58119648687526
+ML bt100 solver completed in 0.0024280548095703125s
+Parareal ML bt100 solver completed in 14.444679021835327s
+ML bt250 training completed in 13.880157947540283s
+ML bt250 train loss: 0.17519194751405492
+ML bt250 test loss: 1.5485826775523042
+ML bt250 solver completed in 0.002752065658569336s
+Parareal ML bt250 solver completed in 14.415738821029663s
+ML fnn1 training completed in 19.32607388496399s
+ML fnn1 train loss: 2.0174559455642704
+ML fnn1 test loss: 2.319042014190149
+ML fnn1 solver completed in 0.005452871322631836s
+Parareal ML fnn1 solver completed in 14.40166687965393s
+ML fnn2 training completed in 19.966141939163208s
+ML fnn2 train loss: 0.5703618069238938
+ML fnn2 test loss: 0.6206597416835864
+ML fnn2 solver completed in 0.005383968353271484s
+Parareal ML fnn2 solver completed in 14.493185043334961s
+ML fnn3 training completed in 21.08739399909973s
+ML fnn3 train loss: 0.7734960015081975
+ML fnn3 test loss: 0.8912533926704426
+ML fnn3 solver completed in 0.005983114242553711s
+Parareal ML fnn3 solver completed in 14.499161005020142s
+ML fnn4 training completed in 21.00782585144043s
+ML fnn4 train loss: 1.1952867531161437
+ML fnn4 test loss: 1.0509894839384997
+ML fnn4 solver completed in 0.005877971649169922s
+Parareal ML fnn4 solver completed in 14.49032998085022s
+Round: 4; seed: 433636464
+Fine solver completed in 12.022576093673706s
+Coarse solver completed in 0.13474702835083008s
+Parareal solver completed in 5.293867826461792s
+ML lr training completed in 13.74265193939209s
+ML lr train loss: 1.3838900410441477
+ML lr test loss: 1.2573195113009208
+ML lr solver completed in 0.0004420280456542969s
+Parareal ML lr solver completed in 14.456425905227661s
+ML rf10 training completed in 13.74710202217102s
+ML rf10 train loss: 0.9435563585098092
+ML rf10 test loss: 1.7907753920998586
+ML rf10 solver completed in 0.003368854522705078s
+Parareal ML rf10 solver completed in 14.457349061965942s
+ML rf100 training completed in 13.863929986953735s
+ML rf100 train loss: 0.666060481806821
+ML rf100 test loss: 1.3774800581996969
+ML rf100 solver completed in 0.0203399658203125s
+Parareal ML rf100 solver completed in 14.567444086074829s
+ML rf250 training completed in 14.06968092918396s
+ML rf250 train loss: 0.5848967207384007
+ML rf250 test loss: 1.9110104810703608
+ML rf250 solver completed in 0.04843497276306152s
+Parareal ML rf250 solver completed in 14.72474193572998s
+ML bt50 training completed in 13.758610010147095s
+ML bt50 train loss: 0.9008033066149891
+ML bt50 test loss: 2.2571530378711504
+ML bt50 solver completed in 0.0023450851440429688s
+Parareal ML bt50 solver completed in 14.437985897064209s
+ML bt100 training completed in 13.79970097541809s
+ML bt100 train loss: 0.5364685147823245
+ML bt100 test loss: 1.8566001195581319
+ML bt100 solver completed in 0.0023720264434814453s
+Parareal ML bt100 solver completed in 14.45677900314331s
+ML bt250 training completed in 13.879716157913208s
+ML bt250 train loss: 0.1614657976101603
+ML bt250 test loss: 1.1274421174222045
+ML bt250 solver completed in 0.0026979446411132812s
+Parareal ML bt250 solver completed in 14.441747903823853s
+ML fnn1 training completed in 19.640379905700684s
+ML fnn1 train loss: 1.334161716017189
+ML fnn1 test loss: 1.8227197886390931
+ML fnn1 solver completed in 0.005385160446166992s
+Parareal ML fnn1 solver completed in 14.68020510673523s
+ML fnn2 training completed in 21.679850101470947s
+ML fnn2 train loss: 0.7266514710676665
+ML fnn2 test loss: 0.7038253895215403
+ML fnn2 solver completed in 0.005969047546386719s
+Parareal ML fnn2 solver completed in 14.654526948928833s
+ML fnn3 training completed in 21.196878910064697s
+ML fnn3 train loss: 0.6309922727276864
+ML fnn3 test loss: 0.5319942100299729
+ML fnn3 solver completed in 0.006033897399902344s
+Parareal ML fnn3 solver completed in 14.586222887039185s
+ML fnn4 training completed in 21.680421113967896s
+ML fnn4 train loss: 0.6804012076142425
+ML fnn4 test loss: 0.7479611122973574
+ML fnn4 solver completed in 0.006526947021484375s
+Parareal ML fnn4 solver completed in 14.694051027297974s
+Round: 5; seed: 530723967
+Fine solver completed in 12.098901987075806s
+Coarse solver completed in 0.14270997047424316s
+Parareal solver completed in 5.47671103477478s
+ML lr training completed in 14.32057499885559s
+ML lr train loss: 2.002929191234996
+ML lr test loss: 1.6693548267145988
+ML lr solver completed in 0.0004928112030029297s
+Parareal ML lr solver completed in 14.610495805740356s
+ML rf10 training completed in 14.32952094078064s
+ML rf10 train loss: 0.8648963119791652
+ML rf10 test loss: 1.8751578962257418
+ML rf10 solver completed in 0.003381013870239258s
+Parareal ML rf10 solver completed in 14.625942945480347s
+ML rf100 training completed in 14.406590938568115s
+ML rf100 train loss: 0.6671227945189778
+ML rf100 test loss: 1.2306149941829179
+ML rf100 solver completed in 0.020274877548217773s
+Parareal ML rf100 solver completed in 14.743277072906494s
+ML rf250 training completed in 14.62711501121521s
+ML rf250 train loss: 0.7027183895284688
+ML rf250 test loss: 2.1116597878962926
+ML rf250 solver completed in 0.04871106147766113s
+Parareal ML rf250 solver completed in 14.895880937576294s
+ML bt50 training completed in 14.26956295967102s
+ML bt50 train loss: 1.0187674467899324
+ML bt50 test loss: 1.7974137339167728
+ML bt50 solver completed in 0.0024261474609375s
+Parareal ML bt50 solver completed in 14.636070966720581s
+ML bt100 training completed in 14.347309112548828s
+ML bt100 train loss: 0.5261631955155418
+ML bt100 test loss: 1.3656703632316687
+ML bt100 solver completed in 0.0025892257690429688s
+Parareal ML bt100 solver completed in 14.645586967468262s
+ML bt250 training completed in 14.396950006484985s
+ML bt250 train loss: 0.13884014645145631
+ML bt250 test loss: 1.739196509791644
+ML bt250 solver completed in 0.003145933151245117s
+Parareal ML bt250 solver completed in 14.635699033737183s
+ML fnn1 training completed in 20.524465084075928s
+ML fnn1 train loss: 1.28777391883715
+ML fnn1 test loss: 1.2965025428460688
+ML fnn1 solver completed in 0.005761861801147461s
+Parareal ML fnn1 solver completed in 14.637326955795288s
+ML fnn2 training completed in 21.074042081832886s
+ML fnn2 train loss: 0.4355818855265354
+ML fnn2 test loss: 0.4590539183841565
+ML fnn2 solver completed in 0.006020069122314453s
+Parareal ML fnn2 solver completed in 14.64229702949524s
+ML fnn3 training completed in 21.81097984313965s
+ML fnn3 train loss: 0.8139812386518739
+ML fnn3 test loss: 0.843139937092902
+ML fnn3 solver completed in 0.006218910217285156s
+Parareal ML fnn3 solver completed in 14.64911699295044s
+ML fnn4 training completed in 22.28805708885193s
+ML fnn4 train loss: 0.6706853195930736
+ML fnn4 test loss: 0.76685496857214
+ML fnn4 solver completed in 0.006337881088256836s
+Parareal ML fnn4 solver completed in 14.668617963790894s
+Round: 6; seed: 295017836
+Fine solver completed in 12.07811188697815s
+Coarse solver completed in 0.14005398750305176s
+Parareal solver completed in 5.465242147445679s
+ML lr training completed in 14.295653104782104s
+ML lr train loss: 1.1995312028049185
+ML lr test loss: 3.997683790198266
+ML lr solver completed in 0.0004470348358154297s
+Parareal ML lr solver completed in 14.605208158493042s
+ML rf10 training completed in 14.289642095565796s
+ML rf10 train loss: 0.8715609684511788
+ML rf10 test loss: 1.5563903246939157
+ML rf10 solver completed in 0.0033240318298339844s
+Parareal ML rf10 solver completed in 14.657416105270386s
+ML rf100 training completed in 14.403191089630127s
+ML rf100 train loss: 0.6217152042046129
+ML rf100 test loss: 2.1829894877546847
+ML rf100 solver completed in 0.020202159881591797s
+Parareal ML rf100 solver completed in 14.70874810218811s
+ML rf250 training completed in 14.61001992225647s
+ML rf250 train loss: 0.6958751329727585
+ML rf250 test loss: 1.7011959017556322
+ML rf250 solver completed in 0.049926042556762695s
+Parareal ML rf250 solver completed in 14.899420022964478s
+ML bt50 training completed in 14.29886507987976s
+ML bt50 train loss: 0.8873230378636607
+ML bt50 test loss: 1.8661434007637203
+ML bt50 solver completed in 0.002440929412841797s
+Parareal ML bt50 solver completed in 14.625250101089478s
+ML bt100 training completed in 14.344733953475952s
+ML bt100 train loss: 0.5041224864319168
+ML bt100 test loss: 1.824884493030222
+ML bt100 solver completed in 0.002618074417114258s
+Parareal ML bt100 solver completed in 14.634916067123413s
+ML bt250 training completed in 14.399467945098877s
+ML bt250 train loss: 0.13462043987051184
+ML bt250 test loss: 1.2122722626076625
+ML bt250 solver completed in 0.0031189918518066406s
+Parareal ML bt250 solver completed in 14.651684999465942s
+ML fnn1 training completed in 20.91544008255005s
+ML fnn1 train loss: 0.9913744111359089
+ML fnn1 test loss: 0.8865707575959643
+ML fnn1 solver completed in 0.005966901779174805s
+Parareal ML fnn1 solver completed in 14.658101081848145s
+ML fnn2 training completed in 21.60639190673828s
+ML fnn2 train loss: 0.5198732025795114
+ML fnn2 test loss: 0.47526429651781915
+ML fnn2 solver completed in 0.006223917007446289s
+Parareal ML fnn2 solver completed in 14.643353939056396s
+ML fnn3 training completed in 22.07514500617981s
+ML fnn3 train loss: 0.5375483359910941
+ML fnn3 test loss: 0.5430399675377346
+ML fnn3 solver completed in 0.006193876266479492s
+Parareal ML fnn3 solver completed in 14.623687982559204s
+ML fnn4 training completed in 22.56887698173523s
+ML fnn4 train loss: 0.48982327801774295
+ML fnn4 test loss: 0.5455509583270465
+ML fnn4 solver completed in 0.006442070007324219s
+Parareal ML fnn4 solver completed in 14.5104238986969s
+Round: 7; seed: 302019026
+Fine solver completed in 12.055872917175293s
+Coarse solver completed in 0.13801908493041992s
+Parareal solver completed in 5.305354118347168s
+ML lr training completed in 13.71439790725708s
+ML lr train loss: 1.7662341566749375
+ML lr test loss: 1.3398590718996244
+ML lr solver completed in 0.00042700767517089844s
+Parareal ML lr solver completed in 14.458273887634277s
+ML rf10 training completed in 13.734334945678711s
+ML rf10 train loss: 0.710029689164084
+ML rf10 test loss: 1.32201757642261
+ML rf10 solver completed in 0.0031681060791015625s
+Parareal ML rf10 solver completed in 11.335848093032837s
+ML rf100 training completed in 13.828486919403076s
+ML rf100 train loss: 0.6290443690480716
+ML rf100 test loss: 1.6770939002637468
+ML rf100 solver completed in 0.020012855529785156s
+Parareal ML rf100 solver completed in 14.591315984725952s
+ML rf250 training completed in 14.031178951263428s
+ML rf250 train loss: 0.7047996401933436
+ML rf250 test loss: 1.841910969823354
+ML rf250 solver completed in 0.047827959060668945s
+Parareal ML rf250 solver completed in 14.747448921203613s
+ML bt50 training completed in 13.75258493423462s
+ML bt50 train loss: 1.012854908881121
+ML bt50 test loss: 2.2472371862553464
+ML bt50 solver completed in 0.0022971630096435547s
+Parareal ML bt50 solver completed in 14.470580816268921s
+ML bt100 training completed in 13.795387029647827s
+ML bt100 train loss: 0.46798884032797683
+ML bt100 test loss: 1.3030169767399977
+ML bt100 solver completed in 0.0023529529571533203s
+Parareal ML bt100 solver completed in 14.487710952758789s
+ML bt250 training completed in 13.869808912277222s
+ML bt250 train loss: 0.15663437952199785
+ML bt250 test loss: 2.7985497500262673
+ML bt250 solver completed in 0.002721071243286133s
+Parareal ML bt250 solver completed in 14.469945907592773s
+ML fnn1 training completed in 20.54291296005249s
+ML fnn1 train loss: 1.5379314082897102
+ML fnn1 test loss: 1.4564081104658166
+ML fnn1 solver completed in 0.005905866622924805s
+Parareal ML fnn1 solver completed in 14.490993976593018s
+ML fnn2 training completed in 21.126611948013306s
+ML fnn2 train loss: 0.6240966204773044
+ML fnn2 test loss: 0.5396234111459481
+ML fnn2 solver completed in 0.006509065628051758s
+Parareal ML fnn2 solver completed in 14.508846998214722s
+ML fnn3 training completed in 21.936033010482788s
+ML fnn3 train loss: 0.4365061101295254
+ML fnn3 test loss: 0.6214494423818435
+ML fnn3 solver completed in 0.006740093231201172s
+Parareal ML fnn3 solver completed in 14.502607107162476s
+ML fnn4 training completed in 22.369529008865356s
+ML fnn4 train loss: 0.2286588478101202
+ML fnn4 test loss: 0.26890232736391023
+ML fnn4 solver completed in 0.006571054458618164s
+Parareal ML fnn4 solver completed in 11.343729972839355s
+Round: 8; seed: 640140178
+Fine solver completed in 12.035714864730835s
+Coarse solver completed in 0.1384868621826172s
+Parareal solver completed in 5.292136907577515s
+ML lr training completed in 13.931766986846924s
+ML lr train loss: 1.3206284016536152
+ML lr test loss: 2.4470364884135405
+ML lr solver completed in 0.00047707557678222656s
+Parareal ML lr solver completed in 14.463151216506958s
+ML rf10 training completed in 13.93419599533081s
+ML rf10 train loss: 0.7302746324080793
+ML rf10 test loss: 1.6880223197175486
+ML rf10 solver completed in 0.003312826156616211s
+Parareal ML rf10 solver completed in 14.471987009048462s
+ML rf100 training completed in 14.057029008865356s
+ML rf100 train loss: 0.7919218200839374
+ML rf100 test loss: 1.4427997128473478
+ML rf100 solver completed in 0.02022099494934082s
+Parareal ML rf100 solver completed in 14.556602954864502s
+ML rf250 training completed in 14.27185606956482s
+ML rf250 train loss: 0.8045619483670898
+ML rf250 test loss: 1.6101315307951125
+ML rf250 solver completed in 0.04826998710632324s
+Parareal ML rf250 solver completed in 14.74950885772705s
+ML bt50 training completed in 13.939957857131958s
+ML bt50 train loss: 0.9807207351692168
+ML bt50 test loss: 1.959400443831833
+ML bt50 solver completed in 0.002373933792114258s
+Parareal ML bt50 solver completed in 14.479269981384277s
+ML bt100 training completed in 13.994509935379028s
+ML bt100 train loss: 0.43839521024792777
+ML bt100 test loss: 2.0196953173630336
+ML bt100 solver completed in 0.002532958984375s
+Parareal ML bt100 solver completed in 14.472452878952026s
+ML bt250 training completed in 14.061596155166626s
+ML bt250 train loss: 0.1464878103178452
+ML bt250 test loss: 1.1163765441509588
+ML bt250 solver completed in 0.002917051315307617s
+Parareal ML bt250 solver completed in 14.476715087890625s
+ML fnn1 training completed in 20.969017028808594s
+ML fnn1 train loss: 1.0317227977767602
+ML fnn1 test loss: 1.182759345202092
+ML fnn1 solver completed in 0.006117820739746094s
+Parareal ML fnn1 solver completed in 14.503292798995972s
+ML fnn2 training completed in 21.504354000091553s
+ML fnn2 train loss: 0.5190051612538704
+ML fnn2 test loss: 0.5855263553056139
+ML fnn2 solver completed in 0.0066089630126953125s
+Parareal ML fnn2 solver completed in 11.326880931854248s
+ML fnn3 training completed in 22.389600038528442s
+ML fnn3 train loss: 0.3654733398504346
+ML fnn3 test loss: 0.42823593356781336
+ML fnn3 solver completed in 0.0065419673919677734s
+Parareal ML fnn3 solver completed in 14.619138956069946s
+ML fnn4 training completed in 23.8734610080719s
+ML fnn4 train loss: 0.509261473634142
+ML fnn4 test loss: 0.5968175045725512
+ML fnn4 solver completed in 0.006891965866088867s
+Parareal ML fnn4 solver completed in 14.654067993164062s
+Round: 9; seed: 957046961
+Fine solver completed in 12.170958995819092s
+Coarse solver completed in 0.15375804901123047s
+Parareal solver completed in 5.369468927383423s
+ML lr training completed in 14.67613697052002s
+ML lr train loss: 2.9048527989527515
+ML lr test loss: 2.0600880758225935
+ML lr solver completed in 0.0004608631134033203s
+Parareal ML lr solver completed in 14.552781105041504s
+ML rf10 training completed in 14.646125078201294s
+ML rf10 train loss: 0.8801710001164523
+ML rf10 test loss: 2.134800141453736
+ML rf10 solver completed in 0.003323078155517578s
+Parareal ML rf10 solver completed in 14.597188949584961s
+ML rf100 training completed in 14.758381128311157s
+ML rf100 train loss: 0.6903432168921789
+ML rf100 test loss: 1.450457057131102
+ML rf100 solver completed in 0.02028203010559082s
+Parareal ML rf100 solver completed in 14.699141025543213s
+ML rf250 training completed in 15.013077020645142s
+ML rf250 train loss: 0.7805632231826333
+ML rf250 test loss: 2.2144618937288145
+ML rf250 solver completed in 0.055155038833618164s
+Parareal ML rf250 solver completed in 14.888080835342407s
+ML bt50 training completed in 14.661988019943237s
+ML bt50 train loss: 1.0360163990170412
+ML bt50 test loss: 1.555870794761948
+ML bt50 solver completed in 0.0024518966674804688s
+Parareal ML bt50 solver completed in 14.591701984405518s
+ML bt100 training completed in 14.675265789031982s
+ML bt100 train loss: 0.4506405082328136
+ML bt100 test loss: 1.824593189843869
+ML bt100 solver completed in 0.002599954605102539s
+Parareal ML bt100 solver completed in 14.592071056365967s
+ML bt250 training completed in 14.802143096923828s
+ML bt250 train loss: 0.14468144364467198
+ML bt250 test loss: 1.7735318979973764
+ML bt250 solver completed in 0.0031549930572509766s
+Parareal ML bt250 solver completed in 14.597960948944092s
+ML fnn1 training completed in 22.104817152023315s
+ML fnn1 train loss: 1.3627603845297813
+ML fnn1 test loss: 1.2590050629729896
+ML fnn1 solver completed in 0.006512880325317383s
+Parareal ML fnn1 solver completed in 14.61539077758789s
+ML fnn2 training completed in 22.755486965179443s
+ML fnn2 train loss: 0.43107940229294034
+ML fnn2 test loss: 0.6309875903188297
+ML fnn2 solver completed in 0.00673985481262207s
+Parareal ML fnn2 solver completed in 14.455962181091309s
+ML fnn3 training completed in 22.42052912712097s
+ML fnn3 train loss: 0.4315679636327542
+ML fnn3 test loss: 0.3713891158716765
+ML fnn3 solver completed in 0.007193088531494141s
+Parareal ML fnn3 solver completed in 14.511557817459106s
+ML fnn4 training completed in 23.115946054458618s
+ML fnn4 train loss: 0.2946725698263085
+ML fnn4 test loss: 0.2745377901435672
+ML fnn4 solver completed in 0.0069730281829833984s
+Parareal ML fnn4 solver completed in 14.504239082336426s
+Round: 10; seed: 475444362
+Fine solver completed in 12.020656108856201s
+Coarse solver completed in 0.13824105262756348s
+Parareal solver completed in 5.289823055267334s
+ML lr training completed in 14.2015380859375s
+ML lr train loss: 1.641948546467099
+ML lr test loss: 2.1442288231906828
+ML lr solver completed in 0.00047898292541503906s
+Parareal ML lr solver completed in 14.415287017822266s
+ML rf10 training completed in 14.2204749584198s
+ML rf10 train loss: 0.8776102084415474
+ML rf10 test loss: 1.7251820110316838
+ML rf10 solver completed in 0.00333404541015625s
+Parareal ML rf10 solver completed in 14.427720069885254s
+ML rf100 training completed in 14.325645923614502s
+ML rf100 train loss: 0.7017481153222598
+ML rf100 test loss: 1.5355632482859818
+ML rf100 solver completed in 0.02041912078857422s
+Parareal ML rf100 solver completed in 14.551854848861694s
+ML rf250 training completed in 14.55289602279663s
+ML rf250 train loss: 0.6089247303303106
+ML rf250 test loss: 2.047481440760592
+ML rf250 solver completed in 0.04865598678588867s
+Parareal ML rf250 solver completed in 14.729147911071777s
+ML bt50 training completed in 14.225723028182983s
+ML bt50 train loss: 1.0403546475210275
+ML bt50 test loss: 1.6480287528752011
+ML bt50 solver completed in 0.002384185791015625s
+Parareal ML bt50 solver completed in 14.437037944793701s
+ML bt100 training completed in 14.29577898979187s
+ML bt100 train loss: 0.46504851116075757
+ML bt100 test loss: 1.6090966100387212
+ML bt100 solver completed in 0.002540111541748047s
+Parareal ML bt100 solver completed in 14.430237054824829s
+ML bt250 training completed in 14.346979856491089s
+ML bt250 train loss: 0.13366394776719212
+ML bt250 test loss: 1.6826004234268532
+ML bt250 solver completed in 0.00308990478515625s
+Parareal ML bt250 solver completed in 14.426895141601562s
+ML fnn1 training completed in 21.94112515449524s
+ML fnn1 train loss: 1.186071301940186
+ML fnn1 test loss: 1.0035062784616031
+ML fnn1 solver completed in 0.006685018539428711s
+Parareal ML fnn1 solver completed in 14.485053062438965s
+ML fnn2 training completed in 21.918305158615112s
+ML fnn2 train loss: 1.037892327466166
+ML fnn2 test loss: 1.1253271637473408
+ML fnn2 solver completed in 0.006958961486816406s
+Parareal ML fnn2 solver completed in 14.481872081756592s
+ML fnn3 training completed in 22.413454055786133s
+ML fnn3 train loss: 0.41997503959102006
+ML fnn3 test loss: 0.5946102007533901
+ML fnn3 solver completed in 0.007086038589477539s
+Parareal ML fnn3 solver completed in 14.481078147888184s
+ML fnn4 training completed in 22.975023984909058s
+ML fnn4 train loss: 0.3134850852552095
+ML fnn4 test loss: 0.32799134026875465
+ML fnn4 solver completed in 0.0076978206634521484s
+Parareal ML fnn4 solver completed in 14.825207948684692s
+Round: 11; seed: 278306975
+Fine solver completed in 12.191443920135498s
+Coarse solver completed in 0.14522004127502441s
+Parareal solver completed in 5.525115013122559s
+ML lr training completed in 15.04408884048462s
+ML lr train loss: 1.2228134372960318
+ML lr test loss: 0.8788788451267552
+ML lr solver completed in 0.0004398822784423828s
+Parareal ML lr solver completed in 14.843891859054565s
+ML rf10 training completed in 15.061020135879517s
+ML rf10 train loss: 0.702800786859167
+ML rf10 test loss: 1.516206910055209
+ML rf10 solver completed in 0.003320932388305664s
+Parareal ML rf10 solver completed in 14.835064888000488s
+ML rf100 training completed in 15.112689971923828s
+ML rf100 train loss: 0.6569797822399869
+ML rf100 test loss: 1.7782276732709548
+ML rf100 solver completed in 0.020392179489135742s
+Parareal ML rf100 solver completed in 11.728453874588013s
+ML rf250 training completed in 15.34142804145813s
+ML rf250 train loss: 0.6535652694989916
+ML rf250 test loss: 2.62771067621208
+ML rf250 solver completed in 0.04917097091674805s
+Parareal ML rf250 solver completed in 15.114177942276001s
+ML bt50 training completed in 15.019871950149536s
+ML bt50 train loss: 1.0083954664745274
+ML bt50 test loss: 2.478482315557047
+ML bt50 solver completed in 0.002424001693725586s
+Parareal ML bt50 solver completed in 14.832113027572632s
+ML bt100 training completed in 15.050189971923828s
+ML bt100 train loss: 0.5330976109622146
+ML bt100 test loss: 1.5763507037034916
+ML bt100 solver completed in 0.0026111602783203125s
+Parareal ML bt100 solver completed in 14.830875158309937s
+ML bt250 training completed in 15.139919996261597s
+ML bt250 train loss: 0.14068105708262807
+ML bt250 test loss: 2.053715864990117
+ML bt250 solver completed in 0.003098011016845703s
+Parareal ML bt250 solver completed in 14.83046007156372s
+ML fnn1 training completed in 23.24275803565979s
+ML fnn1 train loss: 1.0813117058599517
+ML fnn1 test loss: 0.8645257645913178
+ML fnn1 solver completed in 0.007544040679931641s
+Parareal ML fnn1 solver completed in 14.713588953018188s
+ML fnn2 training completed in 23.245244026184082s
+ML fnn2 train loss: 0.34819762894051465
+ML fnn2 test loss: 0.44603862905750186
+ML fnn2 solver completed in 0.007531881332397461s
+Parareal ML fnn2 solver completed in 14.742897987365723s
+ML fnn3 training completed in 23.4703471660614s
+ML fnn3 train loss: 0.24147877385192035
+ML fnn3 test loss: 0.20762916034413698
+ML fnn3 solver completed in 0.0077838897705078125s
+Parareal ML fnn3 solver completed in 14.746713876724243s
+ML fnn4 training completed in 24.232062816619873s
+ML fnn4 train loss: 0.4331193962935764
+ML fnn4 test loss: 0.4943659808932716
+ML fnn4 solver completed in 0.008294820785522461s
+Parareal ML fnn4 solver completed in 14.890704154968262s
+Round: 12; seed: 83585224
+Fine solver completed in 12.186505794525146s
+Coarse solver completed in 0.14390993118286133s
+Parareal solver completed in 5.376737117767334s
+ML lr training completed in 14.766266107559204s
+ML lr train loss: 1.699006953058535
+ML lr test loss: 1.5446527368624898
+ML lr solver completed in 0.00047779083251953125s
+Parareal ML lr solver completed in 14.618032932281494s
+ML rf10 training completed in 14.771878004074097s
+ML rf10 train loss: 0.7551881083829904
+ML rf10 test loss: 1.9141029298840497
+ML rf10 solver completed in 0.003434896469116211s
+Parareal ML rf10 solver completed in 14.635784149169922s
+ML rf100 training completed in 14.85764193534851s
+ML rf100 train loss: 0.6354615674810948
+ML rf100 test loss: 1.5567836825538015
+ML rf100 solver completed in 0.021564006805419922s
+Parareal ML rf100 solver completed in 14.572535991668701s
+ML rf250 training completed in 15.09944486618042s
+ML rf250 train loss: 0.6836477230677575
+ML rf250 test loss: 1.5657630879977569
+ML rf250 solver completed in 0.0522611141204834s
+Parareal ML rf250 solver completed in 11.528097867965698s
+ML bt50 training completed in 14.69374704360962s
+ML bt50 train loss: 1.0007897553082834
+ML bt50 test loss: 2.115547701925396
+ML bt50 solver completed in 0.0025010108947753906s
+Parareal ML bt50 solver completed in 14.446952819824219s
+ML bt100 training completed in 14.790104866027832s
+ML bt100 train loss: 0.5280332565134173
+ML bt100 test loss: 1.4430738293338434
+ML bt100 solver completed in 0.0026650428771972656s
+Parareal ML bt100 solver completed in 14.465203046798706s
+ML bt250 training completed in 14.902927875518799s
+ML bt250 train loss: 0.1277864750994027
+ML bt250 test loss: 1.4029009971975188
+ML bt250 solver completed in 0.0032570362091064453s
+Parareal ML bt250 solver completed in 14.45862102508545s
+ML fnn1 training completed in 23.178393840789795s
+ML fnn1 train loss: 1.229822576824699
+ML fnn1 test loss: 1.3811613466727888
+ML fnn1 solver completed in 0.0069658756256103516s
+Parareal ML fnn1 solver completed in 14.586206912994385s
+ML fnn2 training completed in 23.61017608642578s
+ML fnn2 train loss: 0.3522463676650058
+ML fnn2 test loss: 0.38475613690773464
+ML fnn2 solver completed in 0.0072629451751708984s
+Parareal ML fnn2 solver completed in 14.462893009185791s
+ML fnn3 training completed in 23.716728925704956s
+ML fnn3 train loss: 0.6068958385868944
+ML fnn3 test loss: 0.7397260838409385
+ML fnn3 solver completed in 0.0074040889739990234s
+Parareal ML fnn3 solver completed in 14.451361894607544s
+ML fnn4 training completed in 24.278606176376343s
+ML fnn4 train loss: 0.3384222015084221
+ML fnn4 test loss: 0.3559480379307705
+ML fnn4 solver completed in 0.00821995735168457s
+Parareal ML fnn4 solver completed in 14.605654954910278s
+Round: 13; seed: 685067992
+Fine solver completed in 11.995605945587158s
+Coarse solver completed in 0.14188194274902344s
+Parareal solver completed in 5.437882900238037s
+ML lr training completed in 14.326672077178955s
+ML lr train loss: 1.629876630635068
+ML lr test loss: 2.4858378938394257
+ML lr solver completed in 0.00051116943359375s
+Parareal ML lr solver completed in 14.614009141921997s
+ML rf10 training completed in 14.332304954528809s
+ML rf10 train loss: 0.8570945992482351
+ML rf10 test loss: 2.2691633994415783
+ML rf10 solver completed in 0.0033838748931884766s
+Parareal ML rf10 solver completed in 14.623237133026123s
+ML rf100 training completed in 14.439454078674316s
+ML rf100 train loss: 0.6728549094691137
+ML rf100 test loss: 1.7352788999903541
+ML rf100 solver completed in 0.020431995391845703s
+Parareal ML rf100 solver completed in 14.728155851364136s
+ML rf250 training completed in 14.666770935058594s
+ML rf250 train loss: 0.7037490950155737
+ML rf250 test loss: 2.7106982921246443
+ML rf250 solver completed in 0.04898405075073242s
+Parareal ML rf250 solver completed in 14.908998966217041s
+ML bt50 training completed in 14.332428932189941s
+ML bt50 train loss: 1.0974819859280425
+ML bt50 test loss: 1.8387417816276577
+ML bt50 solver completed in 0.002407073974609375s
+Parareal ML bt50 solver completed in 14.635570049285889s
+ML bt100 training completed in 14.374151945114136s
+ML bt100 train loss: 0.5301808267423365
+ML bt100 test loss: 1.0716195722436146
+ML bt100 solver completed in 0.002588033676147461s
+Parareal ML bt100 solver completed in 14.647257089614868s
+ML bt250 training completed in 14.506417989730835s
+ML bt250 train loss: 0.14936110642183628
+ML bt250 test loss: 1.3960248630944252
+ML bt250 solver completed in 0.0031080245971679688s
+Parareal ML bt250 solver completed in 14.65336298942566s
+ML fnn1 training completed in 23.08971619606018s
+ML fnn1 train loss: 1.0244964966096917
+ML fnn1 test loss: 1.0320375442290886
+ML fnn1 solver completed in 0.007879972457885742s
+Parareal ML fnn1 solver completed in 14.614362001419067s
+ML fnn2 training completed in 23.545872926712036s
+ML fnn2 train loss: 0.370179791732639
+ML fnn2 test loss: 0.38483787512088646
+ML fnn2 solver completed in 0.007687807083129883s
+Parareal ML fnn2 solver completed in 14.63598895072937s
+ML fnn3 training completed in 24.070535898208618s
+ML fnn3 train loss: 0.24434533801946795
+ML fnn3 test loss: 0.27756904439394536
+ML fnn3 solver completed in 0.008752107620239258s
+Parareal ML fnn3 solver completed in 14.677134037017822s
+ML fnn4 training completed in 25.693132162094116s
+ML fnn4 train loss: 0.2900420163547965
+ML fnn4 test loss: 0.35262234376086243
+ML fnn4 solver completed in 0.008539915084838867s
+Parareal ML fnn4 solver completed in 14.517655849456787s
+Round: 14; seed: 400240993
+Fine solver completed in 12.056365013122559s
+Coarse solver completed in 0.14584898948669434s
+Parareal solver completed in 5.337918043136597s
+ML lr training completed in 15.020969152450562s
+ML lr train loss: 1.635039043067724
+ML lr test loss: 1.8834473379105874
+ML lr solver completed in 0.00047206878662109375s
+Parareal ML lr solver completed in 14.497678995132446s
+ML rf10 training completed in 15.040869951248169s
+ML rf10 train loss: 0.7176337931729514
+ML rf10 test loss: 1.776982774954123
+ML rf10 solver completed in 0.0033910274505615234s
+Parareal ML rf10 solver completed in 14.509382963180542s
+ML rf100 training completed in 15.141797065734863s
+ML rf100 train loss: 0.6092162403848397
+ML rf100 test loss: 0.9359235387179471
+ML rf100 solver completed in 0.021466970443725586s
+Parareal ML rf100 solver completed in 14.62824296951294s
+ML rf250 training completed in 15.36520004272461s
+ML rf250 train loss: 0.6788890844931789
+ML rf250 test loss: 1.9103788083434283
+ML rf250 solver completed in 0.05191802978515625s
+Parareal ML rf250 solver completed in 14.798488140106201s
+ML bt50 training completed in 15.007049798965454s
+ML bt50 train loss: 1.0308537813598728
+ML bt50 test loss: 1.7588697671331839
+ML bt50 solver completed in 0.0024480819702148438s
+Parareal ML bt50 solver completed in 14.503260850906372s
+ML bt100 training completed in 15.062700986862183s
+ML bt100 train loss: 0.4219327217522974
+ML bt100 test loss: 2.3469595571895545
+ML bt100 solver completed in 0.0026428699493408203s
+Parareal ML bt100 solver completed in 14.498940229415894s
+ML bt250 training completed in 15.13265585899353s
+ML bt250 train loss: 0.14068487935030982
+ML bt250 test loss: 1.1531135479857073
+ML bt250 solver completed in 0.0031859874725341797s
+Parareal ML bt250 solver completed in 14.519087076187134s
+ML fnn1 training completed in 24.232601165771484s
+ML fnn1 train loss: 0.9078740055066271
+ML fnn1 test loss: 0.8044577200967631
+ML fnn1 solver completed in 0.007919073104858398s
+Parareal ML fnn1 solver completed in 14.688837051391602s
+ML fnn2 training completed in 24.818732023239136s
+ML fnn2 train loss: 0.8034099566311353
+ML fnn2 test loss: 0.7988014841155971
+ML fnn2 solver completed in 0.007925033569335938s
+Parareal ML fnn2 solver completed in 14.624989986419678s
+ML fnn3 training completed in 25.81827998161316s
+ML fnn3 train loss: 0.2582099788134905
+ML fnn3 test loss: 0.2559375425575531
+ML fnn3 solver completed in 0.008185148239135742s
+Parareal ML fnn3 solver completed in 14.662479162216187s
+ML fnn4 training completed in 26.187819004058838s
+ML fnn4 train loss: 0.18450878155294032
+ML fnn4 test loss: 0.21104184276340796
+ML fnn4 solver completed in 0.008533954620361328s
+Parareal ML fnn4 solver completed in 14.642757177352905s
+Round: 15; seed: 239621435
+Fine solver completed in 12.007141828536987s
+Coarse solver completed in 0.1401669979095459s
+Parareal solver completed in 5.434659004211426s
+ML lr training completed in 14.299521923065186s
+ML lr train loss: 1.2614303174214
+ML lr test loss: 0.9583878054983328
+ML lr solver completed in 0.0004451274871826172s
+Parareal ML lr solver completed in 14.583656787872314s
+ML rf10 training completed in 14.290502071380615s
+ML rf10 train loss: 0.7298661021298403
+ML rf10 test loss: 1.9747877300038854
+ML rf10 solver completed in 0.0041849613189697266s
+Parareal ML rf10 solver completed in 14.585387945175171s
+ML rf100 training completed in 14.367751121520996s
+ML rf100 train loss: 0.7076664040012818
+ML rf100 test loss: 2.3759089809398626
+ML rf100 solver completed in 0.020702838897705078s
+Parareal ML rf100 solver completed in 14.683620929718018s
+ML rf250 training completed in 14.638897895812988s
+ML rf250 train loss: 0.5847019723614102
+ML rf250 test loss: 1.967049854550429
+ML rf250 solver completed in 0.04911184310913086s
+Parareal ML rf250 solver completed in 11.641226053237915s
+ML bt50 training completed in 14.219197988510132s
+ML bt50 train loss: 1.089403960734826
+ML bt50 test loss: 1.5179806142204832
+ML bt50 solver completed in 0.002415895462036133s
+Parareal ML bt50 solver completed in 14.557485103607178s
+ML bt100 training completed in 14.308583974838257s
+ML bt100 train loss: 0.5766261397448815
+ML bt100 test loss: 1.6734667058002861
+ML bt100 solver completed in 0.002621889114379883s
+Parareal ML bt100 solver completed in 14.580308198928833s
+ML bt250 training completed in 14.358244895935059s
+ML bt250 train loss: 0.15518769898333604
+ML bt250 test loss: 1.722955601064405
+ML bt250 solver completed in 0.0032050609588623047s
+Parareal ML bt250 solver completed in 14.572214841842651s
+ML fnn1 training completed in 24.087636947631836s
+ML fnn1 train loss: 1.1943220032418873
+ML fnn1 test loss: 0.9970013117667551
+ML fnn1 solver completed in 0.008133888244628906s
+Parareal ML fnn1 solver completed in 14.665562868118286s
+ML fnn2 training completed in 24.236387014389038s
+ML fnn2 train loss: 0.5314723190755777
+ML fnn2 test loss: 0.6270548186411031
+ML fnn2 solver completed in 0.008275032043457031s
+Parareal ML fnn2 solver completed in 14.609029054641724s
+ML fnn3 training completed in 24.57242202758789s
+ML fnn3 train loss: 0.6311252577328826
+ML fnn3 test loss: 0.715124894105157
+ML fnn3 solver completed in 0.008199930191040039s
+Parareal ML fnn3 solver completed in 14.525593042373657s
+ML fnn4 training completed in 25.03066897392273s
+ML fnn4 train loss: 0.204594275135353
+ML fnn4 test loss: 0.48123706684476797
+ML fnn4 solver completed in 0.008447885513305664s
+Parareal ML fnn4 solver completed in 11.34212589263916s
+Round: 16; seed: 637466954
+Fine solver completed in 12.01050877571106s
+Coarse solver completed in 0.1391899585723877s
+Parareal solver completed in 5.291683912277222s
+ML lr training completed in 13.975510120391846s
+ML lr train loss: 1.1739691000627617
+ML lr test loss: 2.1365231194219234
+ML lr solver completed in 0.00045990943908691406s
+Parareal ML lr solver completed in 14.441483974456787s
+ML rf10 training completed in 14.008670091629028s
+ML rf10 train loss: 0.9916886429155628
+ML rf10 test loss: 2.148264595829444
+ML rf10 solver completed in 0.0033080577850341797s
+Parareal ML rf10 solver completed in 14.466625928878784s
+ML rf100 training completed in 14.14628291130066s
+ML rf100 train loss: 0.7383066230100629
+ML rf100 test loss: 1.9389943370664704
+ML rf100 solver completed in 0.02071213722229004s
+Parareal ML rf100 solver completed in 14.602943897247314s
+ML rf250 training completed in 14.332283973693848s
+ML rf250 train loss: 0.6952781869043827
+ML rf250 test loss: 1.9120392431023274
+ML rf250 solver completed in 0.04882097244262695s
+Parareal ML rf250 solver completed in 14.756689071655273s
+ML bt50 training completed in 14.033156156539917s
+ML bt50 train loss: 1.0055165626308775
+ML bt50 test loss: 1.6999077860222356
+ML bt50 solver completed in 0.002414226531982422s
+Parareal ML bt50 solver completed in 14.485235929489136s
+ML bt100 training completed in 14.069330930709839s
+ML bt100 train loss: 0.4976412529303797
+ML bt100 test loss: 1.4328533970400332
+ML bt100 solver completed in 0.0025801658630371094s
+Parareal ML bt100 solver completed in 14.486963033676147s
+ML bt250 training completed in 14.154932022094727s
+ML bt250 train loss: 0.1465500110230947
+ML bt250 test loss: 1.2278232481697418
+ML bt250 solver completed in 0.0030040740966796875s
+Parareal ML bt250 solver completed in 14.48460602760315s
+ML fnn1 training completed in 23.7222421169281s
+ML fnn1 train loss: 0.931699784014431
+ML fnn1 test loss: 2.2788765827648483
+ML fnn1 solver completed in 0.00803995132446289s
+Parareal ML fnn1 solver completed in 14.513174057006836s
+ML fnn2 training completed in 24.326771020889282s
+ML fnn2 train loss: 0.3747578923241239
+ML fnn2 test loss: 0.447724811300771
+ML fnn2 solver completed in 0.008144140243530273s
+Parareal ML fnn2 solver completed in 14.50915789604187s
+ML fnn3 training completed in 24.54566502571106s
+ML fnn3 train loss: 0.3493450680598793
+ML fnn3 test loss: 0.8680944897269867
+ML fnn3 solver completed in 0.008253097534179688s
+Parareal ML fnn3 solver completed in 14.689981937408447s
+ML fnn4 training completed in 25.28919792175293s
+ML fnn4 train loss: 0.23185533391462157
+ML fnn4 test loss: 0.2748753563894402
+ML fnn4 solver completed in 0.008603811264038086s
+Parareal ML fnn4 solver completed in 14.600528001785278s
+Round: 17; seed: 573280196
+Fine solver completed in 12.089907884597778s
+Coarse solver completed in 0.13918399810791016s
+Parareal solver completed in 5.351310968399048s
+ML lr training completed in 14.269103050231934s
+ML lr train loss: 1.2732689822185985
+ML lr test loss: 1.6781985482005601
+ML lr solver completed in 0.00044608116149902344s
+Parareal ML lr solver completed in 14.584811925888062s
+ML rf10 training completed in 14.23849105834961s
+ML rf10 train loss: 0.7601894713255438
+ML rf10 test loss: 2.030333018701097
+ML rf10 solver completed in 0.003280162811279297s
+Parareal ML rf10 solver completed in 14.594101905822754s
+ML rf100 training completed in 14.36638879776001s
+ML rf100 train loss: 0.6182734674298829
+ML rf100 test loss: 1.8835297736983296
+ML rf100 solver completed in 0.0201568603515625s
+Parareal ML rf100 solver completed in 14.722093105316162s
+ML rf250 training completed in 14.579346179962158s
+ML rf250 train loss: 0.6825424630293834
+ML rf250 test loss: 1.294726177599755
+ML rf250 solver completed in 0.04794907569885254s
+Parareal ML rf250 solver completed in 14.865883111953735s
+ML bt50 training completed in 14.289443016052246s
+ML bt50 train loss: 0.9836697950655421
+ML bt50 test loss: 1.9993782000650653
+ML bt50 solver completed in 0.002368927001953125s
+Parareal ML bt50 solver completed in 14.59643006324768s
+ML bt100 training completed in 14.33744192123413s
+ML bt100 train loss: 0.44427916374655674
+ML bt100 test loss: 1.2217538790158584
+ML bt100 solver completed in 0.002521991729736328s
+Parareal ML bt100 solver completed in 14.591448068618774s
+ML bt250 training completed in 14.423676013946533s
+ML bt250 train loss: 0.13536186828730554
+ML bt250 test loss: 2.3588321691743084
+ML bt250 solver completed in 0.002749919891357422s
+Parareal ML bt250 solver completed in 14.609271049499512s
+ML fnn1 training completed in 24.26309895515442s
+ML fnn1 train loss: 1.8962413792867021
+ML fnn1 test loss: 2.2750157219210476
+ML fnn1 solver completed in 0.008044004440307617s
+Parareal ML fnn1 solver completed in 14.644268035888672s
+ML fnn2 training completed in 24.601972818374634s
+ML fnn2 train loss: 0.8583389679600077
+ML fnn2 test loss: 0.847058351675887
+ML fnn2 solver completed in 0.008369922637939453s
+Parareal ML fnn2 solver completed in 14.643819093704224s
+ML fnn3 training completed in 25.009492874145508s
+ML fnn3 train loss: 0.3562783623091755
+ML fnn3 test loss: 0.35232913627208085
+ML fnn3 solver completed in 0.008554935455322266s
+Parareal ML fnn3 solver completed in 14.610843896865845s
+ML fnn4 training completed in 25.594969034194946s
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:200: RuntimeWarning: overflow encountered in double_scalars
+  d_y[0] = self._alpha * r - self._beta * r * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:201: RuntimeWarning: overflow encountered in double_scalars
+  d_y[1] = self._gamma * r * p - self._delta * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:200: RuntimeWarning: overflow encountered in double_scalars
+  d_y[0] = self._alpha * r - self._beta * r * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:201: RuntimeWarning: overflow encountered in double_scalars
+  d_y[1] = self._gamma * r * p - self._delta * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:200: RuntimeWarning: overflow encountered in double_scalars
+  d_y[0] = self._alpha * r - self._beta * r * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:201: RuntimeWarning: overflow encountered in double_scalars
+  d_y[1] = self._gamma * r * p - self._delta * p
+Using TensorFlow 2 backend.
+
+Using TensorFlow 2 backend.
+
+Using TensorFlow 2 backend.
+
+ML fnn4 train loss: 0.22014126194991582
+ML fnn4 test loss: 0.5312420691393878
+ML fnn4 solver completed in 0.00872802734375s
+Parareal ML fnn4 solver completed in 14.597970008850098s
+Round: 18; seed: 231193742
+Fine solver completed in 12.079027891159058s
+Coarse solver completed in 0.13917994499206543s
+Parareal solver completed in 5.339280843734741s
+ML lr training completed in 14.274046897888184s
+ML lr train loss: 1.431615669795458
+ML lr test loss: 1.4340228631890986
+ML lr solver completed in 0.00043702125549316406s
+Parareal ML lr solver completed in 14.53559398651123s
+ML rf10 training completed in 14.296179056167603s
+ML rf10 train loss: 0.7779058614543595
+ML rf10 test loss: 2.004365693213327
+ML rf10 solver completed in 0.003339052200317383s
+Parareal ML rf10 solver completed in 14.542325019836426s
+ML rf100 training completed in 14.382822036743164s
+ML rf100 train loss: 0.657090590775659
+ML rf100 test loss: 2.959919957010637
+ML rf100 solver completed in 0.020385026931762695s
+Parareal ML rf100 solver completed in 14.665821075439453s
+ML rf250 training completed in 14.638790845870972s
+ML rf250 train loss: 0.5673703443045343
+ML rf250 test loss: 2.316595032178964
+ML rf250 solver completed in 0.048542022705078125s
+Parareal ML rf250 solver completed in 14.82984709739685s
+ML bt50 training completed in 14.280846118927002s
+ML bt50 train loss: 1.055980621276894
+ML bt50 test loss: 1.8074053220150001
+ML bt50 solver completed in 0.002357959747314453s
+Parareal ML bt50 solver completed in 14.421570062637329s
+ML bt100 training completed in 14.345111846923828s
+ML bt100 train loss: 0.4622291584535341
+ML bt100 test loss: 1.2402379276050441
+ML bt100 solver completed in 0.002537965774536133s
+Parareal ML bt100 solver completed in 14.4526948928833s
+ML bt250 training completed in 14.37095308303833s
+ML bt250 train loss: 0.1539452483643719
+ML bt250 test loss: 1.9695128004464963
+ML bt250 solver completed in 0.003114938735961914s
+Parareal ML bt250 solver completed in 14.423847913742065s
+ML fnn1 training completed in 24.136314153671265s
+ML fnn1 train loss: 1.1185085392296863
+ML fnn1 test loss: 0.9145786362939433
+ML fnn1 solver completed in 0.008327007293701172s
+Parareal ML fnn1 solver completed in 14.470814943313599s
+ML fnn2 training completed in 24.70273494720459s
+ML fnn2 train loss: 0.45560492128254
+ML fnn2 test loss: 0.4914177270660586
+ML fnn2 solver completed in 0.008659124374389648s
+Parareal ML fnn2 solver completed in 14.470968008041382s
+ML fnn3 training completed in 24.959447145462036s
+ML fnn3 train loss: 0.2924114265744494
+ML fnn3 test loss: 0.41187704984159945
+ML fnn3 solver completed in 0.008745193481445312s
+Parareal ML fnn3 solver completed in 14.418875932693481s
+ML fnn4 training completed in 25.5902419090271s
+ML fnn4 train loss: 0.3083373439368946
+ML fnn4 test loss: 0.3740729567341133
+ML fnn4 solver completed in 0.008911848068237305s
+Parareal ML fnn4 solver completed in 14.415724039077759s
+Round: 19; seed: 149726676
+Fine solver completed in 11.964203119277954s
+Coarse solver completed in 0.13963699340820312s
+Parareal solver completed in 5.27224588394165s
+ML lr training completed in 14.316926956176758s
+ML lr train loss: 1.5712405357105024
+ML lr test loss: 1.3657097532563942
+ML lr solver completed in 0.0004642009735107422s
+Parareal ML lr solver completed in 14.358808994293213s
+ML rf10 training completed in 14.31620192527771s
+ML rf10 train loss: 0.7643702754112458
+ML rf10 test loss: 1.9199333978013369
+ML rf10 solver completed in 0.003361940383911133s
+Parareal ML rf10 solver completed in 14.358105182647705s
+ML rf100 training completed in 14.417405128479004s
+ML rf100 train loss: 0.842113166289025
+ML rf100 test loss: 1.19848057514462
+ML rf100 solver completed in 0.02033400535583496s
+Parareal ML rf100 solver completed in 14.488241910934448s
+ML rf250 training completed in 14.58096694946289s
+ML rf250 train loss: 0.6790367177219702
+ML rf250 test loss: 1.1650352917761793
+ML rf250 solver completed in 0.048464059829711914s
+Parareal ML rf250 solver completed in 14.659169912338257s
+ML bt50 training completed in 14.248806953430176s
+ML bt50 train loss: 1.0083976415939127
+ML bt50 test loss: 1.3695027010232548
+ML bt50 solver completed in 0.0025038719177246094s
+Parareal ML bt50 solver completed in 14.386371850967407s
+ML bt100 training completed in 14.325464010238647s
+ML bt100 train loss: 0.461145814779552
+ML bt100 test loss: 1.489437609871711
+ML bt100 solver completed in 0.0026040077209472656s
+Parareal ML bt100 solver completed in 14.377661943435669s
+ML bt250 training completed in 14.415278911590576s
+ML bt250 train loss: 0.12953771047669205
+ML bt250 test loss: 1.420186286243622
+ML bt250 solver completed in 0.0031130313873291016s
+Parareal ML bt250 solver completed in 14.383291006088257s
+ML fnn1 training completed in 24.547198057174683s
+ML fnn1 train loss: 0.9815491318282835
+ML fnn1 test loss: 0.926525004752884
+ML fnn1 solver completed in 0.008535146713256836s
+Parareal ML fnn1 solver completed in 14.423671007156372s
+ML fnn2 training completed in 24.997736930847168s
+ML fnn2 train loss: 0.5394208797890546
+ML fnn2 test loss: 0.638725574149425
+ML fnn2 solver completed in 0.008728981018066406s
+Parareal ML fnn2 solver completed in 14.409945011138916s
+ML fnn3 training completed in 25.550848960876465s
+ML fnn3 train loss: 0.338109102487991
+ML fnn3 test loss: 0.3164449207956518
+ML fnn3 solver completed in 0.009286880493164062s
+Parareal ML fnn3 solver completed in 14.431394100189209s
+ML fnn4 training completed in 26.27567481994629s
+ML fnn4 train loss: 0.20851260760223517
+ML fnn4 test loss: 0.2886096497214105
+ML fnn4 solver completed in 0.009194135665893555s
+Parareal ML fnn4 solver completed in 14.39157485961914s
+Mean fine solving time: 12.073459768295288s; standard deviation: 0.10740753024061361s
+Mean coarse solving time: 0.14106019735336303s; standard deviation: 0.004096760038461833s
+Mean Parareal solving time: 5.3506874442100525s; standard deviation: 0.0769782918518508s
+Mean coarse ML solving times: [0.0004577  0.00335013 0.0204103  0.04927317 0.00239515 0.00253768
+ 0.0029707  0.00900728 0.00786659 0.00709682 0.00732994]; standard deviations: [2.10701703e-05 2.10012267e-04 4.14930300e-04 1.76704640e-03
+ 5.91267501e-05 9.18432373e-05 2.11469458e-04 9.74182007e-03
+ 3.94277933e-03 1.33516029e-03 1.30711364e-03]
+Mean Parareal ML solving times: [14.5035888  14.35865967 14.14351683 14.46650091 14.50478678 14.51155679
+ 14.5077931  14.56000153 14.38397131 14.55494177 14.24661309]; standard deviations: [0.12380629 0.70479727 1.51590237 0.96788468 0.1156927  0.11561284
+ 0.12081468 0.10871754 0.70769633 0.09922727 0.97709891]
+Mean coarse ML training times: [14.20400106 14.20787393 14.30820076 14.52718884 14.1985357  14.25165632
+ 14.33021554 22.31009963 22.42331305 22.82535059 23.4447117 ]; standard deviations: [0.41687449 0.41733588 0.41096448 0.42111377 0.39936872 0.4018457
+ 0.40696228 2.23175332 1.8573858  1.87405864 2.00078938]
+Mean train losses: [1.57601143 0.79996172 0.67382689 0.67305983 1.02134243 0.48899262
+ 0.14711551 1.5877944  0.85888517 0.64832983 0.56463782]; standard deviations: [0.37828073 0.08107919 0.06488763 0.05997044 0.05952499 0.03975024
+ 0.01192451 0.88824521 0.84894656 0.6921137  0.636582  ]
+Mean test losses: [1.81744173 1.78224801 1.68629328 1.90243849 1.93106565 1.62674329
+ 1.57612068 1.60192843 0.95875297 0.71717234 0.60894983]; standard deviations: [0.68373939 0.27341904 0.44924785 0.39293614 0.30591417 0.31427219
+ 0.43612672 0.79355681 0.98662427 0.74210509 0.5359645 ]
+RMS solution errors compared to the fine operator: [[ 0.          0.          0.          0.        ]
+ [ 0.28334166  1.38682207  3.72191629  4.99806232]
+ [ 0.07756421  0.57248849  1.72443141  3.23767385]
+ [ 0.07756421  0.6100941   1.52169699  2.58612835]
+ [ 0.07756421  0.57982973  1.71368011  2.97694562]
+ [ 0.07119399  0.75864102  1.68373192  2.7900243 ]
+ [ 0.07855147  0.51618971  1.568918    3.00212539]
+ [ 0.07677394  0.55111056  1.68390178  3.18368654]
+ [ 0.22579039  1.41447425  4.59855662 14.72418546]
+ [ 0.20988397  1.1007212   4.3910798  10.03530468]
+ [ 0.19699731  1.01755032  3.11206802  7.78812867]
+ [ 0.14045163  0.77548011  2.11096674  4.50831065]]; standard deviations: [[0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [3.63084691e-02 3.11105443e-01 6.58373094e-01 1.60091164e+00]
+ [6.41934248e-15 1.30066817e-01 6.45681992e-01 2.03144037e+00]
+ [5.84930236e-15 1.39620184e-01 5.98769148e-01 1.33351685e+00]
+ [5.84083182e-15 8.88261228e-02 4.48749387e-01 1.32574492e+00]
+ [2.31491670e-02 2.59283342e-01 8.17662575e-01 1.47454497e+00]
+ [1.59359177e-02 2.71870386e-01 9.46131342e-01 1.65702040e+00]
+ [3.24559549e-03 2.36998984e-01 1.12348011e+00 2.10025700e+00]
+ [1.56318307e-01 8.58585558e-01 3.27857427e+00 1.12539094e+01]
+ [1.81270077e-01 8.37547564e-01 3.29460829e+00 7.66973878e+00]
+ [1.68224425e-01 7.12833192e-01 1.95232869e+00 4.24564056e+00]
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:200: RuntimeWarning: overflow encountered in double_scalars
+  d_y[0] = self._alpha * r - self._beta * r * p
+/lustre/home/d171/s1984842/s1984842/code/python/src/core/differential_equation.py:201: RuntimeWarning: overflow encountered in double_scalars
+  d_y[1] = self._gamma * r * p - self._delta * p
+ [1.13182296e-01 4.95892511e-01 1.38215771e+00 3.00542694e+00]]
