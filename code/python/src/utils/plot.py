@@ -31,7 +31,7 @@ def plot_y_against_t(
     t = solution.t_coordinates
     y = solution.discrete_y(solution.vertex_oriented)
 
-    plt.xlabel('t')
+    plt.xlabel('time')
     plt.ylabel('y')
 
     if diff_eq.y_dimension == 1:
