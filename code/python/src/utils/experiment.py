@@ -35,6 +35,7 @@ def run_parareal_ml_experiment(
         models: Sequence[RegressionModel],
         threshold: float,
         seeds: Sequence[int],
+        solutions_per_trial: int = 1,
         model_names: Optional[Sequence[str]] = None,
         **training_config: Any):
     """
@@ -51,6 +52,8 @@ def run_parareal_ml_experiment(
         operator
     :param threshold: the accuracy threshold of the Parareal framework
     :param seeds: the random seeds to use; for each seed an entire trial is run
+    :param solutions_per_trial: the number of times the solvers should be run
+        per trial (i.e. per model training in the case of ML operators)
     :param model_names: the names of the models
     :param training_config: arguments to the training of the machine learning
         operator;
@@ -65,61 +68,72 @@ def run_parareal_ml_experiment(
     parareal = PararealOperator(f, g, threshold)
     parareal_ml = PararealOperator(f, g_ml, threshold)
 
-    fine_times = np.empty(len(seeds))
+    train_times = np.empty((len(models), len(seeds)))
+    train_losses = np.empty(train_times.shape)
+    test_losses = np.empty(train_times.shape)
+
+    fine_times = np.empty(solutions_per_trial * len(seeds))
     coarse_times = np.empty(fine_times.shape)
     parareal_times = np.empty(fine_times.shape)
 
-    train_times = np.empty((len(models), len(seeds)))
-    coarse_ml_times = np.empty(train_times.shape)
-    parareal_ml_times = np.empty(train_times.shape)
-
-    train_losses = np.empty(train_times.shape)
-    test_losses = np.empty(train_times.shape)
+    coarse_ml_times = np.empty((len(models), solutions_per_trial * len(seeds)))
+    parareal_ml_times = np.empty(coarse_ml_times.shape)
 
     all_diffs = []
 
     print_on_first_rank(f'Experiment: {experiment_name}; '
                         f'processes: {MPI.COMM_WORLD.size}')
 
-    for i, seed in enumerate(seeds):
+    for trial, seed in enumerate(seeds):
         set_random_seed(seed)
 
-        print_on_first_rank(f'Round: {i}; seed: {seed}')
+        print_on_first_rank(f'Trial: {trial}; seed: {seed}')
 
-        fine_solution, fine_time = \
-            time_with_args(True, 'Fine solver')(f.solve)(ivp)
-        fine_times[i] = fine_time
-
-        coarse_solution, coarse_time = \
-            time_with_args(True, 'Coarse solver')(g.solve)(ivp)
-        coarse_solutions = [coarse_solution]
-        coarse_times[i] = coarse_time
-
-        parareal_times[i] = \
-            time_with_args(True, 'Parareal solver')(parareal.solve)(ivp)[1]
-
-        for j, model in enumerate(models):
-            model_name = model_names[j]
+        for model_ind, model in enumerate(models):
+            model_name = model_names[model_ind]
 
             (train_loss, test_loss), train_time = time_with_args(
                 True, f'ML {model_name} training')(g_ml.train)(
                 ivp, g, model, **training_config)
             print_on_first_rank(f'ML {model_name} train loss: {train_loss}')
             print_on_first_rank(f'ML {model_name} test loss: {test_loss}')
-            train_losses[j, i] = train_loss
-            test_losses[j, i] = test_loss
-            train_times[j, i] = train_time
+            train_losses[model_ind, trial] = train_loss
+            test_losses[model_ind, trial] = test_loss
+            train_times[model_ind, trial] = train_time
 
-            coarse_ml_solution, coarse_ml_time = time_with_args(
-                True, f'ML {model_name} solver')(g_ml.solve)(ivp)
-            coarse_solutions.append(coarse_ml_solution)
-            coarse_ml_times[j, i] = coarse_ml_time
+        solution_offset = trial * solutions_per_trial
 
-            parareal_ml_times[j, i] = \
-                time_with_args(True, f'Parareal ML {model_name} solver')(
-                    parareal_ml.solve)(ivp)[1]
+        for solution_ind in range(solutions_per_trial):
+            print_on_first_rank(f'Solution round: {solution_ind}')
 
-        all_diffs.append(fine_solution.diff(coarse_solutions))
+            global_solution_ind = solution_offset + solution_ind
+
+            fine_solution, fine_time = \
+                time_with_args(True, 'Fine solver')(f.solve)(ivp)
+            fine_times[global_solution_ind] = fine_time
+
+            coarse_solution, coarse_time = \
+                time_with_args(True, 'Coarse solver')(g.solve)(ivp)
+            coarse_solutions = [coarse_solution]
+            coarse_times[global_solution_ind] = coarse_time
+
+            parareal_times[global_solution_ind] = \
+                time_with_args(True, 'Parareal solver')(parareal.solve)(ivp)[1]
+
+            for model_ind, model in enumerate(models):
+                model_name = model_names[model_ind]
+
+                coarse_ml_solution, coarse_ml_time = time_with_args(
+                    True, f'ML {model_name} solver')(g_ml.solve)(ivp)
+                coarse_solutions.append(coarse_ml_solution)
+                coarse_ml_times[model_ind, global_solution_ind] = \
+                    coarse_ml_time
+
+                parareal_ml_times[model_ind, global_solution_ind] = \
+                    time_with_args(True, f'Parareal ML {model_name} solver')(
+                        parareal_ml.solve)(ivp)[1]
+
+            all_diffs.append(fine_solution.diff(coarse_solutions))
 
     _print_and_plot_aggregate_execution_times(
         fine_times,
