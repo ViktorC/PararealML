@@ -676,7 +676,7 @@ class StatefulRegressionOperator(StatefulMLOperator):
         """
         assert iterations > 0
 
-        if isinstance(noise_sd, tuple):
+        if isinstance(noise_sd, (tuple, list)):
             assert len(noise_sd) == 2
             assert noise_sd[0] >= 0. and noise_sd[1] >= 0.
         else:
