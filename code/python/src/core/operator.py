@@ -475,7 +475,8 @@ class StatefulMLOperator(MLOperator, ABC):
         for i, t_i in enumerate(time_points[:-1]):
             x[:, diff_eq.x_dimension] = t_i
             x[:, diff_eq.x_dimension + 1:] = y_i
-            y_i = self._model.predict(x)
+            y_i = self._model.predict(x).reshape(
+                x.shape[0], diff_eq.y_dimension)
             y[i, ...] = y_i.reshape(y_shape)
 
         return Solution(
