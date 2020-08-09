@@ -3,6 +3,8 @@
 #SBATCH --job-name=s1984842-parareal-ml
 #SBATCH --time=8:00:0
 #SBATCH --partition=gpu-cascade
+#SBATCH --exclusive
+#SBATCH --nodes=1
 #SBATCH --qos=gpu
 #SBATCH --gres=gpu:4
 
