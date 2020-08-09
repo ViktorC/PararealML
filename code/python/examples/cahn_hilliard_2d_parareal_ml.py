@@ -16,7 +16,6 @@ from src.core.integrator import RK4
 from src.core.mesh import UniformGrid
 from src.core.operator import FVMOperator, FDMOperator, \
     StatefulRegressionOperator
-from src.core.parareal import PararealOperator
 from src.utils.experiment import calculate_coarse_ml_operator_step_size, \
     run_parareal_ml_experiment
 from src.utils.ml import create_keras_regressor, limit_visible_gpus
@@ -45,9 +44,6 @@ g_ml = StatefulRegressionOperator(
     calculate_coarse_ml_operator_step_size(ivp), f.vertex_oriented)
 
 threshold = .1
-
-parareal = PararealOperator(f, g, threshold)
-parareal_ml = PararealOperator(f, g_ml, threshold)
 
 models = [
     LinearRegression(),

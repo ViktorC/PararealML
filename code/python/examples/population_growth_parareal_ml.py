@@ -8,7 +8,6 @@ from src.core.differential_equation import PopulationGrowthEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
 from src.core.operator import ODEOperator, StatefulRegressionOperator
-from src.core.parareal import PararealOperator
 from src.utils.experiment import run_parareal_ml_experiment, \
     calculate_coarse_ml_operator_step_size
 from src.utils.ml import create_keras_regressor, limit_visible_gpus
@@ -27,9 +26,6 @@ g_ml = StatefulRegressionOperator(
     calculate_coarse_ml_operator_step_size(ivp), True)
 
 threshold = .1
-
-parareal = PararealOperator(f, g, threshold)
-parareal_ml = PararealOperator(f, g_ml, threshold)
 
 models = [
     LinearRegression(),
