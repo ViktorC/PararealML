@@ -160,13 +160,13 @@ class LotkaVolterraEquation(DifferentialEquation):
             self,
             alpha: float = 2.,
             beta: float = .04,
-            gamma: float = .02,
-            delta: float = 1.06):
+            gamma: float = 1.06,
+            delta: float = .02):
         """
         :param alpha: the preys' birthrate
         :param beta: a coefficient of the decrease of the prey population
-        :param gamma: a coefficient of the increase of the predator population
-        :param delta: the predators' mortality rate
+        :param gamma: the predators' mortality rate
+        :param delta: a coefficient of the increase of the predator population
         """
         assert alpha >= 0
         assert beta >= 0
@@ -198,7 +198,7 @@ class LotkaVolterraEquation(DifferentialEquation):
         p = y[1]
         d_y = np.empty(2)
         d_y[0] = self._alpha * r - self._beta * r * p
-        d_y[1] = self._gamma * r * p - self._delta * p
+        d_y[1] = self._delta * r * p - self._gamma * p
         return d_y
 
     def fipy_terms(
