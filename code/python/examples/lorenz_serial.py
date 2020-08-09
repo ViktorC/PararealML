@@ -9,8 +9,8 @@ diff_eq = LorenzEquation()
 bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(
     bvp,
-    lambda _: (10., 28., 8. / 3.))
-ivp = InitialValueProblem(bvp,  (0., 20.), ic)
+    lambda _: (1., 1., 1.))
+ivp = InitialValueProblem(bvp,  (0., 40.), ic)
 
 solver = ODEOperator('DOP853', 1e-4)
 solution = time(solver.solve)(ivp)
