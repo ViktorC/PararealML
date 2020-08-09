@@ -19,10 +19,10 @@ limit_visible_gpus()
 diff_eq = LotkaVolterraEquation()
 bvp = BoundaryValueProblem(diff_eq)
 ic = ContinuousInitialCondition(bvp, lambda _: (100., 15.))
-ivp = InitialValueProblem(bvp, (0., 10.), ic)
+ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
-f = ODEOperator('DOP853', 1e-7)
-g = ODEOperator('RK23', 1e-4)
+f = ODEOperator('DOP853', 1e-6)
+g = ODEOperator('DOP853', 1e-4)
 g_ml = StatefulRegressionOperator(
     calculate_coarse_ml_operator_step_size(ivp), True)
 
@@ -87,6 +87,6 @@ run_parareal_ml_experiment(
     models,
     threshold,
     SEEDS[:20],
-    iterations=200,
+    iterations=100,
     noise_sd=(0., 2.5),
     model_names=model_names)
