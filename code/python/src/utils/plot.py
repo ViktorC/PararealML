@@ -43,8 +43,7 @@ def plot_y_against_t(
         if legend_location is not None:
             plt.legend(loc=legend_location)
 
-    plt.ylim(bottom=0)
-
+    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
