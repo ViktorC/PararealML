@@ -45,7 +45,6 @@ def plot_y_against_t(
 
     plt.ylim(bottom=0)
 
-    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
@@ -78,7 +77,6 @@ def plot_phase_space(solution: Solution, file_name: str):
 
         ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
 
-    plt.tight_layout()
     plt.savefig(f'{file_name}.jpg')
     plt.clf()
 
