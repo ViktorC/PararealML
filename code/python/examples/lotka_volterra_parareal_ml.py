@@ -88,5 +88,5 @@ run_parareal_ml_experiment(
     threshold,
     SEEDS[:20],
     iterations=100,
-    noise_sd=(0., 1.),
+    noise_sd=(0., .25),
     model_names=model_names)
