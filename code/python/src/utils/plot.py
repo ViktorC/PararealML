@@ -261,7 +261,9 @@ def plot_evolution_of_y(
         interval: int,
         file_name: str,
         three_d: bool = False,
-        color_map: Colormap = cm.viridis):
+        color_map: Colormap = cm.viridis,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None):
     """
     Plots the solution of an IVP based on a PDE in 1 or 2 spatial dimensions as
     a GIF.
@@ -277,12 +279,18 @@ def plot_evolution_of_y(
         used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on PDEs in 2 spatial
         dimensions
+    :param v_min: the lower bound of the value axis (y axis for 1D PDEs, z axis
+        for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
+        2D); if None, it is set to the minimum value of the solution
+    :param v_max: the upper bound of the value axis (y axis for 1D PDEs, z axis
+        for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
+        2D); if None, it is set to the maximum value of the solution
     """
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
 
-    v_min = np.min(y)
-    v_max = np.max(y)
+    v_min = np.min(y) if v_min is None else v_min
+    v_max = np.max(y) if v_max is None else v_max
 
     if solution.boundary_value_problem.differential_equation.x_dimension == 1:
         fig, ax = plt.subplots()
@@ -382,6 +390,8 @@ def plot_ivp_solution(
         trajectory_line_width: float = .5,
         three_d: Optional[bool] = None,
         color_map: Optional[Colormap] = None,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None,
         legend_location: Optional[str] = None):
     """
     Plots the solution of an IVP. The kind of plot generated depends on the
@@ -407,6 +417,12 @@ def plot_ivp_solution(
         used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on n-body problems or
         PDEs in 2 spatial dimensions
+    :param v_min: the lower bound of the value axis (y axis for 1D PDEs, z axis
+        for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
+        2D); if None, it is set to the minimum value of the solution
+    :param v_max: the upper bound of the value axis (y axis for 1D PDEs, z axis
+        for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
+        2D); if None, it is set to the maximum value of the solution
     :param legend_location: the location of the legend for IVPs based on
         systems of ODEs
     """
@@ -432,7 +448,9 @@ def plot_ivp_solution(
                 interval,
                 f'evolution_{solution_name}_{y_ind}',
                 three_d=three_d,
-                color_map=color_map)
+                color_map=color_map,
+                v_min=v_min,
+                v_max=v_max)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             if color_map is None:
