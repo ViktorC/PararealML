@@ -1,3 +1,4 @@
+import numpy as np
 from fipy import LinearLUSolver
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
@@ -7,13 +8,10 @@ from tensorflow.python.keras.layers import Dense
 from src.core.boundary_condition import NeumannCondition, DirichletCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
-from src.core.initial_condition import ContinuousInitialCondition
+from src.core.initial_condition import GaussianInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
-from src.core.integrator import CrankNicolsonMethod
 from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator, FDMOperator, \
-    StatefulRegressionOperator
+from src.core.operator import FVMOperator, StatefulRegressionOperator
 from src.utils.experiment import run_parareal_ml_experiment, \
     calculate_coarse_ml_operator_step_size
 from src.utils.ml import create_keras_regressor, limit_visible_gpus
@@ -22,23 +20,25 @@ from src.utils.rand import SEEDS
 limit_visible_gpus()
 
 diff_eq = DiffusionEquation(2)
-mesh = UniformGrid(((0., 20.), (0., 20.)), (.2, .2))
+mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
-    (DirichletCondition(lambda x: (1.,)),
-     DirichletCondition(lambda x: (-1.,))),
-    (NeumannCondition(lambda x: (.1,)),
-     NeumannCondition(lambda x: (.1,)))
+    (DirichletCondition(lambda x: (0.,)),
+     DirichletCondition(lambda x: (0.,))),
+    (NeumannCondition(lambda x: (0.,)),
+     NeumannCondition(lambda x: (0.,)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
-ic = ContinuousInitialCondition(bvp, lambda _: (0.,))
+ic = GaussianInitialCondition(
+    bvp,
+    ((np.array([5., 5.]), np.array([[3., 0.], [0., 3.]])),),
+    (-50.,))
 ivp = InitialValueProblem(
     bvp,
-    (0., 10.),
+    (0., 20.),
     ic)
 
-f = FVMOperator(LinearLUSolver(), .01)
-g = FDMOperator(
-    CrankNicolsonMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
+f = FVMOperator(LinearLUSolver(), .005)
+g = FVMOperator(LinearLUSolver(), .25)
 g_ml = StatefulRegressionOperator(
     calculate_coarse_ml_operator_step_size(ivp), f.vertex_oriented)
 
@@ -56,14 +56,14 @@ models = [
         Input(shape=g_ml.model_input_shape(ivp)),
         Dense(50, activation='relu'),
         Dense(g_ml.model_output_shape(ivp)[0])
-    ]),
+    ], epochs=500),
     create_keras_regressor([
         Input(shape=g_ml.model_input_shape(ivp)),
         Dense(50, activation='relu'),
         Dense(50, activation='relu'),
         Dense(50, activation='relu'),
         Dense(g_ml.model_output_shape(ivp)[0])
-    ]),
+    ], epochs=500),
     create_keras_regressor([
         Input(shape=g_ml.model_input_shape(ivp)),
         Dense(50, activation='relu'),
@@ -72,7 +72,7 @@ models = [
         Dense(50, activation='relu'),
         Dense(50, activation='relu'),
         Dense(g_ml.model_output_shape(ivp)[0])
-    ])
+    ], epochs=500)
 ]
 
 model_names = [
@@ -96,7 +96,8 @@ run_parareal_ml_experiment(
     g_ml,
     models,
     threshold,
-    SEEDS[:10],
+    SEEDS[:5],
+    solutions_per_trial=4,
     iterations=20,
     noise_sd=(0., 1.),
     model_names=model_names)
