@@ -1,0 +1,1127 @@
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:96: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+2020-08-10 01:12:04.867586: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-10 01:12:04.867610: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-10 01:12:04.867606: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-10 01:12:04.867631: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcuda.so.1
+2020-08-10 01:12:05.087958: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.087961: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.087954: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.087955: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.091927: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.091992: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.092026: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.092072: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 1 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.095728: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.095823: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.095889: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.095967: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 2 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.099700: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.099800: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.099831: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.099907: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 3 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:12:05.251649: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:12:05.251649: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:12:05.251645: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:12:05.251655: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:12:07.668223: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:12:07.668223: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:12:07.668223: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:12:07.668223: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:12:07.862994: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:12:07.862995: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:12:07.862993: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:12:07.863204: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:12:08.125194: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:12:08.125190: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:12:08.125190: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:12:08.125196: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:12:08.381260: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:12:08.381260: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:12:08.381265: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:12:08.381593: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:12:08.510065: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:12:08.510065: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:12:08.510063: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:12:08.510064: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:12:08.998870: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:12:08.998869: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:12:08.998871: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:12:08.999078: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:12:09.030577: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-10 01:12:09.030636: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-10 01:12:09.030700: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+2020-08-10 01:12:09.030729: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0, 1, 2, 3
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-10 01:15:02.955406: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-10 01:15:02.956538: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-10 01:15:03.057190: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+WARNING:tensorflow:From /lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:1666: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
+Instructions for updating:
+If using Keras pass *_constraint arguments to layers.
+WARNING:tensorflow:OMP_NUM_THREADS is no longer used by the default Keras config. To configure the number of threads, use tf.config.threading APIs.
+2020-08-10 01:15:03.154217: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+2020-08-10 01:15:03.386072: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-10 01:15:03.386072: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-10 01:15:03.386071: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-10 01:15:03.386073: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 2500000000 Hz
+2020-08-10 01:15:03.410527: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55e09cc2bf30 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.410529: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55d10721e530 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.410531: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x558304c00780 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.410532: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55cc90a02490 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.415636: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-10 01:15:03.415637: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-10 01:15:03.415633: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-10 01:15:03.415638: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-08-10 01:15:03.451537: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1c:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:15:03.451636: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.451652: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:03.451642: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:15:03.451665: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:15:03.451676: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:15:03.451671: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:88:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:15:03.451688: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:15:03.451699: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:15:03.451711: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:15:03.451714: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1561] Found device 0 with properties: 
+pciBusID: 0000:1a:00.0 name: Tesla V100-SXM2-16GB computeCapability: 7.0
+coreClock: 1.38GHz coreCount: 80 deviceMemorySize: 15.78GiB deviceMemoryBandwidth: 836.37GiB/s
+2020-08-10 01:15:03.451723: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.451739: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:03.451752: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:15:03.451760: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.451764: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:15:03.451776: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:03.451776: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:15:03.451790: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:15:03.451787: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:15:03.451801: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:15:03.451803: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:15:03.451817: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:15:03.451821: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.451829: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:15:03.451840: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:03.451854: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcufft.so.10
+2020-08-10 01:15:03.451843: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:15:03.451870: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcurand.so.10
+2020-08-10 01:15:03.451883: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusolver.so.10
+2020-08-10 01:15:03.451897: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcusparse.so.10
+2020-08-10 01:15:03.451911: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudnn.so.7
+2020-08-10 01:15:03.459493: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 1
+2020-08-10 01:15:03.459551: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.459871: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 3
+2020-08-10 01:15:03.459912: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.459951: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 2
+2020-08-10 01:15:03.459985: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1703] Adding visible gpu devices: 0
+2020-08-10 01:15:03.460002: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.460050: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcudart.so.10.1
+2020-08-10 01:15:03.809194: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-10 01:15:03.809239: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      1 
+2020-08-10 01:15:03.809194: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-10 01:15:03.809239: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      2 
+2020-08-10 01:15:03.809257: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 2:   N 
+2020-08-10 01:15:03.809256: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 1:   N 
+2020-08-10 01:15:03.809321: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-10 01:15:03.809359: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      0 
+2020-08-10 01:15:03.809371: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 0:   N 
+2020-08-10 01:15:03.811645: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1102] Device interconnect StreamExecutor with strength 1 edge matrix:
+2020-08-10 01:15:03.811670: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1108]      3 
+2020-08-10 01:15:03.811680: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1121] 3:   N 
+2020-08-10 01:15:03.820584: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 1, name: Tesla V100-SXM2-16GB, pci bus id: 0000:1c:00.0, compute capability: 7.0)
+2020-08-10 01:15:03.820605: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 2, name: Tesla V100-SXM2-16GB, pci bus id: 0000:88:00.0, compute capability: 7.0)
+2020-08-10 01:15:03.820752: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 0, name: Tesla V100-SXM2-16GB, pci bus id: 0000:1a:00.0, compute capability: 7.0)
+2020-08-10 01:15:03.821600: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1247] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 14893 MB memory) -> physical GPU (device: 3, name: Tesla V100-SXM2-16GB, pci bus id: 0000:8a:00.0, compute capability: 7.0)
+2020-08-10 01:15:03.826493: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55e0c804ae70 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.826517: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-10 01:15:03.826507: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55d13f8e30d0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.826527: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-10 01:15:03.826509: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55ccdd3e3da0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.826530: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-10 01:15:03.826641: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55832ff2f750 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2020-08-10 01:15:03.826665: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-16GB, Compute Capability 7.0
+2020-08-10 01:15:07.530891: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:07.531074: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:07.550125: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+2020-08-10 01:15:07.573822: I tensorflow/stream_executor/platform/default/dso_loader.cc:44] Successfully opened dynamic library libcublas.so.10
+Using TensorFlow 2 backend.
+
+Experiment: diffusion; processes: 4
+Trial: 0; seed: 541016860
+ML lr training completed in 15.959078073501587s
+ML lr train loss: 0.10121025032639164
+ML lr test loss: 0.10241216633362404
+ML rf50 training completed in 17.692331075668335s
+ML rf50 train loss: 0.011297833544535184
+ML rf50 test loss: 0.02918112050336987
+ML rf250 training completed in 27.182127952575684s
+ML rf250 train loss: 0.010671155690202916
+ML rf250 test loss: 0.02891899464803255
+ML rf500 training completed in 38.88399696350098s
+ML rf500 train loss: 0.008566064326795346
+ML rf500 test loss: 0.023847398323933042
+ML bt100 training completed in 16.847620010375977s
+ML bt100 train loss: 0.02657539150522525
+ML bt100 test loss: 0.02643405243382028
+ML bt250 training completed in 19.024545907974243s
+ML bt250 train loss: 0.02323630842658465
+ML bt250 test loss: 0.023927724169488
+ML bt500 training completed in 22.706423044204712s
+ML bt500 train loss: 0.02305622666865044
+ML bt500 test loss: 0.024551596597705474
+ML fnn1 training completed in 191.56201601028442s
+ML fnn1 train loss: 0.027390568702316806
+ML fnn1 test loss: 0.027451087445237027
+ML fnn3 training completed in 225.5657320022583s
+ML fnn3 train loss: 0.02272967700567376
+ML fnn3 test loss: 0.02268847014709577
+ML fnn5 training completed in 266.54968190193176s
+ML fnn5 train loss: 0.022295377262671848
+ML fnn5 test loss: 0.024215136479654634
+Solution round: 0
+Fine solver completed in 35.19070100784302s
+Coarse solver completed in 0.7141211032867432s
+Parareal solver completed in 20.404921054840088s
+ML lr solver completed in 0.0031011104583740234s
+Parareal ML lr solver completed in 35.31658315658569s
+ML rf50 solver completed in 0.03134512901306152s
+Parareal ML rf50 solver completed in 35.414955854415894s
+ML rf250 solver completed in 0.13706207275390625s
+Parareal ML rf250 solver completed in 36.28537893295288s
+ML rf500 solver completed in 0.2737889289855957s
+Parareal ML rf500 solver completed in 27.816396951675415s
+ML bt100 solver completed in 0.004642963409423828s
+Parareal ML bt100 solver completed in 17.659111976623535s
+ML bt250 solver completed in 0.006111860275268555s
+Parareal ML bt250 solver completed in 17.792847871780396s
+ML bt500 solver completed in 0.00898289680480957s
+Parareal ML bt500 solver completed in 17.654935836791992s
+ML fnn1 solver completed in 0.06457400321960449s
+Parareal ML fnn1 solver completed in 26.544782876968384s
+ML fnn3 solver completed in 0.04365086555480957s
+Parareal ML fnn3 solver completed in 17.689110040664673s
+ML fnn5 solver completed in 0.01998305320739746s
+Parareal ML fnn5 solver completed in 17.848772048950195s
+Solution round: 1
+Fine solver completed in 35.156468868255615s
+Coarse solver completed in 0.7125210762023926s
+Parareal solver completed in 20.19864511489868s
+ML lr solver completed in 0.002994060516357422s
+Parareal ML lr solver completed in 35.41748809814453s
+ML rf50 solver completed in 0.031394004821777344s
+Parareal ML rf50 solver completed in 35.48992109298706s
+ML rf250 solver completed in 0.13762903213500977s
+Parareal ML rf250 solver completed in 36.26794505119324s
+ML rf500 solver completed in 0.2752859592437744s
+Parareal ML rf500 solver completed in 27.862650156021118s
+ML bt100 solver completed in 0.004333972930908203s
+Parareal ML bt100 solver completed in 17.634948015213013s
+ML bt250 solver completed in 0.006307840347290039s
+Parareal ML bt250 solver completed in 17.807313919067383s
+ML bt500 solver completed in 0.009434938430786133s
+Parareal ML bt500 solver completed in 17.690309047698975s
+ML fnn1 solver completed in 0.01798105239868164s
+Parareal ML fnn1 solver completed in 26.51303505897522s
+ML fnn3 solver completed in 0.01809406280517578s
+Parareal ML fnn3 solver completed in 17.74262809753418s
+ML fnn5 solver completed in 0.019454002380371094s
+Parareal ML fnn5 solver completed in 17.832377910614014s
+Solution round: 2
+Fine solver completed in 35.16372299194336s
+Coarse solver completed in 0.7149341106414795s
+Parareal solver completed in 20.25391387939453s
+ML lr solver completed in 0.0029778480529785156s
+Parareal ML lr solver completed in 35.44928693771362s
+ML rf50 solver completed in 0.03154397010803223s
+Parareal ML rf50 solver completed in 35.50271701812744s
+ML rf250 solver completed in 0.13741803169250488s
+Parareal ML rf250 solver completed in 36.35067081451416s
+ML rf500 solver completed in 0.2750852108001709s
+Parareal ML rf500 solver completed in 27.894416093826294s
+ML bt100 solver completed in 0.004354000091552734s
+Parareal ML bt100 solver completed in 17.67968201637268s
+ML bt250 solver completed in 0.006041049957275391s
+Parareal ML bt250 solver completed in 17.620177030563354s
+ML bt500 solver completed in 0.009032011032104492s
+Parareal ML bt500 solver completed in 17.826250076293945s
+ML fnn1 solver completed in 0.01793694496154785s
+Parareal ML fnn1 solver completed in 26.510491847991943s
+ML fnn3 solver completed in 0.0182039737701416s
+Parareal ML fnn3 solver completed in 17.704215049743652s
+ML fnn5 solver completed in 0.019611120223999023s
+Parareal ML fnn5 solver completed in 17.671204090118408s
+Solution round: 3
+Fine solver completed in 35.32942485809326s
+Coarse solver completed in 0.7140829563140869s
+Parareal solver completed in 20.2185640335083s
+ML lr solver completed in 0.003281116485595703s
+Parareal ML lr solver completed in 35.409677028656006s
+ML rf50 solver completed in 0.03139495849609375s
+Parareal ML rf50 solver completed in 35.50117015838623s
+ML rf250 solver completed in 0.1372830867767334s
+Parareal ML rf250 solver completed in 36.254723072052s
+ML rf500 solver completed in 0.27611804008483887s
+Parareal ML rf500 solver completed in 27.854968070983887s
+ML bt100 solver completed in 0.0043261051177978516s
+Parareal ML bt100 solver completed in 17.65106511116028s
+ML bt250 solver completed in 0.006057024002075195s
+Parareal ML bt250 solver completed in 17.649061918258667s
+ML bt500 solver completed in 0.00896310806274414s
+Parareal ML bt500 solver completed in 17.788315057754517s
+ML fnn1 solver completed in 0.017619848251342773s
+Parareal ML fnn1 solver completed in 26.54641103744507s
+ML fnn3 solver completed in 0.017992019653320312s
+Parareal ML fnn3 solver completed in 17.715441942214966s
+ML fnn5 solver completed in 0.01988697052001953s
+Parareal ML fnn5 solver completed in 17.693191051483154s
+Trial: 1; seed: 434342745
+ML lr training completed in 15.245076894760132s
+ML lr train loss: 0.10084528459263327
+ML lr test loss: 0.10222567083935874
+ML rf50 training completed in 17.579410076141357s
+ML rf50 train loss: 0.008650844206218505
+ML rf50 test loss: 0.02273414171257796
+ML rf250 training completed in 27.115654945373535s
+ML rf250 train loss: 0.009737997913129261
+ML rf250 test loss: 0.02611942021813467
+ML rf500 training completed in 39.03878307342529s
+ML rf500 train loss: 0.009504411298077275
+ML rf500 test loss: 0.026153622855960314
+ML bt100 training completed in 16.824939966201782s
+ML bt100 train loss: 0.02520464805619584
+ML bt100 test loss: 0.025790954432852994
+ML bt250 training completed in 18.93463683128357s
+ML bt250 train loss: 0.021487637015318015
+ML bt250 test loss: 0.02247502654344888
+ML bt500 training completed in 22.4913969039917s
+ML bt500 train loss: 0.021067842974871846
+ML bt500 test loss: 0.02287570790956957
+ML fnn1 training completed in 194.58713698387146s
+ML fnn1 train loss: 0.02362135969464384
+ML fnn1 test loss: 0.02328694549242589
+ML fnn3 training completed in 233.07980012893677s
+ML fnn3 train loss: 0.022432694874861343
+ML fnn3 test loss: 0.022778676573968665
+ML fnn5 training completed in 260.9963459968567s
+ML fnn5 train loss: 0.02362991648010742
+ML fnn5 test loss: 0.02517047214431932
+Solution round: 0
+Fine solver completed in 36.96824312210083s
+Coarse solver completed in 0.7468311786651611s
+Parareal solver completed in 21.28250789642334s
+ML lr solver completed in 0.003654003143310547s
+Parareal ML lr solver completed in 37.16391396522522s
+ML rf50 solver completed in 0.03003406524658203s
+Parareal ML rf50 solver completed in 37.250373125076294s
+ML rf250 solver completed in 0.13217496871948242s
+Parareal ML rf250 solver completed in 37.96789884567261s
+ML rf500 solver completed in 0.2595958709716797s
+Parareal ML rf500 solver completed in 38.62374782562256s
+ML bt100 solver completed in 0.004948139190673828s
+Parareal ML bt100 solver completed in 18.553359985351562s
+ML bt250 solver completed in 0.0066721439361572266s
+Parareal ML bt250 solver completed in 18.500508069992065s
+ML bt500 solver completed in 0.009512901306152344s
+Parareal ML bt500 solver completed in 18.615684986114502s
+ML fnn1 solver completed in 0.018405914306640625s
+Parareal ML fnn1 solver completed in 18.524545192718506s
+ML fnn3 solver completed in 0.01894211769104004s
+Parareal ML fnn3 solver completed in 18.568809986114502s
+ML fnn5 solver completed in 0.02046799659729004s
+Parareal ML fnn5 solver completed in 18.582653999328613s
+Solution round: 1
+Fine solver completed in 36.96316480636597s
+Coarse solver completed in 0.7470982074737549s
+Parareal solver completed in 21.22863006591797s
+ML lr solver completed in 0.0036449432373046875s
+Parareal ML lr solver completed in 37.25088906288147s
+ML rf50 solver completed in 0.030014991760253906s
+Parareal ML rf50 solver completed in 37.149832010269165s
+ML rf250 solver completed in 0.13222408294677734s
+Parareal ML rf250 solver completed in 37.79023599624634s
+ML rf500 solver completed in 0.25893092155456543s
+Parareal ML rf500 solver completed in 38.70780301094055s
+ML bt100 solver completed in 0.004968881607055664s
+Parareal ML bt100 solver completed in 18.538979053497314s
+ML bt250 solver completed in 0.006673097610473633s
+Parareal ML bt250 solver completed in 18.533179998397827s
+ML bt500 solver completed in 0.009525060653686523s
+Parareal ML bt500 solver completed in 18.661271810531616s
+ML fnn1 solver completed in 0.01843714714050293s
+Parareal ML fnn1 solver completed in 18.50287103652954s
+ML fnn3 solver completed in 0.01910400390625s
+Parareal ML fnn3 solver completed in 18.587897062301636s
+ML fnn5 solver completed in 0.020390033721923828s
+Parareal ML fnn5 solver completed in 18.5853488445282s
+Solution round: 2
+Fine solver completed in 36.80998682975769s
+Coarse solver completed in 0.8384959697723389s
+Parareal solver completed in 21.364632844924927s
+ML lr solver completed in 0.003631114959716797s
+Parareal ML lr solver completed in 37.10141921043396s
+ML rf50 solver completed in 0.02913212776184082s
+Parareal ML rf50 solver completed in 37.314143896102905s
+ML rf250 solver completed in 0.12917780876159668s
+Parareal ML rf250 solver completed in 37.89063000679016s
+ML rf500 solver completed in 0.25838208198547363s
+Parareal ML rf500 solver completed in 38.735538959503174s
+ML bt100 solver completed in 0.004910945892333984s
+Parareal ML bt100 solver completed in 18.53113603591919s
+ML bt250 solver completed in 0.006675004959106445s
+Parareal ML bt250 solver completed in 18.494241952896118s
+ML bt500 solver completed in 0.009654998779296875s
+Parareal ML bt500 solver completed in 18.535844087600708s
+ML fnn1 solver completed in 0.0184171199798584s
+Parareal ML fnn1 solver completed in 18.62017297744751s
+ML fnn3 solver completed in 0.018928050994873047s
+Parareal ML fnn3 solver completed in 18.532584190368652s
+ML fnn5 solver completed in 0.02032303810119629s
+Parareal ML fnn5 solver completed in 18.55829095840454s
+Solution round: 3
+Fine solver completed in 36.95182800292969s
+Coarse solver completed in 0.7484579086303711s
+Parareal solver completed in 21.328761100769043s
+ML lr solver completed in 0.0035800933837890625s
+Parareal ML lr solver completed in 37.06013607978821s
+ML rf50 solver completed in 0.029256105422973633s
+Parareal ML rf50 solver completed in 37.25440192222595s
+ML rf250 solver completed in 0.12862706184387207s
+Parareal ML rf250 solver completed in 37.74801015853882s
+ML rf500 solver completed in 0.25486302375793457s
+Parareal ML rf500 solver completed in 38.732189893722534s
+ML bt100 solver completed in 0.0049779415130615234s
+Parareal ML bt100 solver completed in 18.536563873291016s
+ML bt250 solver completed in 0.006711006164550781s
+Parareal ML bt250 solver completed in 18.504000902175903s
+ML bt500 solver completed in 0.009619951248168945s
+Parareal ML bt500 solver completed in 18.485294103622437s
+ML fnn1 solver completed in 0.018304824829101562s
+Parareal ML fnn1 solver completed in 18.533617973327637s
+ML fnn3 solver completed in 0.01899886131286621s
+Parareal ML fnn3 solver completed in 18.629918813705444s
+ML fnn5 solver completed in 0.020483970642089844s
+Parareal ML fnn5 solver completed in 18.531658172607422s
+Trial: 2; seed: 1462316
+ML lr training completed in 15.928757905960083s
+ML lr train loss: 0.10126125049628995
+ML lr test loss: 0.1020797517464882
+ML rf50 training completed in 18.230142831802368s
+ML rf50 train loss: 0.012042183793264705
+ML rf50 test loss: 0.032278604163211023
+ML rf250 training completed in 27.58913493156433s
+ML rf250 train loss: 0.009691508571138053
+ML rf250 test loss: 0.025134889882212054
+ML rf500 training completed in 38.92397117614746s
+ML rf500 train loss: 0.010709526696470184
+ML rf500 test loss: 0.0284035543502888
+ML bt100 training completed in 17.426788091659546s
+ML bt100 train loss: 0.020824633847052954
+ML bt100 test loss: 0.021068460272277975
+ML bt250 training completed in 19.562551975250244s
+ML bt250 train loss: 0.023697086558408256
+ML bt250 test loss: 0.025715744379136065
+ML bt500 training completed in 22.94797396659851s
+ML bt500 train loss: 0.02291926512805406
+ML bt500 test loss: 0.024424972371965992
+ML fnn1 training completed in 204.360995054245s
+ML fnn1 train loss: 0.024668715895945645
+ML fnn1 test loss: 0.02399635019177931
+ML fnn3 training completed in 228.98045587539673s
+ML fnn3 train loss: 0.023660707320087907
+ML fnn3 test loss: 0.024430003986519698
+ML fnn5 training completed in 261.83945894241333s
+ML fnn5 train loss: 0.022690653330271204
+ML fnn5 test loss: 0.025492835045598405
+Solution round: 0
+Fine solver completed in 35.92506504058838s
+Coarse solver completed in 0.7242519855499268s
+Parareal solver completed in 20.60159397125244s
+ML lr solver completed in 0.003013134002685547s
+Parareal ML lr solver completed in 36.06485605239868s
+ML rf50 solver completed in 0.031152009963989258s
+Parareal ML rf50 solver completed in 35.975914001464844s
+ML rf250 solver completed in 0.13760900497436523s
+Parareal ML rf250 solver completed in 36.63983201980591s
+ML rf500 solver completed in 0.27176594734191895s
+Parareal ML rf500 solver completed in 37.47062706947327s
+ML bt100 solver completed in 0.0043408870697021484s
+Parareal ML bt100 solver completed in 17.845580101013184s
+ML bt250 solver completed in 0.0061490535736083984s
+Parareal ML bt250 solver completed in 17.77402901649475s
+ML bt500 solver completed in 0.00903010368347168s
+Parareal ML bt500 solver completed in 17.914417028427124s
+ML fnn1 solver completed in 0.01914381980895996s
+Parareal ML fnn1 solver completed in 17.758610010147095s
+ML fnn3 solver completed in 0.019262075424194336s
+Parareal ML fnn3 solver completed in 17.801253080368042s
+ML fnn5 solver completed in 0.020787954330444336s
+Parareal ML fnn5 solver completed in 17.798856019973755s
+Solution round: 1
+Fine solver completed in 35.36062693595886s
+Coarse solver completed in 0.8625569343566895s
+Parareal solver completed in 20.35710597038269s
+ML lr solver completed in 0.00296783447265625s
+Parareal ML lr solver completed in 35.53065490722656s
+ML rf50 solver completed in 0.029121875762939453s
+Parareal ML rf50 solver completed in 35.75727200508118s
+ML rf250 solver completed in 0.12670683860778809s
+Parareal ML rf250 solver completed in 36.27884483337402s
+ML rf500 solver completed in 0.25092196464538574s
+Parareal ML rf500 solver completed in 37.221360206604004s
+ML bt100 solver completed in 0.004392862319946289s
+Parareal ML bt100 solver completed in 17.717811107635498s
+ML bt250 solver completed in 0.0061130523681640625s
+Parareal ML bt250 solver completed in 17.737432956695557s
+ML bt500 solver completed in 0.009478092193603516s
+Parareal ML bt500 solver completed in 17.763872861862183s
+ML fnn1 solver completed in 0.01908111572265625s
+Parareal ML fnn1 solver completed in 17.948946952819824s
+ML fnn3 solver completed in 0.019122838973999023s
+Parareal ML fnn3 solver completed in 17.829079151153564s
+ML fnn5 solver completed in 0.02077507972717285s
+Parareal ML fnn5 solver completed in 17.80289888381958s
+Solution round: 2
+Fine solver completed in 35.26919984817505s
+Coarse solver completed in 0.7181251049041748s
+Parareal solver completed in 20.528813123703003s
+ML lr solver completed in 0.002978086471557617s
+Parareal ML lr solver completed in 35.50592303276062s
+ML rf50 solver completed in 0.028948068618774414s
+Parareal ML rf50 solver completed in 35.82705497741699s
+ML rf250 solver completed in 0.1264209747314453s
+Parareal ML rf250 solver completed in 36.26689600944519s
+ML rf500 solver completed in 0.2506370544433594s
+Parareal ML rf500 solver completed in 37.24884796142578s
+ML bt100 solver completed in 0.00438380241394043s
+Parareal ML bt100 solver completed in 17.73431396484375s
+ML bt250 solver completed in 0.006112813949584961s
+Parareal ML bt250 solver completed in 17.702749013900757s
+ML bt500 solver completed in 0.009105920791625977s
+Parareal ML bt500 solver completed in 17.76388692855835s
+ML fnn1 solver completed in 0.018724918365478516s
+Parareal ML fnn1 solver completed in 17.79728603363037s
+ML fnn3 solver completed in 0.019204139709472656s
+Parareal ML fnn3 solver completed in 17.96354389190674s
+ML fnn5 solver completed in 0.02054309844970703s
+Parareal ML fnn5 solver completed in 17.816260814666748s
+Solution round: 3
+Fine solver completed in 35.34569501876831s
+Coarse solver completed in 0.7159321308135986s
+Parareal solver completed in 20.576483964920044s
+ML lr solver completed in 0.002947092056274414s
+Parareal ML lr solver completed in 35.54851198196411s
+ML rf50 solver completed in 0.028982877731323242s
+Parareal ML rf50 solver completed in 35.69959902763367s
+ML rf250 solver completed in 0.1265709400177002s
+Parareal ML rf250 solver completed in 36.39901900291443s
+ML rf500 solver completed in 0.25062990188598633s
+Parareal ML rf500 solver completed in 37.09011101722717s
+ML bt100 solver completed in 0.00439000129699707s
+Parareal ML bt100 solver completed in 17.92711305618286s
+ML bt250 solver completed in 0.006094932556152344s
+Parareal ML bt250 solver completed in 17.702009916305542s
+ML bt500 solver completed in 0.00902700424194336s
+Parareal ML bt500 solver completed in 17.755822896957397s
+ML fnn1 solver completed in 0.01836991310119629s
+Parareal ML fnn1 solver completed in 17.804503917694092s
+ML fnn3 solver completed in 0.019190073013305664s
+Parareal ML fnn3 solver completed in 17.579068183898926s
+ML fnn5 solver completed in 0.020152807235717773s
+Parareal ML fnn5 solver completed in 17.73889684677124s
+Trial: 3; seed: 746159945
+ML lr training completed in 15.03438401222229s
+ML lr train loss: 0.10110312844897294
+ML lr test loss: 0.09966027981656814
+ML rf50 training completed in 17.521623134613037s
+ML rf50 train loss: 0.00990447808898581
+ML rf50 test loss: 0.02600012278377465
+ML rf250 training completed in 26.700359106063843s
+ML rf250 train loss: 0.010916690985909859
+ML rf250 test loss: 0.029497876599791053
+ML rf500 training completed in 38.0702018737793s
+ML rf500 train loss: 0.009594895977931062
+ML rf500 test loss: 0.02635052196836088
+ML bt100 training completed in 16.656880140304565s
+ML bt100 train loss: 0.0238810573061815
+ML bt100 test loss: 0.024108684134896065
+ML bt250 training completed in 18.787133932113647s
+ML bt250 train loss: 0.02371104208333545
+ML bt250 test loss: 0.02456011091731639
+ML bt500 training completed in 22.32364010810852s
+ML bt500 train loss: 0.02403305292467417
+ML bt500 test loss: 0.02526368832592587
+ML fnn1 training completed in 206.7922809123993s
+ML fnn1 train loss: 0.022301319604007806
+ML fnn1 test loss: 0.0224740821066111
+ML fnn3 training completed in 234.67963814735413s
+ML fnn3 train loss: 0.022632694689570253
+ML fnn3 test loss: 0.022540661952482433
+ML fnn5 training completed in 261.0177869796753s
+ML fnn5 train loss: 0.02202967222262345
+ML fnn5 test loss: 0.024861806573960598
+Solution round: 0
+Fine solver completed in 37.5446879863739s
+Coarse solver completed in 0.7592530250549316s
+Parareal solver completed in 21.653942108154297s
+ML lr solver completed in 0.0038340091705322266s
+Parareal ML lr solver completed in 37.80155110359192s
+ML rf50 solver completed in 0.03199911117553711s
+Parareal ML rf50 solver completed in 37.83226490020752s
+ML rf250 solver completed in 0.1394200325012207s
+Parareal ML rf250 solver completed in 38.660589933395386s
+ML rf500 solver completed in 0.2796940803527832s
+Parareal ML rf500 solver completed in 39.255274057388306s
+ML bt100 solver completed in 0.0051250457763671875s
+Parareal ML bt100 solver completed in 18.84065890312195s
+ML bt250 solver completed in 0.006949901580810547s
+Parareal ML bt250 solver completed in 18.79050612449646s
+ML bt500 solver completed in 0.009982109069824219s
+Parareal ML bt500 solver completed in 37.75198698043823s
+ML fnn1 solver completed in 0.0200958251953125s
+Parareal ML fnn1 solver completed in 18.255704879760742s
+ML fnn3 solver completed in 0.01935100555419922s
+Parareal ML fnn3 solver completed in 17.67337393760681s
+ML fnn5 solver completed in 0.0210111141204834s
+Parareal ML fnn5 solver completed in 17.681988954544067s
+Solution round: 1
+Fine solver completed in 35.253227949142456s
+Coarse solver completed in 0.7094111442565918s
+Parareal solver completed in 20.19502902030945s
+ML lr solver completed in 0.0029489994049072266s
+Parareal ML lr solver completed in 35.38199210166931s
+ML rf50 solver completed in 0.029714107513427734s
+Parareal ML rf50 solver completed in 35.320651054382324s
+ML rf250 solver completed in 0.13129305839538574s
+Parareal ML rf250 solver completed in 36.0164999961853s
+ML rf500 solver completed in 0.26387619972229004s
+Parareal ML rf500 solver completed in 36.868303060531616s
+ML bt100 solver completed in 0.0048410892486572266s
+Parareal ML bt100 solver completed in 17.624513149261475s
+ML bt250 solver completed in 0.006127119064331055s
+Parareal ML bt250 solver completed in 17.62727999687195s
+ML bt500 solver completed in 0.009263038635253906s
+Parareal ML bt500 solver completed in 35.367547035217285s
+ML fnn1 solver completed in 0.019273996353149414s
+Parareal ML fnn1 solver completed in 17.61665105819702s
+ML fnn3 solver completed in 0.01938486099243164s
+Parareal ML fnn3 solver completed in 17.660251140594482s
+ML fnn5 solver completed in 0.020884990692138672s
+Parareal ML fnn5 solver completed in 17.66500997543335s
+Solution round: 2
+Fine solver completed in 35.05109906196594s
+Coarse solver completed in 0.8684439659118652s
+Parareal solver completed in 20.166395902633667s
+ML lr solver completed in 0.0029637813568115234s
+Parareal ML lr solver completed in 35.20372796058655s
+ML rf50 solver completed in 0.029685020446777344s
+Parareal ML rf50 solver completed in 35.4420211315155s
+ML rf250 solver completed in 0.13154888153076172s
+Parareal ML rf250 solver completed in 35.94437098503113s
+ML rf500 solver completed in 0.26375794410705566s
+Parareal ML rf500 solver completed in 36.86318278312683s
+ML bt100 solver completed in 0.004389047622680664s
+Parareal ML bt100 solver completed in 17.575109004974365s
+ML bt250 solver completed in 0.006155967712402344s
+Parareal ML bt250 solver completed in 17.629745960235596s
+ML bt500 solver completed in 0.009310007095336914s
+Parareal ML bt500 solver completed in 35.133634090423584s
+ML fnn1 solver completed in 0.019412994384765625s
+Parareal ML fnn1 solver completed in 17.782159090042114s
+ML fnn3 solver completed in 0.020105838775634766s
+Parareal ML fnn3 solver completed in 17.653553009033203s
+ML fnn5 solver completed in 0.021598100662231445s
+Parareal ML fnn5 solver completed in 17.711972951889038s
+Solution round: 3
+Fine solver completed in 35.01380109786987s
+Coarse solver completed in 0.7113208770751953s
+Parareal solver completed in 20.3504638671875s
+ML lr solver completed in 0.0029790401458740234s
+Parareal ML lr solver completed in 35.173466205596924s
+ML rf50 solver completed in 0.029808998107910156s
+Parareal ML rf50 solver completed in 35.433434009552s
+ML rf250 solver completed in 0.13096404075622559s
+Parareal ML rf250 solver completed in 35.93341398239136s
+ML rf500 solver completed in 0.26343584060668945s
+Parareal ML rf500 solver completed in 36.916083097457886s
+ML bt100 solver completed in 0.004436969757080078s
+Parareal ML bt100 solver completed in 17.57656693458557s
+ML bt250 solver completed in 0.0062139034271240234s
+Parareal ML bt250 solver completed in 17.562577962875366s
+ML bt500 solver completed in 0.009269952774047852s
+Parareal ML bt500 solver completed in 35.1465630531311s
+ML fnn1 solver completed in 0.020173072814941406s
+Parareal ML fnn1 solver completed in 17.80218005180359s
+ML fnn3 solver completed in 0.01959705352783203s
+Parareal ML fnn3 solver completed in 17.607587099075317s
+ML fnn5 solver completed in 0.02105402946472168s
+Parareal ML fnn5 solver completed in 17.640966176986694s
+Trial: 4; seed: 433636464
+ML lr training completed in 15.240684032440186s
+ML lr train loss: 0.10186987943547007
+ML lr test loss: 0.10091084347474089
+ML rf50 training completed in 17.56906294822693s
+ML rf50 train loss: 0.010035002710694197
+ML rf50 test loss: 0.026527012786489692
+ML rf250 training completed in 26.729331016540527s
+ML rf250 train loss: 0.011541523911396148
+ML rf250 test loss: 0.031477263969961464
+ML rf500 training completed in 38.72756099700928s
+ML rf500 train loss: 0.009896676361990134
+ML rf500 test loss: 0.025713650890655162
+ML bt100 training completed in 16.738767862319946s
+ML bt100 train loss: 0.025500942944507752
+ML bt100 test loss: 0.026020917113372833
+ML bt250 training completed in 18.89222812652588s
+ML bt250 train loss: 0.022234588409889382
+ML bt250 test loss: 0.022526236335933352
+ML bt500 training completed in 22.444586992263794s
+ML bt500 train loss: 0.02094256118273137
+ML bt500 test loss: 0.02258931195267334
+ML fnn1 training completed in 212.79468703269958s
+ML fnn1 train loss: 0.02314607648039137
+ML fnn1 test loss: 0.023035258483853124
+ML fnn3 training completed in 240.95709204673767s
+ML fnn3 train loss: 0.02413982655819205
+ML fnn3 test loss: 0.02507662384672279
+ML fnn5 training completed in 273.71990299224854s
+ML fnn5 train loss: 0.024024287047647277
+ML fnn5 test loss: 0.025996870292754215
+Solution round: 0
+Fine solver completed in 37.49146914482117s
+Coarse solver completed in 0.7629561424255371s
+Parareal solver completed in 21.67334294319153s
+ML lr solver completed in 0.0037729740142822266s
+Parareal ML lr solver completed in 37.79530096054077s
+ML rf50 solver completed in 0.032058000564575195s
+Parareal ML rf50 solver completed in 37.922959089279175s
+ML rf250 solver completed in 0.13350296020507812s
+Parareal ML rf250 solver completed in 38.594088077545166s
+ML rf500 solver completed in 0.2662849426269531s
+Parareal ML rf500 solver completed in 39.56465411186218s
+ML bt100 solver completed in 0.005095005035400391s
+Parareal ML bt100 solver completed in 18.873862981796265s
+ML bt250 solver completed in 0.006836891174316406s
+Parareal ML bt250 solver completed in 18.806068897247314s
+ML bt500 solver completed in 0.010174036026000977s
+Parareal ML bt500 solver completed in 18.927935123443604s
+ML fnn1 solver completed in 0.021811962127685547s
+Parareal ML fnn1 solver completed in 18.89116597175598s
+ML fnn3 solver completed in 0.021730899810791016s
+Parareal ML fnn3 solver completed in 18.914931058883667s
+ML fnn5 solver completed in 0.023481130599975586s
+Parareal ML fnn5 solver completed in 18.926814794540405s
+Solution round: 1
+Fine solver completed in 37.574552059173584s
+Coarse solver completed in 0.760627031326294s
+Parareal solver completed in 21.751127004623413s
+ML lr solver completed in 0.0036461353302001953s
+Parareal ML lr solver completed in 37.673178911209106s
+ML rf50 solver completed in 0.03225398063659668s
+Parareal ML rf50 solver completed in 38.0914421081543s
+ML rf250 solver completed in 0.13389992713928223s
+Parareal ML rf250 solver completed in 38.54585886001587s
+ML rf500 solver completed in 0.2705559730529785s
+Parareal ML rf500 solver completed in 39.5485680103302s
+ML bt100 solver completed in 0.005063056945800781s
+Parareal ML bt100 solver completed in 18.901875019073486s
+ML bt250 solver completed in 0.006930828094482422s
+Parareal ML bt250 solver completed in 18.840317010879517s
+ML bt500 solver completed in 0.009931802749633789s
+Parareal ML bt500 solver completed in 18.836031913757324s
+ML fnn1 solver completed in 0.021502017974853516s
+Parareal ML fnn1 solver completed in 18.895520210266113s
+ML fnn3 solver completed in 0.021889925003051758s
+Parareal ML fnn3 solver completed in 19.011526107788086s
+ML fnn5 solver completed in 0.022692203521728516s
+Parareal ML fnn5 solver completed in 18.91731595993042s
+Solution round: 2
+Fine solver completed in 37.51126289367676s
+Coarse solver completed in 0.7632169723510742s
+Parareal solver completed in 21.60459303855896s
+ML lr solver completed in 0.0036950111389160156s
+Parareal ML lr solver completed in 37.8167679309845s
+ML rf50 solver completed in 0.032119035720825195s
+Parareal ML rf50 solver completed in 37.87578105926514s
+ML rf250 solver completed in 0.13400578498840332s
+Parareal ML rf250 solver completed in 38.5610089302063s
+ML rf500 solver completed in 0.26825904846191406s
+Parareal ML rf500 solver completed in 39.36857485771179s
+ML bt100 solver completed in 0.005116939544677734s
+Parareal ML bt100 solver completed in 18.84111189842224s
+ML bt250 solver completed in 0.006794929504394531s
+Parareal ML bt250 solver completed in 18.76453185081482s
+ML bt500 solver completed in 0.00980377197265625s
+Parareal ML bt500 solver completed in 18.999213218688965s
+ML fnn1 solver completed in 0.02149200439453125s
+Parareal ML fnn1 solver completed in 18.91812300682068s
+ML fnn3 solver completed in 0.02206707000732422s
+Parareal ML fnn3 solver completed in 18.92137598991394s
+ML fnn5 solver completed in 0.022976160049438477s
+Parareal ML fnn5 solver completed in 18.939267873764038s
+Solution round: 3
+Fine solver completed in 37.52946996688843s
+Coarse solver completed in 0.7586560249328613s
+Parareal solver completed in 21.582187175750732s
+ML lr solver completed in 0.003679990768432617s
+Parareal ML lr solver completed in 37.63076686859131s
+ML rf50 solver completed in 0.03201007843017578s
+Parareal ML rf50 solver completed in 37.9928138256073s
+ML rf250 solver completed in 0.1342151165008545s
+Parareal ML rf250 solver completed in 38.45089411735535s
+ML rf500 solver completed in 0.2679431438446045s
+Parareal ML rf500 solver completed in 39.411757946014404s
+ML bt100 solver completed in 0.005141019821166992s
+Parareal ML bt100 solver completed in 18.833476066589355s
+ML bt250 solver completed in 0.006924152374267578s
+Parareal ML bt250 solver completed in 18.80583119392395s
+ML bt500 solver completed in 0.009899139404296875s
+Parareal ML bt500 solver completed in 18.83446192741394s
+ML fnn1 solver completed in 0.021787166595458984s
+Parareal ML fnn1 solver completed in 18.881736993789673s
+ML fnn3 solver completed in 0.02142786979675293s
+Parareal ML fnn3 solver completed in 19.04919409751892s
+ML fnn5 solver completed in 0.023402929306030273s
+Parareal ML fnn5 solver completed in 18.89463996887207s
+Mean fine solving time: 36.170184874534606s; standard deviation: 1.021854552586549s
+Mean coarse solving time: 0.7525646924972534s; standard deviation: 0.048077865686748766s
+Mean Parareal solving time: 20.86608270406723s; standard deviation: 0.5943868061271225s
+Mean coarse ML solving times: [0.00331452 0.03059843 0.13288769 0.2649906  0.00470893 0.00643263
+ 0.00945004 0.02162728 0.02081238 0.02099799]; standard deviations: [0.00034312 0.00119432 0.00393669 0.00880538 0.00032348 0.00034154
+ 0.00036321 0.00993975 0.00537394 0.00118462]
+Mean Parareal ML solving times: [36.36480458 36.50243611 37.14234048 36.15275276 18.15384191 18.13222058
+ 21.7726639  19.93242581 18.1417671  18.14191931]; standard deviations: [1.04049942 1.05896744 1.03755274 4.25177279 0.52598774 0.50050265
+ 7.07015221 3.32507408 0.54001797 0.50578493]
+Mean coarse ML training times: [ 15.48159618  17.71851401  27.06332159  38.72890282  16.89899921
+  19.04021935  22.5828042  202.0194232  232.65254364 264.82463536]; standard deviations: [0.38520678 0.26187827 0.32760491 0.34409893 0.27238995 0.27209496
+ 0.22057012 7.86086107 5.23381911 4.90225956]
+Mean train losses: [0.10125796 0.01038607 0.01051178 0.00965431 0.02439733 0.02287333
+ 0.02240379 0.02422561 0.02311912 0.02293398]; standard deviations: [0.00033794 0.00117815 0.00071011 0.00069029 0.00198214 0.00087638
+ 0.00120547 0.00175765 0.00066251 0.00076914]
+Mean test losses: [0.10145774 0.0273442  0.02822969 0.02609375 0.02468461 0.02384097
+ 0.02394106 0.02404874 0.02350289 0.02514742]; standard deviations: [0.00104091 0.00320779 0.00230916 0.0014557  0.00197375 0.00123562
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+ 0.00103136 0.00177007 0.00104401 0.00059869]
+RMS solution errors compared to the fine operator: [[0.0065474  0.00289679 0.00245999 0.0020066 ]
+ [0.14385845 0.09964102 0.06225972 0.0419147 ]
+ [0.0065474  0.00692912 0.01553233 0.02046246]
+ [0.0065474  0.00680883 0.01344517 0.02224469]
+ [0.0065474  0.00770777 0.01348357 0.01676028]
+ [0.01215307 0.00577043 0.00434965 0.00525883]
+ [0.0092455  0.00677432 0.00369926 0.00842845]
+ [0.008375   0.00423237 0.00533747 0.01233918]
+ [0.00986749 0.00378879 0.00636555 0.00551851]
+ [0.00758049 0.00524731 0.00832663 0.00849159]
+ [0.00781819 0.0042992  0.00794149 0.00950982]]; standard deviations: [[8.67361738e-19 8.67361738e-19 4.33680869e-19 0.00000000e+00]
+ [5.00424293e-04 2.79211652e-04 6.35913350e-04 1.59175996e-03]
+ [1.34371103e-18 1.24527529e-03 1.71602517e-03 3.30233068e-03]
+ [2.26234914e-09 2.69113440e-04 3.35172289e-03 1.32303009e-03]
+ [1.39857878e-18 1.22531095e-03 1.13580857e-03 2.24765824e-03]
+ [8.02048940e-04 9.09952422e-04 1.84617040e-03 1.74446202e-03]
+ [1.63080379e-04 1.38904483e-03 4.48565318e-04 4.48470747e-03]
+ [1.05206144e-04 4.05739772e-04 2.65102126e-03 5.83303979e-03]
+ [1.96220991e-03 7.28152723e-04 3.59150177e-03 3.30014930e-03]
+ [1.19003338e-03 1.35020263e-03 2.86153285e-03 2.10765678e-03]
+ [1.47190890e-03 6.05806440e-04 9.06799103e-04 9.83038762e-04]]
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+Using TensorFlow 2 backend.
+
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+Using TensorFlow 2 backend.
+
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+Using TensorFlow 2 backend.
+
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/s1984842/code/python/src/utils/ml.py:121: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples,), for example using ravel().
+  model.fit(x_train, y_train)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
+/lustre/home/d171/s1984842/.conda/envs/s1984842/lib/python3.7/site-packages/sklearn/utils/validation.py:73: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  return f(**kwargs)
