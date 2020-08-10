@@ -22,7 +22,7 @@ limit_visible_gpus()
 
 set_random_seed(SEEDS[0])
 
-diff_eq = CahnHilliardEquation(2, 5., .5)
+diff_eq = CahnHilliardEquation(2, 2.5, .5)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
     (NeumannCondition(lambda x: (0., 0.)),
@@ -33,8 +33,8 @@ bcs = (
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     bvp,
-    .125 * np.random.uniform(-1., 1., bvp.y_shape(True)),
-    True)
+    .125 * np.random.uniform(-1., 1., bvp.y_shape(False)),
+    False)
 ivp = InitialValueProblem(bvp, (0., 5.), ic)
 
 f = FVMOperator(LinearLUSolver(), .005)
@@ -42,7 +42,7 @@ g = FVMOperator(LinearLUSolver(), .025)
 g_ml = StatefulRegressionOperator(
     calculate_coarse_ml_operator_step_size(ivp), f.vertex_oriented)
 
-threshold = .5
+threshold = 1.
 
 models = [
     LinearRegression(),
