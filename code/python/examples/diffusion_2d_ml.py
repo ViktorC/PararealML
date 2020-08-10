@@ -45,8 +45,12 @@ pinn_solution_name = 'diffusion_pinn'
 sol_reg_solution_name = 'diffusion_sol_reg'
 op_reg_solution_name = 'diffusion_op_reg'
 
-time_with_args(function_name=oracle_solution_name)(oracle.solve)(ivp) \
-    .plot(oracle_solution_name, n_images=10)
+oracle_sol = time_with_args(function_name=oracle_solution_name)(oracle.solve)(
+    ivp)
+oracle_sol_y = oracle_sol.discrete_y(oracle.vertex_oriented)
+v_min = np.min(oracle_sol_y)
+v_max = np.min(oracle_sol_y)
+oracle_sol.plot(oracle_solution_name, n_images=10, v_min=v_min, v_max=v_max)
 
 time_with_args(function_name='pinn_training')(pinn.train)(
     ivp,
@@ -63,14 +67,14 @@ time_with_args(function_name='pinn_training')(pinn.train)(
     learning_rate=.001,
     scipy_optimiser='L-BFGS-B')
 time_with_args(function_name=pinn_solution_name)(pinn.solve)(ivp) \
-    .plot(pinn_solution_name, n_images=10)
+    .plot(pinn_solution_name, n_images=10, v_min=v_min, v_max=v_max)
 
 time_with_args(function_name='sol_reg_training')(sol_reg.train)(
     ivp, oracle, RandomForestRegressor(), .75)
 time_with_args(function_name=sol_reg_solution_name)(sol_reg.solve)(ivp) \
-    .plot(sol_reg_solution_name, n_images=10)
+    .plot(sol_reg_solution_name, n_images=10, v_min=v_min, v_max=v_max)
 
 time_with_args(function_name='op_reg_training')(op_reg.train)(
     ivp, oracle, RandomForestRegressor(), 10, (0., .5))
 time_with_args(function_name=op_reg_solution_name)(op_reg.solve)(ivp) \
-    .plot(op_reg_solution_name, n_images=10)
+    .plot(op_reg_solution_name, n_images=10, v_min=v_min, v_max=v_max)
