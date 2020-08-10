@@ -47,7 +47,7 @@ oracle_sol = time_with_args(function_name=oracle_solution_name)(oracle.solve)(
     ivp)
 oracle_sol_y = oracle_sol.discrete_y(oracle.vertex_oriented)
 v_min = np.min(oracle_sol_y)
-v_max = np.min(oracle_sol_y)
+v_max = np.max(oracle_sol_y)
 oracle_sol.plot(oracle_solution_name, n_images=10, v_min=v_min, v_max=v_max)
 
 time_with_args(function_name='pinn_training')(pinn.train)(
