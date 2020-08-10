@@ -706,7 +706,7 @@ class StatefulRegressionOperator(StatefulMLOperator):
                 else:
                     interpolated_noise_sd = noise_sd[0]
                 if relative_noise:
-                    interpolated_noise_sd = y_i * interpolated_noise_sd
+                    interpolated_noise_sd = np.abs(y_i * interpolated_noise_sd)
 
                 y_i += np.random.normal(
                     loc=0.,
