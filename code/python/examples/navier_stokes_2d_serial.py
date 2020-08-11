@@ -1,4 +1,4 @@
-from src.core.boundary_condition import DirichletCondition
+from src.core.boundary_condition import DirichletBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import NavierStokesEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -12,10 +12,10 @@ from src.utils.time import time
 diff_eq = NavierStokesEquation(2, 5000.)
 mesh = UniformGrid(((-2.5, 2.5), (0., 4.)), (.05, .05))
 bcs = (
-    (DirichletCondition(lambda x: (1., .1)),
-     DirichletCondition(lambda x: (.0, .0))),
-    (DirichletCondition(lambda x: (.0, .0)),
-     DirichletCondition(lambda x: (.0, .0)))
+    (DirichletBoundaryCondition(lambda x: (1., .1)),
+     DirichletBoundaryCondition(lambda x: (.0, .0))),
+    (DirichletBoundaryCondition(lambda x: (.0, .0)),
+     DirichletBoundaryCondition(lambda x: (.0, .0)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = ContinuousInitialCondition(bvp, lambda x: (.0, .0))

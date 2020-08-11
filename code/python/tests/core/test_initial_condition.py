@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.core.boundary_condition import DirichletCondition
+from src.core.boundary_condition import DirichletBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation, WaveEquation
 from src.core.initial_condition import ContinuousInitialCondition, \
@@ -13,8 +13,8 @@ def test_1d_continuous_initial_condition():
     bvp = BoundaryValueProblem(
         diff_eq,
         UniformGrid(((0., 20.),), (.1,)),
-        ((DirichletCondition(lambda x: (0.,)),
-          DirichletCondition(lambda x: (1.5,))),))
+        ((DirichletBoundaryCondition(lambda x: (0.,)),
+          DirichletBoundaryCondition(lambda x: (1.5,))),))
     initial_condition = ContinuousInitialCondition(
             bvp,
             lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
@@ -33,10 +33,10 @@ def test_2d_discrete_initial_condition():
     bvp = BoundaryValueProblem(
         diff_eq,
         UniformGrid(((0., 2.), (0., 2.)), (1., 1.)),
-        ((DirichletCondition(lambda x: (0., 2.)),
-          DirichletCondition(lambda x: (1., 2.))),
-         (DirichletCondition(lambda x: (3., 2.)),
-          DirichletCondition(lambda x: (4., 2.)))))
+        ((DirichletBoundaryCondition(lambda x: (0., 2.)),
+          DirichletBoundaryCondition(lambda x: (1., 2.))),
+         (DirichletBoundaryCondition(lambda x: (3., 2.)),
+          DirichletBoundaryCondition(lambda x: (4., 2.)))))
     initial_condition = DiscreteInitialCondition(
         bvp,
         np.zeros((3, 3, 2)),

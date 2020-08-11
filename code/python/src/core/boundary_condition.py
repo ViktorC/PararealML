@@ -49,7 +49,7 @@ class BoundaryCondition(ABC):
         """
 
 
-class DirichletCondition(BoundaryCondition):
+class DirichletBoundaryCondition(BoundaryCondition):
     """
     Dirichlet boundary conditions that restrict the values of y along the
     boundary.
@@ -82,7 +82,7 @@ class DirichletCondition(BoundaryCondition):
         pass
 
 
-class NeumannCondition(BoundaryCondition):
+class NeumannBoundaryCondition(BoundaryCondition):
     """
     Neumann boundary conditions that restrict the values of the derivative of y
     with respect to the normal of the boundary.
@@ -117,7 +117,7 @@ class NeumannCondition(BoundaryCondition):
         return self._d_y_condition(x)
 
 
-class CauchyCondition(BoundaryCondition):
+class CauchyBoundaryCondition(BoundaryCondition):
     """
     A combination of Dirichlet and Neumann boundary conditions.
     """

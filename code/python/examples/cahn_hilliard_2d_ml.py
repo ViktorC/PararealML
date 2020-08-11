@@ -2,7 +2,7 @@ import numpy as np
 from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
-from src.core.boundary_condition import NeumannCondition
+from src.core.boundary_condition import NeumannBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import CahnHilliardEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -20,10 +20,10 @@ set_random_seed(SEEDS[0])
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
 bcs = (
-    (NeumannCondition(lambda x: (0., 0.)),
-     NeumannCondition(lambda x: (0., 0.))),
-    (NeumannCondition(lambda x: (0., 0.)),
-     NeumannCondition(lambda x: (0., 0.)))
+    (NeumannBoundaryCondition(lambda x: (0., 0.)),
+     NeumannBoundaryCondition(lambda x: (0., 0.))),
+    (NeumannBoundaryCondition(lambda x: (0., 0.)),
+     NeumannBoundaryCondition(lambda x: (0., 0.)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(

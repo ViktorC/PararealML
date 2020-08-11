@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.core.boundary_condition import DirichletCondition
+from src.core.boundary_condition import DirichletBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import WaveEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -14,10 +14,10 @@ from src.utils.time import time
 diff_eq = WaveEquation(2)
 mesh = UniformGrid(((-5., 5.), (-5., 5.)), (.1, .1))
 bcs = (
-    (DirichletCondition(lambda x: (.0, .0)),
-     DirichletCondition(lambda x: (.0, .0))),
-    (DirichletCondition(lambda x: (.0, .0)),
-     DirichletCondition(lambda x: (.0, .0)))
+    (DirichletBoundaryCondition(lambda x: (.0, .0)),
+     DirichletBoundaryCondition(lambda x: (.0, .0))),
+    (DirichletBoundaryCondition(lambda x: (.0, .0)),
+     DirichletBoundaryCondition(lambda x: (.0, .0)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(

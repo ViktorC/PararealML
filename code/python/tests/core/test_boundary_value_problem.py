@@ -1,7 +1,8 @@
 import numpy as np
 from fipy.meshes.uniformGrid3D import UniformGrid3D
 
-from src.core.boundary_condition import DirichletCondition, NeumannCondition
+from src.core.boundary_condition import DirichletBoundaryCondition, \
+    NeumannBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.constraint import apply_constraints_along_last_axis
 from src.core.differential_equation import LotkaVolterraEquation, \
@@ -32,10 +33,10 @@ def test_2d_bvp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: (999., None)),
-          NeumannCondition(lambda x: (100., -100.))),
-         (NeumannCondition(lambda x: (-x[0], None)),
-          DirichletCondition(lambda x: (x[0], -999.)))))
+        ((DirichletBoundaryCondition(lambda x: (999., None)),
+          NeumannBoundaryCondition(lambda x: (100., -100.))),
+         (NeumannBoundaryCondition(lambda x: (-x[0], None)),
+          DirichletBoundaryCondition(lambda x: (x[0], -999.)))))
 
     y = np.full(bvp.y_shape(True), 13.)
     apply_constraints_along_last_axis(bvp.y_vertex_constraints, y)
@@ -93,11 +94,11 @@ def test_3d_bvp():
     bvp = BoundaryValueProblem(
         diff_eq,
         mesh,
-        ((DirichletCondition(lambda x: (999.,)),
-          NeumannCondition(lambda x: (None,))),
-         (DirichletCondition(lambda x: (0.,)),
-          NeumannCondition(lambda x: (0.,))),
-         (NeumannCondition(lambda x: (-x[0],)),
-          DirichletCondition(lambda x: (-999.,)))))
+        ((DirichletBoundaryCondition(lambda x: (999.,)),
+          NeumannBoundaryCondition(lambda x: (None,))),
+         (DirichletBoundaryCondition(lambda x: (0.,)),
+          NeumannBoundaryCondition(lambda x: (0.,))),
+         (NeumannBoundaryCondition(lambda x: (-x[0],)),
+          DirichletBoundaryCondition(lambda x: (-999.,)))))
 
     assert len(bvp.fipy_vars) == 1

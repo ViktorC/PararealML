@@ -6,7 +6,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
-from src.core.boundary_condition import NeumannCondition
+from src.core.boundary_condition import NeumannBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import CahnHilliardEquation
 from src.core.initial_condition import DiscreteInitialCondition
@@ -25,10 +25,10 @@ set_random_seed(SEEDS[0])
 diff_eq = CahnHilliardEquation(2, 2.5, .5)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
-    (NeumannCondition(lambda x: (0., 0.)),
-     NeumannCondition(lambda x: (0., 0.))),
-    (NeumannCondition(lambda x: (0., 0.)),
-     NeumannCondition(lambda x: (0., 0.)))
+    (NeumannBoundaryCondition(lambda x: (0., 0.)),
+     NeumannBoundaryCondition(lambda x: (0., 0.))),
+    (NeumannBoundaryCondition(lambda x: (0., 0.)),
+     NeumannBoundaryCondition(lambda x: (0., 0.)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(

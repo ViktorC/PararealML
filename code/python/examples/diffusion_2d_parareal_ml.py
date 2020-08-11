@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression
 from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
-from src.core.boundary_condition import NeumannCondition, DirichletCondition
+from src.core.boundary_condition import NeumannBoundaryCondition, DirichletBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.initial_condition import GaussianInitialCondition
@@ -22,10 +22,10 @@ limit_visible_gpus()
 diff_eq = DiffusionEquation(2)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
-    (DirichletCondition(lambda x: (0.,)),
-     DirichletCondition(lambda x: (0.,))),
-    (NeumannCondition(lambda x: (0.,)),
-     NeumannCondition(lambda x: (0.,)))
+    (DirichletBoundaryCondition(lambda x: (0.,)),
+     DirichletBoundaryCondition(lambda x: (0.,))),
+    (NeumannBoundaryCondition(lambda x: (0.,)),
+     NeumannBoundaryCondition(lambda x: (0.,)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(

@@ -2,7 +2,7 @@ import numpy as np
 from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
-from src.core.boundary_condition import DirichletCondition, NeumannCondition
+from src.core.boundary_condition import DirichletBoundaryCondition, NeumannBoundaryCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
@@ -20,10 +20,10 @@ set_random_seed(SEEDS[0])
 diff_eq = DiffusionEquation(2)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.2, .2))
 bcs = (
-    (DirichletCondition(lambda x: (1.5,)),
-     DirichletCondition(lambda x: (1.5,))),
-    (NeumannCondition(lambda x: (0.,)),
-     NeumannCondition(lambda x: (0.,)))
+    (DirichletBoundaryCondition(lambda x: (1.5,)),
+     DirichletBoundaryCondition(lambda x: (1.5,))),
+    (NeumannBoundaryCondition(lambda x: (0.,)),
+     NeumannBoundaryCondition(lambda x: (0.,)))
 )
 bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
