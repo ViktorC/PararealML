@@ -1,7 +1,6 @@
 import numpy as np
 from deepxde.maps import FNN
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.multioutput import MultiOutputRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 from src.core.boundary_condition import NeumannCondition
 from src.core.boundary_value_problem import BoundaryValueProblem
@@ -69,7 +68,7 @@ time_with_args(function_name=pinn_solution_name)(pinn.solve)(ivp) \
 time_with_args(function_name='sol_reg_training')(sol_reg.train)(
     ivp,
     oracle,
-    RandomForestRegressor(),
+    RandomForestRegressor(n_jobs=6, verbose=1),
     .5)
 time_with_args(function_name=sol_reg_solution_name)(sol_reg.solve)(ivp) \
     .plot(sol_reg_solution_name, n_images=10, v_min=v_min, v_max=v_max)
@@ -77,8 +76,8 @@ time_with_args(function_name=sol_reg_solution_name)(sol_reg.solve)(ivp) \
 time_with_args(function_name='op_reg_training')(op_reg.train)(
     ivp,
     oracle,
-    MultiOutputRegressor(GradientBoostingRegressor()),
+    RandomForestRegressor(max_depth=24, n_estimators=240, n_jobs=6, verbose=1),
     10,
-    (0., .1))
+    (0., .01))
 time_with_args(function_name=op_reg_solution_name)(op_reg.solve)(ivp) \
     .plot(op_reg_solution_name, n_images=10, v_min=v_min, v_max=v_max)
