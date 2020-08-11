@@ -46,11 +46,16 @@ class Operator(ABC):
         """
 
     @abstractmethod
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         """
         Returns the IVP's solution.
 
         :param ivp: the initial value problem to solve
+        :param parallel_enabled: whether in-time parallelisation is enabled
         :return: the solution of the IVP
         """
 
@@ -100,7 +105,11 @@ class ODEOperator(Operator):
     def vertex_oriented(self) -> Optional[bool]:
         return None
 
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
 
@@ -155,7 +164,11 @@ class FDMOperator(Operator):
     def vertex_oriented(self) -> Optional[bool]:
         return True
 
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
         d_x = bvp.mesh.d_x if diff_eq.x_dimension else None
@@ -216,7 +229,11 @@ class FVMOperator(Operator):
     def vertex_oriented(self) -> Optional[bool]:
         return False
 
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         bvp = ivp.boundary_value_problem
         diff_eq = bvp.differential_equation
 
@@ -392,7 +409,11 @@ class StatelessMLOperator(MLOperator, ABC):
         return diff_eq.y_dimension,
 
     @suppress_stdout
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         assert self._model is not None
 
         bvp = ivp.boundary_value_problem
@@ -440,7 +461,11 @@ class StatefulMLOperator(MLOperator, ABC):
         return diff_eq.y_dimension,
 
     @suppress_stdout
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
         assert self._model is not None
 
         bvp = ivp.boundary_value_problem

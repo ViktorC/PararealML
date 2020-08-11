@@ -49,7 +49,14 @@ class PararealOperator(Operator):
     def vertex_oriented(self) -> Optional[bool]:
         return self._f.vertex_oriented
 
-    def solve(self, ivp: InitialValueProblem) -> Solution:
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
+        if not parallel_enabled:
+            return self._f.solve(ivp)
+
         comm = MPI.COMM_WORLD
 
         vertex_oriented = self._f.vertex_oriented
@@ -84,13 +91,13 @@ class PararealOperator(Operator):
                 (time_slices[comm.rank], time_slices[comm.rank + 1]),
                 DiscreteInitialCondition(bvp, y[comm.rank], vertex_oriented))
 
-            fine_solution = self._f.solve(my_ivp)
+            fine_solution = self._f.solve(my_ivp, False)
             my_y_trajectory = fine_solution.discrete_y(vertex_oriented)
             my_f_value = my_y_trajectory[-1]
             comm.Allgather(
                 [my_f_value, MPI.DOUBLE], [f_values, MPI.DOUBLE])
 
-            coarse_solution = self._g.solve(my_ivp)
+            coarse_solution = self._g.solve(my_ivp, False)
             my_g_value = coarse_solution.discrete_y(vertex_oriented)[-1]
             comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
 
