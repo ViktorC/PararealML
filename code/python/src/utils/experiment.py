@@ -206,16 +206,16 @@ def _print_and_plot_aggregate_execution_times(
     plot_execution_times(
         [mean_coarse_time] + mean_coarse_ml_times.tolist(),
         [sd_coarse_time] + sd_coarse_ml_times.tolist(),
-        ['c_conv'] + [f'c_{model_name}' for model_name in model_names],
-        'coarse operator',
+        ['G_conv'] + [f'G_{model_name}' for model_name in model_names],
+        'operator',
         f'{experiment_name}_coarse_times')
 
     plot_execution_times(
         [mean_fine_time, mean_parareal_time] + mean_parareal_ml_times.tolist(),
         [sd_fine_time, sd_parareal_time] + sd_parareal_ml_times.tolist(),
-        ['f_conv', 'p_conv'] +
-        [f'p_{model_name}' for model_name in model_names],
-        'fine operator',
+        ['F_conv', 'P_conv'] +
+        [f'P_{model_name}' for model_name in model_names],
+        'operator',
         f'{experiment_name}_fine_times')
 
 
@@ -240,8 +240,8 @@ def _print_and_plot_training_times(
     plot_execution_times(
         mean_training_times,
         sd_training_times,
-        model_names,
-        'model',
+        [f'G_{model_name}' for model_name in model_names],
+        'operator',
         f'{experiment_name}_training_times')
 
 
@@ -309,5 +309,5 @@ def _print_and_plot_aggregate_operator_errors(
         all_diffs[0].matching_time_points,
         mean_rms_differences,
         sd_rms_differences,
-        ['c_conv'] + [f'c_{model_name}' for model_name in model_names],
+        ['G_conv'] + [f'G_{model_name}' for model_name in model_names],
         f'{experiment_name}_operator_accuracy')
