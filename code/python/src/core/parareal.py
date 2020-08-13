@@ -57,19 +57,19 @@ class PararealOperator(Operator):
 
         comm = MPI.COMM_WORLD
 
+        t_interval = ivp.t_interval
+        delta_t = (t_interval[1] - t_interval[0]) / comm.size
+        assert np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t))
+        assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
+
         vertex_oriented = self._f.vertex_oriented
         bvp = ivp.boundary_value_problem
         y_shape = bvp.y_shape(vertex_oriented)
 
-        t_interval = ivp.t_interval
         time_slice_end_points = np.linspace(
             t_interval[0],
             t_interval[1],
             comm.size + 1)
-
-        delta_t = (t_interval[1] - t_interval[0]) / comm.size
-        assert np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t))
-        assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
 
         y_at_end_points = np.empty(
             (len(time_slice_end_points), *y_shape))
