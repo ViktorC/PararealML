@@ -62,7 +62,7 @@ class PararealOperator(Operator):
         y_shape = bvp.y_shape(vertex_oriented)
 
         t_interval = ivp.t_interval
-        time_slices = np.linspace(
+        time_slice_end_points = np.linspace(
             t_interval[0],
             t_interval[1],
             comm.size + 1)
@@ -71,76 +71,79 @@ class PararealOperator(Operator):
         assert np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t))
         assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
 
-        y = np.empty((len(time_slices), *y_shape))
-        f_values = np.empty((comm.size, *y_shape))
-        g_values = np.empty((comm.size, *y_shape))
-        new_g_values = np.empty((comm.size, *y_shape))
+        y_at_end_points = np.empty(
+            (len(time_slice_end_points), *y_shape))
+        corrections = np.empty((comm.size, *y_shape))
+        new_y_coarse_at_end_points = np.empty((comm.size, *y_shape))
 
-        y[0] = ivp.initial_condition.discrete_y_0(vertex_oriented)
-        for i, t in enumerate(time_slices[:-1]):
-            coarse_ivp = InitialValueProblem(
+        y_at_end_points[0] = \
+            ivp.initial_condition.discrete_y_0(vertex_oriented)
+        for i, t in enumerate(time_slice_end_points[:-1]):
+            sub_ivp = InitialValueProblem(
                 bvp,
-                (t, time_slices[i + 1]),
-                DiscreteInitialCondition(bvp, y[i], vertex_oriented))
-            coarse_solution = self._g.solve(coarse_ivp)
-            y[i + 1] = coarse_solution.discrete_y(vertex_oriented)[-1]
+                (t, time_slice_end_points[i + 1]),
+                DiscreteInitialCondition(
+                    bvp, y_at_end_points[i], vertex_oriented))
+            coarse_solution = self._g.solve(sub_ivp)
+            y_at_end_points[i + 1] = \
+                coarse_solution.discrete_y(vertex_oriented)[-1]
 
-        my_y_trajectory = None
+        y_fine = None
+        y_coarse_at_end_point = None
 
         for i in range(min(comm.size, self._max_iterations)):
-            my_ivp = InitialValueProblem(
+            sub_ivp = InitialValueProblem(
                 bvp,
-                (time_slices[comm.rank], time_slices[comm.rank + 1]),
-                DiscreteInitialCondition(bvp, y[comm.rank], vertex_oriented))
+                (time_slice_end_points[comm.rank],
+                 time_slice_end_points[comm.rank + 1]),
+                DiscreteInitialCondition(
+                    bvp, y_at_end_points[comm.rank], vertex_oriented))
 
-            fine_solution = self._f.solve(my_ivp, False)
-            my_y_trajectory = fine_solution.discrete_y(vertex_oriented)
-            my_f_value = my_y_trajectory[-1]
-            comm.Allgather(
-                [my_f_value, MPI.DOUBLE], [f_values, MPI.DOUBLE])
-
-            coarse_solution = self._g.solve(my_ivp, False)
-            my_g_value = coarse_solution.discrete_y(vertex_oriented)[-1]
-            comm.Allgather([my_g_value, MPI.DOUBLE], [g_values, MPI.DOUBLE])
+            fine_solution = self._f.solve(sub_ivp, False)
+            y_fine = fine_solution.discrete_y(vertex_oriented)
+            coarse_solution = self._g.solve(sub_ivp, False)
+            y_coarse_at_end_point = \
+                coarse_solution.discrete_y(vertex_oriented)[-1]
+            correction = y_fine[-1] - y_coarse_at_end_point
+            comm.Allgather([correction, MPI.DOUBLE], [corrections, MPI.DOUBLE])
 
             max_update = 0.
 
-            for j, t in enumerate(time_slices[:-1]):
-                f_value = f_values[j]
-                g_value = g_values[j]
-                correction = f_value - g_value
-
-                coarse_ivp = InitialValueProblem(
+            for j, t in enumerate(time_slice_end_points[:-1]):
+                sub_ivp = InitialValueProblem(
                     bvp,
-                    (t, time_slices[j + 1]),
-                    DiscreteInitialCondition(bvp, y[j], vertex_oriented))
-                new_coarse_solution = self._g.solve(coarse_ivp)
-                new_g_value = new_coarse_solution.discrete_y(
-                    vertex_oriented)[-1]
-                new_g_values[j] = new_g_value
+                    (t, time_slice_end_points[j + 1]),
+                    DiscreteInitialCondition(
+                        bvp, y_at_end_points[j], vertex_oriented))
 
-                new_y_next = new_g_value + correction
+                new_coarse_solution = self._g.solve(sub_ivp)
+                new_y_coarse_at_end_point = \
+                    new_coarse_solution.discrete_y(vertex_oriented)[-1]
+                new_y_coarse_at_end_points[j] = new_y_coarse_at_end_point
+
+                new_y_at_end_point = new_y_coarse_at_end_point + corrections[j]
 
                 max_update = max(
                     max_update,
-                    np.linalg.norm(new_y_next - y[j + 1]))
+                    np.linalg.norm(
+                        new_y_at_end_point - y_at_end_points[j + 1]))
 
-                y[j + 1] = new_y_next
+                y_at_end_points[j + 1] = new_y_at_end_point
 
             if max_update < self._tol:
                 break
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._f.d_t)[1:]
-        y_trajectory = np.empty((len(time_points), *y_shape))
-        my_y_trajectory += new_g_values[comm.rank] - g_values[comm.rank]
+        all_y_fine = np.empty((len(time_points), *y_shape))
+        y_fine += new_y_coarse_at_end_points[comm.rank] - y_coarse_at_end_point
         comm.Allgather(
-            [my_y_trajectory, MPI.DOUBLE],
-            [y_trajectory, MPI.DOUBLE])
+            [y_fine, MPI.DOUBLE],
+            [all_y_fine, MPI.DOUBLE])
 
         return Solution(
             bvp,
             time_points,
-            y_trajectory,
+            all_y_fine,
             vertex_oriented=vertex_oriented,
             d_t=self._f.d_t)
