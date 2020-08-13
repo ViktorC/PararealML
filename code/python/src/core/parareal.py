@@ -34,8 +34,6 @@ class PararealOperator(Operator):
             processes and the accuracy requirements are not satisfied in fewer
             iterations)
         """
-        assert np.isclose(g.d_t, f.d_t * round(g.d_t / f.d_t))
-
         self._f = f
         self._g = g
         self._tol = tol
@@ -68,6 +66,10 @@ class PararealOperator(Operator):
             t_interval[0],
             t_interval[1],
             comm.size + 1)
+
+        delta_t = (t_interval[1] - t_interval[0]) / comm.size
+        assert np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t))
+        assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
 
         y = np.empty((len(time_slices), *y_shape))
         f_values = np.empty((comm.size, *y_shape))
