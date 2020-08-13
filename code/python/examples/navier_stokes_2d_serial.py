@@ -23,4 +23,4 @@ ivp = InitialValueProblem(bvp, (0., 100.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .02)
 solution = time(solver.solve)(ivp)
-solution.plot('navier_stokes', n_images=50)
+solution.plot('navier_stokes', only_first_process=True, n_images=50)

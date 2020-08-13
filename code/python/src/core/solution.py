@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Sequence, Any, NamedTuple
 
 import numpy as np
+from mpi4py import MPI
 from scipy.interpolate import interpn
 
 from src.core.boundary_value_problem import BoundaryValueProblem
@@ -245,18 +246,25 @@ class Solution:
         diff_arrays = [np.array(diff) for diff in all_diffs]
         return Diffs(matching_time_point_array, diff_arrays)
 
-    def plot(self, solution_name: str, **kwargs: Any):
+    def plot(
+            self,
+            solution_name: str,
+            only_first_process: bool = False,
+            **kwargs: Any):
         """
         Plots the solution and saves it to a file.
 
         :param solution_name: the name of the solution; this is included in the
             file name of the saved plot
+        :param only_first_process: if only the first (rank 0) process should
+            generate a plot
         :param kwargs: plotting configuration;
             see :func:`~src.utils.plot.plot_ivp_solution`
         """
         from src.utils.plot import plot_ivp_solution
 
-        plot_ivp_solution(self, solution_name, **kwargs)
+        if (not only_first_process) or MPI.COMM_WORLD.rank == 0:
+            plot_ivp_solution(self, solution_name, **kwargs)
 
 
 class Diffs(NamedTuple):
