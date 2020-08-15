@@ -7,7 +7,7 @@ from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
 from src.core.boundary_condition import NeumannBoundaryCondition
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import CahnHilliardEquation
 from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -30,12 +30,12 @@ bcs = (
     (NeumannBoundaryCondition(lambda x: (0., 0.)),
      NeumannBoundaryCondition(lambda x: (0., 0.)))
 )
-bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
+cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
-    bvp,
-    .125 * np.random.uniform(-1., 1., bvp.y_shape(False)),
+    cp,
+    .125 * np.random.uniform(-1., 1., cp.y_shape(False)),
     False)
-ivp = InitialValueProblem(bvp, (0., 5.), ic)
+ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 f = FVMOperator(LinearLUSolver(), .005)
 g = FVMOperator(LinearLUSolver(), .025)

@@ -3,7 +3,7 @@ from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
 from src.core.boundary_condition import NeumannBoundaryCondition
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import CahnHilliardEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import DiscreteInitialCondition
@@ -25,12 +25,12 @@ bcs = (
     (NeumannBoundaryCondition(lambda x: (0., 0.)),
      NeumannBoundaryCondition(lambda x: (0., 0.)))
 )
-bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
+cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
-    bvp,
-    .05 * np.random.uniform(-1., 1., bvp.y_shape(False)),
+    cp,
+    .05 * np.random.uniform(-1., 1., cp.y_shape(False)),
     False)
-ivp = InitialValueProblem(bvp, (0., 5.), ic)
+ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 pinn = PINNOperator(1.25, oracle.vertex_oriented)

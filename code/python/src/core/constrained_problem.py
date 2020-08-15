@@ -13,10 +13,11 @@ from src.core.mesh import Mesh
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
 
 
-class BoundaryValueProblem:
+class ConstrainedProblem:
     """
-    A representation of a boundary value problem (BVP) around a differential
-    equation.
+    A representation of a simple ordinary differential equation or a partial
+    differential equation constrained in space by a mesh and boundary
+    conditions.
     """
 
     def __init__(
@@ -26,11 +27,11 @@ class BoundaryValueProblem:
             boundary_conditions:
             Optional[Tuple[BoundaryConditionPair, ...]] = None):
         """
-        :param diff_eq: the differential equation of the boundary value problem
-        :param mesh: the mesh over which the boundary value problem is to be
+        :param diff_eq: the differential equation to constrain
+        :param mesh: the mesh over which the differential equation is to be
             solved
-        :param boundary_conditions: the boundary conditions on the boundary
-            value problem's non-temporal domain
+        :param boundary_conditions: the boundary conditions on differential
+            equation's spatial domain
         """
         assert diff_eq is not None
         self._diff_eq = diff_eq
@@ -83,14 +84,14 @@ class BoundaryValueProblem:
     @property
     def differential_equation(self) -> DifferentialEquation:
         """
-        Returns the differential equation of the BVP.
+        Returns the differential equation.
         """
         return self._diff_eq
 
     @property
     def mesh(self) -> Optional[Mesh]:
         """
-        Returns the mesh over which the BVP is to be solved
+        Returns the mesh over which the differential equation is to be solved
         """
         return self._mesh
 
@@ -98,8 +99,8 @@ class BoundaryValueProblem:
     def boundary_conditions(self) \
             -> Optional[Tuple[BoundaryConditionPair, ...]]:
         """
-        Returns the boundary conditions of the BVP. In case the differential
-        equation is an ODE, it returns None.
+        Returns the boundary conditions of the differential equation. In case
+        the differential equation is an ODE, it returns None.
         """
         return deepcopy(self._boundary_conditions)
 
@@ -107,7 +108,7 @@ class BoundaryValueProblem:
     def y_vertices_shape(self) -> Tuple[int, ...]:
         """
         Returns the shape of the array representing the vertices of the
-        discretised solution to the BVP.
+        discretised solution to the constrained problem.
         """
         return copy(self._y_vertices_shape)
 
@@ -115,7 +116,7 @@ class BoundaryValueProblem:
     def y_cells_shape(self) -> Tuple[int, ...]:
         """
         Returns the shape of the array representing the cell centers of the
-        discretised solution to the BVP.
+        discretised solution to the constrained problem.
         """
         return copy(self._y_cells_shape)
 
@@ -174,19 +175,20 @@ class BoundaryValueProblem:
     @property
     def fipy_vars(self) -> Optional[Tuple[CellVariable]]:
         """
-        Returns a tuple of FiPy variables representing the solution of the BVP.
-        If the differential equation is an ODE, it returns None.
+        Returns a tuple of FiPy variables representing the solution of the
+        constrained problem. If the differential equation is an ODE, it returns
+        None.
         """
         return copy(self._fipy_vars)
 
     def y_shape(self, vertex_oriented: Optional[bool] = None):
         """
         Returns the shape of the array of the array representing the
-        discretised solution to the BVP.
+        discretised solution to the constrained problem.
 
         :param vertex_oriented: whether the solution is to be evaluated at the
-            vertices or the cells of the discretised spatial domain; if the BVP
-            is an ODE, it can be None
+            vertices or the cells of the discretised spatial domain; if the
+            differential equation is an ODE, it can be None
         :return: the shape of result evaluated at the vertices or the cells
         """
         assert (not self._diff_eq.x_dimension) or (vertex_oriented is not None)

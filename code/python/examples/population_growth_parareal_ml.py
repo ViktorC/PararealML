@@ -3,7 +3,7 @@ from sklearn.linear_model import LinearRegression
 from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import PopulationGrowthEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -16,9 +16,9 @@ from src.utils.rand import SEEDS
 limit_visible_gpus()
 
 diff_eq = PopulationGrowthEquation(2e-2)
-bvp = BoundaryValueProblem(diff_eq)
-ic = ContinuousInitialCondition(bvp, lambda _: (100,))
-ivp = InitialValueProblem(bvp, (0., 100.), ic)
+cp = ConstrainedProblem(diff_eq)
+ic = ContinuousInitialCondition(cp, lambda _: (100,))
+ivp = InitialValueProblem(cp, (0., 100.), ic)
 
 f = ODEOperator('DOP853', 1e-6)
 g = ODEOperator('RK45', 1e-4)
@@ -67,7 +67,7 @@ run_parareal_ml_experiment(
     g_ml,
     models,
     threshold,
-    SEEDS[:20],
+    SEEDS[:1],
     iterations=100,
     noise_sd=(0., 50.),
     model_names=model_names)

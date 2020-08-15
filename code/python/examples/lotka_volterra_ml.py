@@ -4,7 +4,7 @@ from deepxde.maps import FNN
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import LotkaVolterraEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -16,9 +16,9 @@ from src.utils.time import time_with_args
 set_random_seed(SEEDS[0])
 
 diff_eq = LotkaVolterraEquation()
-bvp = BoundaryValueProblem(diff_eq)
-ic = ContinuousInitialCondition(bvp, lambda _: (100., 15.))
-ivp = InitialValueProblem(bvp, (0., 10.), ic)
+cp = ConstrainedProblem(diff_eq)
+ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
+ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 oracle = ODEOperator('DOP853', 1e-3)
 pinn = PINNOperator(.1, oracle.vertex_oriented)

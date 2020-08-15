@@ -12,10 +12,10 @@ src.core.boundary\_condition module
    :undoc-members:
    :show-inheritance:
 
-src.core.boundary\_value\_problem module
-----------------------------------------
+src.core.constrained\_problem module
+------------------------------------
 
-.. automodule:: src.core.boundary_value_problem
+.. automodule:: src.core.constrained_problem
    :members:
    :undoc-members:
    :show-inheritance:

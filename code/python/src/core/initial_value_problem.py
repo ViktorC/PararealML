@@ -8,7 +8,7 @@ from deepxde import IC
 from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.geometry import TimeDomain, GeometryXTime
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.initial_condition import InitialCondition
 
 TemporalDomainInterval = Tuple[float, float]
@@ -22,7 +22,7 @@ class InitialValueProblem:
 
     def __init__(
             self,
-            bvp: BoundaryValueProblem,
+            cp: ConstrainedProblem,
             t_interval: TemporalDomainInterval,
             initial_condition: InitialCondition,
             exact_y: Optional[
@@ -32,7 +32,7 @@ class InitialValueProblem:
                 ]
             ] = None):
         """
-        :param bvp: the boundary value problem instance
+        :param cp: the constrained problem to base the initial value problem on
         :param t_interval: the bounds of the time domain of the initial value
             problem
         :param initial_condition: the initial condition of the problem
@@ -40,8 +40,8 @@ class InitialValueProblem:
             initial value problem at time step t and point x. If it is None,
             the problem is assumed to have no analytical solution.
         """
-        assert bvp is not None
-        self._bvp = bvp
+        assert cp is not None
+        self._cp = cp
 
         assert len(t_interval) == 2
         assert t_interval[0] <= t_interval[1]
@@ -54,9 +54,9 @@ class InitialValueProblem:
 
         self._deepxde_time_domain = TimeDomain(*self._t_interval)
         self._deepxde_geometry_time_domain = GeometryXTime(
-            self._bvp.mesh.deepxde_geometry,
+            self._cp.mesh.deepxde_geometry,
             self.deepxde_time_domain
-        ) if self._bvp.differential_equation.x_dimension else None
+        ) if self._cp.differential_equation.x_dimension else None
 
         self._deepxde_initial_conditions = \
             self._create_deepxde_initial_conditions()
@@ -64,11 +64,11 @@ class InitialValueProblem:
             self._create_deepxde_boundary_conditions()
 
     @property
-    def boundary_value_problem(self) -> BoundaryValueProblem:
+    def constrained_problem(self) -> ConstrainedProblem:
         """
-        Returns the boundary value problem instance.
+        Returns the constrained problem the IVP is based on.
         """
-        return self._bvp
+        return self._cp
 
     @property
     def t_interval(self) -> TemporalDomainInterval:
@@ -159,15 +159,15 @@ class InitialValueProblem:
         """
         Creates the DeepXDE equivalent of the boundary conditions.
         """
-        if not self._bvp.differential_equation.x_dimension:
+        if not self._cp.differential_equation.x_dimension:
             return None
 
         boundary_conditions: List[BC] = []
 
-        for axis, bc_pair in enumerate(self._bvp.boundary_conditions):
+        for axis, bc_pair in enumerate(self._cp.boundary_conditions):
             if bc_pair is not None:
                 for bc_ind, bc in enumerate(bc_pair):
-                    boundary_value = self._bvp.mesh.x_intervals[axis][bc_ind]
+                    boundary_value = self._cp.mesh.x_intervals[axis][bc_ind]
 
                     self._add_deepxde_boundary_conditions_for_all_y(
                         bc.has_y_condition,
@@ -254,7 +254,7 @@ class InitialValueProblem:
             component of the output array of the organic condition function
         """
         deepxde_condition_functions = []
-        for y_ind in range(self._bvp.differential_equation.y_dimension):
+        for y_ind in range(self._cp.differential_equation.y_dimension):
             def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
                 if fixed_axis is not None:
                     x = np.delete(x, fixed_axis, axis=1)

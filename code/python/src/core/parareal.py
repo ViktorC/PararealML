@@ -63,8 +63,8 @@ class PararealOperator(Operator):
         assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
 
         vertex_oriented = self._f.vertex_oriented
-        bvp = ivp.boundary_value_problem
-        y_shape = bvp.y_shape(vertex_oriented)
+        cp = ivp.constrained_problem
+        y_shape = cp.y_shape(vertex_oriented)
 
         time_slice_end_points = np.linspace(
             t_interval[0],
@@ -80,10 +80,10 @@ class PararealOperator(Operator):
             ivp.initial_condition.discrete_y_0(vertex_oriented)
         for i, t in enumerate(time_slice_end_points[:-1]):
             sub_ivp = InitialValueProblem(
-                bvp,
+                cp,
                 (t, time_slice_end_points[i + 1]),
                 DiscreteInitialCondition(
-                    bvp, y_at_end_points[i], vertex_oriented))
+                    cp, y_at_end_points[i], vertex_oriented))
             coarse_solution = self._g.solve(sub_ivp)
             y_at_end_points[i + 1] = \
                 coarse_solution.discrete_y(vertex_oriented)[-1]
@@ -93,11 +93,11 @@ class PararealOperator(Operator):
 
         for i in range(min(comm.size, self._max_iterations)):
             sub_ivp = InitialValueProblem(
-                bvp,
+                cp,
                 (time_slice_end_points[comm.rank],
                  time_slice_end_points[comm.rank + 1]),
                 DiscreteInitialCondition(
-                    bvp, y_at_end_points[comm.rank], vertex_oriented))
+                    cp, y_at_end_points[comm.rank], vertex_oriented))
 
             fine_solution = self._f.solve(sub_ivp, False)
             y_fine = fine_solution.discrete_y(vertex_oriented)
@@ -111,10 +111,10 @@ class PararealOperator(Operator):
 
             for j, t in enumerate(time_slice_end_points[:-1]):
                 sub_ivp = InitialValueProblem(
-                    bvp,
+                    cp,
                     (t, time_slice_end_points[j + 1]),
                     DiscreteInitialCondition(
-                        bvp, y_at_end_points[j], vertex_oriented))
+                        cp, y_at_end_points[j], vertex_oriented))
 
                 new_coarse_solution = self._g.solve(sub_ivp)
                 new_y_coarse_at_end_point = \
@@ -142,7 +142,7 @@ class PararealOperator(Operator):
             [all_y_fine, MPI.DOUBLE])
 
         return Solution(
-            bvp,
+            cp,
             time_points,
             all_y_fine,
             vertex_oriented=vertex_oriented,

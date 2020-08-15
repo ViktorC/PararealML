@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import NBodyGravitationalEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -14,11 +14,11 @@ initial_positions = 40 * np.random.rand(n_planets * 3) - 20.
 initial_velocities = 5 * np.random.rand(n_planets * 3)
 
 diff_eq = NBodyGravitationalEquation(3, masses)
-bvp = BoundaryValueProblem(diff_eq)
+cp = ConstrainedProblem(diff_eq)
 ic = ContinuousInitialCondition(
-    bvp,
+    cp,
     lambda _: np.append(initial_positions, [initial_velocities]))
-ivp = InitialValueProblem(bvp, (0., 5.), ic)
+ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 f = ODEOperator('RK45', 1e-6)
 g = ODEOperator('RK45', 1e-2)
@@ -29,8 +29,8 @@ g_solution_name = 'n_body_coarse'
 p_solution_name = 'n_body_parareal'
 
 time_with_args(function_name=f_solution_name)(f.solve)(ivp) \
-    .plot(f_solution_name, only_first_process=True, n_images=20)
+    .plot(f_solution_name, only_first_process=True)
 time_with_args(function_name=g_solution_name)(g.solve)(ivp) \
-    .plot(g_solution_name, only_first_process=True, n_images=20)
+    .plot(g_solution_name, only_first_process=True)
 time_with_args(function_name=p_solution_name)(p.solve)(ivp) \
-    .plot(p_solution_name, only_first_process=True, n_images=20)
+    .plot(p_solution_name, only_first_process=True)

@@ -4,7 +4,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import LotkaVolterraEquation
 from src.core.initial_condition import ContinuousInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -17,9 +17,9 @@ from src.utils.rand import SEEDS
 limit_visible_gpus()
 
 diff_eq = LotkaVolterraEquation()
-bvp = BoundaryValueProblem(diff_eq)
-ic = ContinuousInitialCondition(bvp, lambda _: (100., 15.))
-ivp = InitialValueProblem(bvp, (0., 100.), ic)
+cp = ConstrainedProblem(diff_eq)
+ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
+ivp = InitialValueProblem(cp, (0., 100.), ic)
 
 f = ODEOperator('DOP853', 1e-6)
 g = ODEOperator('DOP853', 1e-4)

@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.core.boundary_condition import DirichletBoundaryCondition
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import WaveEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import GaussianInitialCondition
@@ -19,12 +19,12 @@ bcs = (
     (DirichletBoundaryCondition(lambda x: (.0, .0)),
      DirichletBoundaryCondition(lambda x: (.0, .0)))
 )
-bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
+cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
-    bvp,
+    cp,
     ((np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]])),) * 2,
     (3., .0))
-ivp = InitialValueProblem(bvp, (0., 50.), ic)
+ivp = InitialValueProblem(cp, (0., 50.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 solution = time(solver.solve)(ivp)

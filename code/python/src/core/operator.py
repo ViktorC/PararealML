@@ -11,7 +11,7 @@ from deepxde.model import TrainState, LossHistory
 from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differentiator import Differentiator
 from src.core.initial_condition import DiscreteInitialCondition
 from src.core.initial_value_problem import TemporalDomainInterval, \
@@ -110,8 +110,8 @@ class ODEOperator(Operator):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
 
         assert diff_eq.x_dimension == 0
 
@@ -133,7 +133,7 @@ class ODEOperator(Operator):
                 f'status code: {result.status}, message: {result.message}')
 
         y = np.ascontiguousarray(result.y.T)
-        return Solution(bvp, time_points[1:], y, d_t=self._d_t)
+        return Solution(cp, time_points[1:], y, d_t=self._d_t)
 
 
 class FDMOperator(Operator):
@@ -169,11 +169,11 @@ class FDMOperator(Operator):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
-        d_x = bvp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = bvp.y_vertex_constraints
-        d_y_boundary_constraints = bvp.d_y_boundary_vertex_constraints
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+        d_x = cp.mesh.d_x if diff_eq.x_dimension else None
+        y_constraints = cp.y_vertex_constraints
+        d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return diff_eq.d_y_over_d_t(
@@ -187,7 +187,7 @@ class FDMOperator(Operator):
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
-        y = np.empty((len(time_points) - 1,) + bvp.y_vertices_shape)
+        y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
         y_i = ivp.initial_condition.discrete_y_0(True)
 
         for i, t_i in enumerate(time_points[:-1]):
@@ -200,7 +200,7 @@ class FDMOperator(Operator):
             y[i] = y_i
 
         return Solution(
-            bvp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
+            cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
 
 class FVMOperator(Operator):
@@ -234,16 +234,16 @@ class FVMOperator(Operator):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
 
         assert 1 <= diff_eq.x_dimension <= 3
 
-        mesh = bvp.mesh
+        mesh = cp.mesh
         mesh_shape = mesh.shape(False)
         y_0 = ivp.initial_condition.discrete_y_0(False)
 
-        fipy_vars = bvp.fipy_vars
+        fipy_vars = cp.fipy_vars
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
 
@@ -252,7 +252,7 @@ class FVMOperator(Operator):
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
-        y = np.empty((len(time_points) - 1,) + bvp.y_cells_shape)
+        y = np.empty((len(time_points) - 1,) + cp.y_cells_shape)
         for i, t_i in enumerate(time_points[:-1]):
             for fipy_var in fipy_vars:
                 fipy_var.updateOld()
@@ -265,7 +265,7 @@ class FVMOperator(Operator):
                 y[i, ..., j] = fipy_var.value.reshape(mesh_shape)
 
         return Solution(
-            bvp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
+            cp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
 
 
 class MLOperator(Operator, ABC):
@@ -325,23 +325,23 @@ class MLOperator(Operator, ABC):
 
     def _create_input_placeholder(
             self,
-            bvp: BoundaryValueProblem
+            cp: ConstrainedProblem
     ) -> np.ndarray:
         """
-        Creates a placeholder array for the ML model inputs. If the BVP is an
-        ODE, it returns an empty array of shape (1, 1) into which t can be
-        substituted to create x. If the BVP is a PDE, it returns an array of
-        shape (n_mesh_points, x_dimension + 1) whose each row is populated with
-        the spatial coordinates of the corresponding mesh point in addition to
-        an empty column for t.
+        Creates a placeholder array for the ML model inputs. If the constrained
+        problem is an ODE, it returns an empty array of shape (1, 1) into which
+        t can be substituted to create x. If the constrained problem is a PDE,
+        it returns an array of shape (n_mesh_points, x_dimension + 1) whose
+        each row is populated with the spatial coordinates of the corresponding
+        mesh point in addition to an empty column for t.
 
-        :param bvp: the boundary value problem to base the inputs on
+        :param cp: the constrained problem to base the inputs on
         :return: the placeholder array for the ML inputs
         """
-        diff_eq = bvp.differential_equation
+        diff_eq = cp.differential_equation
 
         if diff_eq.x_dimension:
-            mesh = bvp.mesh
+            mesh = cp.mesh
             mesh_shape = mesh.shape(self._vertex_oriented)
             n_points = np.prod(mesh_shape)
             x = np.empty((n_points, diff_eq.x_dimension + 1))
@@ -354,24 +354,24 @@ class MLOperator(Operator, ABC):
 
     def _create_input_batch(
             self,
-            bvp: BoundaryValueProblem,
+            cp: ConstrainedProblem,
             time_points: np.ndarray
     ) -> np.ndarray:
         """
         Creates a 2D array of inputs with a shape of
         (n_mesh_points * n_time_points, x_dimension + 1).
 
-        :param bvp: the boundary value problem to base the inputs on
+        :param cp: the constrained problem to base the inputs on
         :param time_points: the discretised time domain of the IVP to create
             inputs for
         :return: a batch of all inputs
         """
-        input_placeholder = self._create_input_placeholder(bvp)
+        input_placeholder = self._create_input_placeholder(cp)
         n_mesh_points = input_placeholder.shape[0]
 
         x = np.tile(input_placeholder, (len(time_points), 1))
         t = np.repeat(time_points, n_mesh_points)
-        x[:, bvp.differential_equation.x_dimension] = t
+        x[:, cp.differential_equation.x_dimension] = t
 
         return x
 
@@ -401,11 +401,11 @@ class StatelessMLOperator(MLOperator, ABC):
         self._batch_mode = batch_mode
 
     def model_input_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
-        diff_eq = ivp.boundary_value_problem.differential_equation
+        diff_eq = ivp.constrained_problem.differential_equation
         return diff_eq.x_dimension + 1,
 
     def model_output_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
-        diff_eq = ivp.boundary_value_problem.differential_equation
+        diff_eq = ivp.constrained_problem.differential_equation
         return diff_eq.y_dimension,
 
     @suppress_stdout
@@ -416,22 +416,22 @@ class StatelessMLOperator(MLOperator, ABC):
     ) -> Solution:
         assert self._model is not None
 
-        bvp = ivp.boundary_value_problem
+        cp = ivp.constrained_problem
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)[1:]
 
-        y_shape = bvp.y_shape(self._vertex_oriented)
+        y_shape = cp.y_shape(self._vertex_oriented)
         all_y_shape = (len(time_points),) + y_shape
 
         if self._batch_mode:
-            x_batch = self._create_input_batch(bvp, time_points)
+            x_batch = self._create_input_batch(cp, time_points)
             y_hat_batch = self._model.predict(x_batch)
             y = np.ascontiguousarray(
                 y_hat_batch.reshape(all_y_shape),
                 dtype=np.float)
         else:
-            x = self._create_input_placeholder(bvp)
+            x = self._create_input_placeholder(cp)
             y = np.empty(all_y_shape)
             for i, t_i in enumerate(time_points):
                 x[:, -1] = t_i
@@ -439,7 +439,7 @@ class StatelessMLOperator(MLOperator, ABC):
                 y[i, ...] = y_hat.reshape(y_shape)
 
         return Solution(
-            bvp,
+            cp,
             time_points,
             y, vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)
@@ -453,11 +453,11 @@ class StatefulMLOperator(MLOperator, ABC):
     """
 
     def model_input_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
-        diff_eq = ivp.boundary_value_problem.differential_equation
+        diff_eq = ivp.constrained_problem.differential_equation
         return diff_eq.x_dimension + 1 + diff_eq.y_dimension,
 
     def model_output_shape(self, ivp: InitialValueProblem) -> Tuple[int]:
-        diff_eq = ivp.boundary_value_problem.differential_equation
+        diff_eq = ivp.constrained_problem.differential_equation
         return diff_eq.y_dimension,
 
     @suppress_stdout
@@ -468,15 +468,15 @@ class StatefulMLOperator(MLOperator, ABC):
     ) -> Solution:
         assert self._model is not None
 
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
-        y_shape = bvp.y_shape(self._vertex_oriented)
+        y_shape = cp.y_shape(self._vertex_oriented)
 
-        x = self._create_input_placeholder(bvp)
+        x = self._create_input_placeholder(cp)
         x = np.concatenate(
             (x, np.empty((x.shape[0], diff_eq.y_dimension))),
             axis=-1)
@@ -495,7 +495,7 @@ class StatefulMLOperator(MLOperator, ABC):
             y[i, ...] = y_i.reshape(y_shape)
 
         return Solution(
-            bvp,
+            cp,
             time_points[1:],
             y,
             vertex_oriented=self._vertex_oriented,
@@ -523,7 +523,7 @@ class PINNOperator(StatelessMLOperator):
         :param training_config: keyworded training configuration arguments
         :return: a tuple of the loss history and the training state
         """
-        diff_eq = ivp.boundary_value_problem.differential_equation
+        diff_eq = ivp.constrained_problem.differential_equation
 
         assert diff_eq.x_dimension <= 3
 
@@ -616,10 +616,10 @@ class StatelessRegressionOperator(StatelessMLOperator):
         """
         assert subsampling_factor is None or 0. < subsampling_factor <= 1.
 
-        time_steps = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
+        time_points = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
         x_batch = self._create_input_batch(
-            ivp.boundary_value_problem,
-            time_steps)
+            ivp.constrained_problem,
+            time_points)
 
         y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
         y_0 = y_0.reshape((1,) + y_0.shape)
@@ -701,16 +701,16 @@ class StatefulRegressionOperator(StatefulMLOperator):
 
             noise_sd = (noise_sd, noise_sd)
 
-        bvp = ivp.boundary_value_problem
-        diff_eq = bvp.differential_equation
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
 
-        n_spatial_points = np.prod(bvp.mesh.shape(self._vertex_oriented)) \
+        n_spatial_points = np.prod(cp.mesh.shape(self._vertex_oriented)) \
             if diff_eq.x_dimension else 1
 
         time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
         last_sub_ivp_start_time_point = len(time_points) - 2
 
-        x_batch = self._create_input_batch(bvp, time_points[:-1])
+        x_batch = self._create_input_batch(cp, time_points[:-1])
         x_batch = np.concatenate(
             (x_batch, np.empty((x_batch.shape[0], diff_eq.y_dimension))),
             axis=-1)
@@ -744,9 +744,9 @@ class StatefulRegressionOperator(StatefulMLOperator):
                     y_i.reshape((-1, diff_eq.y_dimension))
 
                 sub_ivp = InitialValueProblem(
-                    bvp,
+                    cp,
                     (t_i, t_i + self._d_t),
-                    DiscreteInitialCondition(bvp, y_i, self._vertex_oriented))
+                    DiscreteInitialCondition(cp, y_i, self._vertex_oriented))
                 solution = oracle.solve(sub_ivp)
 
                 y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]

@@ -3,7 +3,7 @@ from fipy import LinearLUSolver
 
 from src.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import DiffusionEquation
 from src.core.initial_condition import GaussianInitialCondition
 from src.core.initial_value_problem import InitialValueProblem
@@ -20,12 +20,12 @@ bcs = (
     (NeumannBoundaryCondition(lambda x: (0.,)),
      NeumannBoundaryCondition(lambda x: (0.,)))
 )
-bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
+cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
-    bvp,
+    cp,
     ((np.array([5., 5.]), np.array([[1., 0.], [0., 1.]])),),
     (1000.,))
-ivp = InitialValueProblem(bvp, (0., 8.), ic)
+ivp = InitialValueProblem(cp, (0., 8.), ic)
 
 f = FVMOperator(LinearLUSolver(), .00125)
 g = FVMOperator(LinearLUSolver(), .0125)

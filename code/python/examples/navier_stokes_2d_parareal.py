@@ -1,5 +1,5 @@
 from src.core.boundary_condition import DirichletBoundaryCondition
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.differential_equation import NavierStokesEquation
 from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
 from src.core.initial_condition import ContinuousInitialCondition
@@ -18,9 +18,9 @@ bcs = (
     (DirichletBoundaryCondition(lambda x: (.0, .0)),
      DirichletBoundaryCondition(lambda x: (.0, .0)))
 )
-bvp = BoundaryValueProblem(diff_eq, mesh, bcs)
-ic = ContinuousInitialCondition(bvp, lambda x: (.0, .0))
-ivp = InitialValueProblem(bvp, (0., 20.), ic)
+cp = ConstrainedProblem(diff_eq, mesh, bcs)
+ic = ContinuousInitialCondition(cp, lambda x: (.0, .0))
+ivp = InitialValueProblem(cp, (0., 20.), ic)
 
 f = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 g = FDMOperator(

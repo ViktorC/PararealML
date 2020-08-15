@@ -25,7 +25,7 @@ def plot_y_against_t(
     :param legend_location: the location of the legend in case y is
         vector-valued
     """
-    diff_eq = solution.boundary_value_problem.differential_equation
+    diff_eq = solution.constrained_problem.differential_equation
     assert not diff_eq.x_dimension
 
     t = solution.t_coordinates
@@ -107,7 +107,7 @@ def plot_n_body_simulation(
     :param trajectory_line_width: the width of the trajectory line
     """
     diff_eq: NBodyGravitationalEquation = \
-        solution.boundary_value_problem.differential_equation
+        solution.constrained_problem.differential_equation
 
     assert isinstance(diff_eq, NBodyGravitationalEquation)
 
@@ -292,7 +292,7 @@ def plot_evolution_of_y(
     v_min = np.min(y) if v_min is None else v_min
     v_max = np.max(y) if v_max is None else v_max
 
-    if solution.boundary_value_problem.differential_equation.x_dimension == 1:
+    if solution.constrained_problem.differential_equation.x_dimension == 1:
         fig, ax = plt.subplots()
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -426,7 +426,7 @@ def plot_ivp_solution(
     :param legend_location: the location of the legend for IVPs based on
         systems of ODEs
     """
-    diff_eq = solution.boundary_value_problem.differential_equation
+    diff_eq = solution.constrained_problem.differential_equation
 
     if diff_eq.x_dimension:
         if three_d is None:

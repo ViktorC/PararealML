@@ -4,7 +4,7 @@ from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
 
-from src.core.boundary_value_problem import BoundaryValueProblem
+from src.core.constrained_problem import ConstrainedProblem
 from src.core.constraint import apply_constraints_along_last_axis
 from src.core.solution import Solution
 
@@ -46,32 +46,32 @@ class DiscreteInitialCondition(InitialCondition):
 
     def __init__(
             self,
-            bvp: BoundaryValueProblem,
+            cp: ConstrainedProblem,
             y_0: np.ndarray,
             vertex_oriented: Optional[bool] = None,
             interpolation_method: Optional[str] = None):
         """
-        :param bvp: the boundary value problem to turn into an initial value
+        :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
             mesh (which may be 0 dimensional in case of an ODE)
         :param vertex_oriented: whether the initial conditions are evaluated at
-            the vertices or cell centers of the spatial mesh; it the BVP is an
-            ODE, it can be None
+            the vertices or cell centers of the spatial mesh; it the
+            constrained problem is an ODE, it can be None
         :param interpolation_method: the interpolation method to use to
             calculate values that do not exactly fall on points of the y_0
-            grid; if the BVP is based on an ODE, it can be None
+            grid; if the constrained problem is based on an ODE, it can be None
         """
         self._interpolation_method = interpolation_method
 
         y_0_copy = np.copy(y_0)
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                bvp.y_vertex_constraints, y_0_copy)
+                cp.y_vertex_constraints, y_0_copy)
         y_0_copy = y_0_copy.reshape((1,) + y_0_copy.shape)
 
         self._y_0_solution = Solution(
-            bvp, np.zeros(1), y_0_copy, vertex_oriented)
+            cp, np.zeros(1), y_0_copy, vertex_oriented)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_solution.y(
@@ -92,17 +92,17 @@ class ContinuousInitialCondition(InitialCondition):
 
     def __init__(
             self,
-            bvp: BoundaryValueProblem,
+            cp: ConstrainedProblem,
             y_0_func:
             Callable[[Optional[Sequence[float]]], Sequence[float]]):
         """
-        :param bvp: the boundary value problem to turn into an initial value
+        :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param y_0_func: the initial value function that returns an array
             containing the values of y at the spatial coordinates defined by
             its input
         """
-        self._bvp = bvp
+        self._cp = cp
         self._y_0_func = y_0_func
         self._discrete_y_0_vertices = self._create_discrete_y_0(True)
         self._discrete_y_0_cells = self._create_discrete_y_0(False)
@@ -127,18 +127,18 @@ class ContinuousInitialCondition(InitialCondition):
             evaluated at the vertices or cell centers of the spatial mesh
         :return: the discretised initial values
         """
-        diff_eq = self._bvp.differential_equation
+        diff_eq = self._cp.differential_equation
         if diff_eq.x_dimension:
-            mesh = self._bvp.mesh
+            mesh = self._cp.mesh
 
-            y_0 = np.empty(self._bvp.y_shape(vertex_oriented))
+            y_0 = np.empty(self._cp.y_shape(vertex_oriented))
             for index in np.ndindex(y_0.shape[:-1]):
                 y_0[(*index, slice(None))] = self._y_0_func(
                     mesh.x(index, vertex_oriented))
 
             if vertex_oriented:
                 apply_constraints_along_last_axis(
-                    self._bvp.y_vertex_constraints, y_0)
+                    self._cp.y_vertex_constraints, y_0)
         else:
             y_0 = self._y_0_func(None)
 
@@ -152,11 +152,11 @@ class GaussianInitialCondition(ContinuousInitialCondition):
 
     def __init__(
             self,
-            bvp: BoundaryValueProblem,
+            cp: ConstrainedProblem,
             means_and_covs: Tuple[Tuple[np.ndarray, np.ndarray], ...],
             multipliers: Optional[Sequence[float]] = None):
         """
-        :param bvp: the boundary value problem to turn into an initial value
+        :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param means_and_covs: a tuple of mean vectors and covariance matrices
             defining the multivariate Gaussian PDFs corresponding to each
@@ -164,7 +164,7 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :param multipliers: an array of multipliers for each element of the
             initial y values
         """
-        diff_eq = bvp.differential_equation
+        diff_eq = cp.differential_equation
         assert diff_eq.x_dimension
         assert len(means_and_covs) == diff_eq.y_dimension
         for mean, cov in means_and_covs:
@@ -178,7 +178,7 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         else:
             self._multipliers = [1.] * diff_eq.y_dimension
 
-        super(GaussianInitialCondition, self).__init__(bvp, self._y_0_func)
+        super(GaussianInitialCondition, self).__init__(cp, self._y_0_func)
 
     @staticmethod
     def multivariate_gaussian(
