@@ -1,3 +1,3 @@
-# Parallel-in-time Methods with Machine Learning
+# PararealML
 
-A project for training and using various machine learning models as the course operator _G_ in a parareal framework built with `mpi4py`.
+A Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, its own finite difference method solver, and a range of other machine learning solvers.

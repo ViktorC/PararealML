@@ -23,14 +23,7 @@ The original project proposal: [link](https://www.wiki.ed.ac.uk/pages/viewpage.a
 
 The repository contains the following:
 
-* Preliminary work:
-    * Code:
-        * C:
-            * The serial solution of a 1D diffusion equation by discretising along the spatial dimension using the finite difference method and applying the Euler method to the resulting system of ODEs
-            * The parallel solution of the rabbit population differential equation in a parareal framework built on top of POSIX threads using the Euler method as _G_ and RK4 as _F_
-        * Python:
-            * A port of the C code to Python using `mpi4py` allowing for different time step sizes across the two operators _G_ and _F_
-            * A simple machine learning accelerated operator as _G_
+* PararealML: a Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, a PINN solver, and its own finite difference method solver
 * Project presentation
 * Report
 * Minutes from supervisor meetings and other notes (in the Wiki)
