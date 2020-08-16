@@ -21,4 +21,5 @@ The repository contains the following:
 * PararealML: a Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, a PINN solver, and its own finite difference method solver
 * Project presentation
 * Report
+* Results of the dissertation project experiments
 * Minutes from supervisor meetings and other notes (in the Wiki)
