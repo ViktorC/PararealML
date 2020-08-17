@@ -32,8 +32,8 @@ g_solution_name = 'navier_stokes_coarse'
 p_solution_name = 'navier_stokes_parareal'
 
 time_with_args(function_name=f_solution_name)(f.solve)(ivp) \
-    .plot(f_solution_name, n_images=10)
+    .plot(f_solution_name, only_first_process=True, n_images=10)
 time_with_args(function_name=g_solution_name)(g.solve)(ivp) \
-    .plot(g_solution_name, n_images=10)
+    .plot(g_solution_name, only_first_process=True, n_images=10)
 time_with_args(function_name=p_solution_name)(p.solve)(ivp) \
-    .plot(p_solution_name, n_images=10)
+    .plot(p_solution_name, only_first_process=True, n_images=10)
