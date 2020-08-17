@@ -79,6 +79,8 @@ The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/pyt
 ## Getting started
 To use the full feature set of the library, FiPy must be made available. The recommended way of doing that is installing it through Anaconda (see the [installation guide](https://www.ctcms.nist.gov/fipy/INSTALLATION.html)).
 
+To use multiprocessing, the library also requires a working MPI implementation.
+
 To install any other requirements of the library, run `make install`.
 
 To perform linting, execute `make lint`. The library uses type-hints throughout. For `mypy` type checking, use the command `make type-check` (note that this may return a list of warnings including mostly false positives).
