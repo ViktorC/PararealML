@@ -18,7 +18,7 @@ The original project proposal: [link](https://www.wiki.ed.ac.uk/pages/viewpage.a
 
 The repository contains the following:
 
-* PararealML: a Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, a PINN solver, and its own finite difference method solver
+* PararealML: a Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, a PINN solver, and its own finite difference method solver (for more detail, see the library's [README](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/python/README.md))
 * Project presentation
 * Report
 * Results of the dissertation project experiments
