@@ -33,7 +33,6 @@ class DifferentialEquation(ABC):
         solution. If the solution is not vector-valued, its dimension is 1.
         """
 
-    @abstractmethod
     def d_y_over_d_t(
             self,
             t: float,
@@ -67,8 +66,8 @@ class DifferentialEquation(ABC):
             on the entire spatial domain
         :return: an array representing y'(t)
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def fipy_terms(
             self,
             variables: Sequence[CellVariable]
@@ -81,8 +80,8 @@ class DifferentialEquation(ABC):
         :return: a sequence of FiPy terms representing the differential
             equation (system)
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def deepxde_tensors(
             self,
             x: Tensor,
@@ -100,6 +99,7 @@ class DifferentialEquation(ABC):
             (depending on whether the differential equation's solution is
             vector-valued) representing the differential equation
         """
+        raise NotImplementedError
 
 
 class PopulationGrowthEquation(DifferentialEquation):
