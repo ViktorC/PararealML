@@ -1,14 +1,5 @@
-from src.core.boundary_condition import DirichletBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import NavierStokesEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
-from src.core.initial_condition import ContinuousInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.integrator import RK4, ExplicitMidpointMethod
-from src.core.mesh import UniformGrid
-from src.core.operator import FDMOperator
-from src.core.parareal import PararealOperator
-from src.utils.time import time_with_args
+from pararealml import *
+from pararealml.utils.time import time_with_args
 
 diff_eq = NavierStokesEquation(2, 5000.)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.2, .2))

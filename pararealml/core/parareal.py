@@ -4,10 +4,10 @@ from typing import Optional
 import numpy as np
 from mpi4py import MPI
 
-from src.core.initial_condition import DiscreteInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import Operator
-from src.core.solution import Solution
+from pararealml.core.initial_condition import DiscreteInitialCondition
+from pararealml.core.initial_value_problem import InitialValueProblem
+from pararealml.core.operator import Operator
+from pararealml.core.solution import Solution
 
 
 class PararealOperator(Operator):

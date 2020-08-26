@@ -4,7 +4,8 @@ from typing import Callable, Sequence, Optional
 import numpy as np
 from scipy.optimize import newton
 
-from src.core.constraint import Constraint, apply_constraints_along_last_axis
+from pararealml.core.constraint import Constraint, \
+    apply_constraints_along_last_axis
 
 
 class Integrator(ABC):

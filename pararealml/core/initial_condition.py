@@ -4,9 +4,9 @@ from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.constraint import apply_constraints_along_last_axis
-from src.core.solution import Solution
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.constraint import apply_constraints_along_last_axis
+from pararealml.core.solution import Solution
 
 
 class InitialCondition(ABC):

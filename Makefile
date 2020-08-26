@@ -3,7 +3,7 @@ install:
 	pip3 install -r requirements.txt
 
 lint:
-	flake8 src/ tests/
+	flake8 pararealml/ tests/
 
 type-check:
 	mypy --ignore-missing-imports src/

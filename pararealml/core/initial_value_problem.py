@@ -8,8 +8,8 @@ from deepxde import IC
 from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.geometry import TimeDomain, GeometryXTime
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.initial_condition import InitialCondition
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_condition import InitialCondition
 
 TemporalDomainInterval = Tuple[float, float]
 

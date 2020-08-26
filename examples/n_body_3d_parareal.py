@@ -1,12 +1,7 @@
 import numpy as np
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import NBodyGravitationalEquation
-from src.core.initial_condition import ContinuousInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import ODEOperator
-from src.core.parareal import PararealOperator
-from src.utils.time import time_with_args
+from pararealml import *
+from pararealml.utils.time import time_with_args
 
 n_planets = 10
 masses = np.random.randint(5e10, 5e12, n_planets)

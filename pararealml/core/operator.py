@@ -11,15 +11,15 @@ from deepxde.model import TrainState, LossHistory
 from fipy import Solver
 from scipy.integrate import solve_ivp, OdeSolver
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differentiator import Differentiator
-from src.core.initial_condition import DiscreteInitialCondition
-from src.core.initial_value_problem import TemporalDomainInterval, \
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.differentiator import Differentiator
+from pararealml.core.initial_condition import DiscreteInitialCondition
+from pararealml.core.initial_value_problem import TemporalDomainInterval, \
     InitialValueProblem
-from src.core.integrator import Integrator
-from src.core.solution import Solution
-from src.utils.io import suppress_stdout
-from src.utils.ml import train_regression_model, RegressionModel, \
+from pararealml.core.integrator import Integrator
+from pararealml.core.solution import Solution
+from pararealml.utils.io import suppress_stdout
+from pararealml.utils.ml import train_regression_model, RegressionModel, \
     root_mean_squared_error
 
 

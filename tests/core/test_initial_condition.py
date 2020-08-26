@@ -1,11 +1,12 @@
 import numpy as np
 
-from src.core.boundary_condition import DirichletBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import DiffusionEquation, WaveEquation
-from src.core.initial_condition import ContinuousInitialCondition, \
+from pararealml.core.boundary_condition import DirichletBoundaryCondition
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.differential_equation import DiffusionEquation, \
+    WaveEquation
+from pararealml.core.initial_condition import ContinuousInitialCondition, \
     DiscreteInitialCondition
-from src.core.mesh import UniformGrid
+from pararealml.core.mesh import UniformGrid
 
 
 def test_1d_continuous_initial_condition():

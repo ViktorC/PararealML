@@ -4,14 +4,9 @@ from deepxde.maps import FNN
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import LotkaVolterraEquation
-from src.core.initial_condition import ContinuousInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import ODEOperator, PINNOperator, \
-    StatelessRegressionOperator, StatefulRegressionOperator
-from src.utils.rand import SEEDS, set_random_seed
-from src.utils.time import time_with_args
+from pararealml import *
+from pararealml.utils.rand import SEEDS, set_random_seed
+from pararealml.utils.time import time_with_args
 
 set_random_seed(SEEDS[0])
 

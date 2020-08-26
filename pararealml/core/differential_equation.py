@@ -8,7 +8,7 @@ from fipy import TransientTerm, DiffusionTerm, CellVariable
 from fipy.terms.term import Term
 from tensorflow import Tensor
 
-from src.core.differentiator import Differentiator
+from pararealml.core.differentiator import Differentiator
 
 
 class DifferentialEquation(ABC):

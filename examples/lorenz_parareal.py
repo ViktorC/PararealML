@@ -1,9 +1,4 @@
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import LorenzEquation
-from src.core.initial_condition import ContinuousInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import ODEOperator
-from src.core.parareal import PararealOperator
+from pararealml import *
 
 diff_eq = LorenzEquation()
 cp = ConstrainedProblem(diff_eq)

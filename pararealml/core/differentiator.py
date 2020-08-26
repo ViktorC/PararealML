@@ -3,7 +3,8 @@ from typing import Callable, Union, List, Optional, Tuple, Sequence
 
 import numpy as np
 
-from src.core.constraint import Constraint, apply_constraints_along_last_axis
+from pararealml.core.constraint import Constraint, \
+    apply_constraints_along_last_axis
 
 Slicer = List[Union[int, slice]]
 

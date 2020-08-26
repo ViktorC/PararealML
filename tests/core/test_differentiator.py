@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from src.core.constraint import Constraint
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
+from pararealml.core.constraint import Constraint
+from pararealml.core.differentiator import \
+    ThreePointCentralFiniteDifferenceMethod
 
 
 def test_differentiator_jacobian_with_insufficient_dimensions():

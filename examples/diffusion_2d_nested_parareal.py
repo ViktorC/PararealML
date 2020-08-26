@@ -1,16 +1,8 @@
 import numpy as np
 from fipy import LinearLUSolver
 
-from src.core.boundary_condition import DirichletBoundaryCondition, \
-    NeumannBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import DiffusionEquation
-from src.core.initial_condition import GaussianInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator
-from src.core.parareal import PararealOperator
-from src.utils.time import time_with_args
+from pararealml import *
+from pararealml.utils.time import time_with_args
 
 diff_eq = DiffusionEquation(2)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))

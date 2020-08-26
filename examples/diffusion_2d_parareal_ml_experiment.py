@@ -5,17 +5,11 @@ from sklearn.linear_model import LinearRegression
 from tensorflow.python.keras import Input
 from tensorflow.python.keras.layers import Dense
 
-from src.core.boundary_condition import NeumannBoundaryCondition, DirichletBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import DiffusionEquation
-from src.core.initial_condition import GaussianInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.mesh import UniformGrid
-from src.core.operator import FVMOperator, StatefulRegressionOperator
-from src.utils.experiment import run_parareal_ml_experiment, \
+from pararealml import *
+from pararealml.utils.experiment import run_parareal_ml_experiment, \
     calculate_coarse_ml_operator_step_size
-from src.utils.ml import create_keras_regressor, limit_visible_gpus
-from src.utils.rand import SEEDS
+from pararealml.utils.ml import create_keras_regressor, limit_visible_gpus
+from pararealml.utils.rand import SEEDS
 
 limit_visible_gpus()
 

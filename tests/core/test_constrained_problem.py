@@ -1,14 +1,15 @@
 import numpy as np
 from fipy.meshes.uniformGrid3D import UniformGrid3D
 
-from src.core.boundary_condition import DirichletBoundaryCondition, \
+from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.constraint import apply_constraints_along_last_axis
-from src.core.differential_equation import LotkaVolterraEquation, \
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.constraint import apply_constraints_along_last_axis
+from pararealml.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation, DiffusionEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
-from src.core.mesh import UniformGrid
+from pararealml.core.differentiator import \
+    ThreePointCentralFiniteDifferenceMethod
+from pararealml.core.mesh import UniformGrid
 
 
 def test_cp_with_ode():

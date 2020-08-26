@@ -3,16 +3,16 @@ from typing import Sequence, Any, Optional
 import numpy as np
 from mpi4py import MPI
 
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.operator import Operator, StatefulRegressionOperator, \
+from pararealml.core.initial_value_problem import InitialValueProblem
+from pararealml.core.operator import Operator, StatefulRegressionOperator, \
     RegressionModel
-from src.core.parareal import PararealOperator
-from src.core.solution import Diffs
-from src.utils.io import print_on_first_rank
-from src.utils.plot import plot_model_losses, plot_rms_solution_diffs, \
+from pararealml.core.parareal import PararealOperator
+from pararealml.core.solution import Diffs
+from pararealml.utils.io import print_on_first_rank
+from pararealml.utils.plot import plot_model_losses, plot_rms_solution_diffs, \
     plot_execution_times
-from src.utils.rand import set_random_seed
-from src.utils.time import time_with_args
+from pararealml.utils.rand import set_random_seed
+from pararealml.utils.time import time_with_args
 
 
 def calculate_coarse_ml_operator_step_size(ivp: InitialValueProblem) -> float:

@@ -2,18 +2,9 @@ import numpy as np
 from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
-from src.core.boundary_condition import DirichletBoundaryCondition, NeumannBoundaryCondition
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.differential_equation import DiffusionEquation
-from src.core.differentiator import ThreePointCentralFiniteDifferenceMethod
-from src.core.initial_condition import GaussianInitialCondition
-from src.core.initial_value_problem import InitialValueProblem
-from src.core.integrator import RK4
-from src.core.mesh import UniformGrid
-from src.core.operator import FDMOperator, PINNOperator, \
-    StatelessRegressionOperator, StatefulRegressionOperator
-from src.utils.rand import set_random_seed, SEEDS
-from src.utils.time import time_with_args
+from pararealml import *
+from pararealml.utils.rand import set_random_seed, SEEDS
+from pararealml.utils.time import time_with_args
 
 set_random_seed(SEEDS[0])
 

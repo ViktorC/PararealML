@@ -1,7 +1,7 @@
-src
-===
+pararealml
+==========
 
 .. toctree::
    :maxdepth: 4
 
-   src
+   pararealml

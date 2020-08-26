@@ -4,11 +4,11 @@ from typing import Tuple, Optional, Callable, Sequence
 import numpy as np
 from fipy import CellVariable
 
-from src.core.boundary_condition import BoundaryCondition
-from src.core.constraint import Constraint
-from src.core.differential_equation import DifferentialEquation
-from src.core.differentiator import Slicer
-from src.core.mesh import Mesh
+from pararealml.core.boundary_condition import BoundaryCondition
+from pararealml.core.constraint import Constraint
+from pararealml.core.differential_equation import DifferentialEquation
+from pararealml.core.differentiator import Slicer
+from pararealml.core.mesh import Mesh
 
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
 

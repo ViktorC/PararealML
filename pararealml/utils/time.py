@@ -3,7 +3,7 @@ from typing import Callable, Optional, Any
 
 from mpi4py import MPI
 
-from src.utils.io import print_on_first_rank
+from pararealml.utils.io import print_on_first_rank
 
 
 def time(function: Callable) -> Callable:

@@ -6,8 +6,8 @@ import numpy as np
 from mpi4py import MPI
 from scipy.interpolate import interpn
 
-from src.core.constrained_problem import ConstrainedProblem
-from src.core.constraint import apply_constraints_along_last_axis
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.constraint import apply_constraints_along_last_axis
 
 
 class Solution:
@@ -261,7 +261,7 @@ class Solution:
         :param kwargs: plotting configuration;
             see :func:`~src.utils.plot.plot_ivp_solution`
         """
-        from src.utils.plot import plot_ivp_solution
+        from pararealml.utils.plot import plot_ivp_solution
 
         if (not only_first_process) or MPI.COMM_WORLD.rank == 0:
             plot_ivp_solution(self, solution_name, **kwargs)

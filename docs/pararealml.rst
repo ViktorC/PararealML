@@ -1,19 +1,18 @@
-src package
-===========
+pararealml package
+==================
 
 Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
 
-   src.core
-   src.utils
+   pararealml.core
+   pararealml.utils
 
 Module contents
 ---------------
 
-.. automodule:: src
+.. automodule:: pararealml
    :members:
    :undoc-members:
    :show-inheritance:
