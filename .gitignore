@@ -1,8 +1,8 @@
 *__pycache__*
-code/python/**/*.pdf
-code/python/**/*.jpg
-code/python/**/*.gif
+**/*.pdf
+**/*.jpg
+**/*.gif
 *.o
 *.pytest_cache
 *.mypy_cache
-code/python/docs/_build
+docs/_build/
