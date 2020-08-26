@@ -1,0 +1,7 @@
+numpy<=1.17.5
+scipy~=1.4.1
+matplotlib<3.3.0
+scikit-learn~=0.23.1
+tensorflow>=1.14.0
+deepxde==0.8.3
+fipy==3.3
