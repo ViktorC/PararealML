@@ -747,7 +747,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             step_size_coefficient_sum += step_size_coefficient
 
             # Derivative boundary constraints.
-            y_lower_halo = y_upper_halo = 0.
+            y_lower_halo = y_upper_halo = None
 
             slicer[axis] = 1
             y_lower_boundary_adjacent = y_hat[tuple(slicer)]
@@ -762,7 +762,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
                 lower_boundary_constraint = boundary_constraint_pair[0]
                 if lower_boundary_constraint is not None:
-                    if y_lower_halo is 0.:
+                    if y_lower_halo is None:
                         y_lower_halo = np.zeros(
                             y_lower_boundary_adjacent.shape)
 
@@ -778,7 +778,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
                 upper_boundary_constraint = boundary_constraint_pair[1]
                 if upper_boundary_constraint is not None:
-                    if y_upper_halo is 0.:
+                    if y_upper_halo is None:
                         y_upper_halo = np.zeros(
                             y_upper_boundary_adjacent.shape)
 
@@ -791,6 +791,11 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
                         y_upper_halo[..., y_ind] = \
                             y_upper_boundary_adjacent[..., y_ind] + \
                             2. * d_x[axis] * upper_boundary_constraint.value
+
+            if y_lower_halo is None:
+                y_lower_halo = 0.
+            if y_upper_halo is None:
+                y_upper_halo = 0.
 
             # Lower boundary.
             slicer[axis] = 0
