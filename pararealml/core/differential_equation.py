@@ -85,7 +85,8 @@ class DifferentialEquation(ABC):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         """
         Returns the tensor operation or tensor operations representing the
@@ -95,6 +96,7 @@ class DifferentialEquation(ABC):
             represents a point in the spatiotemporal domain
         :param y: the output of the PINN; the current estimates of y at the
             points
+        :param actual_x: a NumPy array of the actual input of the PINN
         :return: the tensor operation or sequence of tensor operations
             (depending on whether the differential equation's solution is
             vector-valued) representing the differential equation
@@ -144,7 +146,8 @@ class PopulationGrowthEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         d_y_over_d_t = tf.gradients(y, x)[0]
         return d_y_over_d_t - self._r * y
@@ -210,7 +213,8 @@ class LotkaVolterraEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         r = y[:, 0:1]
         p = y[:, 1:2]
@@ -280,7 +284,8 @@ class LorenzEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         c = y[:, :1]
         h = y[:, 1:2]
@@ -362,18 +367,10 @@ class NBodyGravitationalEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
-        # DeepXDE (0.8.3) does not support converting the tensors to NumPy
-        # arrays due to the undefined placeholders.
-        y_array = y.eval(session=tf.compat.v1.Session())
-        expected_d_y_over_d_t = tf.convert_to_tensor(
-            self._calculate_d_y_over_d_t(y_array))
-        return [
-            tf.gradients(y[:, y_ind:y_ind + 1], x)[0] -
-            expected_d_y_over_d_t[:, y_ind:y_ind + 1]
-            for y_ind in range(self.y_dimension)
-        ]
+        raise NotImplementedError
 
     def _calculate_d_y_over_d_t(self, y: np.ndarray) -> np.ndarray:
         """
@@ -474,7 +471,8 @@ class DiffusionEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         d_y_over_d_all_x = tf.gradients(y, x)[0]
         d_y_over_d_t = d_y_over_d_all_x[:, self._x_dimension:]
@@ -548,7 +546,8 @@ class WaveEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         displacement = y[:, 0:1]
         displacement_first_order_time_derivative = y[:, 1:2]
@@ -655,7 +654,8 @@ class CahnHilliardEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         potential = y[:, 0:1]
         concentration = y[:, 1:2]
@@ -778,7 +778,8 @@ class NavierStokesEquation(DifferentialEquation):
     def deepxde_tensors(
             self,
             x: Tensor,
-            y: Tensor
+            y: Tensor,
+            actual_x: np.ndarray
     ) -> Union[Tensor, Sequence[Tensor]]:
         raise NotImplementedError
 

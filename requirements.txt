@@ -7,5 +7,5 @@ matplotlib<3.3.0
 mpi4py~=3.0.3
 scikit-learn~=0.23.1
 tensorflow>=1.14.0
-deepxde==0.8.3
+deepxde==0.8.4
 fipy==3.3
