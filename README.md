@@ -1,4 +1,4 @@
-# PararealML [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pararealml.readthedocs.io/en/latest/index.html)
+# PararealML [![Build Status](https://travis-ci.org/ViktorC/PararealML.svg?branch=master)](https://travis-ci.org/ViktorC/PararealML) [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pararealml.readthedocs.io/en/latest/index.html)
 
 A Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, its own finite difference method solver, and a range of other machine learning solvers.
 
