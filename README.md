@@ -1,59 +1,65 @@
 # PararealML [![Build Status](https://travis-ci.org/ViktorC/PararealML.svg?branch=master)](https://travis-ci.org/ViktorC/PararealML) [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pararealml.readthedocs.io/en/latest/index.html)
 
-A Python library providing a Parareal framework based on a unified interface for various differential equation solvers including a finite volume method solver, its own finite difference method solver, and a range of other machine learning solvers.
+PararealML is a differential equation solver library featuring a [Parareal](https://en.wikipedia.org/wiki/Parareal) framework based on a unified interface for various solvers including a range of machine learning accelerated ones. The library's main purpose is to provide a toolset to investigate the properties of the Parareal algorithm, especially when using machine learning accelerated coarse operators, across various problems. The library's implementation of the Parareal algorithm uses [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) via [mpi4py](https://mpi4py.readthedocs.io/en/stable/).
 
 ## Main components
 
-The main components of the library are the following.
+The library has a modular design to allow for easy extensibility. The main components that enable this are described below.
 
 ### Differential Equation
 
-All differential equations extend the `DifferentialEquation` base class. The unknown variables of all differential equations are vector-valued to support systems of differential equations. Both ordinary and partial differential equations are supported.
+All differential equations extend the `DifferentialEquation` base class. In PararealML, all differential equations are time-dependent. Moreover, the unknown variables of differential equations are by definition vector-valued to support systems of differential equations. Both ordinary and partial differential equations are supported.
 
-The list of currently supported differential equations is as follows:
+The library provides out-of-the-box implementations for a number of differential equations including:
 
- * population growth
- * Lotka-Volterra
- * Lorenz
- * gravitational n-body (2 or 3D, not supported by the `PINNOperator`)
- * diffusion (n-D)
- * wave (n-D)
- * Cahn-Hilliard (n-D)
- * Navier-Stokes (2 or 3D, not supported by the `FVMOperator` and the `PINNOperator`)
+ * `PopulationGrowthEquation`
+ * `LotkaVolterraEquation`
+ * `LorenzEquation`
+ * `NBodyGravitationalEquation` - 2 or 3D
+ * `DiffusionEquation` - n-D
+ * `WaveEquation` - n-D
+ * `CahnHilliardEquation` - n-D
+ * `NavierStokesEquation` - 2 or 3D
+
+To solve other differential equations, the `DifferentialEquation` class can be easily extended. Depending on the operators intended to be used for solving the differential equation, not all of the abstract methods may need to be implemented.
 
 ### Mesh
 
-All meshes extend the `Mesh` base class. Meshes define the spatial domain of initial boundary value problems and the discretisation of this domain.
+All meshes extend the `Mesh` base class. Meshes define the spatial domains of initial boundary value problems and also the discretisations of these domains.
 
-The library currently only supports uniform grids (of any dimensions for the `FDMOperator` and for up to 3 dimensions for the `FVMOperator` and the `PINNOperator`) but can be easily extended to support more complex meshes.
+The library currently only supports uniform grids through the `UniformGrid` class (of any dimensions for the `FDMOperator` and for up to 3 dimensions for the `FVMOperator` and the `PINNOperator`) but the `Mesh` class can be easily extended to support more complex meshes.
 
 ### Boundary Conditions
 
-All boundary conditions extend the `BoundaryCondition` base class. Boundary conditions are functions of the spatial coordinates only.
+All boundary conditions extend the `BoundaryCondition` base class. In PararealML, boundary conditions are currently functions of the spatial coordinates only (to enable the pre-computation of boundary values for better performance).
 
 The list of supported boundary conditions is:
 
- * Dirichlet
- * Neumann
- * Cauchy
+ * `DirichletBoundaryCondition`
+ * `NeumannBoundaryCondition`
+ * `CauchyBoundaryCondition`
+ 
+To implement other types of boundary conditions, the `BoundaryCondition` class may be extended.
 
 ### Constrained Problem
 
-Constrained problems encapsulate either simple ordinary differential equations or partial differential equations coupled with a mesh and boundary conditions. This offers a level of abstraction over the two kinds of differential equations. Constrained problems are represented by the `ConstrainedProblem` class whose instances take a differential equation and optionally a mesh and a set of boundary conditions.
+Constrained problems encapsulate either simple ordinary differential equations or partial differential equations coupled with a mesh and boundary conditions. This offers a level of abstraction over the two kinds of differential equations. Constrained problems are represented by the `ConstrainedProblem` class whose constructor takes a differential equation and optionally a mesh and a set of boundary conditions.
 
 ### Initial Conditions
 
-All initial conditions extend the `InitialCondition` base class.
+In PararealML, all initial conditions extend the `InitialCondition` base class.
 
-The supported initial condition types are:
+The library provides a number initial condition implementations including:
 
- * discrete (defined by a NumPy array and whether it is vertex or cell-center oriented)
- * continuous (defined by a function)
-    * Gaussian hump
+ * `DiscreteInitialCondition` - discrete initial conditions defined by a NumPy array and whether they are vertex or cell-center oriented
+ * `ContinuousInitialCondition` - continuous initial conditions defined by a function
+    * `GaussianInitialCondition` - a hump defined by a multivariate Gaussian distribution
+ 
+To implement other types of boundary conditions, the `InitialCondition` class may be extended.
 
 ### Initial Value Problem
 
-Initial value problems are constrained problems associated with a time domain and initial conditions. They are represented by the `InitialValueProblem` class whose instances take a constrained problem, a tuple of two `float`s defining the time interval, and an initial condition instance.
+Initial value problems are constrained problems associated with a time domain and initial conditions. They are represented by the `InitialValueProblem` class whose constructor takes a constrained problem, a tuple of two `float`s defining the time interval, and an initial condition instance.
 
 ### Operators
 
@@ -61,32 +67,34 @@ All operators extend the `Operator` base class. Operators are standalone differe
 
 The list of supported operators is:
 
- * ODE operator (based on `SciPy`'s `solve_ivp`, can solve all ordinary differential equations)
- * FVM operator (finite volume method operator based on `FiPy`, can solve all partial differential equations except for Navier-Stokes)
- * FDM operator (a self-implemented fast finite difference method operator, can solve any differential equation)
- * machine learning operator
-    * stateless machine learning operator
-        * PINN operator (a physics-informed neural network operator based on `DeepXDE`, can solve all differential equations except for n-body and Navier-Stokes)
-        * stateless regression operator (a regression operator trained on data generated by another operator, can solve any differential equation the trainer operator can)
-    * stateful machine learning operator
-        * stateful regression operator (a regression operator trained on data generated by another operator taking the previous value of the solution into account, can solve any differential equation the trainer operator can)
- * Parareal operator (can solve any differential equation its operators can)
+ * `ODEOperator` - based on the [solve_ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html#scipy.integrate.solve_ivp) function of SciPy's `integrate` module, can solve all ordinary differential equations
+ * `FVMOperator` - finite volume method operator based on [FiPy](https://www.ctcms.nist.gov/fipy/), can solve all partial differential equations except for Navier-Stokes
+ * `FDMOperator` - a self-implemented fast finite difference method operator, can solve any differential equation
+ * `MLOperator`
+    * `StatelessMLOperator`
+        * `PINNOperator` - a physics-informed neural network operator based on `DeepXDE`, can solve all differential equations except for n-body and Navier-Stokes
+        * `StatelessRegressionOperator` - a regression operator trained on data generated by another operator, can solve any differential equation the trainer operator can
+    * `StatefulMLOperator`
+        * `StatefulRegressionOperator` - a regression operator trained on data generated by another operator taking the previous value of the solution into account, can solve any differential equation the trainer operator can
+ * `PararealOperator` - a Parareal framework that can solve any differential equation its operators can
 
 ## Examples
 
-The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators. Furthermore, all the scripts used for our experiments and the generation of our figures for the dissertation can be found in this folder. These scripts use hardcoded seeds (defined in [rand.py](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/blob/master/code/python/src/utils/rand.py)) thus all our results are fully reproducible. 
+The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators.
 
-## Getting started
-To use the full feature set of the library, FiPy must be made available. The recommended way of doing that is installing it through Anaconda (see the [installation guide](https://www.ctcms.nist.gov/fipy/INSTALLATION.html)).
+## Setup
+ 1. `conda install -c anaconda mpi4py~=3.0.3` - this is not necessary if there is already an implementation of the MPI standard installed (e.g. [MPICH](https://www.mpich.org/))
+ 1. `conda install -c conda-forge fipy==3.3` - this is not necessary if the `FVMOperator` is not used
+ 1. `make install`
 
-To use multiprocessing, the library also requires a working MPI implementation.
+## Testing
 
-To install any other requirements of the library, run `make install`.
+To perform linting, execute `make lint`.
 
-To perform linting, execute `make lint`. The library uses type-hints throughout. For `mypy` type checking, use the command `make type-check` (note that this may return a list of warnings including mostly false positives).
+The library uses type-hints throughout. For type checking, use the command `make type-check`.
 
 To run the unit tests, execute `make test`.
 
-To run any of the examples from the [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder using 4 MPI processes, run `make run example={name of example file without extension}` (e.g. `make run example=diffusion_1d_serial`).
+## Running
 
-The code base is also thoroughly commented. To generate the Sphinx documentation from the docstrings, type `cd docs` and run `make html`. This generates the HTML documentation in the `./docs/_build/html` directory. To browse the documentation, just open `index.html`.
+To run any of the examples from the [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder using 4 MPI processes, run `make run example={name of example file without extension}` (e.g. `make run example=diffusion_1d_serial`).
