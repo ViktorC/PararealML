@@ -18,6 +18,7 @@ before_install:
 install:
   - conda install -c conda-forge mpi
   - conda install -c conda-forge imagemagick
+  - conda install -c conda-forge fipy==3.3
   - make install
 
 script:
