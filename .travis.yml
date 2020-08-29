@@ -16,8 +16,8 @@ before_install:
   - conda activate test-environment
 
 install:
-  - conda install -c anaconda mpi4py~=3.0.3
-  - conda install -c conda-forge fipy==3.3
+  - conda install -c conda-forge mpi
+  - conda install -c conda-forge imagemagick
   - make install
 
 script:

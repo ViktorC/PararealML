@@ -83,8 +83,8 @@ The list of supported operators is:
 The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators.
 
 ## Setup
- 1. `conda install -c anaconda mpi4py~=3.0.3` - this is not necessary if there is already an implementation of the MPI standard installed (e.g. [MPICH](https://www.mpich.org/))
- 1. `conda install -c conda-forge fipy==3.3` - this is not necessary if the `FVMOperator` is not used
+ 1. `conda install -c conda-forge mpi` - not necessary if there is already an implementation of the MPI standard installed (e.g. [MPICH](https://www.mpich.org/))
+ 1. `conda install -c conda-forge imagemagick` - not necessary if `imagemagick` is already installed
  1. `make install`
 
 ## Testing
