@@ -21,6 +21,12 @@ install:
   - conda install -c conda-forge fipy==3.3
   - make install
 
+addons:
+  sonarcloud:
+    organization: 'viktorc-github'
+    token:
+      secure: ${SONAR_TOKEN}
+
 script:
   - make lint
   - make test
