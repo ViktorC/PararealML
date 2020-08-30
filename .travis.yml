@@ -24,8 +24,7 @@ install:
 addons:
   sonarcloud:
     organization: 'viktorc-github'
-    token:
-      secure: ${SONAR_TOKEN}
+    token: $SONAR_TOKEN
 
 script:
   - make lint
