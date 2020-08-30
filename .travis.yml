@@ -30,3 +30,4 @@ addons:
 script:
   - make lint
   - make test
+  - sonar-scanner
