@@ -99,23 +99,23 @@ The solutions of ordinary differential equations are plotted as y-against-t plot
 
 The solutions of n-body simulations are plotted using a special 2D or 3D scatter plot (depending on the dimensionality of the simulation).
 
-<img src="https://user-images.githubusercontent.com/12938964/91643717-8f7d4180-ea2d-11ea-834b-7f64e8347557.gif" alt="n_body" width="600"/>
+<img src="https://user-images.githubusercontent.com/12938964/91643717-8f7d4180-ea2d-11ea-834b-7f64e8347557.gif" alt="n_body" width="400"/>
 
 #### Partial differential equations in one spatial dimension
 
 The solutions of 1D partial differential equations are visualised as animated line plots.
 
-<img src="https://user-images.githubusercontent.com/12938964/91645244-6ebbe880-ea3b-11ea-925d-54b7a3e0bfee.gif" alt="diffusion_1d" width="600"/>
+<img src="https://user-images.githubusercontent.com/12938964/91645244-6ebbe880-ea3b-11ea-925d-54b7a3e0bfee.gif" alt="diffusion_1d" width="400"/>
 
 #### Partial differential equations in two spatial dimensions
 
 On the other hand, the solutions of 2D partial differential equations can be visualised in two different ways. The first one of these is a 3D surface plot.
 
-<img src="https://user-images.githubusercontent.com/12938964/91648397-fc5cff80-ea5e-11ea-887d-187523ae701b.gif" alt="wave_2d" width="600"/>
+<img src="https://user-images.githubusercontent.com/12938964/91648397-fc5cff80-ea5e-11ea-887d-187523ae701b.gif" alt="wave_2d" width="400"/>
 
 Finally, the second way of visualising the solution of 2D partial differential equations is the generation of a 2D contour plot.
 
-<img src="https://user-images.githubusercontent.com/12938964/91649018-dc313e80-ea66-11ea-9995-dd98af8dbdac.gif" alt="navier_stokes_2d" width="600"/>
+<img src="https://user-images.githubusercontent.com/12938964/91649018-dc313e80-ea66-11ea-9995-dd98af8dbdac.gif" alt="navier_stokes_2d" width="400"/>
 
 ## Examples
 
