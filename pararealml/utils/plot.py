@@ -31,7 +31,7 @@ def plot_y_against_t(
     t = solution.t_coordinates
     y = solution.discrete_y(solution.vertex_oriented)
 
-    plt.xlabel('time')
+    plt.xlabel('t')
     plt.ylabel('y')
 
     if diff_eq.y_dimension == 1:
@@ -574,7 +574,7 @@ def plot_rms_solution_diffs(
             facecolor=color,
             alpha=alpha)
 
-    plt.xlabel('time')
+    plt.xlabel('t')
     plt.ylabel('RMSE')
     plt.ylim(bottom=0)
     plt.legend(loc=legend_location)
