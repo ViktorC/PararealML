@@ -1,15 +1,18 @@
 import math
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union, Tuple, Callable
+from typing import List, Optional, Union, Tuple, Callable, Sequence, Dict
 
 import numpy as np
+import tensorflow as tf
+import sympy as sp
 from deepxde import Model as PINNModel, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
 from deepxde.model import TrainState, LossHistory
-from fipy import Solver
+from fipy import Solver, TransientTerm, DiffusionTerm
 from scipy.integrate import solve_ivp, OdeSolver
+from tensorflow import Tensor
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differentiator import Differentiator
@@ -92,7 +95,8 @@ class ODEOperator(Operator):
         :param method: the ODE solver to use
         :param d_t: the temporal step size to use
         """
-        assert d_t > 0.
+        if d_t <= 0.:
+            raise ValueError
 
         self._method = method
         self._d_t = d_t
@@ -119,8 +123,14 @@ class ODEOperator(Operator):
         time_points = self._discretise_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_points[0], time_points[-1])
 
+        expressions = diff_eq.expressions
+        expressions_func = sp.lambdify([diff_eq.y], expressions, 'numpy')
+
+        def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
+            return np.asarray(expressions_func(_y))
+
         result = solve_ivp(
-            diff_eq.d_y_over_d_t,
+            d_y_over_d_t,
             adjusted_t_interval,
             ivp.initial_condition.discrete_y_0(),
             self._method,
@@ -134,73 +144,6 @@ class ODEOperator(Operator):
 
         y = np.ascontiguousarray(result.y.T)
         return Solution(cp, time_points[1:], y, d_t=self._d_t)
-
-
-class FDMOperator(Operator):
-    """
-    A finite difference method based conventional differential equation solver.
-    """
-
-    def __init__(
-            self,
-            integrator: Integrator,
-            differentiator: Differentiator,
-            d_t: float):
-        """
-        :param integrator: the differential equation integrator to use
-        :param differentiator: the differentiator to use
-        :param d_t: the temporal step size to use
-        """
-        assert d_t > 0.
-        self._integrator = integrator
-        self._differentiator = differentiator
-        self._d_t = d_t
-
-    @property
-    def d_t(self) -> float:
-        return self._d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return True
-
-    def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
-        cp = ivp.constrained_problem
-        diff_eq = cp.differential_equation
-        d_x = cp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = cp.y_vertex_constraints
-        d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
-
-        def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
-            return diff_eq.d_y_over_d_t(
-                _t,
-                _y,
-                d_x,
-                self._differentiator,
-                d_y_boundary_constraints,
-                y_constraints)
-
-        time_points = self._discretise_time_domain(
-            ivp.t_interval, self._d_t)
-
-        y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
-        y_i = ivp.initial_condition.discrete_y_0(True)
-
-        for i, t_i in enumerate(time_points[:-1]):
-            y_i = self._integrator.integral(
-                y_i,
-                t_i,
-                self._d_t,
-                d_y_over_d_t,
-                y_constraints)
-            y[i] = y_i
-
-        return Solution(
-            cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
 
 class FVMOperator(Operator):
@@ -217,7 +160,9 @@ class FVMOperator(Operator):
         :param solver: the FiPy solver to use
         :param d_t: the temporal step size to use
         """
-        assert d_t > 0.
+        if d_t <= 0.:
+            raise ValueError
+
         self._solver = solver
         self._d_t = d_t
 
@@ -244,10 +189,20 @@ class FVMOperator(Operator):
         y_0 = ivp.initial_condition.discrete_y_0(False)
 
         fipy_vars = cp.fipy_vars
+        laplacian_terms = []
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
+            laplacian_terms.append(DiffusionTerm(var=fipy_var, coeff=1.))
 
-        fipy_terms = diff_eq.fipy_terms(fipy_vars)
+        expressions = diff_eq.expressions
+        fipy_expressions = []
+        for i, expr in enumerate(expressions):
+            expr_func = sp.lambdify(
+                [diff_eq.y, diff_eq.y_laplacian],
+                expr,
+                'numpy')
+            rhs = expr_func(fipy_vars, laplacian_terms)
+            fipy_expressions.append(TransientTerm(var=fipy_vars[i]) == rhs)
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
@@ -258,7 +213,7 @@ class FVMOperator(Operator):
                 fipy_var.updateOld()
 
             for j, fipy_var in enumerate(fipy_vars):
-                fipy_terms[j].solve(
+                fipy_expressions[j].solve(
                     var=fipy_var,
                     dt=self._d_t,
                     solver=self._solver)
@@ -266,6 +221,151 @@ class FVMOperator(Operator):
 
         return Solution(
             cp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
+
+
+class FDMOperator(Operator):
+    """
+    A finite difference method based conventional differential equation solver.
+    """
+
+    def __init__(
+            self,
+            integrator: Integrator,
+            differentiator: Differentiator,
+            d_t: float,
+            tol: float = 1e-2):
+        """
+        :param integrator: the differential equation integrator to use
+        :param differentiator: the differentiator to use
+        :param d_t: the temporal step size to use
+        :param tol: he stopping criterion for the Jacobi algorithm when
+        calculating anti-derivatives and anti-Laplacians
+        """
+        if d_t <= 0.:
+            raise ValueError
+
+        self._integrator = integrator
+        self._differentiator = differentiator
+        self._d_t = d_t
+        self._tol = tol
+
+    @property
+    def d_t(self) -> float:
+        return self._d_t
+
+    @property
+    def vertex_oriented(self) -> Optional[bool]:
+        return True
+
+    def solve(
+            self,
+            ivp: InitialValueProblem,
+            parallel_enabled: bool = True
+    ) -> Solution:
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+        y_constraints = cp.y_vertex_constraints
+
+        symbol_set = set()
+        expressions = diff_eq.expressions
+        for expression in expressions:
+            symbol_set.update(expression.free_symbols)
+
+        symbol_map = self._create_symbol_map(ivp)
+        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
+
+        expressions_func = sp.lambdify(
+            [symbol_set],
+            expressions,
+            'numpy')
+
+        def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
+            args = [func(_t, _y) for func in symbol_arg_funcs]
+            return np.concatenate(expressions_func(args), axis=-1)
+
+        time_points = self._discretise_time_domain(
+            ivp.t_interval, self._d_t)
+
+        y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
+        y_i = ivp.initial_condition.discrete_y_0(True)
+
+        for i, t_i in enumerate(time_points[:-1]):
+            y_i = self._integrator.integral(
+                y_i,
+                t_i,
+                self._d_t,
+                d_y_over_d_t,
+                y_constraints)
+            y[i] = y_i
+
+        return Solution(
+            cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
+
+    def _create_symbol_map(
+            self,
+            ivp: InitialValueProblem
+    ) -> Dict[sp.Symbol, Callable[[float, np.ndarray], np.ndarray]]:
+        """
+        Creates a dictionary mapping symbols to functions returning the values
+        of these symbols given t and y.
+
+        :param ivp: the initial value problem to create a symbol map for
+        :return: a dictionary mapping symbols to functions
+        """
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+
+        symbol_map = {}
+
+        for i, y_element in enumerate(diff_eq.y):
+            symbol_map[y_element] = lambda t, y, _i=i: y[..., [_i]]
+
+        if diff_eq.x_dimension:
+            d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
+            d_x = cp.mesh.d_x
+
+            d_y_over_d_x = diff_eq.d_y_over_d_x
+            for i in range(d_y_over_d_x.shape[0]):
+                for j in range(d_y_over_d_x.shape[1]):
+                    symbol_map[d_y_over_d_x[i, j]] = \
+                        lambda t, y, _i=i, _j=j: \
+                        self._differentiator.derivative(
+                            y,
+                            d_x[_j],
+                            _j,
+                            _i,
+                            d_y_boundary_constraints[_j, _i])
+
+            d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+            for i in range(d_y_over_d_x_x.shape[0]):
+                for j in range(d_y_over_d_x_x.shape[1]):
+                    for k in range(d_y_over_d_x_x.shape[2]):
+                        symbol_map[d_y_over_d_x_x[i, j, k]] = \
+                            lambda t, y, _i=i, _j=j, _k=k: \
+                            self._differentiator.second_derivative(
+                                y,
+                                d_x[_j],
+                                d_x[_k],
+                                _j,
+                                _k,
+                                _i,
+                                d_y_boundary_constraints[_j, _i])
+
+            for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+                symbol_map[y_gradient_element] = lambda t, y, _i=i: \
+                    self._differentiator.jacobian(
+                        y[..., [_i]],
+                        d_x,
+                        d_y_boundary_constraints[:, [_i]])
+
+            for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+                symbol_map[y_laplacian_element] = lambda t, y, _i=i: \
+                    self._differentiator.laplacian(
+                        y[..., [_i]],
+                        d_x,
+                        d_y_boundary_constraints[:, [_i]])
+
+        return symbol_map
 
 
 class MLOperator(Operator, ABC):
@@ -284,7 +384,9 @@ class MLOperator(Operator, ABC):
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
         """
-        assert d_t > 0.
+        if d_t <= 0.:
+            raise ValueError
+
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
         self._model: Optional[Union[RegressionModel, PINNModel]] = None
@@ -527,7 +629,27 @@ class PINNOperator(StatelessMLOperator):
 
         assert diff_eq.x_dimension <= 3
 
-        deepxde_diff_eq = diff_eq.deepxde_tensors
+        d_y_over_d_t_sym = sp.symarray('d_y_over_d_t', (diff_eq.y_dimension,))
+        expressions = list(diff_eq.expressions)
+        for i, expr in enumerate(expressions):
+            expressions[i] = d_y_over_d_t_sym[i] - expr
+        solved_expressions, = sp.linsolve(expressions, *d_y_over_d_t_sym)
+        d_y_over_d_t_func = sp.lambdify(
+            diff_eq.y,
+            np.asarray(solved_expressions),
+            'numpy')
+
+        def diff_eq_error(
+                x: Tensor,
+                y: Tensor
+        ) -> Union[Tensor, Sequence[Tensor]]:
+            y_list = [y[:, j:j + 1] for j in range(diff_eq.y_dimension)]
+            d_y_over_d_t = d_y_over_d_t_func(*y_list)
+            return [
+                tf.gradients(y_list[j], x)[0] - d_y_over_d_t[j]
+                for j in range(diff_eq.y_dimension)
+            ]
+
         initial_conditions = ivp.deepxde_initial_conditions
 
         n_domain = training_config['n_domain']
@@ -544,7 +666,7 @@ class PINNOperator(StatelessMLOperator):
             ic_bcs += list(boundary_conditions)
             data = TimePDE(
                 geometryxtime=ivp.deepxde_geometry_time_domain,
-                pde=deepxde_diff_eq,
+                pde=diff_eq_error,
                 ic_bcs=ic_bcs,
                 num_domain=n_domain,
                 num_boundary=n_boundary,
@@ -555,7 +677,7 @@ class PINNOperator(StatelessMLOperator):
         else:
             data = PDE(
                 geometry=ivp.deepxde_time_domain,
-                pde=deepxde_diff_eq,
+                pde=diff_eq_error,
                 bcs=initial_conditions,
                 num_domain=n_domain,
                 num_boundary=n_initial,
