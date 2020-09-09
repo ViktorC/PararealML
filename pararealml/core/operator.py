@@ -10,7 +10,8 @@ from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
 from deepxde.model import TrainState, LossHistory
-from fipy import Solver, TransientTerm, DiffusionTerm
+from fipy import Solver, TransientTerm, DiffusionTerm, Variable
+from fipy.terms.term import Term
 from scipy.integrate import solve_ivp, OdeSolver
 from tensorflow import Tensor
 
@@ -117,7 +118,8 @@ class ODEOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        assert diff_eq.x_dimension == 0
+        if diff_eq.x_dimension != 0:
+            raise ValueError
 
         t_interval = ivp.t_interval
         time_points = self._discretise_time_domain(t_interval, self._d_t)
@@ -182,26 +184,30 @@ class FVMOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        assert 1 <= diff_eq.x_dimension <= 3
+        if diff_eq.x_dimension <= 0:
+            raise ValueError
 
         mesh = cp.mesh
         mesh_shape = mesh.shape(False)
         y_0 = ivp.initial_condition.discrete_y_0(False)
 
         fipy_vars = cp.fipy_vars
-        laplacian_terms = []
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
-            laplacian_terms.append(DiffusionTerm(var=fipy_var, coeff=1.))
+
+        symbol_map = self._create_symbol_map(ivp)
 
         expressions = diff_eq.expressions
         fipy_expressions = []
         for i, expr in enumerate(expressions):
+            symbols = expr.free_symbols
+            symbol_args = [symbol_map[symbol] for symbol in symbols]
+
             expr_func = sp.lambdify(
-                [diff_eq.y, diff_eq.y_laplacian],
+                [symbols],
                 expr,
                 'numpy')
-            rhs = expr_func(fipy_vars, laplacian_terms)
+            rhs = expr_func(symbol_args)
             fipy_expressions.append(TransientTerm(var=fipy_vars[i]) == rhs)
 
         time_points = self._discretise_time_domain(
@@ -221,6 +227,46 @@ class FVMOperator(Operator):
 
         return Solution(
             cp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
+
+    @staticmethod
+    def _create_symbol_map(
+            ivp: InitialValueProblem
+    ) -> Dict[sp.Symbol, Union[Term, Variable]]:
+        """
+        Creates a dictionary mapping symbols to FiPy terms and variables.
+
+        :param ivp: the initial value problem to create a symbol map for
+        :return: a dictionary mapping symbols to terms and variables
+        """
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+        fipy_vars = cp.fipy_vars
+
+        symbol_map = {}
+
+        for i, y_element in enumerate(diff_eq.y):
+            symbol_map[y_element] = fipy_vars[i]
+
+        d_y_over_d_x = diff_eq.d_y_over_d_x
+        for i in range(d_y_over_d_x.shape[0]):
+            for j in range(d_y_over_d_x.shape[1]):
+                symbol_map[d_y_over_d_x[i, j]] = fipy_vars[i].grad[j]
+
+        d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+        for i in range(d_y_over_d_x_x.shape[0]):
+            for j in range(d_y_over_d_x_x.shape[1]):
+                for k in range(d_y_over_d_x_x.shape[2]):
+                    symbol_map[d_y_over_d_x_x[i, j, k]] = \
+                        fipy_vars[i].grad[j].grad[k]
+
+        for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+            symbol_map[y_gradient_element] = fipy_vars[i].grad
+
+        for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+            symbol_map[y_laplacian_element] = \
+                DiffusionTerm(var=fipy_vars[i], coeff=1.)
+
+        return symbol_map
 
 
 class FDMOperator(Operator):
@@ -629,24 +675,27 @@ class PINNOperator(StatelessMLOperator):
 
         assert diff_eq.x_dimension <= 3
 
-        d_y_over_d_t_sym = sp.symarray('d_y_over_d_t', (diff_eq.y_dimension,))
-        expressions = list(diff_eq.expressions)
-        for i, expr in enumerate(expressions):
-            expressions[i] = d_y_over_d_t_sym[i] - expr
-        solved_expressions, = sp.linsolve(expressions, *d_y_over_d_t_sym)
-        d_y_over_d_t_func = sp.lambdify(
-            diff_eq.y,
-            np.asarray(solved_expressions),
+        symbol_set = set()
+        expressions = diff_eq.expressions
+        for expression in expressions:
+            symbol_set.update(expression.free_symbols)
+
+        symbol_map = self._create_symbol_map(ivp)
+        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
+
+        expressions_func = sp.lambdify(
+            [symbol_set],
+            expressions,
             'numpy')
 
         def diff_eq_error(
                 x: Tensor,
                 y: Tensor
-        ) -> Union[Tensor, Sequence[Tensor]]:
-            y_list = [y[:, j:j + 1] for j in range(diff_eq.y_dimension)]
-            d_y_over_d_t = d_y_over_d_t_func(*y_list)
+        ) -> Sequence[Tensor]:
+            d_y_over_d_t = expressions_func(
+                [func(x, y) for func in symbol_arg_funcs])
             return [
-                tf.gradients(y_list[j], x)[0] - d_y_over_d_t[j]
+                tf.gradients(y[:, j:j + 1], x)[0][:, -1:] - d_y_over_d_t[j]
                 for j in range(diff_eq.y_dimension)
             ]
 
@@ -702,6 +751,65 @@ class PINNOperator(StatelessMLOperator):
             loss_history, train_state = self._model.train()
 
         return loss_history, train_state
+
+    @staticmethod
+    def _create_symbol_map(
+            ivp: InitialValueProblem
+    ) -> Dict[sp.Symbol, Callable[[Tensor, Tensor, Tensor], Tensor]]:
+        """
+        Creates a dictionary mapping symbols to functions returning the values
+        of these symbols given x and y.
+
+        :param ivp: the initial value problem to create a symbol map for
+        :return: a dictionary mapping symbols to functions
+        """
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+
+        symbol_map = {}
+
+        for i, y_element in enumerate(diff_eq.y):
+            symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
+
+        if diff_eq.x_dimension:
+            d_y_over_d_x = diff_eq.d_y_over_d_x
+            for i in range(d_y_over_d_x.shape[0]):
+                for j in range(d_y_over_d_x.shape[1]):
+                    symbol_map[d_y_over_d_x[i, j]] = lambda x, y, _i=i, _j=j: \
+                        tf.gradients(y[:, i:i + 1], x)[0][:, _j:_j + 1]
+
+            d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+            for i in range(d_y_over_d_x_x.shape[0]):
+                for j in range(d_y_over_d_x_x.shape[1]):
+                    for k in range(d_y_over_d_x_x.shape[2]):
+                        symbol_map[d_y_over_d_x_x[i, j, k]] = \
+                            lambda x, y, _i=i, _j=j, _k=k: \
+                            tf.gradients(
+                                tf.gradients(
+                                    y[:, i:i + 1],
+                                    x
+                                )[0][:, _j:_j + 1],
+                                x
+                            )[0][:, _k:_k + 1]
+
+            for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+                symbol_map[y_gradient_element] = lambda x, y, _i=i: \
+                    tf.gradients(y[:, i:i + 1], x)[0][:, :diff_eq.x_dimension]
+
+            for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+                symbol_map[y_laplacian_element] = lambda x, y, _i=i: \
+                    tf.math.reduce_sum(
+                        tf.gradients(
+                            tf.gradients(
+                                y[:, i:i + 1],
+                                x
+                            )[0][:, :diff_eq.x_dimension],
+                            x
+                        )[0][:, :diff_eq.x_dimension],
+                        -1,
+                        True)
+
+        return symbol_map
 
 
 class StatelessRegressionOperator(StatelessMLOperator):
