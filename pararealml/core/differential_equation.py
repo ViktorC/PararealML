@@ -342,7 +342,7 @@ class WaveEquation(DifferentialEquation):
     @property
     def expressions(self) -> Sequence[Expr]:
         return [
-            self.y[1],
+            self._y[1],
             (self._c ** 2) * self._y_laplacian[0]
         ]
 
@@ -374,7 +374,7 @@ class CahnHilliardEquation(DifferentialEquation):
     @property
     def expressions(self) -> Sequence[Expr]:
         return [
-            self.y[1] ** 3 - self.y[1] - self._gamma * self._y_laplacian[1],
+            self._y[1] ** 3 - self._y[1] - self._gamma * self._y_laplacian[1],
             self._d * self._y_laplacian[0]
         ]
 
