@@ -355,8 +355,8 @@ class CahnHilliardEquation(DifferentialEquation):
     def __init__(
             self,
             x_dimension: int,
-            d: float,
-            gamma: float):
+            d: float = 1.,
+            gamma: float = .01):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
             differential equation's solution
@@ -374,7 +374,8 @@ class CahnHilliardEquation(DifferentialEquation):
     @property
     def expressions(self) -> Sequence[Expr]:
         return [
-            self._y[1] ** 3 - self._y[1] - self._gamma * self._y_laplacian[1],
+            self._y[1] ** 3 - self._y[1] - self._gamma * self._y_laplacian[1] -
+            self._y[0],
             self._d * self._y_laplacian[0]
         ]
 
