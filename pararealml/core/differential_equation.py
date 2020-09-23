@@ -190,9 +190,7 @@ class DifferentialEquation(ABC):
         """
         Validates the symbolic equations defining the differential equation.
         """
-        rhs = self.symbolic_equation_system.rhs
-
-        if len(rhs) != self._y_dimension:
+        if len(self.symbolic_equation_system.rhs) != self._y_dimension:
             raise ValueError
 
         all_symbols = set()
@@ -204,10 +202,13 @@ class DifferentialEquation(ABC):
             all_symbols.update(self._symbols.y_gradient)
             all_symbols.update(self._symbols.y_laplacian)
 
-        for rhs_element in rhs:
+        for rhs_element in self.symbolic_equation_system.rhs:
             rhs_symbols = rhs_element.free_symbols
             if not rhs_symbols.issubset(all_symbols):
                 raise ValueError
+
+        if LhsType.D_Y_OVER_D_T not in self.symbolic_equation_system.lhs_types:
+            raise ValueError
 
 
 class PopulationGrowthEquation(DifferentialEquation):
