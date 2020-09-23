@@ -1,57 +1,37 @@
 from abc import ABC, abstractmethod
 from copy import copy
+from enum import Enum
 from typing import Optional, Tuple, Sequence
 
 import numpy as np
 from sympy import symarray, Expr
 
 
-class DifferentialEquation(ABC):
+class Symbols:
     """
-    A representation of a time-dependent differential equation.
+    A class containing the symbols for expressing a differential equation
+    system with a specified number of unknown variables and spatial dimensions.
     """
 
-    def __init__(self, x_dimension: int, y_dimension: int):
-        if x_dimension < 0 or y_dimension < 0:
-            raise ValueError
-
-        self._x_dimension = x_dimension
-        self._y_dimension = y_dimension
-
+    def __init__(self, x_dimension, y_dimension):
+        """
+        :param x_dimension: the number spatial dimensions
+        :param y_dimension: the number of unknown variables
+        """
         self._y = symarray('y', (y_dimension,))
 
-        if self._x_dimension:
+        if x_dimension:
             self._d_y_over_d_x = symarray(
                 'd_y_over_d_x', (y_dimension, x_dimension))
             self._d_y_over_d_x_x = symarray(
                 'd_y_over_d_x_x', (y_dimension, x_dimension, x_dimension))
             self._y_gradient = symarray('y_gradient', (y_dimension,))
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
-            self._y_anti_laplacian = symarray(
-                'y_anti_laplacian', (y_dimension,))
         else:
             self._d_y_over_d_x = None
             self._d_y_over_d_x_x = None
             self._y_gradient = None
             self._y_laplacian = None
-            self._y_anti_laplacian = None
-
-    @property
-    def x_dimension(self) -> int:
-        """
-        Returns the dimension of the non-temporal domain of the differential
-        equation's solution. If the differential equation is an ODE, it returns
-        0.
-        """
-        return self._x_dimension
-
-    @property
-    def y_dimension(self) -> int:
-        """
-        Returns the dimension of the image of the differential equation's
-        solution. If the solution is not vector-valued, its dimension is 1.
-        """
-        return self._y_dimension
 
     @property
     def y(self) -> np.ndarray:
@@ -96,23 +76,138 @@ class DifferentialEquation(ABC):
         """
         return np.copy(self._y_laplacian)
 
+
+class LhsType(Enum):
+    """
+    An enumeration defining the types of the left hand sides of symbolic
+    equations making up systems of differential equations.
+    """
+    D_Y_OVER_D_T = 0,
+    Y = 1,
+    Y_LAPLACIAN = 2
+
+
+class SymbolicEquationSystem:
+    """
+    A system of symbolic equations for defining differential equations.
+    """
+
+    def __init__(
+            self,
+            rhs: Sequence[Expr],
+            lhs_types: Optional[Sequence[LhsType]] = None):
+        """
+        :param rhs: the right hand side of the symbolic equation system
+        :param lhs_types: the types of the left hand side of the symbolic
+        equation system
+        """
+        if len(rhs) < 1:
+            raise ValueError
+
+        if lhs_types is None:
+            lhs_types = [LhsType.D_Y_OVER_D_T] * len(rhs)
+
+        if len(rhs) != len(lhs_types):
+            raise ValueError
+
+        self._rhs = copy(rhs)
+        self._lhs_types = copy(lhs_types)
+
     @property
-    def y_anti_laplacian(self) -> Optional[np.ndarray]:
+    def rhs(self) -> Sequence[Expr]:
         """
-        An array of symbols denoting the spatial anti-Laplacians of the
-        elements of the differential equation's solution.
+        Returns the right hand side of the symbolic equation system.
         """
-        return np.copy(self._y_anti_laplacian)
+        return copy(self._rhs)
+
+    @property
+    def lhs_types(self) -> Sequence[LhsType]:
+        """
+        Returns the types of the left hand side of the symbolic equation
+        system.
+        """
+        return copy(self._lhs_types)
+
+
+class DifferentialEquation(ABC):
+    """
+    A representation of a time-dependent differential equation.
+    """
+
+    def __init__(self, x_dimension: int, y_dimension: int):
+        """
+        :param x_dimension: the number spatial dimensions
+        :param y_dimension: the number of unknown variables
+        """
+        if x_dimension < 0 or y_dimension < 0:
+            raise ValueError
+
+        self._x_dimension = x_dimension
+        self._y_dimension = y_dimension
+
+        self._symbols = Symbols(x_dimension, y_dimension)
+
+        self._validate_equations()
+
+    @property
+    def x_dimension(self) -> int:
+        """
+        Returns the dimension of the non-temporal domain of the differential
+        equation's solution. If the differential equation is an ODE, it returns
+        0.
+        """
+        return self._x_dimension
+
+    @property
+    def y_dimension(self) -> int:
+        """
+        Returns the dimension of the image of the differential equation's
+        solution. If the solution is not vector-valued, its dimension is 1.
+        """
+        return self._y_dimension
+
+    @property
+    def symbols(self) -> Symbols:
+        """
+        Returns all valid symbols that can be used to define a differential
+        equation of this many spatial dimensions and unknown variables.
+        """
+        return self._symbols
 
     @property
     @abstractmethod
-    def expressions(self) -> Sequence[Expr]:
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
         """
-        A sequence of symbolic expressions defining the differential equation
-        system. Every element of the returned sequence defines the first time
-        derivative of the respective element of the vector-valued solution of
-        the differential equation system.
+        A system of symbolic equations defining the differential equation
+        system. Every element of the right hand side of the returned system
+        defines the first time derivative, the direct value, or the spatial
+        Laplacian of the respective element of the vector-valued solution of
+        the differential equation system depending on the type of the left hand
+        side of the equation.
         """
+
+    def _validate_equations(self):
+        """
+        Validates the symbolic equations defining the differential equation.
+        """
+        rhs = self.symbolic_equation_system.rhs
+
+        if len(rhs) != self._y_dimension:
+            raise ValueError
+
+        all_symbols = set()
+        all_symbols.update(self._symbols.y)
+
+        if self._x_dimension:
+            all_symbols.update(self._symbols.d_y_over_d_x.flatten())
+            all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
+            all_symbols.update(self._symbols.y_gradient)
+            all_symbols.update(self._symbols.y_laplacian)
+
+        for rhs_element in rhs:
+            rhs_symbols = rhs_element.free_symbols
+            if not rhs_symbols.issubset(all_symbols):
+                raise ValueError
 
 
 class PopulationGrowthEquation(DifferentialEquation):
@@ -125,12 +220,12 @@ class PopulationGrowthEquation(DifferentialEquation):
         """
         :param r: the population growth rate
         """
-        super(PopulationGrowthEquation, self).__init__(0, 1)
         self._r = r
+        super(PopulationGrowthEquation, self).__init__(0, 1)
 
     @property
-    def expressions(self) -> Sequence[Expr]:
-        return [self._r * self._y[0]]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([self._r * self._symbols.y[0]])
 
 
 class LotkaVolterraEquation(DifferentialEquation):
@@ -151,8 +246,6 @@ class LotkaVolterraEquation(DifferentialEquation):
         :param gamma: the predators' mortality rate
         :param delta: a coefficient of the increase of the predator population
         """
-        super(LotkaVolterraEquation, self).__init__(0, 2)
-
         if alpha < 0. or beta < 0. or gamma < 0. or delta < 0.:
             raise ValueError
 
@@ -161,14 +254,16 @@ class LotkaVolterraEquation(DifferentialEquation):
         self._gamma = gamma
         self._delta = delta
 
+        super(LotkaVolterraEquation, self).__init__(0, 2)
+
     @property
-    def expressions(self) -> Sequence[Expr]:
-        r = self._y[0]
-        p = self._y[1]
-        return [
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        r = self._symbols.y[0]
+        p = self._symbols.y[1]
+        return SymbolicEquationSystem([
             self._alpha * r - self._beta * r * p,
             self._delta * r * p - self._gamma * p
-        ]
+        ])
 
 
 class LorenzEquation(DifferentialEquation):
@@ -187,8 +282,6 @@ class LorenzEquation(DifferentialEquation):
         :param rho: the second system coefficient
         :param beta: the third system coefficient
         """
-        super(LorenzEquation, self).__init__(0, 3)
-
         if sigma < .0 or rho < .0 or beta < .0:
             raise ValueError
 
@@ -196,16 +289,18 @@ class LorenzEquation(DifferentialEquation):
         self._rho = rho
         self._beta = beta
 
+        super(LorenzEquation, self).__init__(0, 3)
+
     @property
-    def expressions(self) -> Sequence[Expr]:
-        c = self._y[0]
-        h = self._y[1]
-        v = self._y[2]
-        return [
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        c = self._symbols.y[0]
+        h = self._symbols.y[1]
+        v = self._symbols.y[2]
+        return SymbolicEquationSystem([
             self._sigma * (h - c),
             c * (self._rho - v) - h,
             c * h - self._beta * v
-        ]
+        ])
 
 
 class NBodyGravitationalEquation(DifferentialEquation):
@@ -225,9 +320,6 @@ class NBodyGravitationalEquation(DifferentialEquation):
         :param masses: a list of the masses of the objects (kg)
         :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
         """
-        super(NBodyGravitationalEquation, self).__init__(
-            0, 2 * len(masses) * n_dims)
-
         if n_dims < 2 or n_dims > 3:
             raise ValueError
         if masses is None or len(masses) < 2 or np.any(np.array(masses) <= 0.):
@@ -237,6 +329,9 @@ class NBodyGravitationalEquation(DifferentialEquation):
         self._masses = tuple(masses)
         self._n_objects = len(masses)
         self._g = g
+
+        super(NBodyGravitationalEquation, self).__init__(
+            0, 2 * len(masses) * n_dims)
 
     @property
     def spatial_dimension(self) -> int:
@@ -260,23 +355,26 @@ class NBodyGravitationalEquation(DifferentialEquation):
         return self._n_objects
 
     @property
-    def expressions(self) -> Sequence[Expr]:
-        y = np.array(self._y, dtype=object)
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        y = np.array(self._symbols.y, dtype=object)
 
         n_obj_by_dims = self._n_objects * self._dims
 
         d_y_over_d_t = np.empty(self._y_dimension, dtype=object)
-        d_y_over_d_t[:n_obj_by_dims] = y[n_obj_by_dims:]
+        d_y_over_d_t[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
 
         forces_shape = (self._n_objects, self._n_objects, self._dims)
         forces = np.zeros(forces_shape, dtype=object)
 
         for i in range(self._n_objects):
-            position_i = y[i * self._dims:(i + 1) * self._dims]
+            position_offset_i = i * self._dims
+            position_i = y[position_offset_i:position_offset_i + self._dims]
             mass_i = self._masses[i]
 
             for j in range(i + 1, self._n_objects):
-                position_j = y[j * self._dims:(j + 1) * self._dims]
+                position_offset_j = j * self._dims
+                position_j = y[position_offset_j:
+                               position_offset_j + self._dims]
                 mass_j = self._masses[j]
                 displacement = position_j - position_i
                 distance = np.power(np.power(displacement, 2).sum(axis=-1), .5)
@@ -285,11 +383,14 @@ class NBodyGravitationalEquation(DifferentialEquation):
                 forces[i, j, :] = force
                 forces[j, i, :] = -force
 
-            acceleration = forces[i, :, :].sum(axis=y.ndim - 1) / mass_i
-            d_y_over_d_t[n_obj_by_dims + i * self._dims:
-                         n_obj_by_dims + (i + 1) * self._dims] = acceleration
+            acceleration = forces[i, :, :].sum(axis=0) / mass_i
+            velocity_offset = n_obj_by_dims + position_offset_i
+            d_y_over_d_t[
+                ...,
+                velocity_offset:velocity_offset + self._dims
+            ] = acceleration
 
-        return d_y_over_d_t
+        return SymbolicEquationSystem(d_y_over_d_t)
 
 
 class DiffusionEquation(DifferentialEquation):
@@ -306,16 +407,16 @@ class DiffusionEquation(DifferentialEquation):
             differential equation's solution
         :param d: the diffusion coefficient
         """
-        super(DiffusionEquation, self).__init__(x_dimension, 1)
-
         if x_dimension == 0:
             raise ValueError
 
         self._d = d
 
+        super(DiffusionEquation, self).__init__(x_dimension, 1)
+
     @property
-    def expressions(self) -> Sequence[Expr]:
-        return [self._d * self._y_laplacian[0]]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([self._d * self._symbols.y_laplacian[0]])
 
 
 class WaveEquation(DifferentialEquation):
@@ -332,19 +433,19 @@ class WaveEquation(DifferentialEquation):
             differential equation's solution
         :param c: the propagation speed coefficient
         """
-        super(WaveEquation, self).__init__(x_dimension, 2)
-
         if x_dimension == 0:
             raise ValueError
 
         self._c = c
 
+        super(WaveEquation, self).__init__(x_dimension, 2)
+
     @property
-    def expressions(self) -> Sequence[Expr]:
-        return [
-            self._y[1],
-            (self._c ** 2) * self._y_laplacian[0]
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([
+            self._symbols.y[1],
+            (self._c ** 2) * self._symbols.y_laplacian[0]
+        ])
 
 
 class CahnHilliardEquation(DifferentialEquation):
@@ -355,7 +456,7 @@ class CahnHilliardEquation(DifferentialEquation):
     def __init__(
             self,
             x_dimension: int,
-            d: float = 1.,
+            d: float = .1,
             gamma: float = .01):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
@@ -363,21 +464,27 @@ class CahnHilliardEquation(DifferentialEquation):
         :param d: the potential diffusion coefficient
         :param gamma: the concentration diffusion coefficient
         """
-        super(CahnHilliardEquation, self).__init__(x_dimension, 2)
-
         if x_dimension == 0:
             raise ValueError
 
         self._d = d
         self._gamma = gamma
 
+        super(CahnHilliardEquation, self).__init__(x_dimension, 2)
+
     @property
-    def expressions(self) -> Sequence[Expr]:
-        return [
-            self._y[1] ** 3 - self._y[1] - self._gamma * self._y_laplacian[1] -
-            self._y[0],
-            self._d * self._y_laplacian[0]
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem(
+            [
+                self._symbols.y[1] ** 3 - self._symbols.y[1] -
+                self._gamma * self._symbols.y_laplacian[1],
+                self._d * self._symbols.y_laplacian[0]
+            ],
+            [
+                LhsType.Y,
+                LhsType.D_Y_OVER_D_T
+            ]
+        )
 
 
 class NavierStokes2DEquation(DifferentialEquation):
@@ -392,13 +499,22 @@ class NavierStokes2DEquation(DifferentialEquation):
         """
         :param re: the Reynolds number
         """
-        super(NavierStokes2DEquation, self).__init__(2, 2)
         self._re = re
+        super(NavierStokes2DEquation, self).__init__(2, 2)
 
     @property
-    def expressions(self) -> Sequence[Expr]:
-        return [
-            (1. / self._re) * self._y_laplacian[0] -
-            np.cross(self._d_y_over_d_x[0], self._d_y_over_d_x[1]),
-            -self._y_anti_laplacian[0] - self._y[1]
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem(
+            [
+                (1. / self._re) * self._symbols.y_laplacian[0] -
+                np.cross(
+                    self._symbols.d_y_over_d_x[0],
+                    self._symbols.d_y_over_d_x[1]
+                ),
+                -self._symbols.y[0]
+            ],
+            [
+                LhsType.D_Y_OVER_D_T,
+                LhsType.Y_LAPLACIAN
+            ]
+        )
