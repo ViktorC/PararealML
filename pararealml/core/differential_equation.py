@@ -202,15 +202,17 @@ class DifferentialEquation(ABC):
             all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
             all_symbols.update(self._symbols.y_gradient)
             all_symbols.update(self._symbols.y_laplacian)
-        elif LhsType.Y_LAPLACIAN in equation_system.lhs_types:
-            raise ValueError
 
         for rhs_element in self.symbolic_equation_system.rhs:
             rhs_symbols = rhs_element.free_symbols
             if not rhs_symbols.issubset(all_symbols):
                 raise ValueError
 
-        if LhsType.D_Y_OVER_D_T not in equation_system.lhs_types:
+        if self.x_dimension:
+            if LhsType.D_Y_OVER_D_T not in equation_system.lhs_types:
+                raise ValueError
+        elif LhsType.Y in equation_system.lhs_types \
+                or LhsType.Y_LAPLACIAN in equation_system.lhs_types:
             raise ValueError
 
 
