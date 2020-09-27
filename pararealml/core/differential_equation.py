@@ -514,8 +514,8 @@ class NavierStokes2DEquation(DifferentialEquation):
             [
                 (1. / self._re) * self._symbols.y_laplacian[0] -
                 np.cross(
-                    self._symbols.d_y_over_d_x[0],
-                    self._symbols.d_y_over_d_x[1]
+                    self._symbols.d_y_over_d_x[0, :],
+                    self._symbols.d_y_over_d_x[1, :]
                 ),
                 -self._symbols.y[0]
             ],
