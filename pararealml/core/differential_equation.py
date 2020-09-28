@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from copy import copy
 from enum import Enum
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Tuple, Sequence, Set
 
 import numpy as np
-from sympy import symarray, Expr
+from sympy import symarray, Expr, Symbol
 
 
 class Symbols:
@@ -113,6 +113,14 @@ class SymbolicEquationSystem:
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
 
+        self._equation_indices_by_type = {lhs_type: [] for lhs_type in LhsType}
+        self._rhs_by_type = {lhs_type: [] for lhs_type in LhsType}
+        self._symbols_by_type = {lhs_type: set() for lhs_type in LhsType}
+        for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
+            self._equation_indices_by_type[lhs_type].append(i)
+            self._rhs_by_type[lhs_type].append(rhs_element)
+            self._symbols_by_type[lhs_type].update(rhs_element.free_symbols)
+
     @property
     def rhs(self) -> Sequence[Expr]:
         """
@@ -127,6 +135,37 @@ class SymbolicEquationSystem:
         system.
         """
         return copy(self._lhs_types)
+
+    def equation_indices_by_type(self, lhs_type: LhsType) -> Sequence[int]:
+        """
+        Returns a sequence of integers denoting the indices of all equations of
+        the equation system with the specified type of left hand side.
+
+        :param lhs_type: the type of left hand side
+        :return: the sequence of indices
+        """
+        return copy(self._equation_indices_by_type[lhs_type])
+
+    def rhs_by_type(self, lhs_type: LhsType) -> Sequence[Expr]:
+        """
+        Returns a sequence of expressions representing the right hand sides of
+        all the equations of the equation system whose left hand sides match
+        the specified type.
+
+        :param lhs_type: the type of left hand side
+        :return: a sequence of expressions
+        """
+        return copy(self._rhs_by_type[lhs_type])
+
+    def symbols_by_type(self, lhs_type: LhsType) -> Set[Symbol]:
+        """
+        Returns a set of symbols representing all the symbols included in all
+        the equations whose left hand sides match the specified type.
+
+        :param lhs_type: the type of left hand side
+        :return: a set of symbols
+        """
+        return copy(self._symbols_by_type[lhs_type])
 
 
 class DifferentialEquation(ABC):
