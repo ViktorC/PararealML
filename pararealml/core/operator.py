@@ -10,12 +10,15 @@ from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
 from deepxde.maps.map import Map
 from deepxde.model import TrainState, LossHistory
-from fipy import Solver, TransientTerm, DiffusionTerm, Variable
+from fipy import Solver, Variable, DiffusionTerm, ImplicitSourceTerm, \
+    TransientTerm
 from fipy.terms.term import Term
 from scipy.integrate import solve_ivp, OdeSolver
 from tensorflow import Tensor
 
+from pararealml import apply_constraints_along_last_axis
 from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.differential_equation import LhsType, DifferentialEquation
 from pararealml.core.differentiator import Differentiator
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_value_problem import TemporalDomainInterval, \
@@ -125,11 +128,11 @@ class ODEOperator(Operator):
         time_points = self._discretise_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_points[0], time_points[-1])
 
-        expressions = diff_eq.expressions
-        expressions_func = sp.lambdify([diff_eq.y], expressions, 'numpy')
+        rhs = diff_eq.symbolic_equation_system.rhs
+        rhs_lambda = sp.lambdify([diff_eq.symbols.y], rhs, 'numpy')
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
-            return np.asarray(expressions_func(_y))
+            return np.asarray(rhs_lambda(_y))
 
         result = solve_ivp(
             d_y_over_d_t,
@@ -195,21 +198,7 @@ class FVMOperator(Operator):
         for i, fipy_var in enumerate(fipy_vars):
             fipy_var.setValue(value=y_0[..., i].flatten())
 
-        symbol_map = self._create_symbol_map(ivp)
-
-        expressions = diff_eq.expressions
-        fipy_expressions = []
-        for i, expr in enumerate(expressions):
-            symbols = expr.free_symbols
-            symbol_args = [symbol_map[symbol] for symbol in symbols]
-
-            expr_func = sp.lambdify(
-                [symbols],
-                expr,
-                'numpy')
-            rhs = expr_func(symbol_args)
-            fipy_expressions.append(TransientTerm(var=fipy_vars[i]) == rhs)
-
+        fipy_equations = self._create_fipy_equations(cp)
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
 
@@ -219,7 +208,7 @@ class FVMOperator(Operator):
                 fipy_var.updateOld()
 
             for j, fipy_var in enumerate(fipy_vars):
-                fipy_expressions[j].solve(
+                fipy_equations[j].solve(
                     var=fipy_var,
                     dt=self._d_t,
                     solver=self._solver)
@@ -228,41 +217,84 @@ class FVMOperator(Operator):
         return Solution(
             cp, time_points[1:], y, vertex_oriented=False, d_t=self._d_t)
 
+    def _create_fipy_equations(
+            self,
+            cp: ConstrainedProblem
+    ) -> Sequence[Term]:
+        """
+        Creates and returns a list of equations expressing the differential
+        equation system using FiPy terms.
+
+        :param cp: the constrained problem to create the FiPy equations for
+        :return: a list of FiPy terms expressing the differential equation
+        system
+        """
+        diff_eq = cp.differential_equation
+        fipy_vars = cp.fipy_vars
+
+        symbol_map = self._create_symbol_map(cp)
+
+        fipy_equations = []
+        equation_system = diff_eq.symbolic_equation_system
+        for i, (lhs_type, rhs) in enumerate(
+                zip(equation_system.lhs_types, equation_system.rhs)):
+            symbols = rhs.free_symbols
+            symbol_args = [symbol_map[symbol] for symbol in symbols]
+
+            if lhs_type == LhsType.D_Y_OVER_D_T:
+                fipy_lhs = TransientTerm(var=fipy_vars[i], coeff=1.)
+            elif lhs_type == LhsType.Y:
+                fipy_lhs = ImplicitSourceTerm(var=fipy_vars[i], coeff=1.)
+            elif lhs_type == LhsType.Y_LAPLACIAN:
+                fipy_lhs = DiffusionTerm(var=fipy_vars[i], coeff=1.)
+            else:
+                raise ValueError
+
+            rhs_func = sp.lambdify(
+                [symbols],
+                rhs,
+                'numpy')
+            fipy_rhs = rhs_func(symbol_args)
+
+            fipy_equations.append(fipy_lhs == fipy_rhs)
+
+        return fipy_equations
+
     @staticmethod
     def _create_symbol_map(
-            ivp: InitialValueProblem
+            cp: ConstrainedProblem
     ) -> Dict[sp.Symbol, Union[Term, Variable]]:
         """
         Creates a dictionary mapping symbols to FiPy terms and variables.
 
-        :param ivp: the initial value problem to create a symbol map for
+        :param cp: the constrained problem to create a symbol map for
         :return: a dictionary mapping symbols to terms and variables
         """
-        cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
         fipy_vars = cp.fipy_vars
 
         symbol_map = {}
 
-        for i, y_element in enumerate(diff_eq.y):
-            symbol_map[y_element] = fipy_vars[i]
+        for i, y_element in enumerate(diff_eq.symbols.y):
+            symbol_map[y_element] = \
+                ImplicitSourceTerm(var=fipy_vars[i], coeff=1.)
 
-        d_y_over_d_x = diff_eq.d_y_over_d_x
+        d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
         for i in range(d_y_over_d_x.shape[0]):
             for j in range(d_y_over_d_x.shape[1]):
                 symbol_map[d_y_over_d_x[i, j]] = fipy_vars[i].grad[j]
 
-        d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+        d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
         for i in range(d_y_over_d_x_x.shape[0]):
             for j in range(d_y_over_d_x_x.shape[1]):
                 for k in range(d_y_over_d_x_x.shape[2]):
                     symbol_map[d_y_over_d_x_x[i, j, k]] = \
                         fipy_vars[i].grad[j].grad[k]
 
-        for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+        for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
             symbol_map[y_gradient_element] = fipy_vars[i].grad
 
-        for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+        for i, y_laplacian_element in enumerate(diff_eq.symbols.y_laplacian):
             symbol_map[y_laplacian_element] = \
                 DiffusionTerm(var=fipy_vars[i], coeff=1.)
 
@@ -309,25 +341,7 @@ class FDMOperator(Operator):
             parallel_enabled: bool = True
     ) -> Solution:
         cp = ivp.constrained_problem
-        diff_eq = cp.differential_equation
-        y_constraints = cp.y_vertex_constraints
-
-        symbol_set = set()
-        expressions = diff_eq.expressions
-        for expression in expressions:
-            symbol_set.update(expression.free_symbols)
-
-        symbol_map = self._create_symbol_map(ivp)
-        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
-
-        expressions_func = sp.lambdify(
-            [symbol_set],
-            expressions,
-            'numpy')
-
-        def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
-            args = [func(_t, _y) for func in symbol_arg_funcs]
-            return np.concatenate(expressions_func(args), axis=-1)
+        y_next = self._create_y_next_function(cp)
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
@@ -336,41 +350,123 @@ class FDMOperator(Operator):
         y_i = ivp.initial_condition.discrete_y_0(True)
 
         for i, t_i in enumerate(time_points[:-1]):
-            y_i = self._integrator.integral(
-                y_i,
-                t_i,
-                self._d_t,
-                d_y_over_d_t,
-                y_constraints)
-            y[i] = y_i
+            y[i] = y_i = y_next(t_i, y_i)
 
         return Solution(
             cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
+    def _create_y_next_function(
+            self,
+            cp: ConstrainedProblem
+    ) -> Callable[[float, np.ndarray], np.ndarray]:
+        """
+        Creates a function that returns the value of y(t + d_t) given t and y.
+
+        :param cp: the constrained problem
+        :return: the function defining the value of y at the next time point
+        """
+        diff_eq = cp.differential_equation
+        eq_sys = diff_eq.symbolic_equation_system
+        symbol_map = self._create_symbol_map(cp)
+
+        d_y_over_d_t_eq_inds = \
+            eq_sys.equation_indices_by_type(LhsType.D_Y_OVER_D_T)
+        d_y_over_d_t_symbols = eq_sys.symbols_by_type(LhsType.D_Y_OVER_D_T)
+        d_y_over_d_t_arg_functions = \
+            [symbol_map[sym] for sym in d_y_over_d_t_symbols]
+        d_y_over_d_t_rhs_lambda = sp.lambdify(
+            [d_y_over_d_t_symbols],
+            eq_sys.rhs_by_type(LhsType.D_Y_OVER_D_T),
+            'numpy'
+        )
+
+        y_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y)
+        y_symbols = eq_sys.symbols_by_type(LhsType.Y)
+        y_arg_functions = [symbol_map[sym] for sym in y_symbols]
+        y_rhs_lambda = sp.lambdify(
+            [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy'
+        )
+
+        y_laplacian_eq_inds = \
+            eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
+        y_laplacian_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
+        y_laplacian_arg_functions = \
+            [symbol_map[sym] for sym in y_laplacian_symbols]
+        y_laplacian_rhs_lambda = sp.lambdify(
+            [y_laplacian_symbols],
+            eq_sys.rhs_by_type(LhsType.Y_LAPLACIAN),
+            'numpy'
+        )
+
+        d_x = cp.mesh.d_x if diff_eq.x_dimension else None
+        y_constraints = cp.y_vertex_constraints
+        y_y_constraints = None if y_constraints is None \
+            else y_constraints[y_eq_inds]
+        y_laplacian_y_constraints = None if y_constraints is None \
+            else y_constraints[y_laplacian_eq_inds]
+        d_y_constraints = cp.d_y_boundary_vertex_constraints
+        y_laplacian_d_y_constraints = None if d_y_constraints is None \
+            else d_y_constraints[:, y_laplacian_eq_inds]
+
+        def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
+            d_y_over_d_t = np.zeros(y.shape)
+            args = [function(t, y) for function in d_y_over_d_t_arg_functions]
+            d_y_over_d_t[..., d_y_over_d_t_eq_inds] = \
+                np.concatenate(d_y_over_d_t_rhs_lambda(args), axis=-1)
+            return d_y_over_d_t
+
+        def y_next_function(t: float, y: np.ndarray) -> np.ndarray:
+            y_next = self._integrator.integral(
+                y,
+                t,
+                self._d_t,
+                d_y_over_d_t_function,
+                y_constraints
+            )
+            if len(y_eq_inds):
+                args = [function(t, y) for function in y_arg_functions]
+                y_next[..., y_eq_inds] = apply_constraints_along_last_axis(
+                    y_y_constraints,
+                    np.concatenate(y_rhs_lambda(args), axis=-1)
+                )
+            if len(y_laplacian_eq_inds):
+                args = \
+                    [function(t, y) for function in y_laplacian_arg_functions]
+                y_next[..., y_laplacian_eq_inds] = \
+                    self._differentiator.anti_laplacian(
+                        np.concatenate(y_laplacian_rhs_lambda(args), axis=-1),
+                        d_x,
+                        self._tol,
+                        y_laplacian_y_constraints,
+                        y_laplacian_d_y_constraints
+                    )
+            return y_next
+
+        return y_next_function
+
     def _create_symbol_map(
             self,
-            ivp: InitialValueProblem
+            cp: ConstrainedProblem
     ) -> Dict[sp.Symbol, Callable[[float, np.ndarray], np.ndarray]]:
         """
         Creates a dictionary mapping symbols to functions returning the values
         of these symbols given t and y.
 
-        :param ivp: the initial value problem to create a symbol map for
+        :param cp: the constrained problem to create a symbol map for
         :return: a dictionary mapping symbols to functions
         """
-        cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
         symbol_map = {}
 
-        for i, y_element in enumerate(diff_eq.y):
+        for i, y_element in enumerate(diff_eq.symbols.y):
             symbol_map[y_element] = lambda t, y, _i=i: y[..., [_i]]
 
         if diff_eq.x_dimension:
             d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
             d_x = cp.mesh.d_x
 
-            d_y_over_d_x = diff_eq.d_y_over_d_x
+            d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             for i in range(d_y_over_d_x.shape[0]):
                 for j in range(d_y_over_d_x.shape[1]):
                     symbol_map[d_y_over_d_x[i, j]] = \
@@ -382,7 +478,7 @@ class FDMOperator(Operator):
                             _i,
                             d_y_boundary_constraints[_j, _i])
 
-            d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             for i in range(d_y_over_d_x_x.shape[0]):
                 for j in range(d_y_over_d_x_x.shape[1]):
                     for k in range(d_y_over_d_x_x.shape[2]):
@@ -397,14 +493,15 @@ class FDMOperator(Operator):
                                 _i,
                                 d_y_boundary_constraints[_j, _i])
 
-            for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+            for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
                 symbol_map[y_gradient_element] = lambda t, y, _i=i: \
                     self._differentiator.jacobian(
                         y[..., [_i]],
                         d_x,
                         d_y_boundary_constraints[:, [_i]])
 
-            for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+            for i, y_laplacian_element in enumerate(
+                    diff_eq.symbols.y_laplacian):
                 symbol_map[y_laplacian_element] = lambda t, y, _i=i: \
                     self._differentiator.laplacian(
                         y[..., [_i]],
@@ -676,26 +773,29 @@ class PINNOperator(StatelessMLOperator):
         assert diff_eq.x_dimension <= 3
 
         symbol_set = set()
-        expressions = diff_eq.expressions
-        for expression in expressions:
-            symbol_set.update(expression.free_symbols)
+        symbolic_equation_system = diff_eq.symbolic_equation_system
+        for rhs_element in symbolic_equation_system.rhs:
+            symbol_set.update(rhs_element.free_symbols)
 
-        symbol_map = self._create_symbol_map(ivp)
+        symbol_map = self._create_symbol_map(ivp.constrained_problem)
         symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
 
-        expressions_func = sp.lambdify(
+        rhs_lambda = sp.lambdify(
             [symbol_set],
-            expressions,
+            symbolic_equation_system.rhs,
             'numpy')
+
+        lhs_functions = self._create_lhs_functions(diff_eq)
 
         def diff_eq_error(
                 x: Tensor,
                 y: Tensor
         ) -> Sequence[Tensor]:
-            d_y_over_d_t = expressions_func(
-                [func(x, y) for func in symbol_arg_funcs])
+            rhs = rhs_lambda(
+                [func(x, y) for func in symbol_arg_funcs]
+            )
             return [
-                tf.gradients(y[:, j:j + 1], x)[0][:, -1:] - d_y_over_d_t[j]
+                lhs_functions[j](x, y) - rhs[j]
                 for j in range(diff_eq.y_dimension)
             ]
 
@@ -753,32 +853,73 @@ class PINNOperator(StatelessMLOperator):
         return loss_history, train_state
 
     @staticmethod
+    def _create_lhs_functions(
+            diff_eq: DifferentialEquation
+    ) -> Sequence[Callable[[Tensor, Tensor], Tensor]]:
+        """
+        Returns a list of functions for calculating the left hand sides of the
+        differential equation given x and y.
+
+        :param diff_eq: the differential equation to compute the left hand
+        sides for
+        :return: a list of functions
+        """
+        lhs_functions = []
+        for i, lhs_type in \
+                enumerate(diff_eq.symbolic_equation_system.lhs_types):
+            if lhs_type == LhsType.D_Y_OVER_D_T:
+                lhs_functions.append(
+                    lambda x, y, _i=i:
+                    tf.gradients(y[:, _i:_i + 1], x)[0][:, -1:]
+                )
+            elif lhs_type == LhsType.Y:
+                lhs_functions.append(lambda x, y, _i=i: y[:, _i:_i + 1])
+            elif lhs_type == LhsType.Y_LAPLACIAN:
+                lhs_functions.append(
+                    lambda x, y, _i=i:
+                    tf.math.reduce_sum(
+                        tf.gradients(
+                            tf.gradients(
+                                y[:, _i:_i + 1],
+                                x
+                            )[0][:, :diff_eq.x_dimension],
+                            x
+                        )[0][:, :diff_eq.x_dimension],
+                        -1,
+                        True
+                    )
+                )
+            else:
+                raise ValueError
+
+        return lhs_functions
+
+    @staticmethod
     def _create_symbol_map(
-            ivp: InitialValueProblem
+            cp: ConstrainedProblem
     ) -> Dict[sp.Symbol, Callable[[Tensor, Tensor, Tensor], Tensor]]:
         """
         Creates a dictionary mapping symbols to functions returning the values
         of these symbols given x and y.
 
-        :param ivp: the initial value problem to create a symbol map for
+        :param cp: the constrained problem to create a symbol map for
         :return: a dictionary mapping symbols to functions
         """
-        cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
         symbol_map = {}
 
-        for i, y_element in enumerate(diff_eq.y):
+        for i, y_element in enumerate(diff_eq.symbols.y):
             symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
 
         if diff_eq.x_dimension:
-            d_y_over_d_x = diff_eq.d_y_over_d_x
+            d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             for i in range(d_y_over_d_x.shape[0]):
                 for j in range(d_y_over_d_x.shape[1]):
                     symbol_map[d_y_over_d_x[i, j]] = lambda x, y, _i=i, _j=j: \
-                        tf.gradients(y[:, i:i + 1], x)[0][:, _j:_j + 1]
+                        tf.gradients(y[:, _i:_i + 1], x)[0][:, _j:_j + 1]
 
-            d_y_over_d_x_x = diff_eq.d_y_over_d_x_x
+            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             for i in range(d_y_over_d_x_x.shape[0]):
                 for j in range(d_y_over_d_x_x.shape[1]):
                     for k in range(d_y_over_d_x_x.shape[2]):
@@ -786,28 +927,33 @@ class PINNOperator(StatelessMLOperator):
                             lambda x, y, _i=i, _j=j, _k=k: \
                             tf.gradients(
                                 tf.gradients(
-                                    y[:, i:i + 1],
+                                    y[:, _i:_i + 1],
                                     x
                                 )[0][:, _j:_j + 1],
                                 x
                             )[0][:, _k:_k + 1]
 
-            for i, y_gradient_element in enumerate(diff_eq.y_gradient):
+            for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
                 symbol_map[y_gradient_element] = lambda x, y, _i=i: \
-                    tf.gradients(y[:, i:i + 1], x)[0][:, :diff_eq.x_dimension]
+                    tf.gradients(
+                        y[:, _i:_i + 1],
+                        x
+                    )[0][:, :diff_eq.x_dimension]
 
-            for i, y_laplacian_element in enumerate(diff_eq.y_laplacian):
+            for i, y_laplacian_element in enumerate(
+                    diff_eq.symbols.y_laplacian):
                 symbol_map[y_laplacian_element] = lambda x, y, _i=i: \
                     tf.math.reduce_sum(
                         tf.gradients(
                             tf.gradients(
-                                y[:, i:i + 1],
+                                y[:, _i:_i + 1],
                                 x
                             )[0][:, :diff_eq.x_dimension],
                             x
                         )[0][:, :diff_eq.x_dimension],
                         -1,
-                        True)
+                        True
+                    )
 
         return symbol_map
 
