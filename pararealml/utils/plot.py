@@ -9,7 +9,7 @@ from matplotlib.colors import Colormap
 from mpl_toolkits.mplot3d import Axes3D
 
 from pararealml.core.differential_equation import NBodyGravitationalEquation, \
-    WaveEquation, DiffusionEquation, NavierStokesEquation
+    WaveEquation, DiffusionEquation, NavierStokes2DEquation
 from pararealml.core.solution import Solution
 
 
@@ -435,7 +435,7 @@ def plot_ivp_solution(
         if color_map is None:
             if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
                 color_map = cm.coolwarm
-            elif isinstance(diff_eq, NavierStokesEquation):
+            elif isinstance(diff_eq, NavierStokes2DEquation):
                 color_map = cm.ocean
             else:
                 color_map = cm.viridis

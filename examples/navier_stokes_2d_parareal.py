@@ -1,7 +1,7 @@
 from pararealml import *
 from pararealml.utils.time import time_with_args
 
-diff_eq = NavierStokesEquation(2, 5000.)
+diff_eq = NavierStokes2DEquation(5000.)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.2, .2))
 bcs = (
     (DirichletBoundaryCondition(lambda x: (1., .1)),

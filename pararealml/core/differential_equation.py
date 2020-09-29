@@ -1,14 +1,171 @@
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import Optional, Tuple, Union, Sequence
+from enum import Enum
+from typing import Optional, Tuple, Sequence, Set
 
 import numpy as np
-import tensorflow as tf
-from fipy import TransientTerm, DiffusionTerm, CellVariable
-from fipy.terms.term import Term
-from tensorflow import Tensor
+from sympy import symarray, Expr, Symbol
 
-from pararealml.core.differentiator import Differentiator
+
+class Symbols:
+    """
+    A class containing the symbols for expressing a differential equation
+    system with a specified number of unknown variables and spatial dimensions.
+    """
+
+    def __init__(self, x_dimension, y_dimension):
+        """
+        :param x_dimension: the number spatial dimensions
+        :param y_dimension: the number of unknown variables
+        """
+        self._y = symarray('y', (y_dimension,))
+
+        if x_dimension:
+            self._d_y_over_d_x = symarray(
+                'd_y_over_d_x', (y_dimension, x_dimension))
+            self._d_y_over_d_x_x = symarray(
+                'd_y_over_d_x_x', (y_dimension, x_dimension, x_dimension))
+            self._y_gradient = symarray('y_gradient', (y_dimension,))
+            self._y_laplacian = symarray('y_laplacian', (y_dimension,))
+        else:
+            self._d_y_over_d_x = None
+            self._d_y_over_d_x_x = None
+            self._y_gradient = None
+            self._y_laplacian = None
+
+    @property
+    def y(self) -> np.ndarray:
+        """
+        An array of symbols denoting the elements of the solution of the
+        differential equation.
+        """
+        return np.copy(self._y)
+
+    @property
+    def d_y_over_d_x(self) -> Optional[np.ndarray]:
+        """
+        A 2D array of symbols denoting the first spatial derivatives of the
+        solution where the first rank is the element of the solution and the
+        second rank is the spatial axis.
+        """
+        return np.copy(self._d_y_over_d_x)
+
+    @property
+    def d_y_over_d_x_x(self) -> Optional[np.ndarray]:
+        """
+        A 3D array of symbols denoting the second spatial derivatives of the
+        solution where the first rank is the element of the solution, the
+        second rank is the first spatial axis, and the third rank is the second
+        spatial axis.
+        """
+        return np.copy(self._d_y_over_d_x_x)
+
+    @property
+    def y_gradient(self) -> Optional[np.ndarray]:
+        """
+        An array of symbols denoting the spatial gradients of the elements of
+        the differential equation's solution.
+        """
+        return np.copy(self._y_gradient)
+
+    @property
+    def y_laplacian(self) -> Optional[np.ndarray]:
+        """
+        An array of symbols denoting the spatial Laplacians of the elements of
+        the differential equation's solution.
+        """
+        return np.copy(self._y_laplacian)
+
+
+class LhsType(Enum):
+    """
+    An enumeration defining the types of the left hand sides of symbolic
+    equations making up systems of differential equations.
+    """
+    D_Y_OVER_D_T = 0,
+    Y = 1,
+    Y_LAPLACIAN = 2
+
+
+class SymbolicEquationSystem:
+    """
+    A system of symbolic equations for defining differential equations.
+    """
+
+    def __init__(
+            self,
+            rhs: Sequence[Expr],
+            lhs_types: Optional[Sequence[LhsType]] = None):
+        """
+        :param rhs: the right hand side of the symbolic equation system
+        :param lhs_types: the types of the left hand side of the symbolic
+        equation system
+        """
+        if len(rhs) < 1:
+            raise ValueError
+
+        if lhs_types is None:
+            lhs_types = [LhsType.D_Y_OVER_D_T] * len(rhs)
+
+        if len(rhs) != len(lhs_types):
+            raise ValueError
+
+        self._rhs = copy(rhs)
+        self._lhs_types = copy(lhs_types)
+
+        self._equation_indices_by_type = {lhs_type: [] for lhs_type in LhsType}
+        self._rhs_by_type = {lhs_type: [] for lhs_type in LhsType}
+        self._symbols_by_type = {lhs_type: set() for lhs_type in LhsType}
+        for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
+            self._equation_indices_by_type[lhs_type].append(i)
+            self._rhs_by_type[lhs_type].append(rhs_element)
+            self._symbols_by_type[lhs_type].update(rhs_element.free_symbols)
+
+    @property
+    def rhs(self) -> Sequence[Expr]:
+        """
+        Returns the right hand side of the symbolic equation system.
+        """
+        return copy(self._rhs)
+
+    @property
+    def lhs_types(self) -> Sequence[LhsType]:
+        """
+        Returns the types of the left hand side of the symbolic equation
+        system.
+        """
+        return copy(self._lhs_types)
+
+    def equation_indices_by_type(self, lhs_type: LhsType) -> Sequence[int]:
+        """
+        Returns a sequence of integers denoting the indices of all equations of
+        the equation system with the specified type of left hand side.
+
+        :param lhs_type: the type of left hand side
+        :return: the sequence of indices
+        """
+        return copy(self._equation_indices_by_type[lhs_type])
+
+    def rhs_by_type(self, lhs_type: LhsType) -> Sequence[Expr]:
+        """
+        Returns a sequence of expressions representing the right hand sides of
+        all the equations of the equation system whose left hand sides match
+        the specified type.
+
+        :param lhs_type: the type of left hand side
+        :return: a sequence of expressions
+        """
+        return copy(self._rhs_by_type[lhs_type])
+
+    def symbols_by_type(self, lhs_type: LhsType) -> Set[Symbol]:
+        """
+        Returns a set of symbols representing all the symbols included in all
+        the equations whose left hand sides match the specified type.
+
+        :param lhs_type: the type of left hand side
+        :return: a set of symbols
+        """
+        return copy(self._symbols_by_type[lhs_type])
 
 
 class DifferentialEquation(ABC):
@@ -16,92 +173,86 @@ class DifferentialEquation(ABC):
     A representation of a time-dependent differential equation.
     """
 
+    def __init__(self, x_dimension: int, y_dimension: int):
+        """
+        :param x_dimension: the number spatial dimensions
+        :param y_dimension: the number of unknown variables
+        """
+        if x_dimension < 0 or y_dimension < 0:
+            raise ValueError
+
+        self._x_dimension = x_dimension
+        self._y_dimension = y_dimension
+
+        self._symbols = Symbols(x_dimension, y_dimension)
+
+        self._validate_equations()
+
     @property
-    @abstractmethod
     def x_dimension(self) -> int:
         """
         Returns the dimension of the non-temporal domain of the differential
         equation's solution. If the differential equation is an ODE, it returns
         0.
         """
+        return self._x_dimension
 
     @property
-    @abstractmethod
     def y_dimension(self) -> int:
         """
         Returns the dimension of the image of the differential equation's
         solution. If the solution is not vector-valued, its dimension is 1.
         """
+        return self._y_dimension
 
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+    @property
+    def symbols(self) -> Symbols:
         """
-        Returns the time derivative of the differential equation's solution,
-        y'(t), given t, and y(t). In case of a partial differential equation,
-        the step sizes of the mesh and a differentiator instance are provided
-        as well.
+        Returns all valid symbols that can be used to define a differential
+        equation of this many spatial dimensions and unknown variables.
+        """
+        return self._symbols
 
-        :param t: the time step at which the time derivative is to be
-            calculated
-        :param y: the estimate of y at t
-        :param d_x: a tuple of step sizes corresponding to each spatial
-            dimension
-        :param differentiator: a differentiator instance that allows for
-            calculating various differential terms of y with respect to x given
-            an estimate of y over the spatial mesh, y(t)
-        :param derivative_boundary_constraints: a 2D array (x dimension,
-            y dimension) of boundary value constraint pairs that represent the
-            lower and upper boundary conditions of the spatial derivative of y
-            normal to the boundaries evaluated on the boundaries of the
-            corresponding axes of the spatial domain
-        :param solution_constraints: a 1D array (y dimension) of solution
-            constraints that represent the boundary conditions of y evaluated
-            on the entire spatial domain
-        :return: an array representing y'(t)
+    @property
+    @abstractmethod
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
         """
-        raise NotImplementedError
+        A system of symbolic equations defining the differential equation
+        system. Every element of the right hand side of the returned system
+        defines the first time derivative, the direct value, or the spatial
+        Laplacian of the respective element of the vector-valued solution of
+        the differential equation system depending on the type of the left hand
+        side of the equation.
+        """
 
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
+    def _validate_equations(self):
         """
-        Returns the terms representing the FiPy equivalent of the differential
-        equation.
+        Validates the symbolic equations defining the differential equation.
+        """
+        equation_system = self.symbolic_equation_system
+        if len(equation_system.rhs) != self._y_dimension:
+            raise ValueError
 
-        :param variables: the FiPy cell variables denoting the elements of y
-        :return: a sequence of FiPy terms representing the differential
-            equation (system)
-        """
-        raise NotImplementedError
+        all_symbols = set()
+        all_symbols.update(self._symbols.y)
 
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        """
-        Returns the tensor operation or tensor operations representing the
-        DeepXDE equivalent of the differential equation.
+        if self._x_dimension:
+            all_symbols.update(self._symbols.d_y_over_d_x.flatten())
+            all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
+            all_symbols.update(self._symbols.y_gradient)
+            all_symbols.update(self._symbols.y_laplacian)
 
-        :param x: the input of the PINN; a rank-two tensor whose each row
-            represents a point in the spatiotemporal domain
-        :param y: the output of the PINN; the current estimates of y at the
-            points
-        :param actual_x: a NumPy array of the actual input of the PINN
-        :return: the tensor operation or sequence of tensor operations
-            (depending on whether the differential equation's solution is
-            vector-valued) representing the differential equation
-        """
-        raise NotImplementedError
+        for rhs_element in self.symbolic_equation_system.rhs:
+            rhs_symbols = rhs_element.free_symbols
+            if not rhs_symbols.issubset(all_symbols):
+                raise ValueError
+
+        if self.x_dimension:
+            if LhsType.D_Y_OVER_D_T not in equation_system.lhs_types:
+                raise ValueError
+        elif LhsType.Y in equation_system.lhs_types \
+                or LhsType.Y_LAPLACIAN in equation_system.lhs_types:
+            raise ValueError
 
 
 class PopulationGrowthEquation(DifferentialEquation):
@@ -110,47 +261,16 @@ class PopulationGrowthEquation(DifferentialEquation):
     population over time.
     """
 
-    def __init__(
-            self,
-            r: float = .01):
+    def __init__(self, r: float = .01):
         """
         :param r: the population growth rate
         """
         self._r = r
+        super(PopulationGrowthEquation, self).__init__(0, 1)
 
     @property
-    def x_dimension(self) -> int:
-        return 0
-
-    @property
-    def y_dimension(self) -> int:
-        return 1
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        return self._r * y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        raise NotImplementedError
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        d_y_over_d_t = tf.gradients(y, x)[0]
-        return d_y_over_d_t - self._r * y
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([self._r * self._symbols.y[0]])
 
 
 class LotkaVolterraEquation(DifferentialEquation):
@@ -171,59 +291,24 @@ class LotkaVolterraEquation(DifferentialEquation):
         :param gamma: the predators' mortality rate
         :param delta: a coefficient of the increase of the predator population
         """
-        assert alpha >= 0
-        assert beta >= 0
-        assert gamma >= 0
-        assert delta >= 0
+        if alpha < 0. or beta < 0. or gamma < 0. or delta < 0.:
+            raise ValueError
+
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
         self._delta = delta
 
-    @property
-    def x_dimension(self) -> int:
-        return 0
+        super(LotkaVolterraEquation, self).__init__(0, 2)
 
     @property
-    def y_dimension(self) -> int:
-        return 2
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        r = y[0]
-        p = y[1]
-        d_y = np.empty(2)
-        d_y[0] = self._alpha * r - self._beta * r * p
-        d_y[1] = self._delta * r * p - self._gamma * p
-        return d_y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        raise NotImplementedError
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        r = y[:, 0:1]
-        p = y[:, 1:2]
-        d_r_over_d_t = tf.gradients(r, x)[0]
-        d_p_over_d_t = tf.gradients(p, x)[0]
-        return [
-            d_r_over_d_t - (self._alpha * r - self._beta * r * p),
-            d_p_over_d_t - (self._gamma * r * p - self._delta * p)
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        r = self._symbols.y[0]
+        p = self._symbols.y[1]
+        return SymbolicEquationSystem([
+            self._alpha * r - self._beta * r * p,
+            self._delta * r * p - self._gamma * p
+        ])
 
 
 class LorenzEquation(DifferentialEquation):
@@ -242,62 +327,25 @@ class LorenzEquation(DifferentialEquation):
         :param rho: the second system coefficient
         :param beta: the third system coefficient
         """
-        assert sigma >= .0
-        assert rho >= .0
-        assert beta >= .0
+        if sigma < .0 or rho < .0 or beta < .0:
+            raise ValueError
+
         self._sigma = sigma
         self._rho = rho
         self._beta = beta
 
-    @property
-    def x_dimension(self) -> int:
-        return 0
+        super(LorenzEquation, self).__init__(0, 3)
 
     @property
-    def y_dimension(self) -> int:
-        return 3
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        c = y[0]
-        h = y[1]
-        v = y[2]
-        d_y = np.empty(3)
-        d_y[0] = self._sigma * (h - c)
-        d_y[1] = c * (self._rho - v) - h
-        d_y[2] = c * h - self._beta * v
-        return d_y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        raise NotImplementedError
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        c = y[:, :1]
-        h = y[:, 1:2]
-        v = y[:, 2:]
-        d_c_over_d_t = tf.gradients(c, x)[0]
-        d_h_over_d_t = tf.gradients(h, x)[0]
-        d_v_over_d_t = tf.gradients(v, x)[0]
-        return [
-            d_c_over_d_t - self._sigma * (h - c),
-            d_h_over_d_t - (c * (self._rho - v) - h),
-            d_v_over_d_t - (c * h - self._beta * v)
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        c = self._symbols.y[0]
+        h = self._symbols.y[1]
+        v = self._symbols.y[2]
+        return SymbolicEquationSystem([
+            self._sigma * (h - c),
+            c * (self._rho - v) - h,
+            c * h - self._beta * v
+        ])
 
 
 class NBodyGravitationalEquation(DifferentialEquation):
@@ -308,114 +356,86 @@ class NBodyGravitationalEquation(DifferentialEquation):
 
     def __init__(
             self,
-            dims: int,
+            n_dims: int,
             masses: Sequence[float],
             g: float = 6.6743e-11):
         """
-        :param dims: the spatial dimensionality the motion of the objects is to
-            be considered in (must be either 2 or 3)
+        :param n_dims: the spatial dimensionality the motion of the objects is
+            to be considered in (must be either 2 or 3)
         :param masses: a list of the masses of the objects (kg)
         :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
         """
-        assert 2 <= dims <= 3
-        assert masses is not None
-        assert len(masses) >= 2
-        for mass in masses:
-            assert mass > 0
-        self._dims = dims
+        if n_dims < 2 or n_dims > 3:
+            raise ValueError
+        if masses is None or len(masses) < 2 or np.any(np.array(masses) <= 0.):
+            raise ValueError
+
+        self._dims = n_dims
         self._masses = tuple(masses)
         self._n_objects = len(masses)
         self._g = g
 
-    @property
-    def x_dimension(self) -> int:
-        return 0
-
-    @property
-    def y_dimension(self) -> int:
-        return 2 * self._n_objects * self._dims
+        super(NBodyGravitationalEquation, self).__init__(
+            0, 2 * len(masses) * n_dims)
 
     @property
     def spatial_dimension(self) -> int:
+        """
+        Returns the number of spatial dimensions.
+        """
         return self._dims
 
     @property
     def masses(self) -> Tuple[float, ...]:
+        """
+        Returns the masses of the planetary objects.
+        """
         return copy(self._masses)
 
     @property
     def n_objects(self) -> int:
+        """
+        Returns the number of planetary objects.
+        """
         return self._n_objects
 
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        return self._calculate_d_y_over_d_t(y)
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        raise NotImplementedError
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        raise NotImplementedError
-
-    def _calculate_d_y_over_d_t(self, y: np.ndarray) -> np.ndarray:
-        """
-        Calculates the time derivatives of the positions and velocities of the
-        objects along each dimension.
-
-        :param y: the array specifying the positions and velocities of the
-            objects; it can either be a 1D array specifying the positions and
-            velocities at a single time point or a 2D array specifying them at
-            multiple time points
-        :return: the time derivatives of the positions and velocities of the
-            objects; same shape as y
-        """
-        assert 1 <= y.ndim <= 2
-        assert y.shape[-1] == self.y_dimension
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        y = np.array(self._symbols.y, dtype=object)
 
         n_obj_by_dims = self._n_objects * self._dims
 
-        d_y = np.empty(y.shape)
-        d_y[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
+        d_y_over_d_t = np.empty(self._y_dimension, dtype=object)
+        d_y_over_d_t[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
 
-        forces_shape = (y.shape[0],) if y.ndim == 2 else ()
-        forces_shape += (self._n_objects, self._n_objects, self._dims)
-        forces = np.zeros(forces_shape)
+        forces_shape = (self._n_objects, self._n_objects, self._dims)
+        forces = np.zeros(forces_shape, dtype=object)
 
         for i in range(self._n_objects):
-            position_i = y[..., i * self._dims:(i + 1) * self._dims]
+            position_offset_i = i * self._dims
+            position_i = y[position_offset_i:position_offset_i + self._dims]
             mass_i = self._masses[i]
 
             for j in range(i + 1, self._n_objects):
-                position_j = y[..., j * self._dims:(j + 1) * self._dims]
+                position_offset_j = j * self._dims
+                position_j = y[position_offset_j:
+                               position_offset_j + self._dims]
                 mass_j = self._masses[j]
                 displacement = position_j - position_i
-                distance = np.sqrt(np.power(displacement, 2).sum(axis=-1))
-                force = (self._g * mass_i * mass_j / np.power(distance, 3)) * \
-                    displacement
-                forces[..., i, j, :] = force
-                forces[..., j, i, :] = -force
+                distance = np.power(np.power(displacement, 2).sum(axis=-1), .5)
+                force = (self._g * mass_i * mass_j) * \
+                    (displacement / np.power(distance, 3))
+                forces[i, j, :] = force
+                forces[j, i, :] = -force
 
-            acceleration = forces[..., i, :, :] \
-                .sum(axis=y.ndim - 1) / mass_i
-            d_y[..., n_obj_by_dims + i * self._dims:
-                n_obj_by_dims + (i + 1) * self._dims] = acceleration
+            acceleration = forces[i, :, :].sum(axis=0) / mass_i
+            velocity_offset = n_obj_by_dims + position_offset_i
+            d_y_over_d_t[
+                ...,
+                velocity_offset:velocity_offset + self._dims
+            ] = acceleration
 
-        return d_y
+        return SymbolicEquationSystem(d_y_over_d_t)
 
 
 class DiffusionEquation(DifferentialEquation):
@@ -432,54 +452,16 @@ class DiffusionEquation(DifferentialEquation):
             differential equation's solution
         :param d: the diffusion coefficient
         """
-        assert x_dimension > 0
+        if x_dimension == 0:
+            raise ValueError
 
-        self._x_dimension = x_dimension
         self._d = d
 
-    @property
-    def x_dimension(self) -> int:
-        return self._x_dimension
+        super(DiffusionEquation, self).__init__(x_dimension, 1)
 
     @property
-    def y_dimension(self) -> int:
-        return 1
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        assert d_x is not None
-        assert differentiator is not None
-        assert y.ndim - 1 == self._x_dimension
-        assert y.shape[-1] == 1
-
-        return self._d * differentiator.laplacian(
-            y, d_x, derivative_boundary_constraints)
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        return [TransientTerm() == DiffusionTerm(coeff=self._d)]
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        d_y_over_d_all_x = tf.gradients(y, x)[0]
-        d_y_over_d_t = d_y_over_d_all_x[:, self._x_dimension:]
-        d_y_over_d_x = d_y_over_d_all_x[:, :self._x_dimension]
-        d_y_over_d_xx = tf.gradients(d_y_over_d_x, x)[0][:, :self._x_dimension]
-        laplacian = tf.math.reduce_sum(d_y_over_d_xx, -1, True)
-        return d_y_over_d_t - self._d * laplacian
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([self._d * self._symbols.y_laplacian[0]])
 
 
 class WaveEquation(DifferentialEquation):
@@ -496,81 +478,19 @@ class WaveEquation(DifferentialEquation):
             differential equation's solution
         :param c: the propagation speed coefficient
         """
-        assert x_dimension > 0
+        if x_dimension == 0:
+            raise ValueError
 
-        self._x_dimension = x_dimension
         self._c = c
 
-    @property
-    def x_dimension(self) -> int:
-        return self._x_dimension
+        super(WaveEquation, self).__init__(x_dimension, 2)
 
     @property
-    def y_dimension(self) -> int:
-        return 2
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        assert d_x is not None
-        assert differentiator is not None
-        assert derivative_boundary_constraints is not None
-        assert y.ndim - 1 == self._x_dimension
-        assert y.shape[-1] == 2
-
-        d_y = np.empty(y.shape)
-        d_y[..., 0] = y[..., 1]
-        d_y[..., [1]] = self._c ** 2 * differentiator.laplacian(
-            y[..., [0]], d_x, derivative_boundary_constraints[..., [0]])
-        return d_y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        displacement = variables[0]
-        displacement_first_order_time_derivative = variables[1]
-
-        eq_0 = TransientTerm(var=displacement) == \
-            displacement_first_order_time_derivative
-        eq_1 = TransientTerm(var=displacement_first_order_time_derivative) == \
-            DiffusionTerm(coeff=self._c ** 2, var=displacement)
-        return [eq_0, eq_1]
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        displacement = y[:, 0:1]
-        displacement_first_order_time_derivative = y[:, 1:2]
-
-        d_displacement_over_d_all_x = tf.gradients(displacement, x)[0]
-        d_displacement_over_d_t = \
-            d_displacement_over_d_all_x[:, self._x_dimension:]
-        d_displacement_over_d_x = \
-            d_displacement_over_d_all_x[:, :self._x_dimension]
-        d_displacement_over_d_xx = \
-            tf.gradients(d_displacement_over_d_x, x)[0][:, :self._x_dimension]
-
-        d_displacement_first_order_time_derivative_d_t = \
-            tf.gradients(
-                displacement_first_order_time_derivative,
-                x
-            )[0][:, self._x_dimension:]
-
-        return [
-            d_displacement_over_d_t - displacement_first_order_time_derivative,
-            d_displacement_first_order_time_derivative_d_t -
-            ((self._c ** 2) * d_displacement_over_d_xx)
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([
+            self._symbols.y[1],
+            (self._c ** 2) * self._symbols.y_laplacian[0]
+        ])
 
 
 class CahnHilliardEquation(DifferentialEquation):
@@ -581,242 +501,65 @@ class CahnHilliardEquation(DifferentialEquation):
     def __init__(
             self,
             x_dimension: int,
-            d: float,
-            gamma: float):
+            d: float = .1,
+            gamma: float = .01):
         """
         :param x_dimension: the dimension of the non-temporal domain of the
             differential equation's solution
         :param d: the potential diffusion coefficient
         :param gamma: the concentration diffusion coefficient
         """
-        assert x_dimension > 0
+        if x_dimension == 0:
+            raise ValueError
 
-        self._x_dimension = x_dimension
         self._d = d
         self._gamma = gamma
 
-    @property
-    def x_dimension(self) -> int:
-        return self._x_dimension
+        super(CahnHilliardEquation, self).__init__(x_dimension, 2)
 
     @property
-    def y_dimension(self) -> int:
-        return 2
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        assert d_x is not None
-        assert differentiator is not None
-        assert y.ndim - 1 == self._x_dimension
-        assert y.shape[-1] == 2
-
-        potential = y[..., [0]]
-        concentration = y[..., [1]]
-
-        updated_potential = np.power(concentration, 3) - \
-            concentration - \
-            self._gamma * differentiator.laplacian(
-                concentration,
-                d_x,
-                derivative_boundary_constraints[:, [1]])
-
-        d_y = np.empty(y.shape)
-        d_y[..., [0]] = updated_potential - potential
-        d_y[..., [1]] = self._d * differentiator.laplacian(
-            potential,
-            d_x,
-            derivative_boundary_constraints[..., [0]])
-        return d_y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        potential_var = variables[0]
-        concentration_var = variables[1]
-
-        eq_0 = TransientTerm(var=potential_var) == \
-            concentration_var ** 3 - \
-            concentration_var - \
-            DiffusionTerm(coeff=self._gamma, var=concentration_var) - \
-            potential_var
-        eq_1 = TransientTerm(var=concentration_var) == \
-            DiffusionTerm(coeff=self._d, var=potential_var)
-        return [eq_0, eq_1]
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        potential = y[:, 0:1]
-        concentration = y[:, 1:2]
-
-        d_potential_over_d_all_x = tf.gradients(potential, x)[0]
-        d_potential_over_d_t = d_potential_over_d_all_x[:, self._x_dimension:]
-        d_potential_over_d_x = d_potential_over_d_all_x[:, :self._x_dimension]
-        d_potential_over_d_xx = \
-            tf.gradients(d_potential_over_d_x, x)[0][:, :self._x_dimension]
-        potential_laplacian = tf.math.reduce_sum(
-            d_potential_over_d_xx, -1, True)
-
-        d_concentration_over_d_all_x = tf.gradients(concentration, x)[0]
-        d_concentration_over_d_t = \
-            d_concentration_over_d_all_x[:, self._x_dimension:]
-        d_concentration_over_d_x = \
-            d_concentration_over_d_all_x[:, :self._x_dimension]
-        d_concentration_over_d_xx = \
-            tf.gradients(d_concentration_over_d_x, x)[0][:, :self._x_dimension]
-        concentration_laplacian = tf.math.reduce_sum(
-            d_concentration_over_d_xx, -1, True)
-
-        updated_potential = tf.pow(concentration, 3) - \
-            concentration - \
-            self._gamma * concentration_laplacian
-
-        return [
-            d_potential_over_d_t - (updated_potential - potential),
-            d_concentration_over_d_t - (self._d * potential_laplacian)
-        ]
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem(
+            [
+                self._symbols.y[1] ** 3 - self._symbols.y[1] -
+                self._gamma * self._symbols.y_laplacian[1],
+                self._d * self._symbols.y_laplacian[0]
+            ],
+            [
+                LhsType.Y,
+                LhsType.D_Y_OVER_D_T
+            ]
+        )
 
 
-class NavierStokesEquation(DifferentialEquation):
+class NavierStokes2DEquation(DifferentialEquation):
     """
-    A system of two partial differential equations modelling the stream
-    function and vorticity of incompressible fluids.
+    A system of two partial differential equations modelling the vorticity and
+    the stream function of incompressible fluids in two spatial dimensions.
     """
 
     def __init__(
             self,
-            x_dimension: int,
-            re: float = 4000.,
-            tol: float = 1e-3):
+            re: float = 4000.):
         """
-        :param x_dimension: the dimension of the non-temporal domain of the
-            differential equation's solution
         :param re: the Reynolds number
-        :param tol: the stopping criterion for the Poisson solver; once the
-            second norm of the difference of the estimate and the updated
-            estimate drops below this threshold, the equation is considered to
-            be solved
         """
-        assert x_dimension == 2 or x_dimension == 3
-
-        self._x_dimension = x_dimension
         self._re = re
-        self._tol = tol
+        super(NavierStokes2DEquation, self).__init__(2, 2)
 
     @property
-    def x_dimension(self) -> int:
-        return self._x_dimension
-
-    @property
-    def y_dimension(self) -> int:
-        return 2
-
-    def d_y_over_d_t(
-            self,
-            t: float,
-            y: np.ndarray,
-            d_x: Optional[Tuple[float, ...]] = None,
-            differentiator: Optional[Differentiator] = None,
-            derivative_boundary_constraints: Optional[np.ndarray] = None,
-            solution_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        assert d_x is not None
-        assert differentiator is not None
-        assert derivative_boundary_constraints is not None
-        assert y.ndim - 1 == self._x_dimension
-        assert y.shape[-1] == 2
-
-        vorticity = y[..., [0]]
-        stream_function = y[..., [1]]
-
-        velocity = self.velocity(
-            stream_function,
-            d_x,
-            differentiator,
-            derivative_boundary_constraints)
-
-        vorticity_gradient = differentiator.jacobian(
-            vorticity, d_x, derivative_boundary_constraints[:, [0]])
-
-        vorticity_laplacian = differentiator.laplacian(
-            vorticity, d_x, derivative_boundary_constraints[:, [0]])
-
-        updated_stream_function = differentiator.anti_laplacian(
-            -vorticity,
-            d_x,
-            self._tol,
-            solution_constraints[[1]],
-            derivative_boundary_constraints[:, [1]],
-            stream_function)
-
-        d_y = np.empty(y.shape)
-        d_y[..., [0]] = (1. / self._re) * vorticity_laplacian - \
-            np.sum(
-                velocity * vorticity_gradient.reshape(velocity.shape),
-                axis=-1,
-                keepdims=True)
-        d_y[..., [1]] = updated_stream_function - stream_function
-        return d_y
-
-    def fipy_terms(
-            self,
-            variables: Sequence[CellVariable]
-    ) -> Sequence[Term]:
-        raise NotImplementedError
-
-    def deepxde_tensors(
-            self,
-            x: Tensor,
-            y: Tensor,
-            actual_x: np.ndarray
-    ) -> Union[Tensor, Sequence[Tensor]]:
-        raise NotImplementedError
-
-    def velocity(
-            self,
-            stream_function: np.ndarray,
-            d_x: Tuple[float, ...],
-            differentiator: Differentiator,
-            derivative_boundary_constraints: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """
-        Calculates the vector field representing the velocity of the fluid at
-        every point of the mesh from the stream function.
-
-        :param stream_function: the stream function scalar field
-        :param d_x: a tuple of step sizes corresponding to each spatial
-            dimension
-        :param differentiator: a differentiator instance that allows for
-            calculating various differential terms of y with respect to x
-        :param derivative_boundary_constraints: a 2D array (x dimension,
-            y dimension) of boundary value constraint pairs that represent the
-            lower and upper boundary conditions of the spatial derivative of y
-            normal to the boundaries evaluated on the boundaries of the
-            corresponding axes of the spatial domain
-        :return: the velocity vector field
-        """
-        if self._x_dimension == 2:
-            velocity = np.concatenate(
-                (-differentiator.derivative(
-                    stream_function, d_x[1], 1, 0,
-                    derivative_boundary_constraints[1, 1]),
-                 differentiator.derivative(
-                     stream_function, d_x[0], 0, 0,
-                     derivative_boundary_constraints[0, 1])),
-                axis=-1)
-        else:
-            velocity = -differentiator.curl(
-                stream_function, d_x, derivative_boundary_constraints)
-
-        return velocity
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem(
+            [
+                (1. / self._re) * self._symbols.y_laplacian[0] -
+                np.cross(
+                    self._symbols.d_y_over_d_x[0, :],
+                    self._symbols.d_y_over_d_x[1, :]
+                ),
+                -self._symbols.y[0]
+            ],
+            [
+                LhsType.D_Y_OVER_D_T,
+                LhsType.Y_LAPLACIAN
+            ]
+        )
