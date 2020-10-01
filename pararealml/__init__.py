@@ -10,6 +10,9 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.constraint import Constraint
 
+from pararealml.core.differential_equation import Symbols
+from pararealml.core.differential_equation import LhsType
+from pararealml.core.differential_equation import SymbolicEquationSystem
 from pararealml.core.differential_equation import DifferentialEquation
 from pararealml.core.differential_equation import PopulationGrowthEquation
 from pararealml.core.differential_equation import LotkaVolterraEquation
@@ -64,6 +67,9 @@ __all__ = [
     'ConstrainedProblem',
     'apply_constraints_along_last_axis',
     'Constraint',
+    'Symbols',
+    'LhsType',
+    'SymbolicEquationSystem',
     'DifferentialEquation',
     'PopulationGrowthEquation',
     'LotkaVolterraEquation',
