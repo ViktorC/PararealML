@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
-from typing import Tuple
+from typing import Tuple, Sequence
 
 import numpy as np
 from deepxde.geometry import Interval, Rectangle, Cuboid
@@ -123,8 +123,8 @@ class UniformGrid(Mesh):
 
     def __init__(
             self,
-            x_intervals: Tuple[SpatialDomainInterval, ...],
-            d_x: Tuple[float, ...]):
+            x_intervals: Sequence[SpatialDomainInterval],
+            d_x: Sequence[float]):
         """
         :param x_intervals: the bounds of each axis of the domain
         :param d_x: the step sizes to use for each axis of the domain to create
@@ -136,7 +136,7 @@ class UniformGrid(Mesh):
             assert len(interval) == 2
             assert interval[1] > interval[0]
 
-        self._x_intervals = deepcopy(x_intervals)
+        self._x_intervals = tuple(deepcopy(x_intervals))
         self._vertices_shape = self._calculate_shape(d_x, True)
         self._cells_shape = self._calculate_shape(d_x, False)
         self._d_x = np.array(copy(d_x))
@@ -191,7 +191,7 @@ class UniformGrid(Mesh):
 
     def _calculate_shape(
             self,
-            d_x: Tuple[float, ...],
+            d_x: Sequence[float],
             vertex_oriented: bool
     ) -> Tuple[int, ...]:
         """
