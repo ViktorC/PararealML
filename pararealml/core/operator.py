@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Union, Tuple, Callable, Sequence, Dict
 
 import numpy as np
-import tensorflow as tf
 import sympy as sp
+import tensorflow as tf
 from deepxde import Model as PINNModel, IC
 from deepxde.boundary_conditions import BC
 from deepxde.data import TimePDE, PDE
@@ -275,28 +275,32 @@ class FVMOperator(Operator):
 
         symbol_map = {}
 
-        for i, y_element in enumerate(diff_eq.symbols.y):
-            symbol_map[y_element] = \
-                ImplicitSourceTerm(var=fipy_vars[i], coeff=1.)
-
+        y = diff_eq.symbols.y
         d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
-        for i in range(d_y_over_d_x.shape[0]):
-            for j in range(d_y_over_d_x.shape[1]):
-                symbol_map[d_y_over_d_x[i, j]] = fipy_vars[i].grad[j]
-
         d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
-        for i in range(d_y_over_d_x_x.shape[0]):
-            for j in range(d_y_over_d_x_x.shape[1]):
-                for k in range(d_y_over_d_x_x.shape[2]):
+        y_laplacian = diff_eq.symbols.y_laplacian
+
+        for i in range(diff_eq.y_dimension):
+            fipy_var = fipy_vars[i]
+            symbol_map[y[i]] = fipy_var
+            symbol_map[y_laplacian[i]] = DiffusionTerm(var=fipy_var, coeff=1.)
+
+            for j in range(diff_eq.x_dimension):
+                symbol_map[d_y_over_d_x[i, j]] = fipy_var.grad[j]
+
+                for k in range(diff_eq.x_dimension):
                     symbol_map[d_y_over_d_x_x[i, j, k]] = \
-                        fipy_vars[i].grad[j].grad[k]
+                        fipy_var.grad[j].grad[k]
 
-        for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
-            symbol_map[y_gradient_element] = fipy_vars[i].grad
-
-        for i, y_laplacian_element in enumerate(diff_eq.symbols.y_laplacian):
-            symbol_map[y_laplacian_element] = \
-                DiffusionTerm(var=fipy_vars[i], coeff=1.)
+        if 2 <= diff_eq.x_dimension <= 3:
+            y_divergence = diff_eq.symbols.y_divergence
+            for index in np.ndindex(
+                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                divergence = fipy_vars[index[0]].grad[0] + \
+                    fipy_vars[index[1]].grad[1]
+                if diff_eq.x_dimension == 3:
+                    divergence += fipy_vars[index[2]].grad[2]
+                symbol_map[y_divergence[index]] = divergence
 
         return symbol_map
 
@@ -377,15 +381,13 @@ class FDMOperator(Operator):
         d_y_over_d_t_rhs_lambda = sp.lambdify(
             [d_y_over_d_t_symbols],
             eq_sys.rhs_by_type(LhsType.D_Y_OVER_D_T),
-            'numpy'
-        )
+            'numpy')
 
         y_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y)
         y_symbols = eq_sys.symbols_by_type(LhsType.Y)
         y_arg_functions = [symbol_map[sym] for sym in y_symbols]
         y_rhs_lambda = sp.lambdify(
-            [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy'
-        )
+            [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy')
 
         y_laplacian_eq_inds = \
             eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
@@ -395,8 +397,7 @@ class FDMOperator(Operator):
         y_laplacian_rhs_lambda = sp.lambdify(
             [y_laplacian_symbols],
             eq_sys.rhs_by_type(LhsType.Y_LAPLACIAN),
-            'numpy'
-        )
+            'numpy')
 
         d_x = cp.mesh.d_x if diff_eq.x_dimension else None
         y_constraints = cp.y_vertex_constraints
@@ -421,14 +422,14 @@ class FDMOperator(Operator):
                 t,
                 self._d_t,
                 d_y_over_d_t_function,
-                y_constraints
-            )
+                y_constraints)
+
             if len(y_eq_inds):
                 args = [function(t, y) for function in y_arg_functions]
                 y_next[..., y_eq_inds] = apply_constraints_along_last_axis(
                     y_y_constraints,
-                    np.concatenate(y_rhs_lambda(args), axis=-1)
-                )
+                    np.concatenate(y_rhs_lambda(args), axis=-1))
+
             if len(y_laplacian_eq_inds):
                 args = \
                     [function(t, y) for function in y_laplacian_arg_functions]
@@ -438,8 +439,8 @@ class FDMOperator(Operator):
                         d_x,
                         self._tol,
                         y_laplacian_y_constraints,
-                        y_laplacian_d_y_constraints
-                    )
+                        y_laplacian_d_y_constraints)
+
             return y_next
 
         return y_next_function
@@ -467,10 +468,18 @@ class FDMOperator(Operator):
             d_x = cp.mesh.d_x
 
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
-            for i in range(d_y_over_d_x.shape[0]):
-                for j in range(d_y_over_d_x.shape[1]):
-                    symbol_map[d_y_over_d_x[i, j]] = \
-                        lambda t, y, _i=i, _j=j: \
+            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
+            y_laplacian = diff_eq.symbols.y_laplacian
+
+            for i in range(diff_eq.y_dimension):
+                symbol_map[y_laplacian[i]] = lambda t, y, _i=i: \
+                    self._differentiator.laplacian(
+                        y[..., [_i]],
+                        d_x,
+                        d_y_boundary_constraints[:, [_i]])
+
+                for j in range(diff_eq.x_dimension):
+                    symbol_map[d_y_over_d_x[i, j]] = lambda t, y, _i=i, _j=j: \
                         self._differentiator.derivative(
                             y,
                             d_x[_j],
@@ -478,10 +487,7 @@ class FDMOperator(Operator):
                             _i,
                             d_y_boundary_constraints[_j, _i])
 
-            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
-            for i in range(d_y_over_d_x_x.shape[0]):
-                for j in range(d_y_over_d_x_x.shape[1]):
-                    for k in range(d_y_over_d_x_x.shape[2]):
+                    for k in range(diff_eq.x_dimension):
                         symbol_map[d_y_over_d_x_x[i, j, k]] = \
                             lambda t, y, _i=i, _j=j, _k=k: \
                             self._differentiator.second_derivative(
@@ -493,20 +499,16 @@ class FDMOperator(Operator):
                                 _i,
                                 d_y_boundary_constraints[_j, _i])
 
-            for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
-                symbol_map[y_gradient_element] = lambda t, y, _i=i: \
-                    self._differentiator.jacobian(
-                        y[..., [_i]],
-                        d_x,
-                        d_y_boundary_constraints[:, [_i]])
-
-            for i, y_laplacian_element in enumerate(
-                    diff_eq.symbols.y_laplacian):
-                symbol_map[y_laplacian_element] = lambda t, y, _i=i: \
-                    self._differentiator.laplacian(
-                        y[..., [_i]],
-                        d_x,
-                        d_y_boundary_constraints[:, [_i]])
+            if 2 <= diff_eq.x_dimension <= 3:
+                y_divergence = diff_eq.symbols.y_divergence
+                for index in np.ndindex(
+                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                    symbol_map[y_divergence[index]] = \
+                        lambda t, y, _index=tuple(index): \
+                        self._differentiator.divergence(
+                            y[..., _index],
+                            d_x,
+                            d_y_boundary_constraints[:, _index])
 
         return symbol_map
 
@@ -914,15 +916,27 @@ class PINNOperator(StatelessMLOperator):
 
         if diff_eq.x_dimension:
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
-            for i in range(d_y_over_d_x.shape[0]):
-                for j in range(d_y_over_d_x.shape[1]):
+            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
+            y_laplacian = diff_eq.symbols.y_laplacian
+
+            for i in range(diff_eq.y_dimension):
+                symbol_map[y_laplacian[i]] = lambda x, y, _i=i: \
+                    tf.math.reduce_sum(
+                        tf.gradients(
+                            tf.gradients(
+                                y[:, _i:_i + 1],
+                                x
+                            )[0][:, :diff_eq.x_dimension],
+                            x
+                        )[0][:, :diff_eq.x_dimension],
+                        -1,
+                        True)
+
+                for j in range(diff_eq.x_dimension):
                     symbol_map[d_y_over_d_x[i, j]] = lambda x, y, _i=i, _j=j: \
                         tf.gradients(y[:, _i:_i + 1], x)[0][:, _j:_j + 1]
 
-            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
-            for i in range(d_y_over_d_x_x.shape[0]):
-                for j in range(d_y_over_d_x_x.shape[1]):
-                    for k in range(d_y_over_d_x_x.shape[2]):
+                    for k in range(diff_eq.x_dimension):
                         symbol_map[d_y_over_d_x_x[i, j, k]] = \
                             lambda x, y, _i=i, _j=j, _k=k: \
                             tf.gradients(
@@ -933,27 +947,19 @@ class PINNOperator(StatelessMLOperator):
                                 x
                             )[0][:, _k:_k + 1]
 
-            for i, y_gradient_element in enumerate(diff_eq.symbols.y_gradient):
-                symbol_map[y_gradient_element] = lambda x, y, _i=i: \
-                    tf.gradients(
-                        y[:, _i:_i + 1],
-                        x
-                    )[0][:, :diff_eq.x_dimension]
-
-            for i, y_laplacian_element in enumerate(
-                    diff_eq.symbols.y_laplacian):
-                symbol_map[y_laplacian_element] = lambda x, y, _i=i: \
-                    tf.math.reduce_sum(
-                        tf.gradients(
-                            tf.gradients(
-                                y[:, _i:_i + 1],
-                                x
-                            )[0][:, :diff_eq.x_dimension],
-                            x
-                        )[0][:, :diff_eq.x_dimension],
-                        -1,
-                        True
-                    )
+            if 2 <= diff_eq.x_dimension <= 3:
+                y_divergence = diff_eq.symbols.y_divergence
+                for index in np.ndindex(
+                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                    symbol_map[y_divergence[index]] = \
+                        (lambda x, y, _i=index[0], _j=index[1]:
+                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
+                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2]) \
+                        if diff_eq.x_dimension == 2 else \
+                        (lambda x, y, _i=index[0], _j=index[1], _k=index[2]:
+                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
+                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2] +
+                         tf.gradients(y[:, _k:_k + 1], x)[0][:, 2:3])
 
         return symbol_map
 

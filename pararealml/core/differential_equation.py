@@ -25,13 +25,18 @@ class Symbols:
                 'd_y_over_d_x', (y_dimension, x_dimension))
             self._d_y_over_d_x_x = symarray(
                 'd_y_over_d_x_x', (y_dimension, x_dimension, x_dimension))
-            self._y_gradient = symarray('y_gradient', (y_dimension,))
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
+            if 2 <= x_dimension <= 3:
+                self._y_divergence = symarray(
+                    'y_divergence', (y_dimension,) * x_dimension
+                )
+            else:
+                self._y_divergence = None
         else:
             self._d_y_over_d_x = None
             self._d_y_over_d_x_x = None
-            self._y_gradient = None
             self._y_laplacian = None
+            self._y_divergence = None
 
     @property
     def y(self) -> np.ndarray:
@@ -61,12 +66,12 @@ class Symbols:
         return np.copy(self._d_y_over_d_x_x)
 
     @property
-    def y_gradient(self) -> Optional[np.ndarray]:
+    def y_divergence(self) -> Optional[np.ndarray]:
         """
-        An array of symbols denoting the spatial gradients of the elements of
-        the differential equation's solution.
+        A 2 or 3D array of symbols denoting the spatial divergence of the
+        corresponding elements of the differential equation's solution.
         """
-        return np.copy(self._y_gradient)
+        return np.copy(self._y_divergence)
 
     @property
     def y_laplacian(self) -> Optional[np.ndarray]:
@@ -178,7 +183,9 @@ class DifferentialEquation(ABC):
         :param x_dimension: the number spatial dimensions
         :param y_dimension: the number of unknown variables
         """
-        if x_dimension < 0 or y_dimension < 0:
+        if x_dimension < 0:
+            raise ValueError
+        if y_dimension < 1:
             raise ValueError
 
         self._x_dimension = x_dimension
@@ -239,8 +246,9 @@ class DifferentialEquation(ABC):
         if self._x_dimension:
             all_symbols.update(self._symbols.d_y_over_d_x.flatten())
             all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
-            all_symbols.update(self._symbols.y_gradient)
             all_symbols.update(self._symbols.y_laplacian)
+            if 2 <= self._x_dimension <= 3:
+                all_symbols.update(self._symbols.y_divergence.flatten())
 
         for rhs_element in self.symbolic_equation_system.rhs:
             rhs_symbols = rhs_element.free_symbols
@@ -519,11 +527,11 @@ class CahnHilliardEquation(DifferentialEquation):
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        sym = self._symbols
         return SymbolicEquationSystem(
             [
-                self._symbols.y[1] ** 3 - self._symbols.y[1] -
-                self._gamma * self._symbols.y_laplacian[1],
-                self._d * self._symbols.y_laplacian[0]
+                sym.y[1] ** 3 - sym.y[1] - self._gamma * sym.y_laplacian[1],
+                self._d * sym.y_laplacian[0]
             ],
             [
                 LhsType.Y,
