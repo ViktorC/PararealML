@@ -21,6 +21,7 @@ from pararealml.core.differential_equation import NBodyGravitationalEquation
 from pararealml.core.differential_equation import DiffusionEquation
 from pararealml.core.differential_equation import WaveEquation
 from pararealml.core.differential_equation import CahnHilliardEquation
+from pararealml.core.differential_equation import KortewegDeVries1DEquation
 from pararealml.core.differential_equation import NavierStokes2DEquation
 
 from pararealml.core.differentiator import Differentiator
@@ -78,6 +79,7 @@ __all__ = [
     'DiffusionEquation',
     'WaveEquation',
     'CahnHilliardEquation',
+    'KortewegDeVries1DEquation',
     'NavierStokes2DEquation',
     'Differentiator',
     'ThreePointCentralFiniteDifferenceMethod',
