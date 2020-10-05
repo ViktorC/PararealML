@@ -153,14 +153,14 @@ class GaussianInitialCondition(ContinuousInitialCondition):
     def __init__(
             self,
             cp: ConstrainedProblem,
-            means_and_covs: Tuple[Tuple[np.ndarray, np.ndarray], ...],
+            means_and_covs: Sequence[Tuple[np.ndarray, np.ndarray]],
             multipliers: Optional[Sequence[float]] = None):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
-        :param means_and_covs: a tuple of mean vectors and covariance matrices
-            defining the multivariate Gaussian PDFs corresponding to each
-            element of y_0
+        :param means_and_covs: a sequence of tuples of mean vectors and
+            covariance matrices defining the multivariate Gaussian PDFs
+            corresponding to each element of y_0
         :param multipliers: an array of multipliers for each element of the
             initial y values
         """
