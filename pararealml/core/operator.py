@@ -279,6 +279,7 @@ class FVMOperator(Operator):
         d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
         d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
         y_laplacian = diff_eq.symbols.y_laplacian
+        y_divergence = diff_eq.symbols.y_divergence
 
         for i in range(diff_eq.y_dimension):
             fipy_var = fipy_vars[i]
@@ -292,15 +293,12 @@ class FVMOperator(Operator):
                     symbol_map[d_y_over_d_x_x[i, j, k]] = \
                         fipy_var.grad[j].grad[k]
 
-        if 2 <= diff_eq.x_dimension <= 3:
-            y_divergence = diff_eq.symbols.y_divergence
-            for index in np.ndindex(
-                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                divergence = fipy_vars[index[0]].grad[0] + \
-                    fipy_vars[index[1]].grad[1]
-                if diff_eq.x_dimension == 3:
-                    divergence += fipy_vars[index[2]].grad[2]
-                symbol_map[y_divergence[index]] = divergence
+        for index in np.ndindex(
+                (diff_eq.y_dimension,) * diff_eq.x_dimension):
+            divergence = fipy_vars[index[0]].grad[0]
+            for i in range(1, diff_eq.x_dimension):
+                divergence += fipy_vars[index[i]].grad[i]
+            symbol_map[y_divergence[index]] = divergence
 
         return symbol_map
 
@@ -400,12 +398,12 @@ class FDMOperator(Operator):
             'numpy')
 
         d_x = cp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = cp.y_vertex_constraints
+        y_constraints = cp.static_y_vertex_constraints
         y_y_constraints = None if y_constraints is None \
             else y_constraints[y_eq_inds]
         y_laplacian_y_constraints = None if y_constraints is None \
             else y_constraints[y_laplacian_eq_inds]
-        d_y_constraints = cp.d_y_boundary_vertex_constraints
+        d_y_constraints = cp.static_d_y_boundary_vertex_constraints
         y_laplacian_d_y_constraints = None if d_y_constraints is None \
             else d_y_constraints[:, y_laplacian_eq_inds]
 
@@ -464,12 +462,13 @@ class FDMOperator(Operator):
             symbol_map[y_element] = lambda t, y, _i=i: y[..., [_i]]
 
         if diff_eq.x_dimension:
-            d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
+            d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
             d_x = cp.mesh.d_x
 
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             y_laplacian = diff_eq.symbols.y_laplacian
+            y_divergence = diff_eq.symbols.y_divergence
 
             for i in range(diff_eq.y_dimension):
                 symbol_map[y_laplacian[i]] = lambda t, y, _i=i: \
@@ -499,16 +498,14 @@ class FDMOperator(Operator):
                                 _i,
                                 d_y_boundary_constraints[_j, _i])
 
-            if 2 <= diff_eq.x_dimension <= 3:
-                y_divergence = diff_eq.symbols.y_divergence
-                for index in np.ndindex(
-                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                    symbol_map[y_divergence[index]] = \
-                        lambda t, y, _index=tuple(index): \
-                        self._differentiator.divergence(
-                            y[..., _index],
-                            d_x,
-                            d_y_boundary_constraints[:, _index])
+            for index in np.ndindex(
+                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                symbol_map[y_divergence[index]] = \
+                    lambda t, y, _index=tuple(index): \
+                    self._differentiator.divergence(
+                        y[..., _index],
+                        d_x,
+                        d_y_boundary_constraints[:, _index])
 
         return symbol_map
 
@@ -661,7 +658,8 @@ class StatelessMLOperator(MLOperator, ABC):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        assert self._model is not None
+        if self._model is None:
+            raise ValueError
 
         cp = ivp.constrained_problem
 
@@ -713,7 +711,8 @@ class StatefulMLOperator(MLOperator, ABC):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        assert self._model is not None
+        if self._model is None:
+            raise ValueError
 
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
@@ -771,8 +770,8 @@ class PINNOperator(StatelessMLOperator):
         :return: a tuple of the loss history and the training state
         """
         diff_eq = ivp.constrained_problem.differential_equation
-
-        assert diff_eq.x_dimension <= 3
+        if diff_eq.x_dimension > 3:
+            raise ValueError
 
         symbol_set = set()
         symbolic_equation_system = diff_eq.symbolic_equation_system
@@ -918,6 +917,7 @@ class PINNOperator(StatelessMLOperator):
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             y_laplacian = diff_eq.symbols.y_laplacian
+            y_divergence = diff_eq.symbols.y_divergence
 
             for i in range(diff_eq.y_dimension):
                 symbol_map[y_laplacian[i]] = lambda x, y, _i=i: \
@@ -947,19 +947,18 @@ class PINNOperator(StatelessMLOperator):
                                 x
                             )[0][:, _k:_k + 1]
 
-            if 2 <= diff_eq.x_dimension <= 3:
-                y_divergence = diff_eq.symbols.y_divergence
-                for index in np.ndindex(
-                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                    symbol_map[y_divergence[index]] = \
-                        (lambda x, y, _i=index[0], _j=index[1]:
-                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
-                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2]) \
-                        if diff_eq.x_dimension == 2 else \
-                        (lambda x, y, _i=index[0], _j=index[1], _k=index[2]:
-                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
-                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2] +
-                         tf.gradients(y[:, _k:_k + 1], x)[0][:, 2:3])
+            for index in np.ndindex(
+                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                symbol_map[y_divergence[index]] = lambda x, y, _index=index: \
+                    tf.math.reduce_sum(
+                        tf.stack([
+                            tf.gradients(
+                                y[:, _index[_i]:_index[_i] + 1],
+                                x
+                            )[0][:, _i:_i + 1]
+                            for _i in range(diff_eq.x_dimension)
+                        ]),
+                        axis=0)
 
         return symbol_map
 
@@ -996,7 +995,9 @@ class StatelessRegressionOperator(StatelessMLOperator):
         :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert subsampling_factor is None or 0. < subsampling_factor <= 1.
+        if subsampling_factor is not None \
+                and not (0. < subsampling_factor <= 1.):
+            raise ValueError
 
         time_points = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
         x_batch = self._create_input_batch(
@@ -1072,14 +1073,19 @@ class StatefulRegressionOperator(StatefulMLOperator):
         :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert iterations > 0
+        if iterations <= 0:
+            raise ValueError
 
         if isinstance(noise_sd, (tuple, list)):
-            assert len(noise_sd) == 2
-            assert noise_sd[0] >= 0. and noise_sd[1] >= 0.
+            if len(noise_sd) != 2:
+                raise ValueError
+            if noise_sd[0] < 0. or noise_sd[1] < 0.:
+                raise ValueError
         else:
-            assert isinstance(noise_sd, float)
-            assert noise_sd >= 0.
+            if not isinstance(noise_sd, float):
+                raise ValueError
+            if noise_sd < 0.:
+                raise ValueError
 
             noise_sd = (noise_sd, noise_sd)
 

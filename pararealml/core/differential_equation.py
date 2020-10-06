@@ -26,12 +26,9 @@ class Symbols:
             self._d_y_over_d_x_x = symarray(
                 'd_y_over_d_x_x', (y_dimension, x_dimension, x_dimension))
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
-            if 2 <= x_dimension <= 3:
-                self._y_divergence = symarray(
-                    'y_divergence', (y_dimension,) * x_dimension
-                )
-            else:
-                self._y_divergence = None
+            self._y_divergence = symarray(
+                'y_divergence', (y_dimension,) * x_dimension
+            )
         else:
             self._d_y_over_d_x = None
             self._d_y_over_d_x_x = None
@@ -68,8 +65,8 @@ class Symbols:
     @property
     def y_divergence(self) -> Optional[np.ndarray]:
         """
-        A 2 or 3D array of symbols denoting the spatial divergence of the
-        corresponding elements of the differential equation's solution.
+        A multidimensional array of symbols denoting the spatial divergence of
+        the corresponding elements of the differential equation's solution.
         """
         return np.copy(self._y_divergence)
 
@@ -247,8 +244,7 @@ class DifferentialEquation(ABC):
             all_symbols.update(self._symbols.d_y_over_d_x.flatten())
             all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
             all_symbols.update(self._symbols.y_laplacian)
-            if 2 <= self._x_dimension <= 3:
-                all_symbols.update(self._symbols.y_divergence.flatten())
+            all_symbols.update(self._symbols.y_divergence.flatten())
 
         for rhs_element in self.symbolic_equation_system.rhs:
             rhs_symbols = rhs_element.free_symbols
