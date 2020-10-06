@@ -48,6 +48,7 @@ class DiscreteInitialCondition(InitialCondition):
             self,
             cp: ConstrainedProblem,
             y_0: np.ndarray,
+            t_0: Optional[float] = None,
             vertex_oriented: Optional[bool] = None,
             interpolation_method: Optional[str] = None):
         """
@@ -55,6 +56,7 @@ class DiscreteInitialCondition(InitialCondition):
             problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
             mesh (which may be 0 dimensional in case of an ODE)
+        :param t_0: the lower boundary of the time domain
         :param vertex_oriented: whether the initial conditions are evaluated at
             the vertices or cell centers of the spatial mesh; it the
             constrained problem is an ODE, it can be None
@@ -67,7 +69,11 @@ class DiscreteInitialCondition(InitialCondition):
         y_0_copy = np.copy(y_0)
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                cp.y_vertex_constraints, y_0_copy)
+                cp.static_y_vertex_constraints
+                if cp.are_all_boundary_conditions_static else
+                cp.create_y_vertex_constraints(
+                    cp.create_boundary_constraints(True, t_0)[0]),
+                y_0_copy)
         y_0_copy = y_0_copy.reshape((1,) + y_0_copy.shape)
 
         self._y_0_solution = Solution(
@@ -94,18 +100,20 @@ class ContinuousInitialCondition(InitialCondition):
             self,
             cp: ConstrainedProblem,
             y_0_func:
-            Callable[[Optional[Sequence[float]]], Sequence[float]]):
+            Callable[[Optional[Sequence[float]]], Sequence[float]],
+            t_0: Optional[float] = None):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param y_0_func: the initial value function that returns an array
             containing the values of y at the spatial coordinates defined by
             its input
+        :param t_0: the lower boundary of the time domain
         """
         self._cp = cp
         self._y_0_func = y_0_func
-        self._discrete_y_0_vertices = self._create_discrete_y_0(True)
-        self._discrete_y_0_cells = self._create_discrete_y_0(False)
+        self._discrete_y_0_vertices = self._create_discrete_y_0(True, t_0)
+        self._discrete_y_0_cells = self._create_discrete_y_0(False, None)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         return self._y_0_func(x)
@@ -118,13 +126,18 @@ class ContinuousInitialCondition(InitialCondition):
             self._discrete_y_0_vertices if vertex_oriented
             else self._discrete_y_0_cells)
 
-    def _create_discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
+    def _create_discrete_y_0(
+            self,
+            vertex_oriented: bool,
+            t_0: Optional[float]
+    ) -> np.ndarray:
         """
         Creates the discretised initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
 
         :param vertex_oriented: whether the initial conditions are to be
             evaluated at the vertices or cell centers of the spatial mesh
+        :param t_0: the lower boundary of the time domain
         :return: the discretised initial values
         """
         diff_eq = self._cp.differential_equation
@@ -138,7 +151,11 @@ class ContinuousInitialCondition(InitialCondition):
 
             if vertex_oriented:
                 apply_constraints_along_last_axis(
-                    self._cp.y_vertex_constraints, y_0)
+                    self._cp.static_y_vertex_constraints
+                    if self._cp.are_all_boundary_conditions_static else
+                    self._cp.create_y_vertex_constraints(
+                        self._cp.create_boundary_constraints(True, t_0)[0]),
+                    y_0)
         else:
             y_0 = self._y_0_func(None)
 
@@ -154,6 +171,7 @@ class GaussianInitialCondition(ContinuousInitialCondition):
             self,
             cp: ConstrainedProblem,
             means_and_covs: Sequence[Tuple[np.ndarray, np.ndarray]],
+            t_0: Optional[float] = None,
             multipliers: Optional[Sequence[float]] = None):
         """
         :param cp: the constrained problem to turn into an initial value
@@ -161,24 +179,30 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :param means_and_covs: a sequence of tuples of mean vectors and
             covariance matrices defining the multivariate Gaussian PDFs
             corresponding to each element of y_0
+        :param t_0: the lower boundary of the time domain
         :param multipliers: an array of multipliers for each element of the
             initial y values
         """
         diff_eq = cp.differential_equation
-        assert diff_eq.x_dimension
-        assert len(means_and_covs) == diff_eq.y_dimension
+        if not diff_eq.x_dimension:
+            raise ValueError
+        if len(means_and_covs) != diff_eq.y_dimension:
+            raise ValueError
         for mean, cov in means_and_covs:
-            assert mean.shape == (diff_eq.x_dimension,)
-            assert cov.shape == (diff_eq.x_dimension, diff_eq.x_dimension)
+            if mean.shape != (diff_eq.x_dimension,):
+                raise ValueError
+            if cov.shape != (diff_eq.x_dimension, diff_eq.x_dimension):
+                raise ValueError
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
-            assert len(multipliers) == diff_eq.y_dimension
+            if len(multipliers) != diff_eq.y_dimension:
+                raise ValueError
             self._multipliers = copy(multipliers)
         else:
             self._multipliers = [1.] * diff_eq.y_dimension
 
-        super(GaussianInitialCondition, self).__init__(cp, self._y_0_func)
+        super(GaussianInitialCondition, self).__init__(cp, self._y_0_func, t_0)
 
     @staticmethod
     def multivariate_gaussian(
