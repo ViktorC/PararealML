@@ -40,16 +40,18 @@ class InitialValueProblem:
             initial value problem at time step t and point x. If it is None,
             the problem is assumed to have no analytical solution.
         """
-        assert cp is not None
+        if cp is None:
+            raise ValueError
+        if len(t_interval) != 2:
+            raise ValueError
+        if t_interval[0] > t_interval[1]:
+            raise ValueError
+        if initial_condition is None:
+            raise ValueError
+
         self._cp = cp
-
-        assert len(t_interval) == 2
-        assert t_interval[0] <= t_interval[1]
         self._t_interval = copy(t_interval)
-
-        assert initial_condition is not None
         self._initial_condition = initial_condition
-
         self._exact_y = exact_y
 
         self._deepxde_time_domain = TimeDomain(*self._t_interval)
@@ -260,8 +262,10 @@ class InitialValueProblem:
                     x = np.delete(x, fixed_axis, axis=1)
 
                 n_rows = x.shape[0]
-                values = np.array([condition_function(x[i, :-1])[_y_ind]
-                                   for i in range(n_rows)])
+                values = np.array([
+                    condition_function(x[i, :-1], x[i, -1])[_y_ind]
+                    for i in range(n_rows)
+                ])
                 values = values.reshape((n_rows, 1))
                 return values
 

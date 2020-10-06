@@ -59,8 +59,10 @@ class PararealOperator(Operator):
 
         t_interval = ivp.t_interval
         delta_t = (t_interval[1] - t_interval[0]) / comm.size
-        assert np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t))
-        assert np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t))
+        if not np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t)):
+            raise ValueError
+        if not np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t)):
+            raise ValueError
 
         vertex_oriented = self._f.vertex_oriented
         cp = ivp.constrained_problem

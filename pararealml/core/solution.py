@@ -33,10 +33,13 @@ class Solution:
             is inferred from the `t_coordinates` (which may lead to floating
             point issues)
         """
-        assert t_coordinates.ndim == 1
-        assert len(t_coordinates) > 0
-        assert discrete_y.shape == \
-            ((len(t_coordinates),) + cp.y_shape(vertex_oriented))
+        if t_coordinates.ndim != 1:
+            raise ValueError
+        if len(t_coordinates) == 0:
+            raise ValueError
+        if discrete_y.shape != \
+                ((len(t_coordinates),) + cp.y_shape(vertex_oriented)):
+            raise ValueError
 
         self._cp = cp
         self._t_coordinates = t_coordinates
@@ -115,8 +118,10 @@ class Solution:
         diff_eq = self._cp.differential_equation
 
         if diff_eq.x_dimension:
-            assert x is not None
-            assert x.shape[-1] == diff_eq.x_dimension
+            if x is None:
+                raise ValueError
+            if x.shape[-1] != diff_eq.x_dimension:
+                raise ValueError
 
             y = interpn(
                 self._cp.mesh.coordinates(self._vertex_oriented),
@@ -166,7 +171,7 @@ class Solution:
 
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._cp.y_vertex_constraints, discrete_y)
+                self._cp.static_y_vertex_constraints, discrete_y)
 
         return discrete_y
 
@@ -187,7 +192,8 @@ class Solution:
             representing the differences between this solution and each of the
             provided solutions at the matching time points
         """
-        assert len(solutions) > 0
+        if len(solutions) == 0:
+            raise ValueError
 
         matching_time_points = []
         all_diffs = []
