@@ -206,6 +206,11 @@ class FVMOperator(Operator):
         for i, t_i in enumerate(time_points[:-1]):
             for fipy_var in fipy_vars:
                 fipy_var.updateOld()
+                if not cp.are_all_boundary_conditions_static:
+                    constraints = cp.create_boundary_constraints(False, t_i)
+                    cp.set_fipy_variable_constraints(fipy_var, constraints[0])
+                    cp.set_fipy_variable_constraints(
+                        fipy_var.grad, constraints[1])
 
             for j, fipy_var in enumerate(fipy_vars):
                 fipy_equations[j].solve(
