@@ -77,7 +77,7 @@ class DirichletBoundaryCondition(BoundaryCondition):
                 [Sequence[float], Optional[float]],
                 Sequence[Optional[float]]
             ],
-            is_static: bool = True):
+            is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
@@ -125,7 +125,7 @@ class NeumannBoundaryCondition(BoundaryCondition):
                 [Sequence[float], Optional[float]],
                 Sequence[Optional[float]]
             ],
-            is_static: bool = True):
+            is_static: bool = False):
         """
         :param d_y_condition: the function that determines the value of the
             derivative of y at the coordinates along the boundary specified by
@@ -178,7 +178,7 @@ class CauchyBoundaryCondition(BoundaryCondition):
                 [Sequence[float], Optional[float]],
                 Sequence[Optional[float]]
             ],
-            is_static: bool = True):
+            is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
             coordinates along the boundary specified by x
