@@ -204,15 +204,16 @@ class FVMOperator(Operator):
 
         y = np.empty((len(time_points) - 1,) + cp.y_cells_shape)
         for i, t_i in enumerate(time_points[:-1]):
-            for fipy_var in fipy_vars:
-                fipy_var.updateOld()
-                if not cp.are_all_boundary_conditions_static:
-                    constraints = cp.create_boundary_constraints(False, t_i)
-                    cp.set_fipy_variable_constraints(fipy_var, constraints[0])
+            if not cp.are_all_boundary_conditions_static:
+                constraints = cp.create_boundary_constraints(False, t_i)
+                for j, fipy_var in enumerate(fipy_vars):
                     cp.set_fipy_variable_constraints(
-                        fipy_var.grad, constraints[1])
+                        fipy_var, constraints[0][:, j])
+                    cp.set_fipy_variable_constraints(
+                        fipy_var.grad, constraints[1][:, j])
 
             for j, fipy_var in enumerate(fipy_vars):
+                fipy_var.updateOld()
                 fipy_equations[j].solve(
                     var=fipy_var,
                     dt=self._d_t,
@@ -392,57 +393,48 @@ class FDMOperator(Operator):
         y_rhs_lambda = sp.lambdify(
             [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy')
 
-        y_laplacian_eq_inds = \
-            eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
-        y_laplacian_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
-        y_laplacian_arg_functions = \
-            [symbol_map[sym] for sym in y_laplacian_symbols]
-        y_laplacian_rhs_lambda = sp.lambdify(
-            [y_laplacian_symbols],
+        y_lapl_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
+        y_lapl_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
+        y_lapl_arg_functions = [symbol_map[sym] for sym in y_lapl_symbols]
+        y_lapl_rhs_lambda = sp.lambdify(
+            [y_lapl_symbols],
             eq_sys.rhs_by_type(LhsType.Y_LAPLACIAN),
             'numpy')
 
         d_x = cp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = cp.static_y_vertex_constraints
-        y_y_constraints = None if y_constraints is None \
-            else y_constraints[y_eq_inds]
-        y_laplacian_y_constraints = None if y_constraints is None \
-            else y_constraints[y_laplacian_eq_inds]
-        d_y_constraints = cp.static_d_y_boundary_vertex_constraints
-        y_laplacian_d_y_constraints = None if d_y_constraints is None \
-            else d_y_constraints[:, y_laplacian_eq_inds]
+        y_c_func, d_y_c_func = self._create_constraint_functions(cp)
 
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
-            args = [function(t, y) for function in d_y_over_d_t_arg_functions]
-            d_y_over_d_t[..., d_y_over_d_t_eq_inds] = \
-                np.concatenate(d_y_over_d_t_rhs_lambda(args), axis=-1)
+            args = [f(t, y, d_y_c_func) for f in d_y_over_d_t_arg_functions]
+            d_y_over_d_t[..., d_y_over_d_t_eq_inds] = np.concatenate(
+                d_y_over_d_t_rhs_lambda(args), axis=-1)
             return d_y_over_d_t
 
         def y_next_function(t: float, y: np.ndarray) -> np.ndarray:
             y_next = self._integrator.integral(
-                y,
-                t,
-                self._d_t,
-                d_y_over_d_t_function,
-                y_constraints)
+                y, t, self._d_t, d_y_over_d_t_function, y_c_func)
 
             if len(y_eq_inds):
-                args = [function(t, y) for function in y_arg_functions]
+                args = [f(t, y, d_y_c_func) for f in y_arg_functions]
+                y_c = y_c_func(t)
+                y_c = None if y_c is None else y_c[y_eq_inds]
                 y_next[..., y_eq_inds] = apply_constraints_along_last_axis(
-                    y_y_constraints,
-                    np.concatenate(y_rhs_lambda(args), axis=-1))
+                    y_c, np.concatenate(y_rhs_lambda(args), axis=-1))
 
-            if len(y_laplacian_eq_inds):
-                args = \
-                    [function(t, y) for function in y_laplacian_arg_functions]
-                y_next[..., y_laplacian_eq_inds] = \
+            if len(y_lapl_eq_inds):
+                args = [f(t, y, d_y_c_func) for f in y_lapl_arg_functions]
+                y_c = y_c_func(t)
+                y_c = None if y_c is None else y_c[y_lapl_eq_inds]
+                d_y_c = d_y_c_func(t)
+                d_y_c = None if d_y_c is None else d_y_c[:, y_lapl_eq_inds]
+                y_next[..., y_lapl_eq_inds] = \
                     self._differentiator.anti_laplacian(
-                        np.concatenate(y_laplacian_rhs_lambda(args), axis=-1),
+                        np.concatenate(y_lapl_rhs_lambda(args), axis=-1),
                         d_x,
                         self._tol,
-                        y_laplacian_y_constraints,
-                        y_laplacian_d_y_constraints)
+                        y_c,
+                        d_y_c)
 
             return y_next
 
@@ -464,10 +456,10 @@ class FDMOperator(Operator):
         symbol_map = {}
 
         for i, y_element in enumerate(diff_eq.symbols.y):
-            symbol_map[y_element] = lambda t, y, _i=i: y[..., [_i]]
+            symbol_map[y_element] = \
+                lambda t, y, d_y_bc_func, _i=i: y[..., [_i]]
 
         if diff_eq.x_dimension:
-            d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
             d_x = cp.mesh.d_x
 
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
@@ -476,24 +468,25 @@ class FDMOperator(Operator):
             y_divergence = diff_eq.symbols.y_divergence
 
             for i in range(diff_eq.y_dimension):
-                symbol_map[y_laplacian[i]] = lambda t, y, _i=i: \
+                symbol_map[y_laplacian[i]] = lambda t, y, d_y_bc_func, _i=i: \
                     self._differentiator.laplacian(
                         y[..., [_i]],
                         d_x,
-                        d_y_boundary_constraints[:, [_i]])
+                        d_y_bc_func(t)[:, [_i]])
 
                 for j in range(diff_eq.x_dimension):
-                    symbol_map[d_y_over_d_x[i, j]] = lambda t, y, _i=i, _j=j: \
+                    symbol_map[d_y_over_d_x[i, j]] = \
+                        lambda t, y, d_y_bcs, _i=i, _j=j: \
                         self._differentiator.derivative(
                             y,
                             d_x[_j],
                             _j,
                             _i,
-                            d_y_boundary_constraints[_j, _i])
+                            d_y_bcs(t)[_j, _i])
 
                     for k in range(diff_eq.x_dimension):
                         symbol_map[d_y_over_d_x_x[i, j, k]] = \
-                            lambda t, y, _i=i, _j=j, _k=k: \
+                            lambda t, y, d_y_bc_func, _i=i, _j=j, _k=k: \
                             self._differentiator.second_derivative(
                                 y,
                                 d_x[_j],
@@ -501,18 +494,72 @@ class FDMOperator(Operator):
                                 _j,
                                 _k,
                                 _i,
-                                d_y_boundary_constraints[_j, _i])
+                                d_y_bc_func(t)[_j, _i])
 
             for index in np.ndindex(
                     (diff_eq.y_dimension,) * diff_eq.x_dimension):
                 symbol_map[y_divergence[index]] = \
-                    lambda t, y, _index=tuple(index): \
+                    lambda t, y, d_y_bc_func, _index=tuple(index): \
                     self._differentiator.divergence(
                         y[..., _index],
                         d_x,
-                        d_y_boundary_constraints[:, _index])
+                        d_y_bc_func(t)[:, _index])
 
         return symbol_map
+
+    @staticmethod
+    def _create_constraint_functions(
+            cp: ConstrainedProblem
+    ) -> Tuple[Callable[[float], np.ndarray], Callable[[float], np.ndarray]]:
+        """
+        Creates two functions that return the constraints on y and the boundary
+        constraints on the spatial derivatives of y with respect to the normals
+        of the boundaries respectively.
+
+        :param cp: the constrained problems to create the constraint functions
+        for
+        :return: a tuple of two functions that return the two different
+        constraints given t
+        """
+        if cp.differential_equation.x_dimension:
+            boundary_constraints_cache = {
+                None: (cp.static_y_boundary_vertex_constraints,
+                       cp.static_d_y_boundary_vertex_constraints)
+            }
+            y_constraints_cache = {None: cp.static_y_vertex_constraints}
+
+            def y_constraints_func(t: Optional[float]) -> Optional[np.ndarray]:
+                if t in y_constraints_cache:
+                    return y_constraints_cache[t]
+
+                boundary_constraints = cp.create_boundary_constraints(True, t)
+                boundary_constraints_cache[t] = boundary_constraints
+                y_constraints = \
+                    cp.create_y_vertex_constraints(boundary_constraints[0])
+                y_constraints_cache[t] = y_constraints
+
+                return y_constraints
+
+            def d_y_constraints_func(
+                    t: Optional[float]
+            ) -> Optional[np.ndarray]:
+                if t in boundary_constraints_cache:
+                    return boundary_constraints_cache[t][1]
+
+                boundary_constraints = cp.create_boundary_constraints(True, t)
+                boundary_constraints_cache[t] = boundary_constraints
+
+                return boundary_constraints[1]
+        else:
+            def y_constraints_func(_: Optional[float]) -> Optional[np.ndarray]:
+                return None
+
+            def d_y_constraints_func(
+                    _: Optional[float]
+            ) -> Optional[np.ndarray]:
+                return None
+
+        return y_constraints_func, d_y_constraints_func
 
 
 class MLOperator(Operator, ABC):
