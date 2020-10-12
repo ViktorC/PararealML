@@ -171,17 +171,17 @@ class GaussianInitialCondition(ContinuousInitialCondition):
             self,
             cp: ConstrainedProblem,
             means_and_covs: Sequence[Tuple[np.ndarray, np.ndarray]],
-            t_0: Optional[float] = None,
-            multipliers: Optional[Sequence[float]] = None):
+            multipliers: Optional[Sequence[float]] = None,
+            t_0: Optional[float] = None):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param means_and_covs: a sequence of tuples of mean vectors and
             covariance matrices defining the multivariate Gaussian PDFs
             corresponding to each element of y_0
-        :param t_0: the lower boundary of the time domain
         :param multipliers: an array of multipliers for each element of the
             initial y values
+        :param t_0: the lower boundary of the time domain
         """
         diff_eq = cp.differential_equation
         if not diff_eq.x_dimension:
