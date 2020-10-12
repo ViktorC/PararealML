@@ -230,8 +230,8 @@ class ConstrainedProblem:
 
     def create_y_vertex_constraints(
             self,
-            y_boundary_vertex_constraints: np.ndarray
-    ) -> np.ndarray:
+            y_boundary_vertex_constraints: Optional[np.ndarray]
+    ) -> Optional[np.ndarray]:
         """
         Creates a 1D array of solution value constraints evaluated on all
         vertices of the mesh.
@@ -240,6 +240,9 @@ class ConstrainedProblem:
         y dimension) of boundary value constraint pairs
         :return: a 1D array (y dimension) of solution constraints
         """
+        if y_boundary_vertex_constraints is None:
+            return None
+
         y_constraints = np.empty(self._diff_eq.y_dimension, dtype=object)
 
         slicer: Slicer = [slice(None)] * len(self._y_vertices_shape[:-1])
@@ -273,7 +276,7 @@ class ConstrainedProblem:
             self,
             vertex_oriented: bool,
             t: Optional[float] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Creates a tuple of two 2D arrays (x dimension, y dimension) of boundary
         value constraint pairs that represent the lower and upper boundary
@@ -286,6 +289,9 @@ class ConstrainedProblem:
         :return: a tuple of two 2D arrays of y and d y boundary value
             constraint pairs
         """
+        if not self._diff_eq.x_dimension:
+            return None, None
+
         y_boundary_constraints = np.empty(
             (self._diff_eq.x_dimension, self._diff_eq.y_dimension),
             dtype=object)
