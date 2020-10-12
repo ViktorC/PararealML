@@ -25,7 +25,7 @@ class ConstrainedProblem:
             diff_eq: DifferentialEquation,
             mesh: Optional[Mesh] = None,
             boundary_conditions:
-            Optional[Tuple[BoundaryConditionPair, ...]] = None):
+            Optional[Sequence[BoundaryConditionPair]] = None):
         """
         :param diff_eq: the differential equation to constrain
         :param mesh: the mesh over which the differential equation is to be
@@ -59,7 +59,7 @@ class ConstrainedProblem:
                     raise ValueError
 
             self._mesh = mesh
-            self._boundary_conditions = deepcopy(boundary_conditions)
+            self._boundary_conditions = tuple(deepcopy(boundary_conditions))
             self._y_vertices_shape = mesh.vertices_shape + \
                 (diff_eq.y_dimension,)
             self._y_cells_shape = mesh.cells_shape + (diff_eq.y_dimension,)
