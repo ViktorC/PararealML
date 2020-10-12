@@ -48,18 +48,18 @@ class DiscreteInitialCondition(InitialCondition):
             self,
             cp: ConstrainedProblem,
             y_0: np.ndarray,
-            t_0: Optional[float] = None,
             vertex_oriented: Optional[bool] = None,
+            t_0: Optional[float] = None,
             interpolation_method: Optional[str] = None):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
         :param y_0: the array containing the initial values of y over a spatial
             mesh (which may be 0 dimensional in case of an ODE)
-        :param t_0: the lower boundary of the time domain
         :param vertex_oriented: whether the initial conditions are evaluated at
             the vertices or cell centers of the spatial mesh; it the
             constrained problem is an ODE, it can be None
+        :param t_0: the lower boundary of the time domain
         :param interpolation_method: the interpolation method to use to
             calculate values that do not exactly fall on points of the y_0
             grid; if the constrained problem is based on an ODE, it can be None
