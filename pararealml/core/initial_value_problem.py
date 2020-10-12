@@ -239,7 +239,7 @@ class InitialValueProblem:
             condition_function: Union[
                 Callable[[Optional[Sequence[float]]],
                          Optional[Sequence[float]]],
-                Callable[[Sequence[float]],
+                Callable[[Sequence[float], Optional[float]],
                          Optional[Sequence[Optional[float]]]]],
             fixed_axis: Optional[int] = None
     ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
@@ -258,14 +258,20 @@ class InitialValueProblem:
         deepxde_condition_functions = []
         for y_ind in range(self._cp.differential_equation.y_dimension):
             def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
+                n_rows = x.shape[0]
+
                 if fixed_axis is not None:
                     x = np.delete(x, fixed_axis, axis=1)
+                    values = np.array([
+                        condition_function(x[i, :-1], x[i, -1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
+                else:
+                    values = np.array([
+                        condition_function(x[i, :-1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
 
-                n_rows = x.shape[0]
-                values = np.array([
-                    condition_function(x[i, :-1], x[i, -1])[_y_ind]
-                    for i in range(n_rows)
-                ])
                 values = values.reshape((n_rows, 1))
                 return values
 
