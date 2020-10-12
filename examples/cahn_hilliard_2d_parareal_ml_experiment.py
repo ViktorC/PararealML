@@ -16,19 +16,19 @@ limit_visible_gpus()
 
 set_random_seed(SEEDS[0])
 
-diff_eq = CahnHilliardEquation(2, 2.5, .5)
+diff_eq = CahnHilliardEquation(2)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
-    (NeumannBoundaryCondition(lambda x: (0., 0.)),
-     NeumannBoundaryCondition(lambda x: (0., 0.))),
-    (NeumannBoundaryCondition(lambda x: (0., 0.)),
-     NeumannBoundaryCondition(lambda x: (0., 0.)))
+    (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
+    (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     cp,
     .125 * np.random.uniform(-1., 1., cp.y_shape(False)),
-    False)
+    vertex_oriented=False)
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 f = FVMOperator(LinearLUSolver(), .005)

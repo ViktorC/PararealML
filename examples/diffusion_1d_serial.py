@@ -6,8 +6,8 @@ from pararealml import *
 diff_eq = DiffusionEquation(1, 1.5)
 mesh = UniformGrid(((0., 10.),), (.1,))
 bcs = (
-    (NeumannBoundaryCondition(lambda x: (0.,)),
-     NeumannBoundaryCondition(lambda x: (0.,))),
+    (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
