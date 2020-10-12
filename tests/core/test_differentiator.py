@@ -11,7 +11,7 @@ def test_differentiator_jacobian_with_insufficient_dimensions():
     d_x = 1.,
     y = np.arange(1., 5.)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.jacobian(y, d_x)
 
 
@@ -20,7 +20,7 @@ def test_differentiator_jacobian_with_wrong_d_x_size():
     d_x = (1.,) * 3
     y = np.array([[[0.] * 3] * 2])
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.jacobian(y, d_x)
 
 
@@ -29,7 +29,7 @@ def test_differentiator_divergence_with_insufficient_dimensions():
     d_x = 1.,
     y = np.arange(1., 5.)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.divergence(y, d_x)
 
 
@@ -38,7 +38,7 @@ def test_differentiator_divergence_with_non_matching_vector_field_dimension():
     d_x = (1.,) * 2
     y = np.array([[[0.] * 3] * 2] * 2)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.divergence(y, d_x)
 
 
@@ -47,7 +47,7 @@ def test_differentiator_divergence_with_wrong_d_x_size():
     d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.divergence(y, d_x)
 
 
@@ -56,7 +56,7 @@ def test_differentiator_1d_curl():
     d_x = 1.,
     y = np.array([[0.]])
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.curl(y, d_x)
 
 
@@ -65,7 +65,7 @@ def test_differentiator_more_than_3d_curl():
     d_x = (1.,) * 4
     y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.curl(y, d_x)
 
 
@@ -74,7 +74,7 @@ def test_differentiator_curl_with_wrong_d_x_size():
     d_x = (1.,) * 3
     y = np.array([[[0.] * 2] * 2] * 2)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.curl(y, d_x)
 
 
@@ -83,7 +83,7 @@ def test_3pcfdm_derivative_with_insufficient_dimensions():
     d_x = 1.
     y = np.arange(1., 5.)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.derivative(y, d_x, 0)
 
 
@@ -93,7 +93,7 @@ def test_3pcfdm_derivative_with_out_of_bounds_x_axis():
     x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.derivative(y, d_x, x_axis)
 
 
@@ -104,7 +104,7 @@ def test_3pcfdm_derivative_with_out_of_bounds_y_ind():
     y_ind = 2
     y = np.arange(0., 6.).reshape((3, 2))
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.derivative(y, d_x, x_axis, y_ind)
 
 
@@ -114,7 +114,7 @@ def test_3pcfdm_derivative_with_insufficient_dimension_extent():
     x_axis = 0
     y = np.arange(0., 12.).reshape((2, 3, 2))
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         diff.derivative(y, d_x, x_axis)
 
 

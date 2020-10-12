@@ -17,11 +17,11 @@ def test_cp_with_ode():
     cp = ConstrainedProblem(diff_eq)
 
     assert cp.mesh is None
-    assert cp.y_vertex_constraints is None
-    assert cp.y_boundary_vertex_constraints is None
-    assert cp.y_boundary_cell_constraints is None
-    assert cp.d_y_boundary_vertex_constraints is None
-    assert cp.d_y_boundary_cell_constraints is None
+    assert cp.static_y_vertex_constraints is None
+    assert cp.static_y_boundary_vertex_constraints is None
+    assert cp.static_y_boundary_cell_constraints is None
+    assert cp.static_d_y_boundary_vertex_constraints is None
+    assert cp.static_d_y_boundary_cell_constraints is None
     assert cp.boundary_conditions is None
     assert cp.y_shape(True) == cp.y_shape(False) == (diff_eq.y_dimension,)
 
@@ -31,16 +31,20 @@ def test_2d_cp():
     mesh = UniformGrid(
             ((2., 6.), (-3., 3.)),
             (.1, .2))
+    bcs = (
+        (DirichletBoundaryCondition(lambda x, t: (999., None), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (100., -100.), is_static=True)),
+        (NeumannBoundaryCondition(lambda x, t: (-x[0], None), is_static=True),
+         DirichletBoundaryCondition(
+             lambda x, t: (x[0], -999.), is_static=True))
+    )
     cp = ConstrainedProblem(
         diff_eq,
         mesh,
-        ((DirichletBoundaryCondition(lambda x: (999., None)),
-          NeumannBoundaryCondition(lambda x: (100., -100.))),
-         (NeumannBoundaryCondition(lambda x: (-x[0], None)),
-          DirichletBoundaryCondition(lambda x: (x[0], -999.)))))
+        bcs)
 
     y = np.full(cp.y_shape(True), 13.)
-    apply_constraints_along_last_axis(cp.y_vertex_constraints, y)
+    apply_constraints_along_last_axis(cp.static_y_vertex_constraints, y)
 
     assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
     assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)
@@ -53,7 +57,7 @@ def test_2d_cp():
 
     y = np.zeros(cp.y_shape(True))
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
+    d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
 
     d_y_0_d_x_0 = diff.derivative(
         y, mesh.d_x[0], 0, 0, d_y_boundary_constraints[0, 0])
@@ -95,11 +99,11 @@ def test_3d_cp():
     cp = ConstrainedProblem(
         diff_eq,
         mesh,
-        ((DirichletBoundaryCondition(lambda x: (999.,)),
-          NeumannBoundaryCondition(lambda x: (None,))),
-         (DirichletBoundaryCondition(lambda x: (0.,)),
-          NeumannBoundaryCondition(lambda x: (0.,))),
-         (NeumannBoundaryCondition(lambda x: (-x[0],)),
-          DirichletBoundaryCondition(lambda x: (-999.,)))))
+        ((DirichletBoundaryCondition(lambda x, t: (999.,), is_static=True),
+          NeumannBoundaryCondition(lambda x, t: (None,), is_static=True)),
+         (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
+          NeumannBoundaryCondition(lambda x, t: (t,), is_static=True)),
+         (NeumannBoundaryCondition(lambda x, t: (-x[0],), is_static=True),
+          DirichletBoundaryCondition(lambda x, t: (-999.,), is_static=True))))
 
     assert len(cp.fipy_vars) == 1
