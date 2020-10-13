@@ -469,10 +469,13 @@ class ConstrainedProblem:
                 mesh=self._mesh.fipy_mesh,
                 hasOld=True)
 
-            self.set_fipy_variable_constraints(
-                y_var_i, self._y_boundary_cell_constraints[:, i])
-            self.set_fipy_variable_constraints(
-                y_var_i.faceGrad, self._d_y_boundary_cell_constraints[:, i])
+            if self._are_all_bcs_static:
+                self.set_fipy_variable_constraints(
+                    y_var_i,
+                    self._y_boundary_cell_constraints[:, i])
+                self.set_fipy_variable_constraints(
+                    y_var_i.faceGrad,
+                    self._d_y_boundary_cell_constraints[:, i])
 
             y_vars.append(y_var_i)
 
