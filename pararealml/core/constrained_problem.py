@@ -237,7 +237,7 @@ class ConstrainedProblem:
         vertices of the mesh.
 
         :param y_boundary_vertex_constraints: a 2D array (x dimension,
-        y dimension) of boundary value constraint pairs
+            y dimension) of boundary value constraint pairs
         :return: a 1D array (y dimension) of solution constraints
         """
         if y_boundary_vertex_constraints is None:
