@@ -526,37 +526,6 @@ class CahnHilliardEquation(DifferentialEquation):
         )
 
 
-class KortewegDeVries1DEquation(DifferentialEquation):
-    """
-    A partial differential equation 3rd order in space modelling the
-    propagation of waves on a shallow water surface.
-    """
-
-    def __init__(self, epsilon: float = 6., mu: float = 1.):
-        """
-        :param epsilon: the shock forming tendency coefficient
-        :param mu: the dispersion coefficient
-        """
-        self._epsilon = epsilon
-        self._mu = mu
-        super(KortewegDeVries1DEquation, self).__init__(1, 2)
-
-    @property
-    def symbolic_equation_system(self) -> SymbolicEquationSystem:
-        sym = self._symbols
-        return SymbolicEquationSystem(
-            [
-                sym.d_y_over_d_x_x[1, 0, 0],
-                -self._epsilon * sym.y[1] * sym.d_y_over_d_x[1, 0] -
-                self._mu * sym.d_y_over_d_x[0, 0]
-            ],
-            [
-                LhsType.Y,
-                LhsType.D_Y_OVER_D_T
-            ]
-        )
-
-
 class NavierStokes2DEquation(DifferentialEquation):
     """
     A system of two partial differential equations modelling the vorticity and
