@@ -86,7 +86,7 @@ def plot_n_body_simulation(
         interval: int,
         file_name: str,
         color_map: Colormap = cm.cividis,
-        smallest_marker_size: int = 10,
+        smallest_marker_size: float = 10.,
         draw_trajectory: bool = True,
         trajectory_line_style: str = ':',
         trajectory_line_width: float = .5):
@@ -383,7 +383,7 @@ def plot_ivp_solution(
         solution_name: str,
         n_images: int = 20,
         interval: int = 100,
-        smallest_marker_size: int = 10,
+        smallest_marker_size: float = 10.,
         draw_trajectory: bool = True,
         trajectory_line_style: str = ':',
         trajectory_line_width: float = .5,
