@@ -31,7 +31,7 @@ The library currently only supports uniform grids through the `UniformGrid` clas
 
 ### Boundary conditions
 
-All boundary conditions extend the `BoundaryCondition` base class. In PararealML, boundary conditions are currently functions of the spatial coordinates only (to enable the pre-computation of boundary values for better performance).
+All boundary conditions extend the `BoundaryCondition` base class. In PararealML, boundary conditions are functions of time and space. It is possible to specify static boundary conditions that only depend on the spatial coordinates to enable the pre-computation of boundary values and thus improve performance).
 
 The list of supported boundary conditions is:
 
@@ -39,7 +39,7 @@ The list of supported boundary conditions is:
  * `NeumannBoundaryCondition`
  * `CauchyBoundaryCondition`
  
-To implement other types of boundary conditions, the `BoundaryCondition` class may be extended.
+To implement other types of boundary conditions, the `BoundaryCondition` class can be easily extended.
 
 ### Constrained problem
 
