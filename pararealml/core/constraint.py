@@ -14,7 +14,9 @@ class Constraint:
         :param mask: the mask denoting which elements of the array are to be
             constrained to the provided values
         """
-        assert value.size == mask.sum()
+        if value.size != mask.sum():
+            raise ValueError
+
         self._value = np.copy(value)
         self._mask = np.copy(mask)
 
@@ -41,7 +43,8 @@ class Constraint:
         :param array: the array to constrain
         :return: the constrained array
         """
-        assert array.shape[-self._mask.ndim:] == self._mask.shape
+        if array.shape[-self._mask.ndim:] != self._mask.shape:
+            raise ValueError
 
         array[..., self._mask] = self._value
         return array
@@ -65,10 +68,13 @@ class Constraint:
         :param result: the array to constrain by the result of the operation
         :return: the constrained result array
         """
-        assert addend.shape == result.shape
-        assert addend.shape[-self._mask.ndim:] == self._mask.shape
-        assert isinstance(multiplier, float) \
-            or multiplier.shape == self._value.shape
+        if addend.shape != result.shape:
+            raise ValueError
+        if addend.shape[-self._mask.ndim:] != self._mask.shape:
+            raise ValueError
+        if not isinstance(multiplier, float) \
+                and multiplier.shape != self._value.shape:
+            raise ValueError
 
         result[..., self._mask] = addend[..., self._mask] + \
             multiplier * self._value
@@ -87,8 +93,10 @@ def apply_constraints_along_last_axis(
     :return: the constrained array
     """
     if constraints is not None:
-        assert array.ndim > 1
-        assert len(constraints) == array.shape[-1]
+        if array.ndim <= 1:
+            raise ValueError
+        if len(constraints) != array.shape[-1]:
+            raise ValueError
 
         for i, constraint in enumerate(constraints):
             if constraint is not None:

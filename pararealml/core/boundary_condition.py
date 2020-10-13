@@ -9,6 +9,14 @@ class BoundaryCondition(ABC):
 
     @property
     @abstractmethod
+    def is_static(self) -> bool:
+        """
+        Returns whether the boundary condition is only dependent on x or also
+        on t.
+        """
+
+    @property
+    @abstractmethod
     def has_y_condition(self) -> bool:
         """
         Returns whether the boundary conditions restrict the value of y.
@@ -23,20 +31,27 @@ class BoundaryCondition(ABC):
         """
 
     @abstractmethod
-    def y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
+    def y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
         elements of the returned tuple may be NaNs.
 
         :param x: the coordinates in the hyperplane of the boundary
+        :param t: the time value; if the condition is static, it may be None
         :return: the value of y(x)
         """
 
     @abstractmethod
-    def d_y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
+    def d_y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the
@@ -45,6 +60,7 @@ class BoundaryCondition(ABC):
         corresponding elements of the returned tuple may be NaNs.
 
         :param x: the coordinates in the hyperplane of the boundary
+        :param t: the time value; if the condition is static, it may be None
         :return: the constrained value of dy(x) / dn
         """
 
@@ -57,13 +73,22 @@ class DirichletBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition:
-            Callable[[Sequence[float]], Sequence[Optional[float]]]):
+            y_condition: Callable[
+                [Sequence[float], Optional[float]],
+                Sequence[Optional[float]]
+            ],
+            is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
+        :param is_static: whether the boundary condition is static
         """
         self._y_condition = y_condition
+        self._is_static = is_static
+
+    @property
+    def is_static(self) -> bool:
+        return self._is_static
 
     @property
     def has_y_condition(self) -> bool:
@@ -73,12 +98,18 @@ class DirichletBoundaryCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return False
 
-    def y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
-        return self._y_condition(x)
+    def y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
+        return self._y_condition(x, t)
 
-    def d_y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
+    def d_y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
         pass
 
 
@@ -90,15 +121,24 @@ class NeumannBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            d_y_condition:
-            Callable[[Sequence[float]], Sequence[Optional[float]]]):
+            d_y_condition: Callable[
+                [Sequence[float], Optional[float]],
+                Sequence[Optional[float]]
+            ],
+            is_static: bool = False):
         """
         :param d_y_condition: the function that determines the value of the
             derivative of y at the coordinates along the boundary specified by
             x with respect to the normal vector to the boundary passing through
             the same point
+        :param is_static: whether the boundary condition is static
         """
         self._d_y_condition = d_y_condition
+        self._is_static = is_static
+
+    @property
+    def is_static(self) -> bool:
+        return self._is_static
 
     @property
     def has_y_condition(self) -> bool:
@@ -108,13 +148,19 @@ class NeumannBoundaryCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
+    def y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
         pass
 
-    def d_y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
-        return self._d_y_condition(x)
+    def d_y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
+        return self._d_y_condition(x, t)
 
 
 class CauchyBoundaryCondition(BoundaryCondition):
@@ -124,10 +170,15 @@ class CauchyBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition:
-            Callable[[Sequence[float]], Sequence[Optional[float]]],
-            d_y_condition:
-            Callable[[Sequence[float]], Sequence[Optional[float]]]):
+            y_condition: Callable[
+                [Sequence[float], Optional[float]],
+                Sequence[Optional[float]]
+            ],
+            d_y_condition: Callable[
+                [Sequence[float], Optional[float]],
+                Sequence[Optional[float]]
+            ],
+            is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
             coordinates along the boundary specified by x
@@ -135,9 +186,15 @@ class CauchyBoundaryCondition(BoundaryCondition):
             derivative of y at the coordinates along the boundary specified by
             x with respect to the normal vector to the boundary passing through
             the same point
+        :param is_static: whether the boundary condition is static
         """
         self._y_condition = y_condition
         self._d_y_condition = d_y_condition
+        self._is_static = is_static
+
+    @property
+    def is_static(self) -> bool:
+        return self._is_static
 
     @property
     def has_y_condition(self) -> bool:
@@ -147,10 +204,16 @@ class CauchyBoundaryCondition(BoundaryCondition):
     def has_d_y_condition(self) -> bool:
         return True
 
-    def y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
-        return self._y_condition(x)
+    def y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
+        return self._y_condition(x, t)
 
-    def d_y_condition(self, x: Sequence[float]) \
-            -> Optional[Sequence[Optional[float]]]:
-        return self._d_y_condition(x)
+    def d_y_condition(
+            self,
+            x: Sequence[float],
+            t: Optional[float]
+    ) -> Optional[Sequence[Optional[float]]]:
+        return self._d_y_condition(x, t)

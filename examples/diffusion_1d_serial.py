@@ -6,14 +6,15 @@ from pararealml import *
 diff_eq = DiffusionEquation(1, 1.5)
 mesh = UniformGrid(((0., 10.),), (.1,))
 bcs = (
-    (NeumannBoundaryCondition(lambda x: (0.,)),
-     NeumannBoundaryCondition(lambda x: (0.,))),
+    (NeumannBoundaryCondition(lambda x, t: (0.,)),
+     DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
     ((np.array([5.]), np.array([[2.5]])),),
-    (20.,))
+    (20.,),
+    t_0=0.)
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 solver = FVMOperator(LinearLUSolver(), .01)

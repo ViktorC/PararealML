@@ -8,19 +8,19 @@ from pararealml.utils.time import time_with_args
 
 set_random_seed(SEEDS[0])
 
-diff_eq = CahnHilliardEquation(2, 1., .01)
+diff_eq = CahnHilliardEquation(2)
 mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
 bcs = (
-    (NeumannBoundaryCondition(lambda x: (0., 0.)),
-     NeumannBoundaryCondition(lambda x: (0., 0.))),
-    (NeumannBoundaryCondition(lambda x: (0., 0.)),
-     NeumannBoundaryCondition(lambda x: (0., 0.)))
+    (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
+    (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     cp,
     .05 * np.random.uniform(-1., 1., cp.y_shape(False)),
-    False)
+    vertex_oriented=False)
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

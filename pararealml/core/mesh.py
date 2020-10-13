@@ -130,11 +130,15 @@ class UniformGrid(Mesh):
         :param d_x: the step sizes to use for each axis of the domain to create
             the mesh
         """
-        assert len(x_intervals) > 0
-        assert len(x_intervals) == len(d_x)
+        if len(x_intervals) == 0:
+            raise ValueError
+        if len(x_intervals) != len(d_x):
+            raise ValueError
         for interval in x_intervals:
-            assert len(interval) == 2
-            assert interval[1] > interval[0]
+            if len(interval) != 2:
+                raise ValueError
+            if interval[1] <= interval[0]:
+                raise ValueError
 
         self._x_intervals = tuple(deepcopy(x_intervals))
         self._vertices_shape = self._calculate_shape(d_x, True)
@@ -184,7 +188,9 @@ class UniformGrid(Mesh):
         return self._deepxde_geometry
 
     def x(self, index: Tuple[int, ...], vertex: bool) -> Tuple[float, ...]:
-        assert len(index) == len(self._x_intervals)
+        if len(index) != len(self._x_intervals):
+            raise ValueError
+
         offset = self._x_vertex_offset if vertex \
             else self._x_cell_center_offset
         return tuple(offset + self._d_x * index)

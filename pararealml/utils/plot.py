@@ -300,7 +300,6 @@ def plot_evolution_of_y(
         x = x_coordinates[0]
         line_plot, = ax.plot(x, y[0, ...])
 
-        plt.axis('scaled')
         plt.ylim(v_min, v_max)
 
         def update_plot(time_step: int):

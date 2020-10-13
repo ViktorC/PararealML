@@ -40,16 +40,18 @@ class InitialValueProblem:
             initial value problem at time step t and point x. If it is None,
             the problem is assumed to have no analytical solution.
         """
-        assert cp is not None
+        if cp is None:
+            raise ValueError
+        if len(t_interval) != 2:
+            raise ValueError
+        if t_interval[0] > t_interval[1]:
+            raise ValueError
+        if initial_condition is None:
+            raise ValueError
+
         self._cp = cp
-
-        assert len(t_interval) == 2
-        assert t_interval[0] <= t_interval[1]
         self._t_interval = copy(t_interval)
-
-        assert initial_condition is not None
         self._initial_condition = initial_condition
-
         self._exact_y = exact_y
 
         self._deepxde_time_domain = TimeDomain(*self._t_interval)
@@ -237,7 +239,7 @@ class InitialValueProblem:
             condition_function: Union[
                 Callable[[Optional[Sequence[float]]],
                          Optional[Sequence[float]]],
-                Callable[[Sequence[float]],
+                Callable[[Sequence[float], Optional[float]],
                          Optional[Sequence[Optional[float]]]]],
             fixed_axis: Optional[int] = None
     ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
@@ -256,12 +258,20 @@ class InitialValueProblem:
         deepxde_condition_functions = []
         for y_ind in range(self._cp.differential_equation.y_dimension):
             def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
+                n_rows = x.shape[0]
+
                 if fixed_axis is not None:
                     x = np.delete(x, fixed_axis, axis=1)
+                    values = np.array([
+                        condition_function(x[i, :-1], x[i, -1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
+                else:
+                    values = np.array([
+                        condition_function(x[i, :-1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
 
-                n_rows = x.shape[0]
-                values = np.array([condition_function(x[i, :-1])[_y_ind]
-                                   for i in range(n_rows)])
                 values = values.reshape((n_rows, 1))
                 return values
 

@@ -144,8 +144,10 @@ class Differentiator(ABC):
             constraints to the calculated first derivatives
         :return: the Jacobian of y
         """
-        assert y.ndim > 1
-        assert len(d_x) == y.ndim - 1
+        if y.ndim <= 1:
+            raise ValueError
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -182,9 +184,12 @@ class Differentiator(ABC):
             to compute the divergence
         :return: the divergence of y
         """
-        assert y.ndim > 1
-        assert y.ndim - 1 == y.shape[-1]
-        assert len(d_x) == y.ndim - 1
+        if y.ndim <= 1:
+            raise ValueError
+        if y.ndim - 1 != y.shape[-1]:
+            raise ValueError
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -216,9 +221,12 @@ class Differentiator(ABC):
             to compute the curl
         :return: the curl of y
         """
-        assert y.shape[-1] == 2 or y.shape[-1] == 3
-        assert y.ndim - 1 == y.shape[-1]
-        assert len(d_x) == y.ndim - 1
+        if not (2 <= y.shape[-1] <= 3):
+            raise ValueError
+        if y.ndim - 1 != y.shape[-1]:
+            raise ValueError
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -274,8 +282,10 @@ class Differentiator(ABC):
             to compute the second derivatives and the Hessian
         :return: the Hessian of y
         """
-        assert y.ndim > 1
-        assert len(d_x) == y.ndim - 1
+        if y.ndim <= 1:
+            raise ValueError
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
 
         first_derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -319,8 +329,10 @@ class Differentiator(ABC):
             to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
-        assert y.ndim > 1
-        assert len(d_x) == y.ndim - 1
+        if y.ndim <= 1:
+            raise ValueError
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
 
         first_derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -369,7 +381,8 @@ class Differentiator(ABC):
             None, a random array is used
         :return: the array representing the solution
         """
-        assert y_constraint is not None
+        if y_constraint is None:
+            raise ValueError
 
         def update(y: np.ndarray) -> np.ndarray:
             return self._calculate_updated_anti_derivative(
@@ -409,8 +422,10 @@ class Differentiator(ABC):
         :return: the array representing the solution to Poisson's equation at
             every point of the mesh
         """
-        assert y_constraints is not None
-        assert len(y_constraints) == laplacian.shape[-1]
+        if y_constraints is None:
+            raise ValueError
+        if len(y_constraints) != laplacian.shape[-1]:
+            raise ValueError
 
         first_derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -451,13 +466,16 @@ class Differentiator(ABC):
             solution containing a constraint for each element of y
         :return: the inverse of the differential operation
         """
-        assert len(y_shape) > 1
-        assert len(y_constraints) == y_shape[-1]
+        if len(y_shape) <= 1:
+            raise ValueError
+        if len(y_constraints) != y_shape[-1]:
+            raise ValueError
 
         if y_init is None:
             y_init = np.random.random(y_shape)
         else:
-            assert y_init.shape == y_shape
+            if y_init.shape != y_shape:
+                raise ValueError
 
         apply_constraints_along_last_axis(y_constraints, y_init)
 
@@ -491,8 +509,9 @@ class Differentiator(ABC):
             objects depending on whether the input array is None
         """
         if derivative_boundary_constraints is not None:
-            assert derivative_boundary_constraints.shape == \
-                (len(y_shape) - 1, y_shape[-1])
+            if derivative_boundary_constraints.shape != \
+                    (len(y_shape) - 1, y_shape[-1]):
+                raise ValueError
             return derivative_boundary_constraints
         else:
             return np.empty((len(y_shape) - 1, y_shape[-1]), dtype=object)
@@ -513,9 +532,12 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             derivative_boundary_constraint_pair:
             Optional[BoundaryConstraintPair] = None
     ) -> np.ndarray:
-        assert y.shape[x_axis] > 2
-        assert 0 <= x_axis < y.ndim - 1
-        assert 0 <= y_ind < y.shape[-1]
+        if y.shape[x_axis] <= 2:
+            raise ValueError
+        if not (0 <= x_axis < y.ndim - 1):
+            raise ValueError
+        if not (0 <= y_ind < y.shape[-1]):
+            raise ValueError
 
         derivative_shape = y.shape[:-1] + (1,)
         derivative = np.empty(derivative_shape)
@@ -588,10 +610,14 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             first_derivative_boundary_constraint_pair:
             Optional[BoundaryConstraintPair] = None
     ) -> np.ndarray:
-        assert y.ndim > 1
-        assert 0 <= x_axis1 < y.ndim - 1
-        assert 0 <= x_axis2 < y.ndim - 1
-        assert 0 <= y_ind < y.shape[-1]
+        if y.ndim <= 1:
+            raise ValueError
+        if not (0 <= x_axis1 < y.ndim - 1):
+            raise ValueError
+        if not (0 <= x_axis2 < y.ndim - 1):
+            raise ValueError
+        if not (0 <= y_ind < y.shape[-1]):
+            raise ValueError
 
         if x_axis1 != x_axis2:
             first_derivative = self.derivative(
@@ -684,10 +710,14 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             x_axis: int,
             d_x: float
     ) -> np.ndarray:
-        assert y_hat.shape[x_axis] > 2
-        assert 0 <= x_axis < y_hat.ndim - 1
-        assert y_hat.shape == derivative.shape
-        assert y_hat.shape[-1] == 1
+        if y_hat.shape[x_axis] <= 2:
+            raise ValueError
+        if not (0 <= x_axis < y_hat.ndim - 1):
+            raise ValueError
+        if y_hat.shape != derivative.shape:
+            raise ValueError
+        if y_hat.shape[-1] != 1:
+            raise ValueError
 
         anti_derivative = np.empty(y_hat.shape)
 
@@ -728,10 +758,14 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             d_x: Tuple[float, ...],
             first_derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
-        assert y_hat.ndim > 1
-        assert np.all(np.array(y_hat.shape[:-1]) > 2)
-        assert len(d_x) == y_hat.ndim - 1
-        assert laplacian.shape == y_hat.shape
+        if y_hat.ndim <= 1:
+            raise ValueError
+        if not np.all(np.array(y_hat.shape[:-1]) > 2):
+            raise ValueError
+        if len(d_x) != y_hat.ndim - 1:
+            raise ValueError
+        if laplacian.shape != y_hat.shape:
+            raise ValueError
 
         anti_laplacian = np.zeros(y_hat.shape)
 

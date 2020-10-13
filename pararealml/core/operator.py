@@ -204,10 +204,16 @@ class FVMOperator(Operator):
 
         y = np.empty((len(time_points) - 1,) + cp.y_cells_shape)
         for i, t_i in enumerate(time_points[:-1]):
-            for fipy_var in fipy_vars:
-                fipy_var.updateOld()
+            if not cp.are_all_boundary_conditions_static:
+                constraints = cp.create_boundary_constraints(False, t_i)
+                for j, fipy_var in enumerate(fipy_vars):
+                    cp.set_fipy_variable_constraints(
+                        fipy_var, constraints[0][:, j])
+                    cp.set_fipy_variable_constraints(
+                        fipy_var.faceGrad, constraints[1][:, j])
 
             for j, fipy_var in enumerate(fipy_vars):
+                fipy_var.updateOld()
                 fipy_equations[j].solve(
                     var=fipy_var,
                     dt=self._d_t,
@@ -279,6 +285,7 @@ class FVMOperator(Operator):
         d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
         d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
         y_laplacian = diff_eq.symbols.y_laplacian
+        y_divergence = diff_eq.symbols.y_divergence
 
         for i in range(diff_eq.y_dimension):
             fipy_var = fipy_vars[i]
@@ -292,15 +299,12 @@ class FVMOperator(Operator):
                     symbol_map[d_y_over_d_x_x[i, j, k]] = \
                         fipy_var.grad[j].grad[k]
 
-        if 2 <= diff_eq.x_dimension <= 3:
-            y_divergence = diff_eq.symbols.y_divergence
-            for index in np.ndindex(
-                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                divergence = fipy_vars[index[0]].grad[0] + \
-                    fipy_vars[index[1]].grad[1]
-                if diff_eq.x_dimension == 3:
-                    divergence += fipy_vars[index[2]].grad[2]
-                symbol_map[y_divergence[index]] = divergence
+        for index in np.ndindex(
+                (diff_eq.y_dimension,) * diff_eq.x_dimension):
+            divergence = fipy_vars[index[0]].grad[0]
+            for i in range(1, diff_eq.x_dimension):
+                divergence += fipy_vars[index[i]].grad[i]
+            symbol_map[y_divergence[index]] = divergence
 
         return symbol_map
 
@@ -345,7 +349,7 @@ class FDMOperator(Operator):
             parallel_enabled: bool = True
     ) -> Solution:
         cp = ivp.constrained_problem
-        y_next = self._create_y_next_function(cp)
+        y_next = self._create_y_next_function(ivp)
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
@@ -361,14 +365,15 @@ class FDMOperator(Operator):
 
     def _create_y_next_function(
             self,
-            cp: ConstrainedProblem
+            ivp: InitialValueProblem
     ) -> Callable[[float, np.ndarray], np.ndarray]:
         """
         Creates a function that returns the value of y(t + d_t) given t and y.
 
-        :param cp: the constrained problem
+        :param ivp: the initial value problem
         :return: the function defining the value of y at the next time point
         """
+        cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
         eq_sys = diff_eq.symbolic_equation_system
         symbol_map = self._create_symbol_map(cp)
@@ -389,57 +394,60 @@ class FDMOperator(Operator):
         y_rhs_lambda = sp.lambdify(
             [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy')
 
-        y_laplacian_eq_inds = \
-            eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
-        y_laplacian_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
-        y_laplacian_arg_functions = \
-            [symbol_map[sym] for sym in y_laplacian_symbols]
-        y_laplacian_rhs_lambda = sp.lambdify(
-            [y_laplacian_symbols],
+        y_lapl_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
+        y_lapl_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
+        y_lapl_arg_functions = [symbol_map[sym] for sym in y_lapl_symbols]
+        y_lapl_rhs_lambda = sp.lambdify(
+            [y_lapl_symbols],
             eq_sys.rhs_by_type(LhsType.Y_LAPLACIAN),
             'numpy')
 
         d_x = cp.mesh.d_x if diff_eq.x_dimension else None
-        y_constraints = cp.y_vertex_constraints
-        y_y_constraints = None if y_constraints is None \
-            else y_constraints[y_eq_inds]
-        y_laplacian_y_constraints = None if y_constraints is None \
-            else y_constraints[y_laplacian_eq_inds]
-        d_y_constraints = cp.d_y_boundary_vertex_constraints
-        y_laplacian_d_y_constraints = None if d_y_constraints is None \
-            else d_y_constraints[:, y_laplacian_eq_inds]
+
+        boundary_constraints_cache = {}
+        y_constraints_cache = {}
+        y_c_func, d_y_c_func = self._create_constraint_functions(
+            cp, boundary_constraints_cache, y_constraints_cache)
+        last_t = np.array([ivp.t_interval[0]])
 
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
-            args = [function(t, y) for function in d_y_over_d_t_arg_functions]
-            d_y_over_d_t[..., d_y_over_d_t_eq_inds] = \
-                np.concatenate(d_y_over_d_t_rhs_lambda(args), axis=-1)
+            args = [f(t, y, d_y_c_func) for f in d_y_over_d_t_arg_functions]
+            d_y_over_d_t[..., d_y_over_d_t_eq_inds] = np.concatenate(
+                d_y_over_d_t_rhs_lambda(args), axis=-1)
             return d_y_over_d_t
 
         def y_next_function(t: float, y: np.ndarray) -> np.ndarray:
             y_next = self._integrator.integral(
-                y,
-                t,
-                self._d_t,
-                d_y_over_d_t_function,
-                y_constraints)
+                y, t, self._d_t, d_y_over_d_t_function, y_c_func)
 
             if len(y_eq_inds):
-                args = [function(t, y) for function in y_arg_functions]
+                args = [f(t, y, d_y_c_func) for f in y_arg_functions]
+                y_c = y_c_func(t)
+                y_c = None if y_c is None else y_c[y_eq_inds]
                 y_next[..., y_eq_inds] = apply_constraints_along_last_axis(
-                    y_y_constraints,
-                    np.concatenate(y_rhs_lambda(args), axis=-1))
+                    y_c, np.concatenate(y_rhs_lambda(args), axis=-1))
 
-            if len(y_laplacian_eq_inds):
-                args = \
-                    [function(t, y) for function in y_laplacian_arg_functions]
-                y_next[..., y_laplacian_eq_inds] = \
+            if len(y_lapl_eq_inds):
+                args = [f(t, y, d_y_c_func) for f in y_lapl_arg_functions]
+                y_c = y_c_func(t)
+                y_c = None if y_c is None else y_c[y_lapl_eq_inds]
+                d_y_c = d_y_c_func(t)
+                d_y_c = None if d_y_c is None else d_y_c[:, y_lapl_eq_inds]
+                y_next[..., y_lapl_eq_inds] = \
                     self._differentiator.anti_laplacian(
-                        np.concatenate(y_laplacian_rhs_lambda(args), axis=-1),
+                        np.concatenate(y_lapl_rhs_lambda(args), axis=-1),
                         d_x,
                         self._tol,
-                        y_laplacian_y_constraints,
-                        y_laplacian_d_y_constraints)
+                        y_c,
+                        d_y_c)
+
+            if not cp.are_all_boundary_conditions_static \
+                    and t > (last_t[0] + self.d_t) \
+                    and not np.isclose(t, last_t[0] + self.d_t):
+                last_t[0] = t
+                boundary_constraints_cache.clear()
+                y_constraints_cache.clear()
 
             return y_next
 
@@ -461,35 +469,37 @@ class FDMOperator(Operator):
         symbol_map = {}
 
         for i, y_element in enumerate(diff_eq.symbols.y):
-            symbol_map[y_element] = lambda t, y, _i=i: y[..., [_i]]
+            symbol_map[y_element] = \
+                lambda t, y, d_y_bc_func, _i=i: y[..., [_i]]
 
         if diff_eq.x_dimension:
-            d_y_boundary_constraints = cp.d_y_boundary_vertex_constraints
             d_x = cp.mesh.d_x
 
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             y_laplacian = diff_eq.symbols.y_laplacian
+            y_divergence = diff_eq.symbols.y_divergence
 
             for i in range(diff_eq.y_dimension):
-                symbol_map[y_laplacian[i]] = lambda t, y, _i=i: \
+                symbol_map[y_laplacian[i]] = lambda t, y, d_y_bc_func, _i=i: \
                     self._differentiator.laplacian(
                         y[..., [_i]],
                         d_x,
-                        d_y_boundary_constraints[:, [_i]])
+                        d_y_bc_func(t)[:, [_i]])
 
                 for j in range(diff_eq.x_dimension):
-                    symbol_map[d_y_over_d_x[i, j]] = lambda t, y, _i=i, _j=j: \
+                    symbol_map[d_y_over_d_x[i, j]] = \
+                        lambda t, y, d_y_bcs, _i=i, _j=j: \
                         self._differentiator.derivative(
                             y,
                             d_x[_j],
                             _j,
                             _i,
-                            d_y_boundary_constraints[_j, _i])
+                            d_y_bcs(t)[_j, _i])
 
                     for k in range(diff_eq.x_dimension):
                         symbol_map[d_y_over_d_x_x[i, j, k]] = \
-                            lambda t, y, _i=i, _j=j, _k=k: \
+                            lambda t, y, d_y_bc_func, _i=i, _j=j, _k=k: \
                             self._differentiator.second_derivative(
                                 y,
                                 d_x[_j],
@@ -497,20 +507,101 @@ class FDMOperator(Operator):
                                 _j,
                                 _k,
                                 _i,
-                                d_y_boundary_constraints[_j, _i])
+                                d_y_bc_func(t)[_j, _i])
 
-            if 2 <= diff_eq.x_dimension <= 3:
-                y_divergence = diff_eq.symbols.y_divergence
-                for index in np.ndindex(
-                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                    symbol_map[y_divergence[index]] = \
-                        lambda t, y, _index=tuple(index): \
-                        self._differentiator.divergence(
-                            y[..., _index],
-                            d_x,
-                            d_y_boundary_constraints[:, _index])
+            for index in np.ndindex(
+                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                symbol_map[y_divergence[index]] = \
+                    lambda t, y, d_y_bc_func, _index=tuple(index): \
+                    self._differentiator.divergence(
+                        y[..., _index],
+                        d_x,
+                        d_y_bc_func(t)[:, _index])
 
         return symbol_map
+
+    @staticmethod
+    def _create_constraint_functions(
+            cp: ConstrainedProblem,
+            boundary_constraints_cache: Dict[
+                Optional[float],
+                Tuple[Optional[np.ndarray], Optional[np.ndarray]]
+            ],
+            y_constraints_cache: Dict[
+                Optional[float],
+                Optional[np.ndarray]
+            ]
+    ) -> Tuple[Callable[[float], np.ndarray], Callable[[float], np.ndarray]]:
+        """
+        Creates two functions that return the constraints on y and the boundary
+        constraints on the spatial derivatives of y with respect to the normals
+        of the boundaries respectively.
+
+        :param cp: the constrained problems to create the constraint functions
+            for
+        :param boundary_constraints_cache: a cache for boundary constraints for
+            different t values
+        :param y_constraints_cache: a cache for y constraints for different t
+            values
+        :return: a tuple of two functions that return the two different
+            constraints given t
+        """
+        if cp.differential_equation.x_dimension:
+            if cp.are_all_boundary_conditions_static:
+                static_y_constraints = cp.static_y_vertex_constraints
+                static_d_y_constraints = \
+                    cp.static_d_y_boundary_vertex_constraints
+
+                def y_constraints_func(
+                        _: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    return static_y_constraints
+
+                def d_y_constraints_func(
+                        _: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    return static_d_y_constraints
+            else:
+                def y_constraints_func(
+                        t: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    if t in y_constraints_cache:
+                        return y_constraints_cache[t]
+
+                    if t in boundary_constraints_cache:
+                        boundary_constraints = boundary_constraints_cache[t]
+                    else:
+                        boundary_constraints = \
+                            cp.create_boundary_constraints(True, t)
+                        boundary_constraints_cache[t] = boundary_constraints
+
+                    y_constraints = \
+                        cp.create_y_vertex_constraints(boundary_constraints[0])
+                    y_constraints_cache[t] = y_constraints
+
+                    return y_constraints
+
+                def d_y_constraints_func(
+                        t: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    if t in boundary_constraints_cache:
+                        return boundary_constraints_cache[t][1]
+
+                    boundary_constraints = \
+                        cp.create_boundary_constraints(True, t)
+                    boundary_constraints_cache[t] = boundary_constraints
+
+                    return boundary_constraints[1]
+        else:
+            def y_constraints_func(_: Optional[float]) -> Optional[np.ndarray]:
+                return None
+
+            def d_y_constraints_func(
+                    _: Optional[float]
+            ) -> Optional[np.ndarray]:
+                return None
+
+        return y_constraints_func, d_y_constraints_func
 
 
 class MLOperator(Operator, ABC):
@@ -661,7 +752,8 @@ class StatelessMLOperator(MLOperator, ABC):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        assert self._model is not None
+        if self._model is None:
+            raise ValueError
 
         cp = ivp.constrained_problem
 
@@ -713,7 +805,8 @@ class StatefulMLOperator(MLOperator, ABC):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True
     ) -> Solution:
-        assert self._model is not None
+        if self._model is None:
+            raise ValueError
 
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
@@ -771,8 +864,8 @@ class PINNOperator(StatelessMLOperator):
         :return: a tuple of the loss history and the training state
         """
         diff_eq = ivp.constrained_problem.differential_equation
-
-        assert diff_eq.x_dimension <= 3
+        if diff_eq.x_dimension > 3:
+            raise ValueError
 
         symbol_set = set()
         symbolic_equation_system = diff_eq.symbolic_equation_system
@@ -918,6 +1011,7 @@ class PINNOperator(StatelessMLOperator):
             d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
             d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
             y_laplacian = diff_eq.symbols.y_laplacian
+            y_divergence = diff_eq.symbols.y_divergence
 
             for i in range(diff_eq.y_dimension):
                 symbol_map[y_laplacian[i]] = lambda x, y, _i=i: \
@@ -947,19 +1041,18 @@ class PINNOperator(StatelessMLOperator):
                                 x
                             )[0][:, _k:_k + 1]
 
-            if 2 <= diff_eq.x_dimension <= 3:
-                y_divergence = diff_eq.symbols.y_divergence
-                for index in np.ndindex(
-                        (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                    symbol_map[y_divergence[index]] = \
-                        (lambda x, y, _i=index[0], _j=index[1]:
-                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
-                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2]) \
-                        if diff_eq.x_dimension == 2 else \
-                        (lambda x, y, _i=index[0], _j=index[1], _k=index[2]:
-                         tf.gradients(y[:, _i:_i + 1], x)[0][:, 0:1] +
-                         tf.gradients(y[:, _j:_j + 1], x)[0][:, 1:2] +
-                         tf.gradients(y[:, _k:_k + 1], x)[0][:, 2:3])
+            for index in np.ndindex(
+                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
+                symbol_map[y_divergence[index]] = lambda x, y, _index=index: \
+                    tf.math.reduce_sum(
+                        tf.stack([
+                            tf.gradients(
+                                y[:, _index[_i]:_index[_i] + 1],
+                                x
+                            )[0][:, _i:_i + 1]
+                            for _i in range(diff_eq.x_dimension)
+                        ]),
+                        axis=0)
 
         return symbol_map
 
@@ -996,7 +1089,9 @@ class StatelessRegressionOperator(StatelessMLOperator):
         :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert subsampling_factor is None or 0. < subsampling_factor <= 1.
+        if subsampling_factor is not None \
+                and not (0. < subsampling_factor <= 1.):
+            raise ValueError
 
         time_points = self._discretise_time_domain(ivp.t_interval, oracle.d_t)
         x_batch = self._create_input_batch(
@@ -1072,14 +1167,19 @@ class StatefulRegressionOperator(StatefulMLOperator):
         :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
-        assert iterations > 0
+        if iterations <= 0:
+            raise ValueError
 
         if isinstance(noise_sd, (tuple, list)):
-            assert len(noise_sd) == 2
-            assert noise_sd[0] >= 0. and noise_sd[1] >= 0.
+            if len(noise_sd) != 2:
+                raise ValueError
+            if noise_sd[0] < 0. or noise_sd[1] < 0.:
+                raise ValueError
         else:
-            assert isinstance(noise_sd, float)
-            assert noise_sd >= 0.
+            if not isinstance(noise_sd, float):
+                raise ValueError
+            if noise_sd < 0.:
+                raise ValueError
 
             noise_sd = (noise_sd, noise_sd)
 

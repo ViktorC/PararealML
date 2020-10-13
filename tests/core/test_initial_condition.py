@@ -14,8 +14,8 @@ def test_1d_continuous_initial_condition():
     cp = ConstrainedProblem(
         diff_eq,
         UniformGrid(((0., 20.),), (.1,)),
-        ((DirichletBoundaryCondition(lambda x: (0.,)),
-          DirichletBoundaryCondition(lambda x: (1.5,))),))
+        ((DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
+          DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True)),))
     initial_condition = ContinuousInitialCondition(
         cp,
         lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
@@ -34,10 +34,10 @@ def test_2d_discrete_initial_condition():
     cp = ConstrainedProblem(
         diff_eq,
         UniformGrid(((0., 2.), (0., 2.)), (1., 1.)),
-        ((DirichletBoundaryCondition(lambda x: (0., 2.)),
-          DirichletBoundaryCondition(lambda x: (1., 2.))),
-         (DirichletBoundaryCondition(lambda x: (3., 2.)),
-          DirichletBoundaryCondition(lambda x: (4., 2.)))))
+        ((DirichletBoundaryCondition(lambda x, t: (0., 2.), is_static=True),
+          DirichletBoundaryCondition(lambda x, t: (1., 2.), is_static=True)),
+         (DirichletBoundaryCondition(lambda x, t: (3., 2.), is_static=True),
+          DirichletBoundaryCondition(lambda x, t: (4., 2.), is_static=True))))
     initial_condition = DiscreteInitialCondition(
         cp,
         np.zeros((3, 3, 2)),

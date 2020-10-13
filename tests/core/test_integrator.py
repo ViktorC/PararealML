@@ -15,7 +15,7 @@ def test_forward_euler_method():
     def d_y_over_d_t(t, y): return 5. * y + t ** 2
 
     expected_y_next = np.array([4.])
-    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t)
+    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -34,7 +34,8 @@ def test_forward_euler_method_with_constraints():
 
     expected_y_next = np.concatenate(
         (np.full((10, 1), 0.), np.full((10, 1), 4.)), axis=-1)
-    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t, y_constraints)
+    actual_y_next = euler.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: y_constraints)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -49,7 +50,8 @@ def test_explicit_midpoint_method():
     def d_y_over_d_t(t, y): return 2. * y - 4. * t
 
     expected_y_next = np.array([4.5])
-    actual_y_next = midpoint.integral(y_0, t_0, d_t, d_y_over_d_t)
+    actual_y_next = midpoint.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -79,7 +81,7 @@ def test_explicit_midpoint_method_with_constraints():
         t_0,
         d_t,
         d_y_over_d_t,
-        [y_constraint])
+        lambda _: [y_constraint])
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -94,7 +96,7 @@ def test_rk4():
     def d_y_over_d_t(_, y): return 2. * y + 1.
 
     expected_y_next = np.array([3.])
-    actual_y_next = rk4.integral(y_0, t_0, d_t, d_y_over_d_t)
+    actual_y_next = rk4.integral(y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -118,7 +120,8 @@ def test_rk4_with_constraints():
     expected_y_next = np.full(y_shape, 3.)
     y_constraint.apply(expected_y_next[..., 0])
 
-    actual_y_next = rk4.integral(y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
+    actual_y_next = rk4.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -133,7 +136,7 @@ def test_backward_euler_method():
     def d_y_over_d_t(t, y): return 5. * y + t ** 2
 
     expected_y_next = (y_0 + d_t * (t_0 + d_t) ** 2) / (1. - 5 * d_t)
-    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t)
+    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -155,7 +158,8 @@ def test_backward_euler_method_with_constraints():
 
     expected_y_next = (y_0 + d_t * (t_0 + d_t) ** 2) / (1. - 5 * d_t)
     y_constraint.apply(expected_y_next[..., 0])
-    actual_y_next = euler.integral(y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
+    actual_y_next = euler.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -170,7 +174,8 @@ def test_crank_nicolson_method():
     def d_y_over_d_t(t, y): return 5. * y
 
     expected_y_next = (y_0 + .5 * 5. * d_t * y_0) / (1. - .5 * 5. * d_t)
-    actual_y_next = crank_nicolson.integral(y_0, t_0, d_t, d_y_over_d_t)
+    actual_y_next = crank_nicolson.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -193,7 +198,7 @@ def test_crank_nicolson_method_with_constraints():
     expected_y_next = (y_0 + .5 * 5. * d_t * y_0) / (1. - .5 * 5. * d_t)
     y_constraint.apply(expected_y_next[..., 0])
     actual_y_next = crank_nicolson.integral(
-        y_0, t_0, d_t, d_y_over_d_t, [y_constraint])
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
 
     assert np.isclose(actual_y_next, expected_y_next).all()
 
@@ -208,8 +213,10 @@ def test_crank_nicolson_method_with_a_eq_0_matches_forward_euler():
 
     def d_y_over_d_t(t, y): return t * y ** 2
 
-    cn_integral = crank_nicolson.integral(y_0, t_0, d_t, d_y_over_d_t)
-    fe_integral = forward_euler.integral(y_0, t_0, d_t, d_y_over_d_t)
+    cn_integral = crank_nicolson.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
+    fe_integral = forward_euler.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(cn_integral, fe_integral).all()
 
@@ -224,7 +231,9 @@ def test_crank_nicolson_method_with_a_eq_1_matches_backward_euler():
 
     def d_y_over_d_t(t, y): return .5 * y + 3 * t
 
-    cn_integral = crank_nicolson.integral(y_0, t_0, d_t, d_y_over_d_t)
-    be_integral = backward_euler.integral(y_0, t_0, d_t, d_y_over_d_t)
+    cn_integral = crank_nicolson.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
+    be_integral = backward_euler.integral(
+        y_0, t_0, d_t, d_y_over_d_t, lambda _: None)
 
     assert np.isclose(cn_integral, be_integral).all()
