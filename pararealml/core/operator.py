@@ -210,7 +210,7 @@ class FVMOperator(Operator):
                     cp.set_fipy_variable_constraints(
                         fipy_var, constraints[0][:, j])
                     cp.set_fipy_variable_constraints(
-                        fipy_var.grad, constraints[1][:, j])
+                        fipy_var.faceGrad, constraints[1][:, j])
 
             for j, fipy_var in enumerate(fipy_vars):
                 fipy_var.updateOld()
