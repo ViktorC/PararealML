@@ -349,7 +349,7 @@ class FDMOperator(Operator):
             parallel_enabled: bool = True
     ) -> Solution:
         cp = ivp.constrained_problem
-        y_next = self._create_y_next_function(cp)
+        y_next = self._create_y_next_function(ivp)
 
         time_points = self._discretise_time_domain(
             ivp.t_interval, self._d_t)
@@ -365,14 +365,15 @@ class FDMOperator(Operator):
 
     def _create_y_next_function(
             self,
-            cp: ConstrainedProblem
+            ivp: InitialValueProblem
     ) -> Callable[[float, np.ndarray], np.ndarray]:
         """
         Creates a function that returns the value of y(t + d_t) given t and y.
 
-        :param cp: the constrained problem
+        :param ivp: the initial value problem
         :return: the function defining the value of y at the next time point
         """
+        cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
         eq_sys = diff_eq.symbolic_equation_system
         symbol_map = self._create_symbol_map(cp)
@@ -402,7 +403,12 @@ class FDMOperator(Operator):
             'numpy')
 
         d_x = cp.mesh.d_x if diff_eq.x_dimension else None
-        y_c_func, d_y_c_func = self._create_constraint_functions(cp)
+
+        boundary_constraints_cache = {}
+        y_constraints_cache = {}
+        y_c_func, d_y_c_func = self._create_constraint_functions(
+            cp, boundary_constraints_cache, y_constraints_cache)
+        last_t = np.array([ivp.t_interval[0]])
 
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
@@ -435,6 +441,13 @@ class FDMOperator(Operator):
                         self._tol,
                         y_c,
                         d_y_c)
+
+            if not cp.are_all_boundary_conditions_static \
+                    and t > (last_t[0] + self.d_t) \
+                    and not np.isclose(t, last_t[0] + self.d_t):
+                last_t[0] = t
+                boundary_constraints_cache.clear()
+                y_constraints_cache.clear()
 
             return y_next
 
@@ -509,7 +522,15 @@ class FDMOperator(Operator):
 
     @staticmethod
     def _create_constraint_functions(
-            cp: ConstrainedProblem
+            cp: ConstrainedProblem,
+            boundary_constraints_cache: Dict[
+                Optional[float],
+                Tuple[Optional[np.ndarray], Optional[np.ndarray]]
+            ],
+            y_constraints_cache: Dict[
+                Optional[float],
+                Optional[np.ndarray]
+            ]
     ) -> Tuple[Callable[[float], np.ndarray], Callable[[float], np.ndarray]]:
         """
         Creates two functions that return the constraints on y and the boundary
@@ -517,39 +538,60 @@ class FDMOperator(Operator):
         of the boundaries respectively.
 
         :param cp: the constrained problems to create the constraint functions
-        for
+            for
+        :param boundary_constraints_cache: a cache for boundary constraints for
+            different t values
+        :param y_constraints_cache: a cache for y constraints for different t
+            values
         :return: a tuple of two functions that return the two different
-        constraints given t
+            constraints given t
         """
         if cp.differential_equation.x_dimension:
-            boundary_constraints_cache = {
-                None: (cp.static_y_boundary_vertex_constraints,
-                       cp.static_d_y_boundary_vertex_constraints)
-            }
-            y_constraints_cache = {None: cp.static_y_vertex_constraints}
+            if cp.are_all_boundary_conditions_static:
+                static_y_constraints = cp.static_y_vertex_constraints
+                static_d_y_constraints = \
+                    cp.static_d_y_boundary_vertex_constraints
 
-            def y_constraints_func(t: Optional[float]) -> Optional[np.ndarray]:
-                if t in y_constraints_cache:
-                    return y_constraints_cache[t]
+                def y_constraints_func(
+                        _: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    return static_y_constraints
 
-                boundary_constraints = cp.create_boundary_constraints(True, t)
-                boundary_constraints_cache[t] = boundary_constraints
-                y_constraints = \
-                    cp.create_y_vertex_constraints(boundary_constraints[0])
-                y_constraints_cache[t] = y_constraints
+                def d_y_constraints_func(
+                        _: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    return static_d_y_constraints
+            else:
+                def y_constraints_func(
+                        t: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    if t in y_constraints_cache:
+                        return y_constraints_cache[t]
 
-                return y_constraints
+                    if t in boundary_constraints_cache:
+                        boundary_constraints = boundary_constraints_cache[t]
+                    else:
+                        boundary_constraints = \
+                            cp.create_boundary_constraints(True, t)
+                        boundary_constraints_cache[t] = boundary_constraints
 
-            def d_y_constraints_func(
-                    t: Optional[float]
-            ) -> Optional[np.ndarray]:
-                if t in boundary_constraints_cache:
-                    return boundary_constraints_cache[t][1]
+                    y_constraints = \
+                        cp.create_y_vertex_constraints(boundary_constraints[0])
+                    y_constraints_cache[t] = y_constraints
 
-                boundary_constraints = cp.create_boundary_constraints(True, t)
-                boundary_constraints_cache[t] = boundary_constraints
+                    return y_constraints
 
-                return boundary_constraints[1]
+                def d_y_constraints_func(
+                        t: Optional[float]
+                ) -> Optional[np.ndarray]:
+                    if t in boundary_constraints_cache:
+                        return boundary_constraints_cache[t][1]
+
+                    boundary_constraints = \
+                        cp.create_boundary_constraints(True, t)
+                    boundary_constraints_cache[t] = boundary_constraints
+
+                    return boundary_constraints[1]
         else:
             def y_constraints_func(_: Optional[float]) -> Optional[np.ndarray]:
                 return None
