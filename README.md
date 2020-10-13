@@ -15,11 +15,11 @@ The library provides out-of-the-box implementations for a number of differential
  * `PopulationGrowthEquation`
  * `LotkaVolterraEquation`
  * `LorenzEquation`
- * `NBodyGravitationalEquation` - 2 or 3D
- * `DiffusionEquation` - n-D
- * `WaveEquation` - n-D
- * `CahnHilliardEquation` - n-D
- * `NavierStokesEquation` - 2 or 3D
+ * `NBodyGravitationalEquation`
+ * `DiffusionEquation`
+ * `WaveEquation`
+ * `CahnHilliardEquation`
+ * `NavierStokes2DEquation`
 
 To solve other differential equations, the `DifferentialEquation` class can be easily extended. The only method that needs to be implemented to do so is `symbolic_equation_system` which defines the system of differential equations using symbolic expressions.
 
@@ -51,9 +51,9 @@ In PararealML, all initial conditions extend the `InitialCondition` base class.
 
 The library provides a number initial condition implementations including:
 
- * `DiscreteInitialCondition` - discrete initial conditions defined by a NumPy array and whether they are vertex or cell-center oriented
- * `ContinuousInitialCondition` - continuous initial conditions defined by a function
-    * `GaussianInitialCondition` - a hump defined by a multivariate Gaussian distribution
+ * `DiscreteInitialCondition`
+ * `ContinuousInitialCondition`
+    * `GaussianInitialCondition`
  
 To implement other types of boundary conditions, the `InitialCondition` class may be extended.
 
