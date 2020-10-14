@@ -11,9 +11,8 @@ bcs = (
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
-    ((np.array([5.]), np.array([[2.5]])),),
-    (20.,))
-ivp = InitialValueProblem(cp, (0., 10.), ic)
+    ((np.array([2.5]), np.array([[1.]])),),)
+ivp = InitialValueProblem(cp, (0., 200.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
-solver.solve(ivp).plot('1d_burgers')
+solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
+solver.solve(ivp).plot('1d_burgers', n_images=40)
