@@ -540,7 +540,7 @@ class BurgerEquation(DifferentialEquation):
         """
         if x_dimension <= 0:
             raise ValueError
-        
+
         self._re = re
 
         super(BurgerEquation, self).__init__(x_dimension, x_dimension)
