@@ -552,8 +552,7 @@ class BurgerEquation(DifferentialEquation):
                 (1. / self._re) * self._symbols.y_laplacian[i] -
                 np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
                 for i in range(self._x_dimension)
-            ],
-            [LhsType.D_Y_OVER_D_T] * self._x_dimension
+            ]
         )
 
 
