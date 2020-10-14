@@ -19,6 +19,7 @@ The library provides out-of-the-box implementations for a number of differential
  * `DiffusionEquation`
  * `WaveEquation`
  * `CahnHilliardEquation`
+ * `BurgerEquation`
  * `NavierStokes2DEquation`
 
 To solve other differential equations, the `DifferentialEquation` class can be easily extended. The only method that needs to be implemented to do so is `symbolic_equation_system` which defines the system of differential equations using symbolic expressions.
