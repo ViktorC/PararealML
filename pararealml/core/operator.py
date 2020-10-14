@@ -355,7 +355,16 @@ class FDMOperator(Operator):
             ivp.t_interval, self._d_t)
 
         y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
+
         y_i = ivp.initial_condition.discrete_y_0(True)
+        if not cp.are_all_boundary_conditions_static:
+            init_boundary_constraints = cp.create_boundary_constraints(
+                True, time_points[0])
+            init_y_constraints = cp.create_y_vertex_constraints(
+                init_boundary_constraints[0])
+            apply_constraints_along_last_axis(
+                init_y_constraints,
+                y_i)
 
         for i, t_i in enumerate(time_points[:-1]):
             y[i] = y_i = y_next(t_i, y_i)

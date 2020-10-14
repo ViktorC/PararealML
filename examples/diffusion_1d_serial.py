@@ -13,8 +13,7 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
     ((np.array([5.]), np.array([[2.5]])),),
-    (20.,),
-    t_0=0.)
+    (20.,))
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 solver = FVMOperator(LinearLUSolver(), .01)

@@ -20,7 +20,7 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     cp,
     .05 * np.random.uniform(-1., 1., cp.y_shape(False)),
-    vertex_oriented=False)
+    False)
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

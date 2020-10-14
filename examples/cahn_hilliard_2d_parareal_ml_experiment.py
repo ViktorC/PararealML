@@ -28,7 +28,7 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     cp,
     .125 * np.random.uniform(-1., 1., cp.y_shape(False)),
-    vertex_oriented=False)
+    False)
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 f = FVMOperator(LinearLUSolver(), .005)
