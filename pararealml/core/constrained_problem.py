@@ -94,7 +94,7 @@ class ConstrainedProblem:
             self._boundary_conditions = None
             self._y_vertices_shape = self._y_cells_shape = diff_eq.y_dimension,
 
-            self._are_all_bcs_static = False
+            self._are_all_bcs_static = True
 
             self._y_boundary_vertex_constraints = None
             self._y_boundary_cell_constraints = None
