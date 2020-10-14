@@ -63,20 +63,20 @@ class Symbols:
         return np.copy(self._d_y_over_d_x_x)
 
     @property
-    def y_divergence(self) -> Optional[np.ndarray]:
-        """
-        A multidimensional array of symbols denoting the spatial divergence of
-        the corresponding elements of the differential equation's solution.
-        """
-        return np.copy(self._y_divergence)
-
-    @property
     def y_laplacian(self) -> Optional[np.ndarray]:
         """
         An array of symbols denoting the spatial Laplacians of the elements of
         the differential equation's solution.
         """
         return np.copy(self._y_laplacian)
+
+    @property
+    def y_divergence(self) -> Optional[np.ndarray]:
+        """
+        A multidimensional array of symbols denoting the spatial divergence of
+        the corresponding elements of the differential equation's solution.
+        """
+        return np.copy(self._y_divergence)
 
 
 class LhsType(Enum):
@@ -449,11 +449,11 @@ class DiffusionEquation(DifferentialEquation):
 
     def __init__(self, x_dimension: int, d: float = 1.):
         """
-        :param x_dimension: the dimension of the non-temporal domain of the
+        :param x_dimension: the dimensionality of the spatial domain of the
             differential equation's solution
         :param d: the diffusion coefficient
         """
-        if x_dimension == 0:
+        if x_dimension <= 0:
             raise ValueError
 
         self._d = d
@@ -472,11 +472,11 @@ class WaveEquation(DifferentialEquation):
 
     def __init__(self, x_dimension: int, c: float = 1.):
         """
-        :param x_dimension: the dimension of the non-temporal domain of the
+        :param x_dimension: the dimensionality of the spatial domain of the
             differential equation's solution
         :param c: the propagation speed coefficient
         """
-        if x_dimension == 0:
+        if x_dimension <= 0:
             raise ValueError
 
         self._c = c
@@ -498,12 +498,12 @@ class CahnHilliardEquation(DifferentialEquation):
 
     def __init__(self, x_dimension: int, d: float = .1, gamma: float = .01):
         """
-        :param x_dimension: the dimension of the non-temporal domain of the
+        :param x_dimension: the dimensionality of the spatial domain of the
             differential equation's solution
         :param d: the potential diffusion coefficient
         :param gamma: the concentration diffusion coefficient
         """
-        if x_dimension == 0:
+        if x_dimension <= 0:
             raise ValueError
 
         self._d = d
@@ -523,6 +523,37 @@ class CahnHilliardEquation(DifferentialEquation):
                 LhsType.Y,
                 LhsType.D_Y_OVER_D_T
             ]
+        )
+
+
+class BurgerEquation(DifferentialEquation):
+    """
+    A system of two differential equations providing a simplified model of
+    fluid flow.
+    """
+
+    def __init__(self, x_dimension: int, re: float = 4000.):
+        """
+        :param x_dimension: the dimensionality of the spatial domain of the
+            differential equation's solution
+        :param re: the Reynolds number
+        """
+        if x_dimension <= 0:
+            raise ValueError
+        
+        self._re = re
+
+        super(BurgerEquation, self).__init__(x_dimension, x_dimension)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem(
+            [
+                (1. / self._re) * self._symbols.y_laplacian[i] -
+                np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
+                for i in range(self._x_dimension)
+            ],
+            [LhsType.D_Y_OVER_D_T] * self._x_dimension
         )
 
 
