@@ -17,6 +17,7 @@ The library provides out-of-the-box implementations for a number of differential
  * `LorenzEquation`
  * `NBodyGravitationalEquation`
  * `DiffusionEquation`
+ * `ConvectionDiffusionEquation`
  * `WaveEquation`
  * `CahnHilliardEquation`
  * `BurgerEquation`
