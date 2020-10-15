@@ -465,6 +465,41 @@ class DiffusionEquation(DifferentialEquation):
         return SymbolicEquationSystem([self._d * self._symbols.y_laplacian[0]])
 
 
+class ConvectionDiffusionEquation(DifferentialEquation):
+    """
+    A partial differential equation modelling the convection and diffusion of
+    particles.
+    """
+
+    def __init__(
+            self,
+            x_dimension: int,
+            velocity: Sequence[float],
+            d: float = 1.):
+        """
+        :param x_dimension: the dimensionality of the spatial domain of the
+            differential equation's solution
+        :param velocity: the convection velocity vector
+        :param d: the diffusion coefficient
+        """
+        if x_dimension <= 0:
+            raise ValueError
+        if len(velocity) != x_dimension:
+            raise ValueError
+
+        self._velocity = copy(velocity)
+        self._d = d
+
+        super(ConvectionDiffusionEquation, self).__init__(x_dimension, 1)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([
+            self._d * self._symbols.y_laplacian[0] -
+            np.dot(self._velocity, self._symbols.d_y_over_d_x[0, :])
+        ])
+
+
 class WaveEquation(DifferentialEquation):
     """
     A partial differential equation modelling the propagation of waves.
@@ -547,13 +582,11 @@ class BurgerEquation(DifferentialEquation):
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
-        return SymbolicEquationSystem(
-            [
-                (1. / self._re) * self._symbols.y_laplacian[i] -
-                np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
-                for i in range(self._x_dimension)
-            ]
-        )
+        return SymbolicEquationSystem([
+            (1. / self._re) * self._symbols.y_laplacian[i] -
+            np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
+            for i in range(self._x_dimension)
+        ])
 
 
 class NavierStokes2DEquation(DifferentialEquation):

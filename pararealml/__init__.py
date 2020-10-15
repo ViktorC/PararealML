@@ -14,6 +14,7 @@ from pararealml.core.differential_equation import Symbols
 from pararealml.core.differential_equation import LhsType
 from pararealml.core.differential_equation import SymbolicEquationSystem
 from pararealml.core.differential_equation import DifferentialEquation
+from pararealml.core.differential_equation import ConvectionDiffusionEquation
 from pararealml.core.differential_equation import PopulationGrowthEquation
 from pararealml.core.differential_equation import LotkaVolterraEquation
 from pararealml.core.differential_equation import LorenzEquation
@@ -77,6 +78,7 @@ __all__ = [
     'LorenzEquation',
     'NBodyGravitationalEquation',
     'DiffusionEquation',
+    'ConvectionDiffusionEquation',
     'WaveEquation',
     'CahnHilliardEquation',
     'BurgerEquation',
