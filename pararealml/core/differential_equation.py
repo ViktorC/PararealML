@@ -563,8 +563,8 @@ class CahnHilliardEquation(DifferentialEquation):
 
 class BurgerEquation(DifferentialEquation):
     """
-    A system of two differential equations providing a simplified model of
-    fluid flow.
+    A system of partial differential equations providing a simplified model
+    of fluid flow.
     """
 
     def __init__(self, x_dimension: int, re: float = 4000.):
