@@ -570,8 +570,8 @@ class ShallowWaterEquation(DifferentialEquation):
     def __init__(
             self,
             h: float,
-            b: float,
-            v: float,
+            b: float = .01,
+            v: float = .1,
             f: float = 0.,
             g: float = 9.80665):
         """
