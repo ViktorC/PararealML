@@ -49,7 +49,6 @@ from pararealml.core.mesh import UniformGrid
 
 from pararealml.core.operator import Operator
 from pararealml.core.operator import ODEOperator
-from pararealml.core.operator import FVMOperator
 from pararealml.core.operator import FDMOperator
 from pararealml.core.operator import MLOperator
 from pararealml.core.operator import StatelessMLOperator
@@ -102,7 +101,6 @@ __all__ = [
     'UniformGrid',
     'Operator',
     'ODEOperator',
-    'FVMOperator',
     'FDMOperator',
     'MLOperator',
     'StatelessMLOperator',

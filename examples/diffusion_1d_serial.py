@@ -1,5 +1,4 @@
 import numpy as np
-from fipy import LinearLUSolver
 
 from pararealml import *
 
@@ -16,5 +15,5 @@ ic = GaussianInitialCondition(
     (20.,))
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-solver = FVMOperator(LinearLUSolver(), .01)
+solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
 solver.solve(ivp).plot('1d_diffusion')

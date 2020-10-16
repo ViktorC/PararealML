@@ -6,11 +6,6 @@ import numpy as np
 from deepxde.geometry import Interval, Rectangle, Cuboid
 from deepxde.geometry.geometry import Geometry
 
-from fipy.meshes.abstractMesh import AbstractMesh as FiPyAbstractMesh
-from fipy.meshes.uniformGrid1D import UniformGrid1D as FiPyUniformGrid1D
-from fipy.meshes.uniformGrid2D import UniformGrid2D as FiPyUniformGrid2D
-from fipy.meshes.uniformGrid3D import UniformGrid3D as FiPyUniformGrid3D
-
 SpatialDomainInterval = Tuple[float, float]
 
 
@@ -63,13 +58,6 @@ class Mesh(ABC):
         """
         Returns a tuple of the coordinates of the cell centers of the mesh
         along each axis.
-        """
-
-    @property
-    @abstractmethod
-    def fipy_mesh(self) -> FiPyAbstractMesh:
-        """
-        Returns the FiPy equivalent of the mesh instance.
         """
 
     @property
@@ -152,7 +140,6 @@ class UniformGrid(Mesh):
         self._x_cell_center_offset = np.array(
             [coordinates[0] for coordinates in self._cell_center_coordinates])
 
-        self._fipy_mesh = self._create_fipy_mesh()
         self._deepxde_geometry = self._create_deepxde_geometry()
 
     @property
@@ -178,10 +165,6 @@ class UniformGrid(Mesh):
     @property
     def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
         return deepcopy(self._cell_center_coordinates)
-
-    @property
-    def fipy_mesh(self) -> FiPyAbstractMesh:
-        return self._fipy_mesh
 
     @property
     def deepxde_geometry(self) -> Geometry:
@@ -246,37 +229,6 @@ class UniformGrid(Mesh):
                 np.linspace(x_low, x_high, mesh_shape[i]))
 
         return tuple(coordinates)
-
-    def _create_fipy_mesh(self) -> FiPyAbstractMesh:
-        """
-        Creates and returns the FiPy equivalent of the mesh.
-        """
-        x_dimension = len(self._x_intervals)
-        if x_dimension == 1:
-            mesh = FiPyUniformGrid1D(
-                dx=self._d_x[0],
-                nx=self._cells_shape[0])
-            mesh += np.flip(self._x_vertex_offset).reshape(1, 1)
-        elif x_dimension == 2:
-            mesh = FiPyUniformGrid2D(
-                dx=self._d_x[1],
-                dy=self._d_x[0],
-                nx=self._cells_shape[1],
-                ny=self._cells_shape[0])
-            mesh += np.flip(self._x_vertex_offset).reshape(2, 1)
-        elif x_dimension == 3:
-            mesh = FiPyUniformGrid3D(
-                dx=self._d_x[2],
-                dy=self._d_x[1],
-                dz=self._d_x[0],
-                nx=self._cells_shape[2],
-                ny=self._cells_shape[1],
-                nz=self._cells_shape[0])
-            mesh += np.flip(self._x_vertex_offset).reshape(3, 1)
-        else:
-            raise NotImplementedError
-
-        return mesh
 
     def _create_deepxde_geometry(self) -> Geometry:
         """

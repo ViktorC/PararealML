@@ -30,7 +30,7 @@ To solve other differential equations, the `DifferentialEquation` class can be e
 
 All meshes extend the `Mesh` base class. Meshes define the spatial domains of initial boundary value problems and also the discretisations of these domains.
 
-The library currently only supports uniform grids through the `UniformGrid` class (of any dimensions for the `FDMOperator` and for up to 3 dimensions for the `FVMOperator` and the `PINNOperator`) but the `Mesh` class can be easily extended to support more complex meshes.
+The library currently only supports uniform grids through the `UniformGrid` class (of any dimensions for the `FDMOperator` and for up to 3 dimensions for the `PINNOperator`) but the `Mesh` class can be easily extended to support more complex meshes.
 
 ### Boundary conditions
 
@@ -71,7 +71,6 @@ All operators extend the `Operator` base class. Operators are standalone differe
 The list of supported operators is:
 
  * `ODEOperator` - an ODE solver based on the [solve_ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html#scipy.integrate.solve_ivp) function of SciPy's `integrate` module
- * `FVMOperator` - a finite volume method PDE solver based on [FiPy](https://www.ctcms.nist.gov/fipy/)
  * `FDMOperator` - a fast finite difference method operator that can solve both ODEs and PDEs
  * `MLOperator`
     * `StatelessMLOperator`
@@ -125,12 +124,12 @@ Finally, the second way of visualising the solution of 2D partial differential e
 The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators.
 
 ## Setup
+To use the Parareal operator, an implementation of the MPI standard must be installed (e.g. [MPICH](https://www.mpich.org/)). To save animated plots, [`imagemagick`](https://imagemagick.org/index.php) must be installed. These programs can be easily installed using [Anaconda](https://www.anaconda.com/). If they are already installed and available on the system, you can skip to step 6 of the setup guide.
  1. make sure you have a working Anaconda installation (see the [guide](https://docs.anaconda.com/anaconda/install/))
  1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.7`
  1. `conda activate {environment_name}`
- 1. `conda install -c conda-forge mpi` - not necessary if there is already an implementation of the MPI standard installed (e.g. [MPICH](https://www.mpich.org/))
- 1. `conda install -c conda-forge imagemagick` - only used for saving animated plots; not necessary if `imagemagick` is already installed
- 1. `conda install -c conda-forge fipy==3.3`
+ 1. `conda install -c conda-forge mpi`
+ 1. `conda install -c conda-forge imagemagick`
  1. `make install`
 
 ## Testing

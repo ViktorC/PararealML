@@ -91,19 +91,26 @@ def test_3d_cp():
         ((2., 6.), (-3., 3.), (10., 12.)),
         (.1, .2, .5))
 
-    fipy_mesh: UniformGrid3D = mesh.fipy_mesh
+    assert mesh.shape(True) == (41, 31, 5)
+    assert mesh.shape(False) == (40, 30, 4)
 
-    assert fipy_mesh.shape[::-1] == mesh.shape(False) == (40, 30, 4)
-
-    diff_eq = DiffusionEquation(3)
+    diff_eq = WaveEquation(3)
     cp = ConstrainedProblem(
         diff_eq,
         mesh,
         ((DirichletBoundaryCondition(lambda x, t: (999.,), is_static=True),
           NeumannBoundaryCondition(lambda x, t: (None,), is_static=True)),
          (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
-          NeumannBoundaryCondition(lambda x, t: (t,), is_static=True)),
+          NeumannBoundaryCondition(lambda x, t: (t,))),
          (NeumannBoundaryCondition(lambda x, t: (-x[0],), is_static=True),
           DirichletBoundaryCondition(lambda x, t: (-999.,), is_static=True))))
 
-    assert len(cp.fipy_vars) == 1
+    assert cp.y_shape(True) == (41, 31, 5, 2)
+    assert cp.y_shape(False) == (40, 30, 4, 2)
+
+    assert not cp.are_all_boundary_conditions_static
+    assert cp.static_y_vertex_constraints is None
+    assert cp.static_y_boundary_vertex_constraints is None
+    assert cp.static_d_y_boundary_vertex_constraints is None
+    assert cp.static_y_boundary_cell_constraints is None
+    assert cp.static_d_y_boundary_cell_constraints is None

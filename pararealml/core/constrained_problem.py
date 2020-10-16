@@ -2,7 +2,6 @@ from copy import deepcopy, copy
 from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
-from fipy import CellVariable
 
 from pararealml.core.boundary_condition import BoundaryCondition
 from pararealml.core.constraint import Constraint
@@ -40,8 +39,6 @@ class ConstrainedProblem:
         self._mesh: Optional[Mesh]
         self._boundary_conditions: \
             Optional[Tuple[BoundaryConditionPair, ...]]
-
-        self._fipy_vars: Optional[Tuple[CellVariable]]
 
         if diff_eq.x_dimension:
             if mesh is None:
@@ -87,8 +84,6 @@ class ConstrainedProblem:
                 self._d_y_boundary_cell_constraints = None
 
                 self._y_vertex_constraints = None
-
-            self._fipy_vars = self._create_fipy_variables()
         else:
             self._mesh = None
             self._boundary_conditions = None
@@ -102,8 +97,6 @@ class ConstrainedProblem:
             self._d_y_boundary_cell_constraints = None
 
             self._y_vertex_constraints = None
-
-            self._fipy_vars = None
 
     @property
     def differential_equation(self) -> DifferentialEquation:
@@ -203,15 +196,6 @@ class ConstrainedProblem:
         discretised solution to the constrained problem.
         """
         return copy(self._y_cells_shape)
-
-    @property
-    def fipy_vars(self) -> Optional[Tuple[CellVariable]]:
-        """
-        Returns a tuple of FiPy variables representing the solution of the
-        constrained problem. If the differential equation is an ODE, it returns
-        None.
-        """
-        return copy(self._fipy_vars)
 
     def y_shape(self, vertex_oriented: Optional[bool] = None):
         """
@@ -321,35 +305,6 @@ class ConstrainedProblem:
 
         return y_boundary_constraints, d_y_boundary_constraints
 
-    def set_fipy_variable_constraints(
-            self,
-            var: CellVariable,
-            boundary_constraints: np.ndarray):
-        """
-        Sets all constraints on the values of the variable at the boundaries.
-
-        :param var: the FiPy variable
-        :param boundary_constraints: the boundary constraint pairs
-        """
-        fipy_mesh = self._mesh.fipy_mesh
-        face_masks = [(fipy_mesh.facesLeft.value, fipy_mesh.facesRight.value)]
-        if self._diff_eq.x_dimension > 1:
-            face_masks.append(
-                (fipy_mesh.facesBottom.value, fipy_mesh.facesTop.value))
-        if self._diff_eq.x_dimension > 2:
-            face_masks.append(
-                (fipy_mesh.facesFront.value, fipy_mesh.facesBack.value))
-
-        for axis in range(self._diff_eq.x_dimension):
-            boundary_constraint_pair = boundary_constraints[axis]
-            if boundary_constraint_pair is not None:
-                face_mask_pair = face_masks[
-                    self._diff_eq.x_dimension - axis - 1]
-                self._apply_fipy_variable_constraint(
-                    var, boundary_constraint_pair[0], face_mask_pair[0])
-                self._apply_fipy_variable_constraint(
-                    var, boundary_constraint_pair[1], face_mask_pair[1])
-
     def _create_boundary_constraint_pairs_for_all_y(
             self,
             boundary_condition_pair: BoundaryConditionPair,
@@ -453,49 +408,3 @@ class ConstrainedProblem:
             boundary_constraints.append(Constraint(value, mask))
 
         return boundary_constraints
-
-    def _create_fipy_variables(self) -> Tuple[CellVariable]:
-        """
-        Creates a tuple containing a FiPy cell variable for each element of
-        y. It also applies all boundary conditions.
-        """
-        if not (1 <= self._diff_eq.x_dimension <= 3):
-            raise ValueError
-
-        y_vars = []
-        for i in range(self._diff_eq.y_dimension):
-            y_var_i = CellVariable(
-                name=f'y_{i}',
-                mesh=self._mesh.fipy_mesh,
-                hasOld=True)
-
-            if self._are_all_bcs_static:
-                self.set_fipy_variable_constraints(
-                    y_var_i,
-                    self._y_boundary_cell_constraints[:, i])
-                self.set_fipy_variable_constraints(
-                    y_var_i.faceGrad,
-                    self._d_y_boundary_cell_constraints[:, i])
-
-            y_vars.append(y_var_i)
-
-        return tuple(y_vars)
-
-    @staticmethod
-    def _apply_fipy_variable_constraint(
-            var: CellVariable,
-            boundary_constraint: Optional[Constraint],
-            face_mask: np.ndarray):
-        """
-        Applies the boundary constraint to the faces specified by the face mask
-        parameter.
-
-        :param var: the variable whose values are to be constrained
-        :param boundary_constraint: the boundary value constraints
-        :param face_mask: the mask for the cell faces the boundary consists of
-        """
-        if boundary_constraint is not None:
-            face_mask[face_mask] &= boundary_constraint.mask.flatten()
-            var.constrain(
-                boundary_constraint.value.flatten(),
-                where=face_mask)
