@@ -561,6 +561,56 @@ class CahnHilliardEquation(DifferentialEquation):
         )
 
 
+class ShallowWaterEquation(DifferentialEquation):
+    """
+    A system of partial differential equations providing a non-conservative
+    model of fluid flow below a pressure surface.
+    """
+
+    def __init__(
+            self,
+            h: float,
+            b: float,
+            v: float,
+            f: float = 0.,
+            g: float = 9.80665):
+        """
+        :param h: the mean height of the pressure surface
+        :param b: the viscous drag coefficient
+        :param v: the kinematic viscosity coefficient
+        :param f: the Coriolis coefficient
+        :param g: the gravitational acceleration coefficient
+        """
+        self._h = h
+        self._b = b
+        self._v = v
+        self._f = f
+        self._g = g
+
+        super(ShallowWaterEquation, self).__init__(2, 3)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        sym = self._symbols
+        return SymbolicEquationSystem([
+            -self._h * sym.y_divergence[1, 2] -
+            sym.y[0] * sym.d_y_over_d_x[1, 0] -
+            sym.y[1] * sym.d_y_over_d_x[0, 0] -
+            sym.y[0] * sym.d_y_over_d_x[2, 1] -
+            sym.y[2] * sym.d_y_over_d_x[0, 1],
+            -np.dot(sym.y[1:3], sym.d_y_over_d_x[1, :]) +
+            self._f * sym.y[2] -
+            self._g * sym.d_y_over_d_x[0, 0] -
+            self._b * sym.y[1] +
+            self._v * sym.y_laplacian[1],
+            -np.dot(sym.y[1:3], sym.d_y_over_d_x[2, :]) -
+            self._f * sym.y[1] -
+            self._g * sym.d_y_over_d_x[0, 1] -
+            self._b * sym.y[2] +
+            self._v * sym.y_laplacian[2]
+        ])
+
+
 class BurgerEquation(DifferentialEquation):
     """
     A system of partial differential equations providing a simplified model
