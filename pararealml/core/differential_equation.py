@@ -18,6 +18,7 @@ class Symbols:
         :param x_dimension: the number spatial dimensions
         :param y_dimension: the number of unknown variables
         """
+        self._t = Symbol('t')
         self._y = symarray('y', (y_dimension,))
 
         if x_dimension:
@@ -34,6 +35,13 @@ class Symbols:
             self._d_y_over_d_x_x = None
             self._y_laplacian = None
             self._y_divergence = None
+
+    @property
+    def t(self) -> Symbol:
+        """
+        The temporal position.
+        """
+        return self._t
 
     @property
     def y(self) -> np.ndarray:
@@ -238,6 +246,7 @@ class DifferentialEquation(ABC):
             raise ValueError
 
         all_symbols = set()
+        all_symbols.add(self._symbols.t)
         all_symbols.update(self._symbols.y)
 
         if self._x_dimension:

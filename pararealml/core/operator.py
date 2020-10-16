@@ -128,11 +128,12 @@ class ODEOperator(Operator):
         time_points = self._discretise_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_points[0], time_points[-1])
 
+        sym = diff_eq.symbols
         rhs = diff_eq.symbolic_equation_system.rhs
-        rhs_lambda = sp.lambdify([diff_eq.symbols.y], rhs, 'numpy')
+        rhs_lambda = sp.lambdify([sym.t, sym.y], rhs, 'numpy')
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
-            return np.asarray(rhs_lambda(_y))
+            return np.asarray(rhs_lambda(_t, _y))
 
         result = solve_ivp(
             d_y_over_d_t,
@@ -475,7 +476,7 @@ class FDMOperator(Operator):
         """
         diff_eq = cp.differential_equation
 
-        symbol_map = {}
+        symbol_map = {diff_eq.symbols.t: lambda t, y, d_y_bc_func: t}
 
         for i, y_element in enumerate(diff_eq.symbols.y):
             symbol_map[y_element] = \
@@ -1011,7 +1012,7 @@ class PINNOperator(StatelessMLOperator):
         """
         diff_eq = cp.differential_equation
 
-        symbol_map = {}
+        symbol_map = {diff_eq.symbols.t: lambda x, y: x[:, -1:]}
 
         for i, y_element in enumerate(diff_eq.symbols.y):
             symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
