@@ -70,8 +70,8 @@ All operators extend the `Operator` base class. Operators are standalone differe
 
 The list of supported operators is:
 
- * `ODEOperator` - an operator based on the [solve_ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html#scipy.integrate.solve_ivp) function of SciPy's `integrate` module that can solve ODEs
- * `FVMOperator` - a finite volume method operator based on [FiPy](https://www.ctcms.nist.gov/fipy/) that can solve PDEs
+ * `ODEOperator` - an ODE solver based on the [solve_ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html#scipy.integrate.solve_ivp) function of SciPy's `integrate` module
+ * `FVMOperator` - a finite volume method PDE solver based on [FiPy](https://www.ctcms.nist.gov/fipy/)
  * `FDMOperator` - a fast finite difference method operator that can solve both ODEs and PDEs
  * `MLOperator`
     * `StatelessMLOperator`
