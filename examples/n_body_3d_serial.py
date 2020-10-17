@@ -49,8 +49,9 @@ ic = ContinuousInitialCondition(
     cp,
     lambda _: [pos * astronomical_unit for pos in positions_au] +
               [vel * astronomical_unit / day for vel in velocities_au_d])
-ivp = InitialValueProblem(cp, (0., 200. * 365. * 24. * 3600.), ic)
+ivp = InitialValueProblem(cp, (0., 300. * 365. * 24. * 3600.), ic)
 
 solver = ODEOperator('DOP853', 12. * 3600.)
 solution = solver.solve(ivp)
-solution.plot('fine', n_images=20, smallest_marker_size=.001)
+solution.plot(
+    'fine', n_images=30, smallest_marker_size=1e-6, trajectory_line_width=.05)
