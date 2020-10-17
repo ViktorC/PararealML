@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Sequence
+from typing import Optional, Sequence, List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -254,7 +254,7 @@ def plot_n_body_simulation(
     plt.style.use('default')
 
 
-def plot_evolution_of_y(
+def plot_evolution_of_scalar_field(
         solution: Solution,
         y_ind: int,
         frames_between_updates: int,
@@ -263,7 +263,9 @@ def plot_evolution_of_y(
         three_d: bool = False,
         color_map: Colormap = cm.viridis,
         v_min: Optional[float] = None,
-        v_max: Optional[float] = None):
+        v_max: Optional[float] = None,
+        slice_axis: Optional[int] = None,
+        slice_inds: Optional[Sequence[int]] = None):
     """
     Plots the solution of an IVP based on a PDE in 1 or 2 spatial dimensions as
     a GIF.
@@ -285,74 +287,60 @@ def plot_evolution_of_y(
     :param v_max: the upper bound of the value axis (y axis for 1D PDEs, z axis
         for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
         2D); if None, it is set to the maximum value of the solution
+    :param slice_axis: the spatial axis along which the solution is to be
+        sliced
+    :param slice_inds: the indices along the slice axis representing the slices
     """
     x_coordinates = solution.x_coordinates(solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
+    x_dim = solution.constrained_problem.differential_equation.x_dimension
 
     v_min = np.min(y) if v_min is None else v_min
     v_max = np.max(y) if v_max is None else v_max
 
-    if solution.constrained_problem.differential_equation.x_dimension == 1:
-        fig, ax = plt.subplots()
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+    if x_dim == 3:
+        if slice_axis is None:
+            slice_axis = 0
+        if slice_inds is None:
+            slice_inds = [0]
+            slice_axis_size = y.shape[slice_axis + 1]
+            if slice_axis_size > 2:
+                slice_inds.append(int(math.floor(slice_axis_size / 2.)))
+            slice_inds.append(slice_axis_size - 1)
 
-        x = x_coordinates[0]
-        line_plot, = ax.plot(x, y[0, ...])
+        if not 0 <= slice_axis < 3:
+            raise ValueError
+        if len(slice_inds) == 0:
+            raise ValueError
 
-        plt.ylim(v_min, v_max)
+        axes = [axis for axis in range(3) if axis != slice_axis]
+        first_x_label = f'x {axes[0]}'
+        second_x_label = f'x {axes[1]}'
 
-        def update_plot(time_step: int):
-            line_plot.set_ydata(y[time_step, ...])
-            return line_plot, ax
-    else:
-        x0_label = 'x 0'
-        x1_label = 'x 1'
+        first_x_axis_coordinates = x_coordinates[axes[0]]
+        second_x_axis_coordinates = x_coordinates[axes[1]]
+        first_x_axis_coordinates, second_x_axis_coordinates = \
+            np.meshgrid(first_x_axis_coordinates, second_x_axis_coordinates)
 
-        x_0 = x_coordinates[0]
-        x_1 = x_coordinates[1]
-        x_0, x_1 = np.meshgrid(x_0, x_1)
+        slicer: List[Union[slice, int]] = [slice(None)] * len(y.shape)
 
-        if three_d:
-            fig = plt.figure()
-            ax = Axes3D(fig)
-            y_label = 'y'
-            ax.set_xlabel(x0_label)
-            ax.set_ylabel(x1_label)
-            ax.set_zlabel(y_label)
+        for slice_ind in slice_inds:
+            if not 0 <= slice_ind < y.shape[slice_axis]:
+                raise ValueError
 
-            plot_args = {
-                'rstride': 1,
-                'cstride': 1,
-                'linewidth': 0,
-                'antialiased': False,
-                'cmap': color_map
-            }
+            slicer[slice_axis + 1] = slice_ind
+            y_slice = y[tuple(slicer)]
 
-            ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
-            ax.set_zlim(v_min, v_max)
-
-            def update_plot(time_step: int):
-                ax.clear()
-                ax.set_xlabel(x0_label)
-                ax.set_ylabel(x1_label)
-                ax.set_zlabel(y_label)
-
-                _plot = ax.plot_surface(
-                    x_0, x_1, y[time_step, ...].T, **plot_args)
-                ax.set_zlim(v_min, v_max)
-                return _plot,
-        else:
             fig, ax = plt.subplots()
             ax.contourf(
-                x_0,
-                x_1,
-                y[0, ...].T,
+                first_x_axis_coordinates,
+                second_x_axis_coordinates,
+                y_slice[0, ...].T,
                 vmin=v_min,
                 vmax=v_max,
                 cmap=color_map)
-            ax.set_xlabel(x0_label)
-            ax.set_ylabel(x1_label)
+            ax.set_xlabel(first_x_label)
+            ax.set_ylabel(second_x_label)
             plt.axis('scaled')
 
             mappable = plt.cm.ScalarMappable(cmap=color_map)
@@ -362,20 +350,109 @@ def plot_evolution_of_y(
 
             def update_plot(time_step: int):
                 return plt.contourf(
-                    x_0,
-                    x_1,
-                    y[time_step, ...].T,
+                    first_x_axis_coordinates,
+                    second_x_axis_coordinates,
+                    y_slice[time_step, ...].T,
                     vmin=v_min,
                     vmax=v_max,
                     cmap=color_map)
 
-    animation = FuncAnimation(
-        fig,
-        update_plot,
-        frames=range(0, y.shape[0], frames_between_updates),
-        interval=interval)
-    animation.save(f'{file_name}.gif', writer='imagemagick')
-    plt.clf()
+            animation = FuncAnimation(
+                fig,
+                update_plot,
+                frames=range(0, y.shape[0], frames_between_updates),
+                interval=interval)
+            animation.save(
+                f'{file_name}_slice_{slice_ind}.gif',
+                writer='imagemagick')
+            plt.clf()
+    else:
+        if x_dim == 1:
+            fig, ax = plt.subplots()
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+
+            x = x_coordinates[0]
+            line_plot, = ax.plot(x, y[0, ...])
+
+            plt.ylim(v_min, v_max)
+
+            def update_plot(time_step: int):
+                line_plot.set_ydata(y[time_step, ...])
+                return line_plot, ax
+        elif x_dim == 2:
+            x0_label = 'x 0'
+            x1_label = 'x 1'
+
+            x_0 = x_coordinates[0]
+            x_1 = x_coordinates[1]
+            x_0, x_1 = np.meshgrid(x_0, x_1)
+
+            if three_d:
+                fig = plt.figure()
+                ax = Axes3D(fig)
+                y_label = 'y'
+                ax.set_xlabel(x0_label)
+                ax.set_ylabel(x1_label)
+                ax.set_zlabel(y_label)
+
+                plot_args = {
+                    'rstride': 1,
+                    'cstride': 1,
+                    'linewidth': 0,
+                    'antialiased': False,
+                    'cmap': color_map
+                }
+
+                ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
+                ax.set_zlim(v_min, v_max)
+
+                def update_plot(time_step: int):
+                    ax.clear()
+                    ax.set_xlabel(x0_label)
+                    ax.set_ylabel(x1_label)
+                    ax.set_zlabel(y_label)
+
+                    _plot = ax.plot_surface(
+                        x_0, x_1, y[time_step, ...].T, **plot_args)
+                    ax.set_zlim(v_min, v_max)
+                    return _plot,
+            else:
+                fig, ax = plt.subplots()
+                ax.contourf(
+                    x_0,
+                    x_1,
+                    y[0, ...].T,
+                    vmin=v_min,
+                    vmax=v_max,
+                    cmap=color_map)
+                ax.set_xlabel(x0_label)
+                ax.set_ylabel(x1_label)
+                plt.axis('scaled')
+
+                mappable = plt.cm.ScalarMappable(cmap=color_map)
+                mappable.set_array(y[0, ...])
+                mappable.set_clim(v_min, v_max)
+                plt.colorbar(mappable)
+
+                def update_plot(time_step: int):
+                    return plt.contourf(
+                        x_0,
+                        x_1,
+                        y[time_step, ...].T,
+                        vmin=v_min,
+                        vmax=v_max,
+                        cmap=color_map)
+        else:
+            raise ValueError
+
+        animation = FuncAnimation(
+            fig,
+            update_plot,
+            frames=range(0, y.shape[0], frames_between_updates),
+            interval=interval)
+        animation.save(f'{file_name}.gif', writer='imagemagick')
+        plt.clf()
 
 
 def plot_ivp_solution(
@@ -391,6 +468,8 @@ def plot_ivp_solution(
         color_map: Optional[Colormap] = None,
         v_min: Optional[float] = None,
         v_max: Optional[float] = None,
+        slice_axis: Optional[int] = None,
+        slice_inds: Optional[Sequence[int]] = None,
         legend_location: Optional[str] = None):
     """
     Plots the solution of an IVP. The kind of plot generated depends on the
@@ -422,6 +501,9 @@ def plot_ivp_solution(
     :param v_max: the upper bound of the value axis (y axis for 1D PDEs, z axis
         for 2D PDEs plotted in 3D, and the color bar for 2D PDEs plotted in
         2D); if None, it is set to the maximum value of the solution
+    :param slice_axis: the spatial axis along which the solution is to be
+        sliced
+    :param slice_inds: the indices along the slice axis representing the slices
     :param legend_location: the location of the legend for IVPs based on
         systems of ODEs
     """
@@ -440,7 +522,7 @@ def plot_ivp_solution(
                 color_map = cm.viridis
 
         for y_ind in range(diff_eq.y_dimension):
-            plot_evolution_of_y(
+            plot_evolution_of_scalar_field(
                 solution,
                 y_ind,
                 math.ceil(len(solution.t_coordinates) / float(n_images)),
@@ -449,7 +531,9 @@ def plot_ivp_solution(
                 three_d=three_d,
                 color_map=color_map,
                 v_min=v_min,
-                v_max=v_max)
+                v_max=v_max,
+                slice_axis=slice_axis,
+                slice_inds=slice_inds)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             if color_map is None:
