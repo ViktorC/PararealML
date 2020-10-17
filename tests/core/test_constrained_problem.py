@@ -1,12 +1,11 @@
 import numpy as np
-from fipy.meshes.uniformGrid3D import UniformGrid3D
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
-    WaveEquation, DiffusionEquation
+    WaveEquation
 from pararealml.core.differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.mesh import UniformGrid
