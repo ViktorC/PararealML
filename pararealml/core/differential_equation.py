@@ -419,7 +419,7 @@ class NBodyGravitationalEquation(DifferentialEquation):
         n_obj_by_dims = self._n_objects * self._dims
 
         d_y_over_d_t = np.empty(self._y_dimension, dtype=object)
-        d_y_over_d_t[..., :n_obj_by_dims] = y[..., n_obj_by_dims:]
+        d_y_over_d_t[:n_obj_by_dims] = y[n_obj_by_dims:]
 
         forces_shape = (self._n_objects, self._n_objects, self._dims)
         forces = np.zeros(forces_shape, dtype=object)
@@ -443,10 +443,8 @@ class NBodyGravitationalEquation(DifferentialEquation):
 
             acceleration = forces[i, :, :].sum(axis=0) / mass_i
             velocity_offset = n_obj_by_dims + position_offset_i
-            d_y_over_d_t[
-                ...,
-                velocity_offset:velocity_offset + self._dims
-            ] = acceleration
+            d_y_over_d_t[velocity_offset:velocity_offset + self._dims] = \
+                acceleration
 
         return SymbolicEquationSystem(d_y_over_d_t)
 
