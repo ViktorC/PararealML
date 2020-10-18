@@ -9,7 +9,8 @@ from matplotlib.colors import Colormap
 from mpl_toolkits.mplot3d import Axes3D
 
 from pararealml.core.differential_equation import NBodyGravitationalEquation, \
-    WaveEquation, DiffusionEquation, NavierStokes2DEquation
+    WaveEquation, DiffusionEquation, NavierStokes2DEquation, \
+    ShallowWaterEquation, BurgerEquation
 from pararealml.core.solution import Solution
 
 
@@ -171,7 +172,6 @@ def plot_n_body_simulation(
                         linewidth=trajectory_line_width)
 
             scatter_plot.set_offsets(coordinates[time_step, ...])
-            return scatter_plot, ax
     else:
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -241,7 +241,6 @@ def plot_n_body_simulation(
                 y_coordinates[time_step, ...],
                 z_coordinates[time_step, ...]
             )
-            return scatter_plot, ax
 
     animation = FuncAnimation(
         fig,
@@ -267,8 +266,8 @@ def plot_evolution_of_scalar_field(
         slice_axis: Optional[int] = None,
         slice_inds: Optional[Sequence[int]] = None):
     """
-    Plots the solution of an IVP based on a PDE in 1 or 2 spatial dimensions as
-    a GIF.
+    Plots the scalar field representing the solution of an IVP based on a PDE
+    in 1 or 2 spatial dimensions as a GIF.
 
     :param solution: a solution to an IVP based on a PDE in 1 or 2 spatial
         dimensions
@@ -349,7 +348,7 @@ def plot_evolution_of_scalar_field(
             plt.colorbar(mappable)
 
             def update_plot(time_step: int):
-                return plt.contourf(
+                plt.contourf(
                     first_x_axis_coordinates,
                     second_x_axis_coordinates,
                     y_slice[time_step, ...].T,
@@ -379,7 +378,6 @@ def plot_evolution_of_scalar_field(
 
             def update_plot(time_step: int):
                 line_plot.set_ydata(y[time_step, ...])
-                return line_plot, ax
         elif x_dim == 2:
             x0_label = 'x 0'
             x1_label = 'x 1'
@@ -413,10 +411,8 @@ def plot_evolution_of_scalar_field(
                     ax.set_ylabel(x1_label)
                     ax.set_zlabel(y_label)
 
-                    _plot = ax.plot_surface(
-                        x_0, x_1, y[time_step, ...].T, **plot_args)
+                    ax.plot_surface(x_0, x_1, y[time_step, ...].T, **plot_args)
                     ax.set_zlim(v_min, v_max)
-                    return _plot,
             else:
                 fig, ax = plt.subplots()
                 ax.contourf(
@@ -436,7 +432,7 @@ def plot_evolution_of_scalar_field(
                 plt.colorbar(mappable)
 
                 def update_plot(time_step: int):
-                    return plt.contourf(
+                    plt.contourf(
                         x_0,
                         x_1,
                         y[time_step, ...].T,
@@ -455,6 +451,112 @@ def plot_evolution_of_scalar_field(
         plt.clf()
 
 
+def plot_evolution_of_vector_field(
+        solution: Solution,
+        y_inds: Sequence[int],
+        frames_between_updates: int,
+        interval: int,
+        file_name: str,
+        normalise: bool = True,
+        pivot: str = 'middle'):
+    """
+    Plots the vector field representing the solution of an IVP based on a PDE
+    in 2 or 3 spatial dimensions as a GIF.
+
+    :param solution: a solution to an IVP based on a PDE in 1 or 2 spatial
+        dimensions
+    :param y_inds: the indices of the elements of y that form the
+        vector field to plot
+    :param frames_between_updates: the number of frames to skip in between
+        plotted frames
+    :param interval: the number of milliseconds between each frame of the GIF
+    :param file_name: the name of the file to save the plot to
+    :param normalise: whether the lengths of the arrows should be normalised
+    :param pivot: the pivot point of the arrows
+    """
+    cp = solution.constrained_problem
+    x_dim = cp.differential_equation.x_dimension
+
+    if y_inds is None or len(y_inds) != x_dim:
+        raise ValueError
+
+    x_coordinates = solution.x_coordinates(solution.vertex_oriented)
+    y = solution.discrete_y(solution.vertex_oriented)
+
+    if x_dim == 2:
+        x_0 = x_coordinates[0]
+        x_1 = x_coordinates[1]
+
+        y_0 = y[..., y_inds[0]]
+        y_1 = y[..., y_inds[1]]
+
+        if normalise:
+            y_magnitude = np.sqrt(np.square(y_0) + np.square(y_1))
+            y_magnitude_gt_zero = y_magnitude > 0.
+            y_0[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
+            y_1[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
+
+        fig, ax = plt.subplots()
+        quiver = ax.quiver(x_0, x_1, y_0[0, ...], y_1[0, ...], pivot=pivot)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.axis('scaled')
+
+        def update_plot(time_step: int):
+            quiver.set_UVC(y_0[time_step, ...], y_1[time_step, ...])
+    elif x_dim == 3:
+        x0_label = 'x'
+        x1_label = 'y'
+        x2_label = 'z'
+
+        x_0, x_1, x_2 = np.meshgrid(*x_coordinates)
+
+        y_0 = y[..., y_inds[0]]
+        y_1 = y[..., y_inds[1]]
+        y_2 = y[..., y_inds[2]]
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.quiver(
+            x_0,
+            x_1,
+            x_2,
+            y_0[0, ...],
+            y_1[0, ...],
+            y_2[0, ...],
+            pivot=pivot,
+            normalize=normalise)
+        ax.set_xlabel(x0_label)
+        ax.set_ylabel(x1_label)
+        ax.set_zlabel(x2_label)
+
+        def update_plot(time_step: int):
+            ax.clear()
+            ax.quiver(
+                x_0,
+                x_1,
+                x_2,
+                y_0[time_step, ...],
+                y_1[time_step, ...],
+                y_2[time_step, ...],
+                pivot=pivot,
+                normalize=normalise)
+            ax.set_xlabel(x0_label)
+            ax.set_ylabel(x1_label)
+            ax.set_zlabel(x2_label)
+    else:
+        raise ValueError
+
+    animation = FuncAnimation(
+        fig,
+        update_plot,
+        frames=range(0, y.shape[0], frames_between_updates),
+        interval=interval,
+        blit=False)
+    animation.save(f'{file_name}.gif', writer='imagemagick')
+    plt.clf()
+
+
 def plot_ivp_solution(
         solution: Solution,
         solution_name: str,
@@ -464,12 +566,15 @@ def plot_ivp_solution(
         draw_trajectory: bool = True,
         trajectory_line_style: str = ':',
         trajectory_line_width: float = .5,
+        normalise: bool = True,
+        pivot: str = 'middle',
         three_d: Optional[bool] = None,
         color_map: Optional[Colormap] = None,
         v_min: Optional[float] = None,
         v_max: Optional[float] = None,
         slice_axis: Optional[int] = None,
         slice_inds: Optional[Sequence[int]] = None,
+        y_vector_field_inds: Optional[Sequence[int]] = None,
         legend_location: Optional[str] = None):
     """
     Plots the solution of an IVP. The kind of plot generated depends on the
@@ -491,6 +596,9 @@ def plot_ivp_solution(
         based on n-body problems
     :param trajectory_line_width: the width of the trajectory line for IVPs
         based on n-body problems
+    :param normalise: whether the lengths of the arrows should be normalised
+        for vector field plots
+    :param pivot: the pivot point of the arrows for vector field plots
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
         used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on n-body problems or
@@ -504,28 +612,48 @@ def plot_ivp_solution(
     :param slice_axis: the spatial axis along which the solution is to be
         sliced
     :param slice_inds: the indices along the slice axis representing the slices
+    :param y_vector_field_inds: the indices of the elements of y that form the
+        vector field to plot
     :param legend_location: the location of the legend for IVPs based on
         systems of ODEs
     """
     diff_eq = solution.constrained_problem.differential_equation
 
     if diff_eq.x_dimension:
+        if y_vector_field_inds is None:
+            if isinstance(diff_eq, ShallowWaterEquation):
+                y_vector_field_inds = [1, 2]
+            if isinstance(diff_eq, BurgerEquation) and diff_eq.x_dimension > 1:
+                y_vector_field_inds = list(range(diff_eq.x_dimension))
+
         if three_d is None:
-            three_d = isinstance(diff_eq, (DiffusionEquation, WaveEquation))
+            three_d = isinstance(
+                diff_eq,
+                (DiffusionEquation,
+                 WaveEquation,
+                 ShallowWaterEquation,
+                 BurgerEquation))
 
         if color_map is None:
             if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
                 color_map = cm.coolwarm
-            elif isinstance(diff_eq, NavierStokes2DEquation):
+            elif isinstance(
+                    diff_eq,
+                    (ShallowWaterEquation,
+                     BurgerEquation,
+                     NavierStokes2DEquation)):
                 color_map = cm.ocean
             else:
                 color_map = cm.viridis
+
+        frames_between_updates = \
+            math.ceil(len(solution.t_coordinates) / float(n_images))
 
         for y_ind in range(diff_eq.y_dimension):
             plot_evolution_of_scalar_field(
                 solution,
                 y_ind,
-                math.ceil(len(solution.t_coordinates) / float(n_images)),
+                frames_between_updates,
                 interval,
                 f'evolution_{solution_name}_{y_ind}',
                 three_d=three_d,
@@ -534,6 +662,20 @@ def plot_ivp_solution(
                 v_max=v_max,
                 slice_axis=slice_axis,
                 slice_inds=slice_inds)
+
+        if y_vector_field_inds is not None:
+            file_name = f'evolution_{solution_name}'
+            for vector_field_ind in y_vector_field_inds:
+                file_name += f'_{vector_field_ind}'
+
+            plot_evolution_of_vector_field(
+                solution,
+                y_vector_field_inds,
+                frames_between_updates,
+                interval,
+                file_name,
+                normalise=normalise,
+                pivot=pivot)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             if color_map is None:
