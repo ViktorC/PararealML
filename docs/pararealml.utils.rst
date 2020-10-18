@@ -4,14 +4,6 @@ pararealml.utils package
 Submodules
 ----------
 
-pararealml.utils.experiment module
-----------------------------------
-
-.. automodule:: pararealml.utils.experiment
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pararealml.utils.io module
 --------------------------
 
