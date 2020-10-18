@@ -35,7 +35,8 @@ def limit_visible_gpus():
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         comm = MPI.COMM_WORLD
-        assert len(gpus) == comm.size
+        if len(gpus) != comm.size:
+            raise ValueError
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
 
 
@@ -109,7 +110,8 @@ def train_regression_model(
     :param score_func: the prediction scoring function to use
     :return: the training and test losses
     """
-    assert 0. <= test_size < 1.
+    if not 0. <= test_size < 1.:
+        raise ValueError
     train_size = 1. - test_size
 
     x_train, x_test, y_train, y_test = train_test_split(

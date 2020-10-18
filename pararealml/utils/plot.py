@@ -27,7 +27,8 @@ def plot_y_against_t(
         vector-valued
     """
     diff_eq = solution.constrained_problem.differential_equation
-    assert not diff_eq.x_dimension
+    if diff_eq.x_dimension:
+        raise ValueError
 
     t = solution.t_coordinates
     y = solution.discrete_y(solution.vertex_oriented)
@@ -58,8 +59,10 @@ def plot_phase_space(solution: Solution, file_name: str):
     """
     y = solution.discrete_y(solution.vertex_oriented)
 
-    assert y.ndim == 2
-    assert 2 <= y.shape[1] <= 3
+    if y.ndim != 2:
+        raise ValueError
+    if not 2 <= y.shape[1] <= 3:
+        raise ValueError
 
     if y.shape[1] == 2:
         plt.xlabel('y 0')
@@ -110,7 +113,8 @@ def plot_n_body_simulation(
     diff_eq: NBodyGravitationalEquation = \
         solution.constrained_problem.differential_equation
 
-    assert isinstance(diff_eq, NBodyGravitationalEquation)
+    if not isinstance(diff_eq, NBodyGravitationalEquation):
+        raise ValueError
 
     n_obj = diff_eq.n_objects
     n_obj_by_dims = n_obj * diff_eq.spatial_dimension
@@ -717,10 +721,11 @@ def plot_model_losses(
     :param loss_name: the loss type
     :param file_name: the name of the file to save the plot to
     """
-    assert len(mean_train_losses) == len(mean_test_losses)
-    assert len(mean_train_losses) == len(sd_train_losses)
-    assert len(mean_train_losses) == len(sd_test_losses)
-    assert len(mean_train_losses) == len(model_names)
+    if len(mean_train_losses) != len(mean_test_losses) or \
+            len(mean_train_losses) != len(sd_train_losses) or \
+            len(mean_train_losses) != len(sd_test_losses) or \
+            len(mean_train_losses) != len(model_names):
+        raise ValueError
 
     bar_width = .35
     train_positions = np.arange(len(mean_train_losses))
@@ -774,8 +779,10 @@ def plot_rms_solution_diffs(
         one standard deviation
     :param color_map: the color map to use for coloring the lines
     """
-    assert mean_rms_diffs.shape == sd_rms_diffs.shape
-    assert len(mean_rms_diffs) == len(labels)
+    if mean_rms_diffs.shape != sd_rms_diffs.shape:
+        raise ValueError
+    if len(mean_rms_diffs) != len(labels):
+        raise ValueError
 
     plt.figure()
 
@@ -824,8 +831,10 @@ def plot_execution_times(
     :param x_label: the text along the x axis
     :param file_name: the name of the file to save the plot to
     """
-    assert len(mean_execution_times) == len(sd_execution_times)
-    assert len(mean_execution_times) == len(labels)
+    if len(mean_execution_times) != len(sd_execution_times):
+        raise ValueError
+    if len(mean_execution_times) != len(labels):
+        raise ValueError
 
     positions = np.arange(len(mean_execution_times))
 
