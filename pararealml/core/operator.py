@@ -6,8 +6,9 @@ import numpy as np
 import sympy as sp
 import tensorflow as tf
 from deepxde import Model as PINNModel, IC
-from deepxde.boundary_conditions import BC
+from deepxde.boundary_conditions import BC, DirichletBC, NeumannBC
 from deepxde.data import TimePDE, PDE
+from deepxde.geometry import TimeDomain, GeometryXTime
 from deepxde.maps.map import Map
 from deepxde.model import TrainState, LossHistory
 from scipy.integrate import solve_ivp, OdeSolver
@@ -712,7 +713,8 @@ class PINNOperator(StatelessMLOperator):
         :param training_config: keyworded training configuration arguments
         :return: a tuple of the loss history and the training state
         """
-        diff_eq = ivp.constrained_problem.differential_equation
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
         if diff_eq.x_dimension > 3:
             raise ValueError
 
@@ -743,8 +745,6 @@ class PINNOperator(StatelessMLOperator):
                 for j in range(diff_eq.y_dimension)
             ]
 
-        initial_conditions = ivp.deepxde_initial_conditions
-
         n_domain = training_config['n_domain']
         n_initial = training_config['n_initial']
         n_test = training_config.get('n_test', None)
@@ -752,13 +752,17 @@ class PINNOperator(StatelessMLOperator):
             'sample_distribution', 'random')
         solution_function = training_config.get('solution_function', None)
 
+        initial_conditions = self._create_deepxde_initial_conditions(ivp)
+
         if diff_eq.x_dimension:
-            boundary_conditions = ivp.deepxde_boundary_conditions
+            boundary_conditions = self._create_deepxde_boundary_conditions(ivp)
             n_boundary = training_config['n_boundary']
             ic_bcs: List[Union[IC, BC]] = list(initial_conditions)
             ic_bcs += list(boundary_conditions)
             data = TimePDE(
-                geometryxtime=ivp.deepxde_geometry_time_domain,
+                geometryxtime=GeometryXTime(
+                    cp.mesh.deepxde_geometry,
+                    TimeDomain(*ivp.t_interval)),
                 pde=diff_eq_error,
                 ic_bcs=ic_bcs,
                 num_domain=n_domain,
@@ -769,7 +773,7 @@ class PINNOperator(StatelessMLOperator):
                 solution=solution_function)
         else:
             data = PDE(
-                geometry=ivp.deepxde_time_domain,
+                geometry=TimeDomain(*ivp.t_interval),
                 pde=diff_eq_error,
                 bcs=initial_conditions,
                 num_domain=n_domain,
@@ -795,6 +799,178 @@ class PINNOperator(StatelessMLOperator):
             loss_history, train_state = self._model.train()
 
         return loss_history, train_state
+
+    @staticmethod
+    def _create_deepxde_initial_conditions(
+            ivp: InitialValueProblem
+    ) -> Sequence[IC]:
+        """
+        Creates the DeepXDE equivalent of the initial condition.
+
+        :param ivp: the initial value problem to create DeepXDE initial
+            conditions for
+        :return: a sequence of the DeepXDE initial conditions
+        """
+        cp = ivp.constrained_problem
+        diff_eq = cp.differential_equation
+        time_domain = TimeDomain(*ivp.t_interval)
+        geometry_time_domain = GeometryXTime(
+            cp.mesh.deepxde_geometry, time_domain) \
+            if diff_eq.x_dimension else time_domain
+
+        condition_functions = PINNOperator._create_deepxde_condition_functions(
+            cp, ivp.initial_condition.y_0)
+
+        return [
+            IC(
+                geometry_time_domain,
+                cond_func,
+                lambda _, on_initial: on_initial, y_ind)
+            for y_ind, cond_func in enumerate(condition_functions)
+        ]
+
+    @staticmethod
+    def _create_deepxde_boundary_conditions(
+            ivp: InitialValueProblem
+    ) -> Optional[Sequence[BC]]:
+        """
+        Creates the DeepXDE equivalent of the boundary conditions.
+
+        :param ivp: the initial value problem to create DeepXDE boundary
+            conditions for
+        :return: a sequence of the DeepXDE boundary conditions or None if the
+            IVP is based on an ODE
+        """
+        cp = ivp.constrained_problem
+        if not cp.differential_equation.x_dimension:
+            return None
+
+        boundary_conditions: List[BC] = []
+
+        for axis, bc_pair in enumerate(cp.boundary_conditions):
+            if bc_pair is not None:
+                for bc_ind, bc in enumerate(bc_pair):
+                    boundary_value = cp.mesh.x_intervals[axis][bc_ind]
+
+                    PINNOperator._add_deepxde_boundary_conditions_for_all_y(
+                        ivp,
+                        bc.has_y_condition,
+                        bc.y_condition,
+                        DirichletBC,
+                        axis,
+                        boundary_value,
+                        boundary_conditions)
+                    PINNOperator._add_deepxde_boundary_conditions_for_all_y(
+                        ivp,
+                        bc.has_d_y_condition,
+                        bc.d_y_condition,
+                        NeumannBC,
+                        axis,
+                        boundary_value,
+                        boundary_conditions)
+
+        return boundary_conditions
+
+    @staticmethod
+    def _add_deepxde_boundary_conditions_for_all_y(
+            ivp: InitialValueProblem,
+            has_condition: bool,
+            condition_function: Callable[
+                [Sequence[float], Optional[float]],
+                Optional[Sequence[Optional[float]]]
+            ],
+            deepxde_boundary_condition_type: type,
+            fixed_axis: int,
+            boundary_value: float,
+            boundary_conditions: List[BC]):
+        """
+        Creates a DeepXDE boundary condition for each element of y and appends
+        them to the list of boundary conditions.
+
+        :param ivp: the initial value problem to create condition functions for
+        :param has_condition: whether there is an organic boundary condition
+            specified
+        :param condition_function: the organic boundary condition
+        :param deepxde_boundary_condition_type: the DeepXDE equivalent of the
+            type of the organic boundary condition
+        :param fixed_axis: the axis normal to the boundary
+        :param boundary_value: the value along the fixed axis at the boundary
+        :param boundary_conditions: the list of DeepXDE boundary conditions to
+            append the created boundary conditions to
+        """
+        if has_condition:
+            cp = ivp.constrained_problem
+            deepxde_condition_functions = \
+                PINNOperator._create_deepxde_condition_functions(
+                    cp, condition_function, fixed_axis)
+            deepxde_geometry_time_domain = GeometryXTime(
+                cp.mesh.deepxde_geometry,
+                TimeDomain(*ivp.t_interval))
+
+            for y_ind, cond_func in \
+                    enumerate(deepxde_condition_functions):
+                def predicate(
+                        x: np.ndarray,
+                        on_boundary: bool,
+                        _y_ind: int = y_ind) -> bool:
+                    return on_boundary \
+                           and np.isclose(x[fixed_axis], boundary_value) \
+                           and (condition_function(x[:-1], x[-1])[_y_ind]
+                                is not None)
+
+                boundary_conditions.append(
+                    deepxde_boundary_condition_type(
+                        deepxde_geometry_time_domain,
+                        cond_func,
+                        predicate,
+                        y_ind))
+
+    @staticmethod
+    def _create_deepxde_condition_functions(
+            cp: ConstrainedProblem,
+            condition_function: Union[
+                Callable[[Optional[Sequence[float]]],
+                         Optional[Sequence[float]]],
+                Callable[[Sequence[float], Optional[float]],
+                         Optional[Sequence[Optional[float]]]]],
+            fixed_axis: Optional[int] = None
+    ) -> Sequence[Callable[[np.ndarray], np.ndarray]]:
+        """
+        Creates a list of functions that can be used to define DeepXDE boundary
+        conditions.
+
+        :param cp: the constrained problem to create condition functions for
+        :param condition_function: a condition function in the format of the
+            y_0 function of well defined initial conditions or the y_condition
+            or d_y_condition functions of boundary conditions
+        :param fixed_axis: the fixed axis in case the condition function is
+            a boundary condition function
+        :return: a list of DeepXDE condition functions with an element for each
+            component of the output array of the organic condition function
+        """
+        deepxde_condition_functions = []
+        for y_ind in range(cp.differential_equation.y_dimension):
+            def condition(x: np.ndarray, _y_ind: int = y_ind) -> np.ndarray:
+                n_rows = x.shape[0]
+
+                if fixed_axis is not None:
+                    x = np.delete(x, fixed_axis, axis=1)
+                    values = np.array([
+                        condition_function(x[i, :-1], x[i, -1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
+                else:
+                    values = np.array([
+                        condition_function(x[i, :-1])[_y_ind]
+                        for i in range(n_rows)
+                    ])
+
+                values = values.reshape((n_rows, 1))
+                return values
+
+            deepxde_condition_functions.append(condition)
+
+        return deepxde_condition_functions
 
     @staticmethod
     def _create_lhs_functions(
