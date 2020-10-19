@@ -129,6 +129,7 @@ To use the Parareal operator, an implementation of the MPI standard must be inst
  1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.7`
  1. `conda activate {environment_name}`
  1. `conda install -c conda-forge mpi`
+ 1. `conda install -c conda-forge mpi4py`
  1. `conda install -c conda-forge imagemagick`
  1. `make install`
 
