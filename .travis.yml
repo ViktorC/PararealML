@@ -18,7 +18,6 @@ before_install:
 install:
   - conda install -c conda-forge mpi
   - conda install -c conda-forge imagemagick
-  - conda install -c conda-forge fipy==3.3
   - make install
 
 addons:
@@ -28,5 +27,5 @@ addons:
 
 script:
   - make lint
-  - make test
+  - make coverage
   - sonar-scanner
