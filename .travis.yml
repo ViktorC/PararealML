@@ -16,7 +16,7 @@ before_install:
   - conda activate test-environment
 
 install:
-  - conda install -c conda-forge mpi
+  - conda install -c conda-forge mpich
   - conda install -c conda-forge imagemagick
   - make install
 
