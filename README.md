@@ -117,7 +117,7 @@ On the other hand, the solutions of 2D partial differential equations can be vis
 
 Finally, the second way of visualising the solution of 2D partial differential equations is the generation of a 2D contour plot.
 
-<img src="https://user-images.githubusercontent.com/12938964/91649018-dc313e80-ea66-11ea-9995-dd98af8dbdac.gif" alt="navier_stokes_2d" width="400"/>
+<img src="https://user-images.githubusercontent.com/12938964/96491705-8133f080-123a-11eb-98fa-7f4b43730ac1.gif" alt="navier_stokes_2d" width="400"/>
 
 ## Examples
 
