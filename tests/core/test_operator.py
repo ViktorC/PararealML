@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 
-from pararealml import *
+from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
+    ContinuousInitialCondition, InitialValueProblem, ODEOperator, \
+    DiffusionEquation, UniformGrid, NeumannBoundaryCondition, \
+    DirichletBoundaryCondition, GaussianInitialCondition, LorenzEquation, \
+    FDMOperator, ForwardEulerMethod, ThreePointCentralFiniteDifferenceMethod, \
+    BurgerEquation, RK4, NavierStokesStreamFunctionVorticityEquation, \
+    CahnHilliardEquation, DiscreteInitialCondition
 
 
 def test_ode_operator_on_ode():
