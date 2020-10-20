@@ -9,8 +9,8 @@ from matplotlib.colors import Colormap
 from mpl_toolkits.mplot3d import Axes3D
 
 from pararealml.core.differential_equation import NBodyGravitationalEquation, \
-    WaveEquation, DiffusionEquation, NavierStokesStreamFunctionVorticityEquation, \
-    ShallowWaterEquation, BurgerEquation
+    DiffusionEquation, WaveEquation, BurgerEquation, ShallowWaterEquation, \
+    NavierStokesStreamFunctionVorticityEquation
 from pararealml.core.solution import Solution
 
 
