@@ -568,6 +568,34 @@ class CahnHilliardEquation(DifferentialEquation):
         )
 
 
+class BurgerEquation(DifferentialEquation):
+    """
+    A system of partial differential equations providing a simplified model
+    of fluid flow.
+    """
+
+    def __init__(self, x_dimension: int, re: float = 4000.):
+        """
+        :param x_dimension: the dimensionality of the spatial domain of the
+            differential equation's solution
+        :param re: the Reynolds number
+        """
+        if x_dimension <= 0:
+            raise ValueError
+
+        self._re = re
+
+        super(BurgerEquation, self).__init__(x_dimension, x_dimension)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        return SymbolicEquationSystem([
+            (1. / self._re) * self._symbols.y_laplacian[i] -
+            np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
+            for i in range(self._x_dimension)
+        ])
+
+
 class ShallowWaterEquation(DifferentialEquation):
     """
     A system of partial differential equations providing a non-conservative
@@ -618,35 +646,7 @@ class ShallowWaterEquation(DifferentialEquation):
         ])
 
 
-class BurgerEquation(DifferentialEquation):
-    """
-    A system of partial differential equations providing a simplified model
-    of fluid flow.
-    """
-
-    def __init__(self, x_dimension: int, re: float = 4000.):
-        """
-        :param x_dimension: the dimensionality of the spatial domain of the
-            differential equation's solution
-        :param re: the Reynolds number
-        """
-        if x_dimension <= 0:
-            raise ValueError
-
-        self._re = re
-
-        super(BurgerEquation, self).__init__(x_dimension, x_dimension)
-
-    @property
-    def symbolic_equation_system(self) -> SymbolicEquationSystem:
-        return SymbolicEquationSystem([
-            (1. / self._re) * self._symbols.y_laplacian[i] -
-            np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
-            for i in range(self._x_dimension)
-        ])
-
-
-class NavierStokes2DEquation(DifferentialEquation):
+class NavierStokesStreamFunctionVorticityEquation(DifferentialEquation):
     """
     A system of two partial differential equations modelling the vorticity and
     the stream function of incompressible fluids in two spatial dimensions.
@@ -657,7 +657,7 @@ class NavierStokes2DEquation(DifferentialEquation):
         :param re: the Reynolds number
         """
         self._re = re
-        super(NavierStokes2DEquation, self).__init__(2, 2)
+        super(NavierStokesStreamFunctionVorticityEquation, self).__init__(2, 2)
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:

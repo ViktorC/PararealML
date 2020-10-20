@@ -22,9 +22,10 @@ from pararealml.core.differential_equation import DiffusionEquation
 from pararealml.core.differential_equation import ConvectionDiffusionEquation
 from pararealml.core.differential_equation import WaveEquation
 from pararealml.core.differential_equation import CahnHilliardEquation
-from pararealml.core.differential_equation import ShallowWaterEquation
 from pararealml.core.differential_equation import BurgerEquation
-from pararealml.core.differential_equation import NavierStokes2DEquation
+from pararealml.core.differential_equation import ShallowWaterEquation
+from pararealml.core.differential_equation import \
+    NavierStokesStreamFunctionVorticityEquation
 
 from pararealml.core.differentiator import Differentiator
 from pararealml.core.differentiator import \
@@ -81,9 +82,9 @@ __all__ = [
     'ConvectionDiffusionEquation',
     'WaveEquation',
     'CahnHilliardEquation',
-    'ShallowWaterEquation',
     'BurgerEquation',
-    'NavierStokes2DEquation',
+    'ShallowWaterEquation',
+    'NavierStokesStreamFunctionVorticityEquation',
     'Differentiator',
     'ThreePointCentralFiniteDifferenceMethod',
     'InitialCondition',
