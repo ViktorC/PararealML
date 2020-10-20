@@ -160,6 +160,9 @@ class Solution:
             None, linear interpolation is used
         :return: the discrete solution
         """
+        if vertex_oriented is None:
+            vertex_oriented = self._vertex_oriented
+
         if (self._cp.differential_equation.x_dimension == 0) \
                 or (self._vertex_oriented == vertex_oriented):
             return np.copy(self._discrete_y)
