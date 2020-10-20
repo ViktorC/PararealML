@@ -832,8 +832,8 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
         None, x_0_upper_derivative_boundary_constraint)
 
     derivative_boundary_constraints = np.array([
-        [x_0_derivative_boundary_constraint_pair, None]
-    ])
+        [x_0_derivative_boundary_constraint_pair, None],
+    ], dtype=object)
 
     laplacian = diff.laplacian(y, d_x, derivative_boundary_constraints)
 
@@ -887,7 +887,7 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     derivative_boundary_constraints = np.array([
         [x_0_derivative_boundary_constraint_pair, None],
         [x_1_derivative_boundary_constraint_pair, None]
-    ])
+    ], dtype=object)
 
     laplacian = diff.laplacian(y, d_x, derivative_boundary_constraints)
 
