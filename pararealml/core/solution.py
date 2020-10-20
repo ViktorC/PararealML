@@ -83,7 +83,7 @@ class Solution:
 
     def x_coordinates(
             self,
-            vertex_oriented: bool
+            vertex_oriented: Optional[bool] = None
     ) -> Optional[Sequence[np.ndarray]]:
         """
         Returns the spatial coordinates at which the solution is evaluated. To
@@ -95,7 +95,11 @@ class Solution:
         :return: a tuple of arrays each representing the coordinates along the
             corresponding axis
         """
-        return self._cp.mesh.coordinates(vertex_oriented)
+        if self._cp.differential_equation.x_dimension:
+            if vertex_oriented is None:
+                vertex_oriented = self._vertex_oriented
+            return self._cp.mesh.coordinates(vertex_oriented)
+        return None
 
     def y(
             self,
