@@ -338,8 +338,8 @@ class FDMOperator(Operator):
         if diff_eq.x_dimension:
             d_x = cp.mesh.d_x
 
-            d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
-            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
+            y_gradient = diff_eq.symbols.y_gradient
+            y_hessian = diff_eq.symbols.y_hessian
             y_laplacian = diff_eq.symbols.y_laplacian
             y_divergence = diff_eq.symbols.y_divergence
 
@@ -351,7 +351,7 @@ class FDMOperator(Operator):
                         d_y_bc_func(t)[:, [_i]])
 
                 for j in range(diff_eq.x_dimension):
-                    symbol_map[d_y_over_d_x[i, j]] = \
+                    symbol_map[y_gradient[i, j]] = \
                         lambda t, y, d_y_bcs, _i=i, _j=j: \
                         self._differentiator.derivative(
                             y,
@@ -361,7 +361,7 @@ class FDMOperator(Operator):
                             d_y_bcs(t)[_j, _i])
 
                     for k in range(diff_eq.x_dimension):
-                        symbol_map[d_y_over_d_x_x[i, j, k]] = \
+                        symbol_map[y_hessian[i, j, k]] = \
                             lambda t, y, d_y_bc_func, _i=i, _j=j, _k=k: \
                             self._differentiator.second_derivative(
                                 y,
@@ -1046,8 +1046,8 @@ class PINNOperator(StatelessMLOperator):
             symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
 
         if diff_eq.x_dimension:
-            d_y_over_d_x = diff_eq.symbols.d_y_over_d_x
-            d_y_over_d_x_x = diff_eq.symbols.d_y_over_d_x_x
+            y_gradient = diff_eq.symbols.y_gradient
+            y_hessian = diff_eq.symbols.y_hessian
             y_laplacian = diff_eq.symbols.y_laplacian
             y_divergence = diff_eq.symbols.y_divergence
 
@@ -1065,11 +1065,11 @@ class PINNOperator(StatelessMLOperator):
                         True)
 
                 for j in range(diff_eq.x_dimension):
-                    symbol_map[d_y_over_d_x[i, j]] = lambda x, y, _i=i, _j=j: \
+                    symbol_map[y_gradient[i, j]] = lambda x, y, _i=i, _j=j: \
                         tf.gradients(y[:, _i:_i + 1], x)[0][:, _j:_j + 1]
 
                     for k in range(diff_eq.x_dimension):
-                        symbol_map[d_y_over_d_x_x[i, j, k]] = \
+                        symbol_map[y_hessian[i, j, k]] = \
                             lambda x, y, _i=i, _j=j, _k=k: \
                             tf.gradients(
                                 tf.gradients(

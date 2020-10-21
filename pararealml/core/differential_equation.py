@@ -22,17 +22,17 @@ class Symbols:
         self._y = symarray('y', (y_dimension,))
 
         if x_dimension:
-            self._d_y_over_d_x = symarray(
-                'd_y_over_d_x', (y_dimension, x_dimension))
-            self._d_y_over_d_x_x = symarray(
-                'd_y_over_d_x_x', (y_dimension, x_dimension, x_dimension))
-            self._y_laplacian = symarray('y_laplacian', (y_dimension,))
+            self._y_gradient = symarray(
+                'y_gradient', (y_dimension, x_dimension))
+            self._y_hessian = symarray(
+                'y_hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
                 'y_divergence', (y_dimension,) * x_dimension
             )
+            self._y_laplacian = symarray('y_laplacian', (y_dimension,))
         else:
-            self._d_y_over_d_x = None
-            self._d_y_over_d_x_x = None
+            self._y_gradient = None
+            self._y_hessian = None
             self._y_laplacian = None
             self._y_divergence = None
 
@@ -52,31 +52,23 @@ class Symbols:
         return np.copy(self._y)
 
     @property
-    def d_y_over_d_x(self) -> Optional[np.ndarray]:
+    def y_gradient(self) -> Optional[np.ndarray]:
         """
         A 2D array of symbols denoting the first spatial derivatives of the
         solution where the first rank is the element of the solution and the
         second rank is the spatial axis.
         """
-        return np.copy(self._d_y_over_d_x)
+        return np.copy(self._y_gradient)
 
     @property
-    def d_y_over_d_x_x(self) -> Optional[np.ndarray]:
+    def y_hessian(self) -> Optional[np.ndarray]:
         """
         A 3D array of symbols denoting the second spatial derivatives of the
         solution where the first rank is the element of the solution, the
         second rank is the first spatial axis, and the third rank is the second
         spatial axis.
         """
-        return np.copy(self._d_y_over_d_x_x)
-
-    @property
-    def y_laplacian(self) -> Optional[np.ndarray]:
-        """
-        An array of symbols denoting the spatial Laplacians of the elements of
-        the differential equation's solution.
-        """
-        return np.copy(self._y_laplacian)
+        return np.copy(self._y_hessian)
 
     @property
     def y_divergence(self) -> Optional[np.ndarray]:
@@ -85,6 +77,14 @@ class Symbols:
         the corresponding elements of the differential equation's solution.
         """
         return np.copy(self._y_divergence)
+
+    @property
+    def y_laplacian(self) -> Optional[np.ndarray]:
+        """
+        An array of symbols denoting the spatial Laplacians of the elements of
+        the differential equation's solution.
+        """
+        return np.copy(self._y_laplacian)
 
 
 class LhsType(Enum):
@@ -250,10 +250,10 @@ class DifferentialEquation(ABC):
         all_symbols.update(self._symbols.y)
 
         if self._x_dimension:
-            all_symbols.update(self._symbols.d_y_over_d_x.flatten())
-            all_symbols.update(self._symbols.d_y_over_d_x_x.flatten())
-            all_symbols.update(self._symbols.y_laplacian)
+            all_symbols.update(self._symbols.y_gradient.flatten())
+            all_symbols.update(self._symbols.y_hessian.flatten())
             all_symbols.update(self._symbols.y_divergence.flatten())
+            all_symbols.update(self._symbols.y_laplacian)
 
         for rhs_element in self.symbolic_equation_system.rhs:
             rhs_symbols = rhs_element.free_symbols
@@ -503,7 +503,7 @@ class ConvectionDiffusionEquation(DifferentialEquation):
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
         return SymbolicEquationSystem([
             self._d * self._symbols.y_laplacian[0] -
-            np.dot(self._velocity, self._symbols.d_y_over_d_x[0, :])
+            np.dot(self._velocity, self._symbols.y_gradient[0, :])
         ])
 
 
@@ -591,7 +591,7 @@ class BurgerEquation(DifferentialEquation):
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
         return SymbolicEquationSystem([
             (1. / self._re) * self._symbols.y_laplacian[i] -
-            np.dot(self._symbols.y, self._symbols.d_y_over_d_x[i, :])
+            np.dot(self._symbols.y, self._symbols.y_gradient[i, :])
             for i in range(self._x_dimension)
         ])
 
@@ -626,23 +626,22 @@ class ShallowWaterEquation(DifferentialEquation):
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
-        sym = self._symbols
         return SymbolicEquationSystem([
-            -self._h * sym.y_divergence[1, 2] -
-            sym.y[0] * sym.d_y_over_d_x[1, 0] -
-            sym.y[1] * sym.d_y_over_d_x[0, 0] -
-            sym.y[0] * sym.d_y_over_d_x[2, 1] -
-            sym.y[2] * sym.d_y_over_d_x[0, 1],
-            -np.dot(sym.y[1:3], sym.d_y_over_d_x[1, :]) +
-            self._f * sym.y[2] -
-            self._g * sym.d_y_over_d_x[0, 0] -
-            self._b * sym.y[1] +
-            self._v * sym.y_laplacian[1],
-            -np.dot(sym.y[1:3], sym.d_y_over_d_x[2, :]) -
-            self._f * sym.y[1] -
-            self._g * sym.d_y_over_d_x[0, 1] -
-            self._b * sym.y[2] +
-            self._v * sym.y_laplacian[2]
+            -self._h * self._symbols.y_divergence[1, 2] -
+            self._symbols.y[0] * self._symbols.y_gradient[1, 0] -
+            self._symbols.y[1] * self._symbols.y_gradient[0, 0] -
+            self._symbols.y[0] * self._symbols.y_gradient[2, 1] -
+            self._symbols.y[2] * self._symbols.y_gradient[0, 1],
+            -np.dot(self._symbols.y[1:3], self._symbols.y_gradient[1, :]) +
+            self._f * self._symbols.y[2] -
+            self._g * self._symbols.y_gradient[0, 0] -
+            self._b * self._symbols.y[1] +
+            self._v * self._symbols.y_laplacian[1],
+            -np.dot(self._symbols.y[1:3], self._symbols.y_gradient[2, :]) -
+            self._f * self._symbols.y[1] -
+            self._g * self._symbols.y_gradient[0, 1] -
+            self._b * self._symbols.y[2] +
+            self._v * self._symbols.y_laplacian[2]
         ])
 
 
@@ -665,8 +664,8 @@ class NavierStokesStreamFunctionVorticityEquation(DifferentialEquation):
             [
                 (1. / self._re) * self._symbols.y_laplacian[0] -
                 np.cross(
-                    self._symbols.d_y_over_d_x[0, :],
-                    self._symbols.d_y_over_d_x[1, :]
+                    self._symbols.y_gradient[0, :],
+                    self._symbols.y_gradient[1, :]
                 ),
                 -self._symbols.y[0]
             ],
