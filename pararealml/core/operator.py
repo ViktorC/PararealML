@@ -273,16 +273,16 @@ class FDMOperator(Operator):
 
             if len(y_eq_inds):
                 args = [f(t, y, d_y_c_func) for f in y_arg_functions]
-                y_c = y_c_func(t)
+                y_c = y_c_func(t + self._d_t)
                 y_c = None if y_c is None else y_c[y_eq_inds]
                 y_next[..., y_eq_inds] = apply_constraints_along_last_axis(
                     y_c, np.concatenate(y_rhs_lambda(args), axis=-1))
 
             if len(y_lapl_eq_inds):
                 args = [f(t, y, d_y_c_func) for f in y_lapl_arg_functions]
-                y_c = y_c_func(t)
+                y_c = y_c_func(t + self._d_t)
                 y_c = None if y_c is None else y_c[y_lapl_eq_inds]
-                d_y_c = d_y_c_func(t)
+                d_y_c = d_y_c_func(t + self._d_t)
                 d_y_c = None if d_y_c is None else d_y_c[:, y_lapl_eq_inds]
                 y_next[..., y_lapl_eq_inds] = \
                     self._differentiator.anti_laplacian(
