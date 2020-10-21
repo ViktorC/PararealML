@@ -14,7 +14,7 @@ from deepxde.model import TrainState, LossHistory
 from scipy.integrate import solve_ivp, OdeSolver
 from tensorflow import Tensor
 
-from pararealml import apply_constraints_along_last_axis
+from pararealml import apply_constraints_along_last_axis, Constraint
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LhsType, DifferentialEquation
 from pararealml.core.differentiator import Differentiator
@@ -306,7 +306,20 @@ class FDMOperator(Operator):
     def _create_symbol_map(
             self,
             cp: ConstrainedProblem
-    ) -> Dict[sp.Symbol, Callable[[float, np.ndarray], np.ndarray]]:
+    ) -> Dict[
+         sp.Symbol,
+         Callable[
+             [
+                 float,
+                 np.ndarray,
+                 Callable[
+                     [Optional[float]],
+                     Optional[Sequence[Constraint]]
+                 ]
+             ],
+             np.ndarray
+         ]
+    ]:
         """
         Creates a dictionary mapping symbols to functions returning the values
         of these symbols given t and y.
@@ -1017,7 +1030,7 @@ class PINNOperator(StatelessMLOperator):
     @staticmethod
     def _create_symbol_map(
             cp: ConstrainedProblem
-    ) -> Dict[sp.Symbol, Callable[[Tensor, Tensor, Tensor], Tensor]]:
+    ) -> Dict[sp.Symbol, Callable[[Tensor, Tensor], Tensor]]:
         """
         Creates a dictionary mapping symbols to functions returning the values
         of these symbols given x and y.
