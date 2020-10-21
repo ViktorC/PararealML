@@ -79,7 +79,7 @@ class Operator(ABC):
         :return: the array containing the discretised temporal domain
         """
         t_0 = t[0]
-        steps = round((t[1] - t_0) / d_t)
+        steps = int(round((t[1] - t_0) / d_t))
         t_1 = t_0 + steps * d_t
         return np.linspace(t_0, t_1, steps + 1)
 
