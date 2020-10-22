@@ -27,14 +27,13 @@ class Symbols:
             self._y_hessian = symarray(
                 'y_hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
-                'y_divergence', (y_dimension,) * x_dimension
-            )
+                'y_divergence', (y_dimension,) * x_dimension)
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
         else:
             self._y_gradient = None
             self._y_hessian = None
-            self._y_laplacian = None
             self._y_divergence = None
+            self._y_laplacian = None
 
     @property
     def t(self) -> Symbol:
