@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from sklearn.ensemble import RandomForestRegressor
 
 from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
     ContinuousInitialCondition, InitialValueProblem, ODEOperator, \
@@ -7,7 +8,44 @@ from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
     DirichletBoundaryCondition, GaussianInitialCondition, LorenzEquation, \
     FDMOperator, ForwardEulerMethod, ThreePointCentralFiniteDifferenceMethod, \
     BurgerEquation, RK4, NavierStokesStreamFunctionVorticityEquation, \
-    CahnHilliardEquation, DiscreteInitialCondition
+    CahnHilliardEquation, DiscreteInitialCondition, \
+    NBodyGravitationalEquation, StatelessRegressionOperator, \
+    PopulationGrowthEquation, ShallowWaterEquation
+from pararealml.utils.rand import set_random_seed
+
+
+def test_conventional_operators_on_ode_with_analytic_solution():
+    r = .02
+    y_0 = 100.
+
+    diff_eq = PopulationGrowthEquation(r)
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: (y_0,))
+    ivp = InitialValueProblem(
+        cp,
+        (0., 10.),
+        ic,
+        lambda _ivp, t, x: (y_0 * np.e ** (r * t),))
+
+    ode_op = ODEOperator('DOP853', 1e-4)
+    fdm_op = FDMOperator(
+        RK4(), ThreePointCentralFiniteDifferenceMethod(), 1e-4)
+
+    ode_solution = ode_op.solve(ivp)
+    fdm_solution = fdm_op.solve(ivp)
+
+    assert ode_solution.d_t == 1e-4
+    assert fdm_solution.d_t == 1e-4
+    assert np.all(ode_solution.t_coordinates == fdm_solution.t_coordinates)
+    assert ode_solution.x_coordinates() is None
+    assert fdm_solution.x_coordinates() is None
+    assert ode_solution.discrete_y().shape == (1e5, 1)
+    assert fdm_solution.discrete_y().shape == (1e5, 1)
+    assert np.allclose(ode_solution.discrete_y(), fdm_solution.discrete_y())
+
+    analytic_y = np.array([ivp.exact_y(t) for t in ode_solution.t_coordinates])
+
+    assert np.allclose(analytic_y, ode_solution.discrete_y())
 
 
 def test_ode_operator_on_ode():
@@ -161,3 +199,90 @@ def test_fdm_operator_on_3d_pde():
     assert np.all(cell_oriented_x_coordinates[0] == np.linspace(.25, 4.75, 10))
     assert np.all(cell_oriented_x_coordinates[1] == np.linspace(.5, 4.5, 5))
     assert np.all(cell_oriented_x_coordinates[2] == np.linspace(1., 9., 5))
+
+
+def test_stateless_regression_operator_on_ode():
+    set_random_seed(0)
+
+    n_planets = 5
+    masses = np.random.randint(5e10, 5e12, n_planets)
+    initial_positions = 40 * np.random.rand(n_planets * 3) - 20.
+    initial_velocities = 5 * np.random.rand(n_planets * 3)
+
+    diff_eq = NBodyGravitationalEquation(3, masses)
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(
+        cp,
+        lambda _: np.append(initial_positions, [initial_velocities]))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = ODEOperator('DOP853', .001)
+    ref_solution = oracle.solve(ivp)
+
+    batch_ml_op = StatelessRegressionOperator(1.25, True, batch_mode=True)
+    batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
+    batch_solution = batch_ml_op.solve(ivp)
+
+    assert batch_solution.vertex_oriented is True
+    assert batch_solution.d_t == 1.25
+    assert batch_solution.x_coordinates() is None
+    assert batch_solution.discrete_y().shape == (8, 2 * 3 * n_planets)
+
+    diff = ref_solution.diff([batch_solution])
+    assert np.all(diff.matching_time_points == np.linspace(1.25, 10., 8))
+    assert np.max(np.abs(diff.differences[0])) < .1
+
+    non_batch_ml_op = StatelessRegressionOperator(1.25, True, batch_mode=False)
+    non_batch_ml_op.model = batch_ml_op.model
+    non_batch_solution = non_batch_ml_op.solve(ivp)
+
+    assert np.all(
+        batch_solution.discrete_y() == non_batch_solution.discrete_y())
+
+
+def test_stateless_regression_operator_on_pde():
+    set_random_seed(0)
+
+    diff_eq = ShallowWaterEquation(.5)
+    mesh = UniformGrid(((-5., 5.), (-5., 5.)), (1., 1.))
+    bcs = (
+        (NeumannBoundaryCondition(
+            lambda x, t: (.0, None, None), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: (.0, None, None), is_static=True)),
+        (NeumannBoundaryCondition(
+            lambda x, t: (.0, None, None), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: (.0, None, None), is_static=True))
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([2.5, 2.5]), np.array([[.25, 0.], [0., .25]])),) * 3,
+        (1., .0, .0))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = FDMOperator(
+        RK4(), ThreePointCentralFiniteDifferenceMethod(), 1e-2)
+    ref_solution = oracle.solve(ivp)
+
+    batch_ml_op = StatelessRegressionOperator(2.5, True, batch_mode=True)
+    batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
+    batch_solution = batch_ml_op.solve(ivp)
+
+    assert batch_solution.vertex_oriented is True
+    assert batch_solution.d_t == 2.5
+    assert np.array_equal(
+        batch_solution.x_coordinates(), [np.linspace(-5., 5., 11)] * 2)
+    assert batch_solution.discrete_y().shape == (4, 11, 11, 3)
+
+    diff = ref_solution.diff([batch_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .1
+
+    non_batch_ml_op = StatelessRegressionOperator(2.5, True, batch_mode=False)
+    non_batch_ml_op.model = batch_ml_op.model
+    non_batch_solution = non_batch_ml_op.solve(ivp)
+
+    assert np.all(
+        batch_solution.discrete_y() == non_batch_solution.discrete_y())
