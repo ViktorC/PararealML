@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
 from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
@@ -10,7 +11,8 @@ from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
     BurgerEquation, RK4, NavierStokesStreamFunctionVorticityEquation, \
     CahnHilliardEquation, DiscreteInitialCondition, \
     NBodyGravitationalEquation, StatelessRegressionOperator, \
-    PopulationGrowthEquation, ShallowWaterEquation
+    PopulationGrowthEquation, ShallowWaterEquation, \
+    ConvectionDiffusionEquation, PINNOperator
 from pararealml.utils.rand import set_random_seed
 
 
@@ -91,7 +93,7 @@ def test_fdm_operator_on_ode():
         ForwardEulerMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
     solution = op.solve(ivp)
 
-    assert solution.vertex_oriented is True
+    assert solution.vertex_oriented
     assert solution.d_t == .01
     assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (1000, 3)
@@ -112,7 +114,7 @@ def test_fdm_operator_on_1d_pde():
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
     solution = op.solve(ivp)
 
-    assert solution.vertex_oriented is True
+    assert solution.vertex_oriented
     assert solution.d_t == .25
     assert solution.discrete_y().shape == (200, 101, 1)
     assert solution.discrete_y(False).shape == (200, 100, 1)
@@ -143,7 +145,7 @@ def test_fdm_operator_on_2d_pde():
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
     solution = op.solve(ivp)
 
-    assert solution.vertex_oriented is True
+    assert solution.vertex_oriented
     assert solution.d_t == .25
     assert solution.discrete_y().shape == (40, 11, 11, 2)
     assert solution.discrete_y(False).shape == (40, 10, 10, 2)
@@ -181,7 +183,7 @@ def test_fdm_operator_on_3d_pde():
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
     solution = op.solve(ivp)
 
-    assert solution.vertex_oriented is True
+    assert solution.vertex_oriented
     assert solution.d_t == .05
     assert solution.discrete_y().shape == (100, 11, 6, 6, 2)
     assert solution.discrete_y(False).shape == (100, 10, 5, 5, 2)
@@ -223,7 +225,7 @@ def test_stateless_regression_operator_on_ode():
     batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
     batch_solution = batch_ml_op.solve(ivp)
 
-    assert batch_solution.vertex_oriented is True
+    assert batch_solution.vertex_oriented
     assert batch_solution.d_t == 1.25
     assert batch_solution.x_coordinates() is None
     assert batch_solution.discrete_y().shape == (8, 2 * 3 * n_planets)
@@ -270,7 +272,7 @@ def test_stateless_regression_operator_on_pde():
     batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
     batch_solution = batch_ml_op.solve(ivp)
 
-    assert batch_solution.vertex_oriented is True
+    assert batch_solution.vertex_oriented
     assert batch_solution.d_t == 2.5
     assert np.array_equal(
         batch_solution.x_coordinates(), [np.linspace(-5., 5., 11)] * 2)
@@ -286,3 +288,87 @@ def test_stateless_regression_operator_on_pde():
 
     assert np.all(
         batch_solution.discrete_y() == non_batch_solution.discrete_y())
+
+
+def test_pinn_operator_on_ode():
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: (100.,))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
+    batch_pinn_op.train(
+        ivp,
+        FNN(
+            batch_pinn_op.model_input_shape(ivp) +
+            (50,) * 1 +
+            batch_pinn_op.model_output_shape(ivp),
+            'tanh',
+            'Glorot normal'),
+        n_domain=500,
+        n_initial=1,
+        n_test=100,
+        n_epochs=5000,
+        optimiser='adam',
+        learning_rate=.0001,
+        scipy_optimiser='L-BFGS-B')
+    batch_solution = batch_pinn_op.solve(ivp)
+
+    assert batch_solution.vertex_oriented
+    assert batch_solution.d_t == 2.5
+    assert batch_solution.x_coordinates() is None
+    assert batch_solution.discrete_y().shape == (4, 1)
+
+    non_batch_pinn_op = PINNOperator(2.5, True, batch_mode=False)
+    non_batch_pinn_op.model = batch_pinn_op.model
+    non_batch_solution = non_batch_pinn_op.solve(ivp)
+
+    assert np.allclose(
+        batch_solution.discrete_y(), non_batch_solution.discrete_y())
+
+
+def test_pinn_operator_on_pde():
+    diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
+    mesh = UniformGrid(((0., 50.), (0., 50.)), (5., 5.))
+    bcs = (
+        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True))
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([12.5, 12.5]), np.array([[10., 0.], [0., 10.]])),), (20.,))
+    ivp = InitialValueProblem(cp, (0., 5.), ic)
+
+    batch_pinn_op = PINNOperator(1.25, False, batch_mode=True)
+    batch_pinn_op.train(
+        ivp,
+        FNN(
+            batch_pinn_op.model_input_shape(ivp) +
+            (50,) * 3 +
+            batch_pinn_op.model_output_shape(ivp),
+            'tanh',
+            'Glorot normal'),
+        n_domain=800,
+        n_initial=80,
+        n_boundary=80,
+        n_test=200,
+        n_epochs=5000,
+        optimiser='adam',
+        learning_rate=.001)
+    batch_solution = batch_pinn_op.solve(ivp)
+
+    assert not batch_solution.vertex_oriented
+    assert batch_solution.d_t == 1.25
+    assert np.array_equal(
+        batch_solution.x_coordinates(), [np.linspace(2.5, 47.5, 10)] * 2)
+    assert batch_solution.discrete_y().shape == (4, 10, 10, 1)
+
+    non_batch_pinn_op = PINNOperator(.25, False, batch_mode=False)
+    non_batch_pinn_op.model = batch_pinn_op.model
+    non_batch_solution = non_batch_pinn_op.solve(ivp)
+
+    pinn_diff = batch_solution.diff([non_batch_solution])
+    assert np.isclose(np.max(np.abs(pinn_diff.differences[0])), 0.)
