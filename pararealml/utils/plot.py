@@ -46,7 +46,7 @@ def plot_y_against_t(
             plt.legend(loc=legend_location)
 
     plt.tight_layout()
-    plt.savefig(f'{file_name}.jpg')
+    plt.savefig(f'{file_name}.png')
     plt.clf()
 
 
@@ -80,7 +80,7 @@ def plot_phase_space(solution: Solution, file_name: str):
 
         ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
 
-    plt.savefig(f'{file_name}.jpg')
+    plt.savefig(f'{file_name}.png')
     plt.clf()
 
 
@@ -752,7 +752,7 @@ def plot_model_losses(
     plt.legend((train_bars[0], test_bars[0]), ('train', 'test'))
 
     plt.tight_layout()
-    plt.savefig(f'{file_name}.jpg')
+    plt.savefig(f'{file_name}.png')
     plt.clf()
 
 
@@ -812,7 +812,7 @@ def plot_rms_solution_diffs(
     plt.legend(loc=legend_location)
 
     plt.tight_layout()
-    plt.savefig(f'{file_name}.jpg')
+    plt.savefig(f'{file_name}.png')
     plt.clf()
 
 
@@ -848,5 +848,5 @@ def plot_execution_times(
     plt.ylim(bottom=0)
 
     plt.tight_layout()
-    plt.savefig(f'{file_name}.jpg')
+    plt.savefig(f'{file_name}.png')
     plt.clf()
