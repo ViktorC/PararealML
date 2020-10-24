@@ -403,7 +403,7 @@ def test_stateful_regression_operator_on_ode():
 
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
-    assert np.max(np.abs(diff.differences[0])) < .1
+    assert np.max(np.abs(diff.differences[0])) < .2
 
 
 def test_stateful_regression_operator_on_pde():
