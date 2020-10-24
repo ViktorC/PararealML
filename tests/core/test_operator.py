@@ -12,7 +12,8 @@ from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
     CahnHilliardEquation, DiscreteInitialCondition, \
     NBodyGravitationalEquation, StatelessRegressionOperator, \
     PopulationGrowthEquation, ShallowWaterEquation, \
-    ConvectionDiffusionEquation, PINNOperator
+    ConvectionDiffusionEquation, PINNOperator, StatefulRegressionOperator, \
+    WaveEquation
 from pararealml.utils.rand import set_random_seed
 
 
@@ -372,3 +373,71 @@ def test_pinn_operator_on_pde():
 
     pinn_diff = batch_solution.diff([non_batch_solution])
     assert np.isclose(np.max(np.abs(pinn_diff.differences[0])), 0.)
+
+
+def test_stateful_regression_operator_on_ode():
+    set_random_seed(0)
+
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: (1.,) * 3)
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = ODEOperator('DOP853', .001)
+    ref_solution = oracle.solve(ivp)
+
+    ml_op = StatefulRegressionOperator(2.5, True)
+    ml_op.train(
+        ivp,
+        oracle,
+        RandomForestRegressor(),
+        20,
+        noise_sd=.01,
+        relative_noise=True)
+    ml_solution = ml_op.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 2.5
+    assert ml_solution.x_coordinates() is None
+    assert ml_solution.discrete_y().shape == (4, 3)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .1
+
+
+def test_stateful_regression_operator_on_pde():
+    set_random_seed(0)
+
+    diff_eq = WaveEquation(2)
+    mesh = UniformGrid(((-5., 5.), (-5., 5.)), (1., 1.))
+    bcs = (
+        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
+         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
+        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
+         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]])),) * 2,
+        (3., .0))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = FDMOperator(
+        RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    ref_solution = oracle.solve(ivp)
+
+    ml_op = StatefulRegressionOperator(2.5, True)
+    ml_op.train(ivp, oracle, RandomForestRegressor(), 20, noise_sd=(0., .1))
+    ml_solution = ml_op.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 2.5
+    assert np.array_equal(
+        ml_solution.x_coordinates(), [np.linspace(-5., 5., 11)] * 2)
+    assert ml_solution.discrete_y().shape == (4, 11, 11, 2)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .5
