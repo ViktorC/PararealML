@@ -3,17 +3,24 @@ import pytest
 from deepxde.maps import FNN
 from sklearn.ensemble import RandomForestRegressor
 
-from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
-    ContinuousInitialCondition, InitialValueProblem, ODEOperator, \
-    DiffusionEquation, UniformGrid, NeumannBoundaryCondition, \
-    DirichletBoundaryCondition, GaussianInitialCondition, LorenzEquation, \
-    FDMOperator, ForwardEulerMethod, ThreePointCentralFiniteDifferenceMethod, \
-    BurgerEquation, RK4, NavierStokesStreamFunctionVorticityEquation, \
-    CahnHilliardEquation, DiscreteInitialCondition, \
-    NBodyGravitationalEquation, StatelessRegressionOperator, \
-    PopulationGrowthEquation, ShallowWaterEquation, \
-    ConvectionDiffusionEquation, PINNOperator, StatefulRegressionOperator, \
-    WaveEquation, CrankNicolsonMethod
+from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
+    NeumannBoundaryCondition
+from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.differential_equation import PopulationGrowthEquation, \
+    LotkaVolterraEquation, LorenzEquation, NBodyGravitationalEquation, \
+    DiffusionEquation, ConvectionDiffusionEquation, WaveEquation, \
+    CahnHilliardEquation, BurgerEquation, ShallowWaterEquation, \
+    NavierStokesStreamFunctionVorticityEquation
+from pararealml.core.differentiator import \
+    ThreePointCentralFiniteDifferenceMethod
+from pararealml.core.initial_condition import DiscreteInitialCondition, \
+    ContinuousInitialCondition, GaussianInitialCondition
+from pararealml.core.initial_value_problem import InitialValueProblem
+from pararealml.core.integrator import ForwardEulerMethod, RK4, \
+    CrankNicolsonMethod
+from pararealml.core.mesh import UniformGrid
+from pararealml.core.operator import ODEOperator, FDMOperator, PINNOperator, \
+    StatelessRegressionOperator, StatefulRegressionOperator
 from pararealml.utils.rand import set_random_seed
 
 
@@ -230,6 +237,165 @@ def test_fdm_operator_on_3d_pde():
     assert np.all(cell_oriented_x_coordinates[2] == np.linspace(1., 9., 5))
 
 
+def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
+    diff_eq = DiffusionEquation(1, 1.5)
+    mesh = UniformGrid(((0., 10.),), (1.,))
+    bcs = (
+        (NeumannBoundaryCondition(lambda x, t: (0.,)),
+         DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([5.]), np.array([[2.5]])),),
+        (20.,))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .5)
+    solution = op.solve(ivp)
+    y = solution.discrete_y()
+
+    assert solution.vertex_oriented
+    assert solution.d_t == .5
+    assert y.shape == (20, 11, 1)
+    assert solution.discrete_y(False).shape == (20, 10, 1)
+
+    vertex_oriented_x_coordinates = solution.x_coordinates()
+    cell_oriented_x_coordinates = solution.x_coordinates(False)
+
+    assert len(vertex_oriented_x_coordinates) == \
+        len(cell_oriented_x_coordinates) == 1
+    assert np.all(
+        vertex_oriented_x_coordinates[0] == np.linspace(0., 10., 11))
+    assert np.all(
+        cell_oriented_x_coordinates[0] == np.linspace(.5, 9.5, 10))
+
+    assert np.isclose(y[0, -1, 0], .1)
+    assert np.isclose(y[-1, -1, 0], 2.)
+
+
+def test_pinn_operator_on_ode():
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: (100.,))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
+    batch_pinn_op.train(
+        ivp,
+        FNN(
+            batch_pinn_op.model_input_shape(ivp) +
+            (50,) * 1 +
+            batch_pinn_op.model_output_shape(ivp),
+            'tanh',
+            'Glorot normal'),
+        n_domain=500,
+        n_initial=1,
+        n_test=100,
+        n_epochs=5000,
+        optimiser='adam',
+        learning_rate=.0001,
+        scipy_optimiser='L-BFGS-B')
+    batch_solution = batch_pinn_op.solve(ivp)
+
+    assert batch_solution.vertex_oriented
+    assert batch_solution.d_t == 2.5
+    assert batch_solution.x_coordinates() is None
+    assert batch_solution.discrete_y().shape == (4, 1)
+
+    non_batch_pinn_op = PINNOperator(2.5, True, batch_mode=False)
+    non_batch_pinn_op.model = batch_pinn_op.model
+    non_batch_solution = non_batch_pinn_op.solve(ivp)
+
+    assert np.allclose(
+        batch_solution.discrete_y(), non_batch_solution.discrete_y())
+
+
+def test_pinn_operator_on_pde():
+    diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
+    mesh = UniformGrid(((0., 50.), (0., 50.)), (5., 5.))
+    bcs = (
+        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True))
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([12.5, 12.5]), np.array([[10., 0.], [0., 10.]])),), (20.,))
+    ivp = InitialValueProblem(cp, (0., 5.), ic)
+
+    batch_pinn_op = PINNOperator(1.25, False, batch_mode=True)
+    batch_pinn_op.train(
+        ivp,
+        FNN(
+            batch_pinn_op.model_input_shape(ivp) +
+            (50,) * 3 +
+            batch_pinn_op.model_output_shape(ivp),
+            'tanh',
+            'Glorot normal'),
+        n_domain=800,
+        n_initial=80,
+        n_boundary=80,
+        n_test=200,
+        n_epochs=5000,
+        optimiser='adam',
+        learning_rate=.001)
+    batch_solution = batch_pinn_op.solve(ivp)
+
+    assert not batch_solution.vertex_oriented
+    assert batch_solution.d_t == 1.25
+    assert np.array_equal(
+        batch_solution.x_coordinates(), [np.linspace(2.5, 47.5, 10)] * 2)
+    assert batch_solution.discrete_y().shape == (4, 10, 10, 1)
+
+    non_batch_pinn_op = PINNOperator(.25, False, batch_mode=False)
+    non_batch_pinn_op.model = batch_pinn_op.model
+    non_batch_solution = non_batch_pinn_op.solve(ivp)
+
+    pinn_diff = batch_solution.diff([non_batch_solution])
+    assert np.isclose(np.max(np.abs(pinn_diff.differences[0])), 0.)
+
+
+def test_pinn_operator_on_pde_with_dynamic_boundary_conditions():
+    diff_eq = DiffusionEquation(1, 1.5)
+    mesh = UniformGrid(((0., 10.),), (1.,))
+    bcs = (
+        (NeumannBoundaryCondition(lambda x, t: (0.,)),
+         DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([5.]), np.array([[2.5]])),),
+        (20.,))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
+    batch_pinn_op.train(
+        ivp,
+        FNN(
+            batch_pinn_op.model_input_shape(ivp) +
+            (50,) * 3 +
+            batch_pinn_op.model_output_shape(ivp),
+            'tanh',
+            'Glorot normal'),
+        n_domain=400,
+        n_initial=80,
+        n_boundary=80,
+        n_test=100,
+        n_epochs=5000,
+        optimiser='adam',
+        learning_rate=.001)
+    batch_solution = batch_pinn_op.solve(ivp)
+
+    assert batch_solution.vertex_oriented
+    assert batch_solution.d_t == 2.5
+    assert np.array_equal(
+        batch_solution.x_coordinates(), [np.linspace(0., 10., 11)])
+    assert batch_solution.discrete_y().shape == (4, 11, 1)
+
+
 def test_stateless_regression_operator_on_ode():
     set_random_seed(0)
 
@@ -315,90 +481,6 @@ def test_stateless_regression_operator_on_pde():
 
     assert np.all(
         batch_solution.discrete_y() == non_batch_solution.discrete_y())
-
-
-def test_pinn_operator_on_ode():
-    diff_eq = PopulationGrowthEquation()
-    cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (100.,))
-    ivp = InitialValueProblem(cp, (0., 10.), ic)
-
-    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
-    batch_pinn_op.train(
-        ivp,
-        FNN(
-            batch_pinn_op.model_input_shape(ivp) +
-            (50,) * 1 +
-            batch_pinn_op.model_output_shape(ivp),
-            'tanh',
-            'Glorot normal'),
-        n_domain=500,
-        n_initial=1,
-        n_test=100,
-        n_epochs=5000,
-        optimiser='adam',
-        learning_rate=.0001,
-        scipy_optimiser='L-BFGS-B')
-    batch_solution = batch_pinn_op.solve(ivp)
-
-    assert batch_solution.vertex_oriented
-    assert batch_solution.d_t == 2.5
-    assert batch_solution.x_coordinates() is None
-    assert batch_solution.discrete_y().shape == (4, 1)
-
-    non_batch_pinn_op = PINNOperator(2.5, True, batch_mode=False)
-    non_batch_pinn_op.model = batch_pinn_op.model
-    non_batch_solution = non_batch_pinn_op.solve(ivp)
-
-    assert np.allclose(
-        batch_solution.discrete_y(), non_batch_solution.discrete_y())
-
-
-def test_pinn_operator_on_pde():
-    diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
-    mesh = UniformGrid(((0., 50.), (0., 50.)), (5., 5.))
-    bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
-        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True))
-    )
-    cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    ic = GaussianInitialCondition(
-        cp,
-        ((np.array([12.5, 12.5]), np.array([[10., 0.], [0., 10.]])),), (20.,))
-    ivp = InitialValueProblem(cp, (0., 5.), ic)
-
-    batch_pinn_op = PINNOperator(1.25, False, batch_mode=True)
-    batch_pinn_op.train(
-        ivp,
-        FNN(
-            batch_pinn_op.model_input_shape(ivp) +
-            (50,) * 3 +
-            batch_pinn_op.model_output_shape(ivp),
-            'tanh',
-            'Glorot normal'),
-        n_domain=800,
-        n_initial=80,
-        n_boundary=80,
-        n_test=200,
-        n_epochs=5000,
-        optimiser='adam',
-        learning_rate=.001)
-    batch_solution = batch_pinn_op.solve(ivp)
-
-    assert not batch_solution.vertex_oriented
-    assert batch_solution.d_t == 1.25
-    assert np.array_equal(
-        batch_solution.x_coordinates(), [np.linspace(2.5, 47.5, 10)] * 2)
-    assert batch_solution.discrete_y().shape == (4, 10, 10, 1)
-
-    non_batch_pinn_op = PINNOperator(.25, False, batch_mode=False)
-    non_batch_pinn_op.model = batch_pinn_op.model
-    non_batch_solution = non_batch_pinn_op.solve(ivp)
-
-    pinn_diff = batch_solution.diff([non_batch_solution])
-    assert np.isclose(np.max(np.abs(pinn_diff.differences[0])), 0.)
 
 
 def test_stateful_regression_operator_on_ode():
