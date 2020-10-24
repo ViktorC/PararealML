@@ -13,11 +13,11 @@ from pararealml import LotkaVolterraEquation, ConstrainedProblem, \
     NBodyGravitationalEquation, StatelessRegressionOperator, \
     PopulationGrowthEquation, ShallowWaterEquation, \
     ConvectionDiffusionEquation, PINNOperator, StatefulRegressionOperator, \
-    WaveEquation
+    WaveEquation, CrankNicolsonMethod
 from pararealml.utils.rand import set_random_seed
 
 
-def test_conventional_operators_on_ode_with_analytic_solution():
+def test_ode_and_fdm_operators_on_ode_with_analytic_solution():
     r = .02
     y_0 = 100.
 
@@ -49,6 +49,32 @@ def test_conventional_operators_on_ode_with_analytic_solution():
     analytic_y = np.array([ivp.exact_y(t) for t in ode_solution.t_coordinates])
 
     assert np.allclose(analytic_y, ode_solution.discrete_y())
+
+
+def test_fdm_operator_conserves_density_on_no_flux_diffusion_equation():
+    diff_eq = DiffusionEquation(1, 5.)
+    mesh = UniformGrid(((0., 500.),), (.1,))
+    bcs = (
+        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([250]), np.array([[250.]])),),
+        (1000.,))
+    ivp = InitialValueProblem(cp, (0., 20.), ic)
+
+    y_0 = ic.discrete_y_0(True)
+    y_0_sum = np.sum(y_0)
+
+    fdm_op = FDMOperator(
+        CrankNicolsonMethod(), ThreePointCentralFiniteDifferenceMethod(), 1e-3)
+    solution = fdm_op.solve(ivp)
+    y = solution.discrete_y()
+    y_sums = np.sum(y, axis=tuple(range(1, y.ndim)))
+
+    assert np.allclose(y_sums, y_0_sum)
 
 
 def test_ode_operator_on_ode():
