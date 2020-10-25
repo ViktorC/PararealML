@@ -111,26 +111,46 @@ The solutions of 1D partial differential equations are visualised as animated li
 
 #### Partial differential equations in two spatial dimensions
 
-On the other hand, the solutions of 2D partial differential equations can be visualised in two different ways. The first one of these is a 3D surface plot.
+On the other hand, the solutions of 2D partial differential equations can be visualised in multiple different ways. The first one of these is a 3D surface plot.
 
 <img src="https://user-images.githubusercontent.com/12938964/91648397-fc5cff80-ea5e-11ea-887d-187523ae701b.gif" alt="wave_2d" width="400"/>
 
-Finally, the second way of visualising the solution of 2D partial differential equations is the generation of a 2D contour plot.
+The second way is 2D contour plots.
 
 <img src="https://user-images.githubusercontent.com/12938964/96491705-8133f080-123a-11eb-98fa-7f4b43730ac1.gif" alt="navier_stokes_2d" width="400"/>
+
+Finally, 2D vector fields can be visualised as 2D quiver plots.
+
+<img src="https://user-images.githubusercontent.com/12938964/96521862-231f0180-126a-11eb-948f-718117b63895.gif" alt="shallow_water_2d" width="400"/>
+
+#### Partial differential equations in three spatial dimensions
+
+The solutions of partial differential equation in three spatial dimensions can be visualised in two different ways. The first one of these is 2D contour plots of slices of the solution along an arbitrary axis at arbitrary points.
+
+<p float="left">
+  <img src="https://user-images.githubusercontent.com/12938964/97097322-369ce480-163d-11eb-9ccc-7505bca2b2b2.gif" alt="cahn_hilliard_slice_0" width="266"/>
+  <img src="https://user-images.githubusercontent.com/12938964/97097323-37357b00-163d-11eb-9258-bd699ef7ea29.gif" alt="cahn_hilliard_slice_1" width="266"/>
+  <img src="https://user-images.githubusercontent.com/12938964/97097325-37ce1180-163d-11eb-8acb-b6d996ea178a.gif" alt="cahn_hilliard_slice_2" width="266"/>
+</p>
+
+The second way, only applicable to 3D vector fields, is the use of 3D quiver plots.
+
+<img src="https://user-images.githubusercontent.com/12938964/97097783-1708ba80-1643-11eb-8349-f065de5ddc4d.gif" alt="burger_3d" width="400"/>
 
 ## Examples
 
 The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators.
 
 ## Setup
-To use the Parareal operator, an implementation of the MPI standard must be installed (e.g. [MPICH](https://www.mpich.org/)). To save animated plots, [`imagemagick`](https://imagemagick.org/index.php) must be installed. These programs can be easily installed using [Anaconda](https://www.anaconda.com/). If they are already installed and available on the system, you can skip to step 6 of the setup guide.
+To use the Parareal operator, an implementation of the MPI standard must be installed (e.g. [MPICH](https://www.mpich.org/)). To save animated plots, [ImageMagick](https://imagemagick.org/index.php) must be installed. These programs can be easily installed using [Anaconda](https://www.anaconda.com/). If they are already installed and available on the system, you can skip to step 6 of the setup guide.
  1. make sure you have a working Anaconda installation (see the [guide](https://docs.anaconda.com/anaconda/install/))
  1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.7`
  1. `conda activate {environment_name}`
  1. `conda install -c conda-forge mpi4py`
  1. `conda install -c conda-forge imagemagick`
  1. `make install`
+ 
+ On Windows, steps 1 to 5 do not apply. Instead, both Microsoft MPI and ImageMagick must be installed and added to the PATH manually.
 
 ## Testing
 
