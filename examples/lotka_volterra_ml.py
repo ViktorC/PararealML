@@ -16,9 +16,9 @@ ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 oracle = ODEOperator('DOP853', 1e-3)
-pinn = PINNOperator(.1, oracle.vertex_oriented)
+pinn = DeepONetOperator(.1, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(.1, oracle.vertex_oriented)
-op_reg = StatefulRegressionOperator(.1, oracle.vertex_oriented)
+op_reg = RegressionOperator(.1, oracle.vertex_oriented)
 
 oracle_solution_name = 'lotka_volterra_oracle'
 pinn_solution_name = 'lotka_volterra_pinn'

@@ -6,14 +6,14 @@ from pararealml.core.differential_equation import DiffusionEquation, \
     WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
     DiscreteInitialCondition
-from pararealml.core.mesh import UniformGrid
+from pararealml.core.mesh import Mesh
 
 
 def test_1d_continuous_initial_condition():
     diff_eq = DiffusionEquation(1)
     cp = ConstrainedProblem(
         diff_eq,
-        UniformGrid(((0., 20.),), (.1,)),
+        Mesh(((0., 20.),), (.1,)),
         ((DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
           DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True)),))
     initial_condition = ContinuousInitialCondition(
@@ -33,7 +33,7 @@ def test_2d_discrete_initial_condition():
     diff_eq = WaveEquation(2)
     cp = ConstrainedProblem(
         diff_eq,
-        UniformGrid(((0., 2.), (0., 2.)), (1., 1.)),
+        Mesh(((0., 2.), (0., 2.)), (1., 1.)),
         ((DirichletBoundaryCondition(lambda x, t: (0., 2.), is_static=True),
           DirichletBoundaryCondition(lambda x, t: (1., 2.), is_static=True)),
          (DirichletBoundaryCondition(lambda x, t: (3., 2.), is_static=True),

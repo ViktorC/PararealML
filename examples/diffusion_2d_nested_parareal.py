@@ -4,7 +4,7 @@ from pararealml import *
 from pararealml.utils.time import time_with_args
 
 diff_eq = DiffusionEquation(2)
-mesh = UniformGrid(((0., 10.), (0., 10.)), (.5, .5))
+mesh = Mesh(((0., 10.), (0., 10.)), (.5, .5))
 bcs = (
     (DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True),
      DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True)),

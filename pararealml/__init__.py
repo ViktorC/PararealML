@@ -46,19 +46,15 @@ from pararealml.core.integrator import BackwardEulerMethod
 from pararealml.core.integrator import CrankNicolsonMethod
 
 from pararealml.core.mesh import Mesh
-from pararealml.core.mesh import UniformGrid
 
 from pararealml.core.operator import Operator
-from pararealml.core.operator import ODEOperator
-from pararealml.core.operator import FDMOperator
-from pararealml.core.operator import MLOperator
-from pararealml.core.operator import StatelessMLOperator
-from pararealml.core.operator import StatefulMLOperator
-from pararealml.core.operator import PINNOperator
-from pararealml.core.operator import StatelessRegressionOperator
-from pararealml.core.operator import StatefulRegressionOperator
 
-from pararealml.core.parareal import PararealOperator
+from pararealml.core.operators.ode_operator import ODEOperator
+from pararealml.core.operators.fdm_operator import FDMOperator
+from pararealml.core.operators.ml_operator import MLOperator
+from pararealml.core.operators.regression_operator import RegressionOperator
+from pararealml.core.operators.deeponet_operator import DeepONetOperator
+from pararealml.core.operators.parareal_operator import PararealOperator
 
 from pararealml.core.solution import Solution
 
@@ -99,16 +95,12 @@ __all__ = [
     'BackwardEulerMethod',
     'CrankNicolsonMethod',
     'Mesh',
-    'UniformGrid',
     'Operator',
     'ODEOperator',
     'FDMOperator',
     'MLOperator',
-    'StatelessMLOperator',
-    'StatefulMLOperator',
-    'PINNOperator',
-    'StatelessRegressionOperator',
-    'StatefulRegressionOperator',
+    'RegressionOperator',
+    'DeepONetOperator',
     'PararealOperator',
     'Solution',
 ]

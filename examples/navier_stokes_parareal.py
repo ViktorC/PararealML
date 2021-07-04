@@ -2,7 +2,7 @@ from pararealml import *
 from pararealml.utils.time import time_with_args
 
 diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
-mesh = UniformGrid(((0., 10.), (0., 10.)), (.2, .2))
+mesh = Mesh(((0., 10.), (0., 10.)), (.2, .2))
 bcs = (
     (DirichletBoundaryCondition(lambda x, t: (1., .1), is_static=True),
      DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),

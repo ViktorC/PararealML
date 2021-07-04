@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = DiffusionEquation(1, 1.5)
-mesh = UniformGrid(((0., 10.),), (.1,))
+mesh = Mesh(((0., 10.),), (.1,))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (0.,)),
      DirichletBoundaryCondition(lambda x, t: (t / 5.,))),

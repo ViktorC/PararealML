@@ -7,10 +7,9 @@ from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
-    LotkaVolterraEquation, LorenzEquation, NBodyGravitationalEquation, \
-    DiffusionEquation, ConvectionDiffusionEquation, WaveEquation, \
-    CahnHilliardEquation, BurgerEquation, ShallowWaterEquation, \
-    NavierStokesStreamFunctionVorticityEquation
+    LotkaVolterraEquation, LorenzEquation, DiffusionEquation, \
+    ConvectionDiffusionEquation, WaveEquation, CahnHilliardEquation, \
+    BurgerEquation, NavierStokesStreamFunctionVorticityEquation
 from pararealml.core.differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.initial_condition import DiscreteInitialCondition, \
@@ -18,9 +17,11 @@ from pararealml.core.initial_condition import DiscreteInitialCondition, \
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.integrator import ForwardEulerMethod, RK4, \
     CrankNicolsonMethod
-from pararealml.core.mesh import UniformGrid
-from pararealml.core.operator import ODEOperator, FDMOperator, PINNOperator, \
-    StatelessRegressionOperator, StatefulRegressionOperator
+from pararealml.core.mesh import Mesh
+from pararealml.core.operators.ode_operator import ODEOperator
+from pararealml.core.operators.fdm_operator import FDMOperator
+from pararealml.core.operators.regression_operator import RegressionOperator
+from pararealml.core.operators.deeponet_operator import DeepONetOperator
 from pararealml.utils.rand import set_random_seed
 
 
@@ -60,7 +61,7 @@ def test_ode_and_fdm_operators_on_ode_with_analytic_solution():
 
 def test_fdm_operator_conserves_density_on_no_flux_diffusion_equation():
     diff_eq = DiffusionEquation(1, 5.)
-    mesh = UniformGrid(((0., 500.),), (.1,))
+    mesh = Mesh(((0., 500.),), (.1,))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
          NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
@@ -100,7 +101,7 @@ def test_ode_operator_on_ode():
 
 def test_ode_operator_op_pde():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = UniformGrid(((0., 10.),), (.1,))
+    mesh = Mesh(((0., 10.),), (.1,))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,)),
          DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
@@ -135,7 +136,7 @@ def test_fdm_operator_on_ode():
 
 def test_fdm_operator_on_1d_pde():
     diff_eq = BurgerEquation(1, 1000.)
-    mesh = UniformGrid(((0., 10.),), (.1,))
+    mesh = Mesh(((0., 10.),), (.1,))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
          NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
@@ -166,7 +167,7 @@ def test_fdm_operator_on_1d_pde():
 
 def test_fdm_operator_on_2d_pde():
     diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
-    mesh = UniformGrid(((0., 10.), (0., 10.)), (1., 1.))
+    mesh = Mesh(((0., 10.), (0., 10.)), (1., 1.))
     bcs = (
         (DirichletBoundaryCondition(lambda x, t: (1., .1), is_static=True),
          DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
@@ -199,7 +200,7 @@ def test_fdm_operator_on_2d_pde():
 
 def test_fdm_operator_on_3d_pde():
     diff_eq = CahnHilliardEquation(3)
-    mesh = UniformGrid(((0., 5.), (0., 5.), (0., 10.)), (.5, 1., 2.))
+    mesh = Mesh(((0., 5.), (0., 5.), (0., 10.)), (.5, 1., 2.))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
          NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
@@ -239,7 +240,7 @@ def test_fdm_operator_on_3d_pde():
 
 def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = UniformGrid(((0., 10.),), (1.,))
+    mesh = Mesh(((0., 10.),), (1.,))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,)),
          DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
@@ -273,13 +274,13 @@ def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     assert np.isclose(y[-1, -1, 0], 2.)
 
 
-def test_pinn_operator_on_ode():
+def test_deeponet_operator_on_ode():
     diff_eq = PopulationGrowthEquation()
     cp = ConstrainedProblem(diff_eq)
     ic = ContinuousInitialCondition(cp, lambda _: (100.,))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
+    batch_pinn_op = DeepONetOperator(2.5, True)
     batch_pinn_op.train(
         ivp,
         FNN(
@@ -302,7 +303,7 @@ def test_pinn_operator_on_ode():
     assert batch_solution.x_coordinates() is None
     assert batch_solution.discrete_y().shape == (4, 1)
 
-    non_batch_pinn_op = PINNOperator(2.5, True, batch_mode=False)
+    non_batch_pinn_op = DeepONetOperator(2.5, True)
     non_batch_pinn_op.model = batch_pinn_op.model
     non_batch_solution = non_batch_pinn_op.solve(ivp)
 
@@ -310,9 +311,9 @@ def test_pinn_operator_on_ode():
         batch_solution.discrete_y(), non_batch_solution.discrete_y())
 
 
-def test_pinn_operator_on_pde():
+def test_deeponet_operator_on_pde():
     diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
-    mesh = UniformGrid(((0., 50.), (0., 50.)), (5., 5.))
+    mesh = Mesh(((0., 50.), (0., 50.)), (5., 5.))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
          NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
@@ -325,7 +326,7 @@ def test_pinn_operator_on_pde():
         ((np.array([12.5, 12.5]), np.array([[10., 0.], [0., 10.]])),), (20.,))
     ivp = InitialValueProblem(cp, (0., 5.), ic)
 
-    batch_pinn_op = PINNOperator(1.25, False, batch_mode=True)
+    batch_pinn_op = DeepONetOperator(1.25, False)
     batch_pinn_op.train(
         ivp,
         FNN(
@@ -349,7 +350,7 @@ def test_pinn_operator_on_pde():
         batch_solution.x_coordinates(), [np.linspace(2.5, 47.5, 10)] * 2)
     assert batch_solution.discrete_y().shape == (4, 10, 10, 1)
 
-    non_batch_pinn_op = PINNOperator(.25, False, batch_mode=False)
+    non_batch_pinn_op = DeepONetOperator(.25, False)
     non_batch_pinn_op.model = batch_pinn_op.model
     non_batch_solution = non_batch_pinn_op.solve(ivp)
 
@@ -357,9 +358,9 @@ def test_pinn_operator_on_pde():
     assert np.isclose(np.max(np.abs(pinn_diff.differences[0])), 0.)
 
 
-def test_pinn_operator_on_pde_with_dynamic_boundary_conditions():
+def test_deeponet_operator_on_pde_with_dynamic_boundary_conditions():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = UniformGrid(((0., 10.),), (1.,))
+    mesh = Mesh(((0., 10.),), (1.,))
     bcs = (
         (NeumannBoundaryCondition(lambda x, t: (0.,)),
          DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
@@ -371,7 +372,7 @@ def test_pinn_operator_on_pde_with_dynamic_boundary_conditions():
         (20.,))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    batch_pinn_op = PINNOperator(2.5, True, batch_mode=True)
+    batch_pinn_op = DeepONetOperator(2.5, True)
     batch_pinn_op.train(
         ivp,
         FNN(
@@ -396,94 +397,7 @@ def test_pinn_operator_on_pde_with_dynamic_boundary_conditions():
     assert batch_solution.discrete_y().shape == (4, 11, 1)
 
 
-def test_stateless_regression_operator_on_ode():
-    set_random_seed(0)
-
-    n_planets = 5
-    masses = np.random.randint(5e10, 5e12, n_planets)
-    initial_positions = 40 * np.random.rand(n_planets * 3) - 20.
-    initial_velocities = 5 * np.random.rand(n_planets * 3)
-
-    diff_eq = NBodyGravitationalEquation(3, masses)
-    cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(
-        cp,
-        lambda _: np.append(initial_positions, [initial_velocities]))
-    ivp = InitialValueProblem(cp, (0., 10.), ic)
-
-    oracle = ODEOperator('DOP853', .001)
-    ref_solution = oracle.solve(ivp)
-
-    batch_ml_op = StatelessRegressionOperator(1.25, True, batch_mode=True)
-    batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
-    batch_solution = batch_ml_op.solve(ivp)
-
-    assert batch_solution.vertex_oriented
-    assert batch_solution.d_t == 1.25
-    assert batch_solution.x_coordinates() is None
-    assert batch_solution.discrete_y().shape == (8, 2 * 3 * n_planets)
-
-    diff = ref_solution.diff([batch_solution])
-    assert np.all(diff.matching_time_points == np.linspace(1.25, 10., 8))
-    assert np.max(np.abs(diff.differences[0])) < .1
-
-    non_batch_ml_op = StatelessRegressionOperator(1.25, True, batch_mode=False)
-    non_batch_ml_op.model = batch_ml_op.model
-    non_batch_solution = non_batch_ml_op.solve(ivp)
-
-    assert np.all(
-        batch_solution.discrete_y() == non_batch_solution.discrete_y())
-
-
-def test_stateless_regression_operator_on_pde():
-    set_random_seed(0)
-
-    diff_eq = ShallowWaterEquation(.5)
-    mesh = UniformGrid(((-5., 5.), (-5., 5.)), (1., 1.))
-    bcs = (
-        (NeumannBoundaryCondition(
-            lambda x, t: (.0, None, None), is_static=True),
-         NeumannBoundaryCondition(
-             lambda x, t: (.0, None, None), is_static=True)),
-        (NeumannBoundaryCondition(
-            lambda x, t: (.0, None, None), is_static=True),
-         NeumannBoundaryCondition(
-             lambda x, t: (.0, None, None), is_static=True))
-    )
-    cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    ic = GaussianInitialCondition(
-        cp,
-        ((np.array([2.5, 2.5]), np.array([[.25, 0.], [0., .25]])),) * 3,
-        (1., .0, .0))
-    ivp = InitialValueProblem(cp, (0., 10.), ic)
-
-    oracle = FDMOperator(
-        RK4(), ThreePointCentralFiniteDifferenceMethod(), 1e-2)
-    ref_solution = oracle.solve(ivp)
-
-    batch_ml_op = StatelessRegressionOperator(2.5, True, batch_mode=True)
-    batch_ml_op.train(ivp, oracle, RandomForestRegressor(), .5)
-    batch_solution = batch_ml_op.solve(ivp)
-
-    assert batch_solution.vertex_oriented
-    assert batch_solution.d_t == 2.5
-    assert np.array_equal(
-        batch_solution.x_coordinates(), [np.linspace(-5., 5., 11)] * 2)
-    assert batch_solution.discrete_y().shape == (4, 11, 11, 3)
-
-    diff = ref_solution.diff([batch_solution])
-    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
-    assert np.max(np.abs(diff.differences[0])) < .1
-
-    non_batch_ml_op = StatelessRegressionOperator(2.5, True, batch_mode=False)
-    non_batch_ml_op.model = batch_ml_op.model
-    non_batch_solution = non_batch_ml_op.solve(ivp)
-
-    assert np.all(
-        batch_solution.discrete_y() == non_batch_solution.discrete_y())
-
-
-def test_stateful_regression_operator_on_ode():
+def test_regression_operator_on_ode():
     set_random_seed(0)
 
     diff_eq = LorenzEquation()
@@ -494,7 +408,7 @@ def test_stateful_regression_operator_on_ode():
     oracle = ODEOperator('DOP853', .001)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = StatefulRegressionOperator(2.5, True)
+    ml_op = RegressionOperator(2.5, True)
     ml_op.train(
         ivp,
         oracle,
@@ -514,11 +428,11 @@ def test_stateful_regression_operator_on_ode():
     assert np.max(np.abs(diff.differences[0])) < .2
 
 
-def test_stateful_regression_operator_on_pde():
+def test_regression_operator_on_pde():
     set_random_seed(0)
 
     diff_eq = WaveEquation(2)
-    mesh = UniformGrid(((-5., 5.), (-5., 5.)), (1., 1.))
+    mesh = Mesh(((-5., 5.), (-5., 5.)), (1., 1.))
     bcs = (
         (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
          DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
@@ -536,7 +450,7 @@ def test_stateful_regression_operator_on_pde():
         RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = StatefulRegressionOperator(2.5, True)
+    ml_op = RegressionOperator(2.5, True)
     ml_op.train(ivp, oracle, RandomForestRegressor(), 20, noise_sd=(0., .1))
     ml_solution = ml_op.solve(ivp)
 

@@ -9,7 +9,7 @@ from pararealml.utils.time import time_with_args
 set_random_seed(SEEDS[0])
 
 diff_eq = DiffusionEquation(2)
-mesh = UniformGrid(((0., 10.), (0., 10.)), (.2, .2))
+mesh = Mesh(((0., 10.), (0., 10.)), (.2, .2))
 bcs = (
     (DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True),
      DirichletBoundaryCondition(lambda x, t: (1.5,), is_static=True)),
@@ -27,9 +27,9 @@ ivp = InitialValueProblem(
     ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-pinn = PINNOperator(.1, oracle.vertex_oriented)
+pinn = DeepONetOperator(.1, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(.1, oracle.vertex_oriented)
-op_reg = StatefulRegressionOperator(.1, oracle.vertex_oriented)
+op_reg = RegressionOperator(.1, oracle.vertex_oriented)
 
 oracle_solution_name = 'diffusion_oracle'
 pinn_solution_name = 'diffusion_pinn'

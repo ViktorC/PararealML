@@ -16,7 +16,7 @@ BoundaryConstraintPair = Tuple[
 
 class Differentiator(ABC):
     """
-    A base class for numerical differentiators.
+    A base class for numerical differentiators in Cartesian coordinates.
     """
 
     @abstractmethod

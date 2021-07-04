@@ -9,11 +9,12 @@ from sympy import symarray, Expr, Symbol
 
 class Symbols:
     """
-    A class containing the symbols for expressing a differential equation
-    system with a specified number of unknown variables and spatial dimensions.
+    A class containing the symbols for expressing a coordinate system agnostic
+    differential equation system with a specified number of unknown variables
+    and spatial dimensions.
     """
 
-    def __init__(self, x_dimension, y_dimension):
+    def __init__(self, x_dimension: int, y_dimension: int):
         """
         :param x_dimension: the number spatial dimensions
         :param y_dimension: the number of unknown variables
@@ -28,11 +29,14 @@ class Symbols:
                 'y_hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
                 'y_divergence', (y_dimension,) * x_dimension)
+            self._y_curl = symarray('y_curl', (y_dimension,) * x_dimension) \
+                if 2 <= x_dimension <= 3 else None
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
         else:
             self._y_gradient = None
             self._y_hessian = None
             self._y_divergence = None
+            self._y_curl = None
             self._y_laplacian = None
 
     @property
@@ -76,6 +80,14 @@ class Symbols:
         the corresponding elements of the differential equation's solution.
         """
         return np.copy(self._y_divergence)
+
+    @property
+    def y_curl(self) -> Optional[np.ndarray]:
+        """
+        A multidimensional array of symbols denoting the spatial curl of
+        the corresponding elements of the differential equation's solution.
+        """
+        return np.copy(self._y_curl)
 
     @property
     def y_laplacian(self) -> Optional[np.ndarray]:
@@ -252,6 +264,8 @@ class DifferentialEquation(ABC):
             all_symbols.update(self._symbols.y_gradient.flatten())
             all_symbols.update(self._symbols.y_hessian.flatten())
             all_symbols.update(self._symbols.y_divergence.flatten())
+            if 2 <= self._x_dimension <= 3:
+                all_symbols.update(self._symbols.y_curl.flatten())
             all_symbols.update(self._symbols.y_laplacian)
 
         for rhs_element in self.symbolic_equation_system.rhs:

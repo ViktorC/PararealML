@@ -9,7 +9,7 @@ from pararealml.utils.time import time_with_args
 set_random_seed(SEEDS[0])
 
 diff_eq = CahnHilliardEquation(2)
-mesh = UniformGrid(((0., 10.), (0., 10.)), (.1, .1))
+mesh = Mesh(((0., 10.), (0., 10.)), (.1, .1))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
@@ -24,9 +24,9 @@ ic = DiscreteInitialCondition(
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-pinn = PINNOperator(1.25, oracle.vertex_oriented)
+pinn = DeepONetOperator(1.25, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(1.25, oracle.vertex_oriented)
-op_reg = StatefulRegressionOperator(1.25, oracle.vertex_oriented)
+op_reg = RegressionOperator(1.25, oracle.vertex_oriented)
 
 oracle_solution_name = 'cahn_hilliard_oracle'
 pinn_solution_name = 'cahn_hilliard_pinn'

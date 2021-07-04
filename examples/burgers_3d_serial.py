@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = BurgerEquation(3, 100)
-mesh = UniformGrid(((0., 10.), (0., 10.), (0., 10.)), (1., 1., 1.))
+mesh = Mesh(((0., 10.), (0., 10.), (0., 10.)), (1., 1., 1.))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),

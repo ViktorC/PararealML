@@ -8,7 +8,7 @@ from pararealml.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation
 from pararealml.core.differentiator import \
     ThreePointCentralFiniteDifferenceMethod
-from pararealml.core.mesh import UniformGrid
+from pararealml.core.mesh import Mesh
 
 
 def test_cp_with_ode():
@@ -27,7 +27,7 @@ def test_cp_with_ode():
 
 def test_2d_cp():
     diff_eq = WaveEquation(2)
-    mesh = UniformGrid(
+    mesh = Mesh(
             ((2., 6.), (-3., 3.)),
             (.1, .2))
     bcs = (
@@ -86,7 +86,7 @@ def test_2d_cp():
 
 
 def test_3d_cp():
-    mesh = UniformGrid(
+    mesh = Mesh(
         ((2., 6.), (-3., 3.), (10., 12.)),
         (.1, .2, .5))
 

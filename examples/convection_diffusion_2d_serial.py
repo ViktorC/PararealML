@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
-mesh = UniformGrid(((0., 50.), (0., 50.)), (.5, .5))
+mesh = Mesh(((0., 50.), (0., 50.)), (.5, .5))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),

@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = CahnHilliardEquation(3, d=.25, gamma=.1)
-mesh = UniformGrid(((0., 25.), (0., 25.), (0., 25.)), (.5, .5, .5))
+mesh = Mesh(((0., 25.), (0., 25.), (0., 25.)), (.5, .5, .5))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),

@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = WaveEquation(2)
-mesh = UniformGrid(((-5., 5.), (-5., 5.)), (.1, .1))
+mesh = Mesh(((-5., 5.), (-5., 5.)), (.1, .1))
 bcs = (
     (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
      DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),

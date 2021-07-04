@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 
 diff_eq = ShallowWaterEquation(.5)
-mesh = UniformGrid(((-5., 5.), (-5., 5.)), (.1, .1))
+mesh = Mesh(((-5., 5.), (-5., 5.)), (.1, .1))
 bcs = (
     (NeumannBoundaryCondition(lambda x, t: (.0, None, None), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (.0, None, None), is_static=True)),
