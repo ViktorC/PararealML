@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml.core.constraint import Constraint
-from pararealml.core.integrator import ForwardEulerMethod, \
+from pararealml.core.operators.fdm.integrator import ForwardEulerMethod, \
     ExplicitMidpointMethod, RK4, BackwardEulerMethod, CrankNicolsonMethod
 
 

@@ -29,8 +29,14 @@ class Symbols:
                 'y_hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
                 'y_divergence', (y_dimension,) * x_dimension)
-            self._y_curl = symarray('y_curl', (y_dimension,) * x_dimension) \
-                if 2 <= x_dimension <= 3 else None
+            if x_dimension == 2:
+                self._y_curl = symarray('y_curl', (y_dimension,) * x_dimension)
+            elif x_dimension == 3:
+                self._y_curl = symarray(
+                    'y_curl',
+                    ((y_dimension,) * x_dimension) + (x_dimension,))
+            else:
+                self._y_curl = None
             self._y_laplacian = symarray('y_laplacian', (y_dimension,))
         else:
             self._y_gradient = None
@@ -86,6 +92,13 @@ class Symbols:
         """
         A multidimensional array of symbols denoting the spatial curl of
         the corresponding elements of the differential equation's solution.
+
+        For two spatial dimensions, this corresponds to a scalar field.
+        However, for three spatial dimensions, it corresponds to a vector
+        field, therefore an additional axis is appended to this
+        multidimensional array to allow for indexing the components of this
+        vector field. For differential equations with less than two or more
+        than three spatial dimensions, the curl is not defined.
         """
         return np.copy(self._y_curl)
 
@@ -98,7 +111,7 @@ class Symbols:
         return np.copy(self._y_laplacian)
 
 
-class LhsType(Enum):
+class Lhs(Enum):
     """
     An enumeration defining the types of the left hand sides of symbolic
     equations making up systems of differential equations.
@@ -116,7 +129,7 @@ class SymbolicEquationSystem:
     def __init__(
             self,
             rhs: Sequence[Expr],
-            lhs_types: Optional[Sequence[LhsType]] = None):
+            lhs_types: Optional[Sequence[Lhs]] = None):
         """
         :param rhs: the right hand side of the symbolic equation system
         :param lhs_types: the types of the left hand side of the symbolic
@@ -126,7 +139,7 @@ class SymbolicEquationSystem:
             raise ValueError
 
         if lhs_types is None:
-            lhs_types = [LhsType.D_Y_OVER_D_T] * len(rhs)
+            lhs_types = [Lhs.D_Y_OVER_D_T] * len(rhs)
 
         if len(rhs) != len(lhs_types):
             raise ValueError
@@ -134,9 +147,9 @@ class SymbolicEquationSystem:
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
 
-        self._equation_indices_by_type = {lhs_type: [] for lhs_type in LhsType}
-        self._rhs_by_type = {lhs_type: [] for lhs_type in LhsType}
-        self._symbols_by_type = {lhs_type: set() for lhs_type in LhsType}
+        self._equation_indices_by_type = {lhs_type: [] for lhs_type in Lhs}
+        self._rhs_by_type = {lhs_type: [] for lhs_type in Lhs}
+        self._symbols_by_type = {lhs_type: set() for lhs_type in Lhs}
         for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
             self._equation_indices_by_type[lhs_type].append(i)
             self._rhs_by_type[lhs_type].append(rhs_element)
@@ -150,14 +163,14 @@ class SymbolicEquationSystem:
         return copy(self._rhs)
 
     @property
-    def lhs_types(self) -> Sequence[LhsType]:
+    def lhs_types(self) -> Sequence[Lhs]:
         """
         Returns the types of the left hand side of the symbolic equation
         system.
         """
         return copy(self._lhs_types)
 
-    def equation_indices_by_type(self, lhs_type: LhsType) -> Sequence[int]:
+    def equation_indices_by_type(self, lhs_type: Lhs) -> Sequence[int]:
         """
         Returns a sequence of integers denoting the indices of all equations of
         the equation system with the specified type of left hand side.
@@ -167,7 +180,7 @@ class SymbolicEquationSystem:
         """
         return copy(self._equation_indices_by_type[lhs_type])
 
-    def rhs_by_type(self, lhs_type: LhsType) -> Sequence[Expr]:
+    def rhs_by_type(self, lhs_type: Lhs) -> Sequence[Expr]:
         """
         Returns a sequence of expressions representing the right hand sides of
         all the equations of the equation system whose left hand sides match
@@ -178,7 +191,7 @@ class SymbolicEquationSystem:
         """
         return copy(self._rhs_by_type[lhs_type])
 
-    def symbols_by_type(self, lhs_type: LhsType) -> Set[Symbol]:
+    def symbols_by_type(self, lhs_type: Lhs) -> Set[Symbol]:
         """
         Returns a set of symbols representing all the symbols included in all
         the equations whose left hand sides match the specified type.
@@ -274,10 +287,10 @@ class DifferentialEquation(ABC):
                 raise ValueError
 
         if self.x_dimension:
-            if LhsType.D_Y_OVER_D_T not in equation_system.lhs_types:
+            if Lhs.D_Y_OVER_D_T not in equation_system.lhs_types:
                 raise ValueError
-        elif LhsType.Y in equation_system.lhs_types \
-                or LhsType.Y_LAPLACIAN in equation_system.lhs_types:
+        elif Lhs.Y in equation_system.lhs_types \
+                or Lhs.Y_LAPLACIAN in equation_system.lhs_types:
             raise ValueError
 
 
@@ -575,8 +588,8 @@ class CahnHilliardEquation(DifferentialEquation):
                 self._d * sym.y_laplacian[0]
             ],
             [
-                LhsType.Y,
-                LhsType.D_Y_OVER_D_T
+                Lhs.Y,
+                Lhs.D_Y_OVER_D_T
             ]
         )
 
@@ -683,7 +696,7 @@ class NavierStokesStreamFunctionVorticityEquation(DifferentialEquation):
                 -self._symbols.y[0]
             ],
             [
-                LhsType.D_Y_OVER_D_T,
-                LhsType.Y_LAPLACIAN
+                Lhs.D_Y_OVER_D_T,
+                Lhs.Y_LAPLACIAN
             ]
         )

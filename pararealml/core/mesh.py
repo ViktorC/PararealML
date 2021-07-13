@@ -1,9 +1,20 @@
 from copy import copy, deepcopy
+from enum import Enum
 from typing import Tuple, Sequence
 
 import numpy as np
 
 SpatialDomainInterval = Tuple[float, float]
+
+
+class CoordinateSystem(Enum):
+    """
+    An enumeration defining the types of coordinate systems supported.
+    """
+    CARTESIAN = 0,
+    POLAR = 1,
+    CYLINDRICAL = 2,
+    SPHERICAL = 3
 
 
 class Mesh:
@@ -15,11 +26,15 @@ class Mesh:
     def __init__(
             self,
             x_intervals: Sequence[SpatialDomainInterval],
-            d_x: Sequence[float]):
+            d_x: Sequence[float],
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN):
         """
         :param x_intervals: the bounds of each axis of the domain
         :param d_x: the step sizes to use for each axis of the domain to create
             the mesh
+        :param coordinate_system_type: the coordinate system type used by the
+            mesh
         """
         if len(x_intervals) == 0:
             raise ValueError
@@ -31,12 +46,20 @@ class Mesh:
             if interval[1] <= interval[0]:
                 raise ValueError
 
+        if coordinate_system_type == CoordinateSystem.POLAR and len(d_x) != 2:
+            raise ValueError
+        if (coordinate_system_type == CoordinateSystem.CYLINDRICAL or
+            coordinate_system_type == CoordinateSystem.SPHERICAL) \
+                and len(d_x) != 3:
+            raise ValueError
+
         self._x_intervals = tuple(deepcopy(x_intervals))
         self._vertices_shape = self._calculate_shape(d_x, True)
         self._cells_shape = self._calculate_shape(d_x, False)
         self._d_x = np.array(copy(d_x))
         self._vertex_coordinates = self._calculate_coordinates(True)
         self._cell_center_coordinates = self._calculate_coordinates(False)
+        self._coordinate_system_type = coordinate_system_type
 
         self._x_vertex_offset = np.array(
             [coordinates[0] for coordinates in self._vertex_coordinates])
@@ -56,6 +79,13 @@ class Mesh:
         Returns the step sizes along the dimensions of the domain.
         """
         return tuple(self._d_x)
+
+    @property
+    def coordinate_system_type(self) -> CoordinateSystem:
+        """
+        Returns the coordinate system type used by the mesh.
+        """
+        return self._coordinate_system_type
 
     @property
     def vertices_shape(self) -> Tuple[int, ...]:

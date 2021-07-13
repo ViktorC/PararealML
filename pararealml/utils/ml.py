@@ -1,4 +1,4 @@
-from typing import Union, Callable, Tuple, Sequence, Any
+from typing import Union, Callable, Tuple, Any, Sequence
 
 import numpy as np
 import tensorflow as tf
@@ -10,7 +10,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
 from sklearn.pipeline import Pipeline
 from sklearn.utils import all_estimators
 from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.engine.base_layer import Layer
+from tensorflow.python.keras.layers import Input, Dense
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 SKLearnRegressionModel = Union[
@@ -40,8 +40,36 @@ def limit_visible_gpus():
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
 
 
+def create_fnn(
+        layer_sizes: Sequence[int],
+        activation: str = 'relu',
+        initialisation: str = 'he_normal'
+) -> Sequential:
+    """
+    Creates a fully-connected neural network model.
+
+    :param layer_sizes: a list of the sizes of the input, hidden, and output
+        layers
+    :param activation: the activation function to use for the hidden layers
+    :param initialisation: the initialisation method to use for the weights
+    :return: the fully-connected neural network model
+    """
+    if len(layer_sizes) < 2:
+        raise ValueError
+
+    model = Sequential()
+    model.add(Input(shape=layer_sizes[0]))
+    for layer_size in layer_sizes[1:-1]:
+        model.add(Dense(
+            layer_size,
+            activation=activation,
+            kernel_initializer=initialisation))
+    model.add(Dense(layer_sizes[-1], kernel_initializer=initialisation))
+    return model
+
+
 def create_keras_regressor(
-        layers: Sequence[Layer],
+        model: Sequential,
         optimiser: str = 'adam',
         loss: str = 'mse',
         epochs: int = 1000,
@@ -52,7 +80,7 @@ def create_keras_regressor(
     """
     Creates a Keras regression model.
 
-    :param layers: the layers of the neural network
+    :param model: the neural network
     :param optimiser: the optimiser to use
     :param loss: the loss function to use
     :param epochs: the number of training epochs
@@ -63,7 +91,6 @@ def create_keras_regressor(
     :return: the regression model
     """
     def build_model():
-        model = Sequential(layers)
         model.compile(optimizer=optimiser, loss=loss)
         return model
 

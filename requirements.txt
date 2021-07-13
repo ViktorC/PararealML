@@ -9,4 +9,3 @@ mpi4py~=3.0.3
 sympy~=1.6.2
 scikit-learn~=0.23.1
 tensorflow>=1.14.0
-deepxde==0.12.0

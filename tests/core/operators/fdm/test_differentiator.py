@@ -2,26 +2,27 @@ import numpy as np
 import pytest
 
 from pararealml.core.constraint import Constraint
-from pararealml.core.differentiator import \
+from pararealml.core.operators.fdm.differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 
 
-def test_differentiator_jacobian_with_insufficient_dimensions():
+def test_differentiator_gradient_with_insufficient_dimensions():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.,
+    d_x = 1.
     y = np.arange(1., 5.)
 
     with pytest.raises(ValueError):
-        diff.jacobian(y, d_x)
+        diff.gradient(y, d_x, 0, [])
 
 
-def test_differentiator_jacobian_with_wrong_d_x_size():
+def test_differentiator_derivative_with_out_of_bounds_x_axis():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (1.,) * 3
-    y = np.array([[[0.] * 3] * 2])
+    d_x = 1.
+    x_axis = 1
+    y = np.arange(0., 6.).reshape((3, 2))
 
     with pytest.raises(ValueError):
-        diff.jacobian(y, d_x)
+        diff.gradient(y, d_x, x_axis)
 
 
 def test_differentiator_divergence_with_insufficient_dimensions():
@@ -78,51 +79,20 @@ def test_differentiator_curl_with_wrong_d_x_size():
         diff.curl(y, d_x)
 
 
-def test_3pcfdm_derivative_with_insufficient_dimensions():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
-    y = np.arange(1., 5.)
-
-    with pytest.raises(ValueError):
-        diff.derivative(y, d_x, 0)
-
-
-def test_3pcfdm_derivative_with_out_of_bounds_x_axis():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
-    x_axis = 1
-    y = np.arange(0., 6.).reshape((3, 2))
-
-    with pytest.raises(ValueError):
-        diff.derivative(y, d_x, x_axis)
-
-
-def test_3pcfdm_derivative_with_out_of_bounds_y_ind():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
-    x_axis = 0
-    y_ind = 2
-    y = np.arange(0., 6.).reshape((3, 2))
-
-    with pytest.raises(ValueError):
-        diff.derivative(y, d_x, x_axis, y_ind)
-
-
-def test_3pcfdm_derivative_with_insufficient_dimension_extent():
+def test_3pcfdm_gradient_with_insufficient_dimension_extent():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 1.
     x_axis = 0
     y = np.arange(0., 12.).reshape((2, 3, 2))
 
     with pytest.raises(ValueError):
-        diff.derivative(y, d_x, x_axis)
+        diff.gradient(y, d_x, x_axis)
 
 
-def test_3pcfdm_derivative():
+def test_3pcfdm_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 1
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -134,49 +104,53 @@ def test_3pcfdm_derivative():
             [2., 6.], [8., 2.], [-7., 7.]
         ]
     ])
-    expected_derivative = np.array([
+    expected_gradient = np.array([
         [
-            [1.], [1.], [-.25]
+            [1.5, 1.], [1., 1.], [1.25, -.25]
         ],
         [
-            [0.5], [-1.5], [1.25]
+            [0., .5], [1., -1.5], [-1., 1.25]
         ],
         [
-            [-1.], [-1.], [.25]
+            [-1.5, -1.], [-1., -1.], [-1.25, .25]
         ]
     ])
-    actual_derivative = diff.derivative(y, d_x, x_axis, y_ind)
+    actual_gradient = diff.gradient(y, d_x, x_axis)
 
-    assert np.isclose(actual_derivative, expected_derivative).all()
+    assert np.isclose(actual_gradient, expected_gradient).all()
 
 
-def test_3pcfdm_1d_constrained_derivative():
+def test_3pcfdm_1d_constrained_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 1
     y = np.array([
         [2., 4.], [4., 8.], [-3., 2.], [-3., 2.]
     ])
 
-    lower_constraint = Constraint(np.full(1, 9999.), np.array([True]))
-    upper_constraint = None
-    boundary_constraint_pair = lower_constraint, upper_constraint
+    first_boundary_constraint_pair = \
+        None, \
+        Constraint(np.full(1, -9999.), np.array([True]))
+    second_boundary_constraint = \
+        Constraint(np.full(1, 9999.), np.array([True])), \
+        None
+    boundary_constraints = [
+        first_boundary_constraint_pair,
+        second_boundary_constraint]
 
-    expected_derivative = np.array([
-        [9999.], [-.5], [-1.5], [-.5]
+    expected_gradient = np.array([
+        [1., 9999.], [-1.25, -.5], [-1.75, -1.5], [-9999., -.5]
     ])
-    actual_derivative = diff.derivative(
-        y, d_x, x_axis, y_ind, boundary_constraint_pair)
+    actual_gradient = diff.gradient(
+        y, d_x, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_derivative, expected_derivative).all()
+    assert np.isclose(actual_gradient, expected_gradient).all()
 
 
-def test_3pcfdm_2d_constrained_derivative():
+def test_3pcfdm_2d_constrained_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 1
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -189,45 +163,47 @@ def test_3pcfdm_2d_constrained_derivative():
         ]
     ])
 
-    lower_constraint = Constraint(
-        np.full(1, 9999.), np.array([False, True, False]))
-    upper_constraint = None
-    boundary_constraint_pair = lower_constraint, upper_constraint
+    first_boundary_constraint_pair = \
+        None, Constraint(np.full(2, -9999.), np.array([True, False, True]))
+    second_boundary_constraint_pair = \
+        Constraint(np.full(1, 9999.), np.array([False, True, False])), None
+    boundary_constraints = [
+        first_boundary_constraint_pair,
+        second_boundary_constraint_pair]
 
-    expected_derivative = np.array([
+    expected_gradient = np.array([
         [
-            [1.], [9999.], [-.25]
+            [1.5, 1.], [1., 9999.], [1.25, -.25]
         ],
         [
-            [0.5], [-1.5], [1.25]
+            [0., .5], [1., -1.5], [-1., 1.25]
         ],
         [
-            [-1.], [-1.], [.25]
+            [-9999., -1.], [-1., -1.], [-9999., .25]
         ]
     ])
-    actual_derivative = diff.derivative(
-        y, d_x, x_axis, y_ind, boundary_constraint_pair)
+    actual_gradient = diff._derivative(
+        y, d_x, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_derivative, expected_derivative).all()
+    assert np.isclose(actual_gradient, expected_gradient).all()
 
 
-def test_3pcfdm_second_derivative():
+def test_3pcfdm_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 1
     y = np.array([
         [
-            [2., 4.], [4., 8.], [-3., 2.]
+            [4.], [8.], [2.]
         ],
         [
-            [6., 4.], [4., 4.], [5., -1.]
+            [4.], [4.], [-1.]
         ],
         [
-            [2., 6.], [8., 2.], [-7., 7.]
+            [6.], [2.], [7.]
         ]
     ])
-    expected_second_derivative = np.array([
+    expected_hessian = np.array([
         [
             [-1.], [-3.], [-1.25]
         ],
@@ -238,41 +214,38 @@ def test_3pcfdm_second_derivative():
             [-2.], [0.], [-3.75]
         ]
     ])
-    actual_second_derivative = diff.second_derivative(
-        y, d_x, d_x, x_axis, x_axis, y_ind)
+    actual_hessian = diff.hessian(y, d_x, d_x, x_axis, x_axis)
 
     assert np.isclose(
-        actual_second_derivative, expected_second_derivative).all()
+        actual_hessian, expected_hessian).all()
 
 
-def test_3pcfdm_1d_constrained_second_derivative():
+def test_3pcfdm_1d_constrained_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 0
     y = np.array([
-        [2., 4.], [4., 8.], [-3., 2.], [-3., 2.]
+        [2.], [4.], [-3.], [-3.]
     ])
 
-    lower_constraint = Constraint(np.array([0.]), np.array([True]))
-    upper_constraint = Constraint(np.array([]), np.array([False]))
-    boundary_constraint_pair = lower_constraint, upper_constraint
+    boundary_constraint_pair = \
+        Constraint(np.array([0.]), np.array([True])), \
+        Constraint(np.array([]), np.array([False]))
+    boundary_constraints = [boundary_constraint_pair]
 
-    expected_second_derivative = np.array([
+    expected_hessian = np.array([
         [1.], [-2.25], [1.75], [.75]
     ])
-    actual_second_derivative = diff.second_derivative(
-        y, d_x, d_x, x_axis, x_axis, y_ind, boundary_constraint_pair)
+    actual_hessian = diff.hessian(
+        y, d_x, d_x, x_axis, x_axis, boundary_constraints)
 
-    assert np.isclose(
-        actual_second_derivative, expected_second_derivative).all()
+    assert np.isclose(actual_hessian, expected_hessian).all()
 
 
-def test_3pcfdm_2d_constrained_second_derivative():
+def test_3pcfdm_2d_constrained_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x = 2.
     x_axis = 0
-    y_ind = 1
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -285,31 +258,29 @@ def test_3pcfdm_2d_constrained_second_derivative():
         ]
     ])
 
-    lower_constraint = Constraint(
-        np.full(2, -2.), np.array([True, True, False]))
-    upper_constraint = Constraint(
-        np.full(1, 0.), np.array([False, False, True]))
-    boundary_constraint_pair = lower_constraint, upper_constraint
+    boundary_constraint_pair = \
+        Constraint(np.full(2, -2.), np.array([True, True, False])), \
+        Constraint(np.full(1, 0.), np.array([False, False, True]))
+    boundary_constraints = [None, boundary_constraint_pair]
 
-    expected_second_derivative = np.array([
+    expected_hessian = np.array([
         [
-            [2.], [0.], [-1.25]
+            [.5, 2.], [-1., 0.], [2.75, -1.25]
         ],
         [
-            [.5], [.5], [2.75]
+            [-2., .5], [1., .5], [-5., 2.75]
         ],
         [
-            [-2.], [0.], [-4.]
+            [.5, -2.], [-3., 0.], [4.75, -4.]
         ]
     ])
-    actual_second_derivative = diff.second_derivative(
-        y, d_x, d_x, x_axis, x_axis, y_ind, boundary_constraint_pair)
+    actual_hessian = diff.hessian(
+        y, d_x, d_x, x_axis, x_axis, boundary_constraints)
 
-    assert np.isclose(
-        actual_second_derivative, expected_second_derivative).all()
+    assert np.isclose(actual_hessian, expected_hessian).all()
 
 
-def test_3pcfdm_mixed_second_derivative():
+def test_3pcfdm_mixed_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_x1 = 1.
     d_x2 = .5
@@ -317,16 +288,16 @@ def test_3pcfdm_mixed_second_derivative():
     x_axis2 = 1
     y = np.array([
         [
-            [2., 4.], [4., 8.], [-3., 2.]
+            [2.], [4.], [-3.]
         ],
         [
-            [6., 4.], [4., 4.], [5., -1.]
+            [6.], [4.], [5.]
         ],
         [
-            [2., 6.], [8., 2.], [-7., 7.]
+            [2.], [8.], [-7.]
         ]
     ])
-    expected_second_derivative = np.array([
+    expected_hessian = np.array([
         [
             [2.], [-.5], [-2.]
         ],
@@ -337,65 +308,9 @@ def test_3pcfdm_mixed_second_derivative():
             [-2.], [.5], [2.]
         ]
     ])
-    actual_second_derivative = diff.second_derivative(
-        y, d_x1, d_x2, x_axis1, x_axis2)
+    actual_hessian = diff.hessian(y, d_x1, d_x2, x_axis1, x_axis2)
 
-    assert np.isclose(
-        actual_second_derivative, expected_second_derivative).all()
-
-
-def test_3pcfdm_jacobian():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2., 1.
-    y = np.array([
-        [
-            [2., 4.], [4., 8.], [-3., 2.]
-        ],
-        [
-            [6., 4.], [4., 4.], [5., -1.]
-        ],
-        [
-            [2., 6.], [8., 2.], [-7., 7.]
-        ]
-    ])
-    expected_jacobian = np.array([
-        [
-            [
-                [1.5, 2.], [1., 4.]
-            ],
-            [
-                [1., -2.5], [1., -1.]
-            ],
-            [
-                [1.25, -2.], [-.25, -4.]
-            ]
-        ],
-        [
-            [
-                [0., 2.], [.5, 2.]
-            ],
-            [
-                [1., -.5], [-1.5, -2.5]
-            ],
-            [
-                [-1., -2.], [1.25, -2.]
-            ]
-        ],
-        [
-            [
-                [-1.5, 4.], [-1., 1.]
-            ],
-            [
-                [-1., -4.5], [-1., .5]
-            ],
-            [
-                [-1.25, -4.], [.25, -1.]
-            ]
-        ]
-    ])
-    actual_jacobian = diff.jacobian(y, d_x)
-
-    assert np.isclose(actual_jacobian, expected_jacobian).all()
+    assert np.isclose(actual_hessian, expected_hessian).all()
 
 
 def test_3pcfdm_2d_divergence():
@@ -609,108 +524,13 @@ def test_3pcfdm_3d_curl():
             ]
         ]
     ])
-    actual_curl = diff.curl(y, d_x)
+    actual_curl_0 = diff.curl(y, d_x, 0)
+    actual_curl_1 = diff.curl(y, d_x, 1)
+    actual_curl_2 = diff.curl(y, d_x, 2)
 
-    assert np.isclose(actual_curl, expected_curl).all()
-
-
-def test_3pcfdm_hessian():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2., 1.
-    y = np.array([
-        [
-            [2., 4.], [4., 8.], [1., -2.]
-        ],
-        [
-            [6., 4.], [4., 4.], [-2., 1.]
-        ],
-        [
-            [2., 6.], [8., 2.], [0., 4.]
-        ]
-    ])
-    expected_hessian = np.array([
-        [
-            [
-                [
-                    [.5, .5], [.5, 0.]
-                ],
-                [
-                    [-1., .5], [.5, 0.]
-                ]
-            ],
-            [
-                [
-                    [-1., -1.], [-1., -5.]
-                ],
-                [
-                    [-3., -.375], [-.375, -14.]
-                ]
-            ],
-            [
-                [
-                    [-1., -.5], [-.5, 2.]
-                ],
-                [
-                    [1.25, -.5], [-.5, 12.]
-                ]
-            ]
-        ],
-        [
-            [
-                [
-                    [-2., .5], [.5, -8.]
-                ],
-                [
-                    [.5, -.75], [-.75, -4.]
-                ]
-            ],
-            [
-                [
-                    [1., -.125], [-.125, -4.]
-                ],
-                [
-                    [.5, .5], [.5, -3.]
-                ]
-            ],
-            [
-                [
-                    [1.25, -.5], [-.5, 8.]
-                ],
-                [
-                    [0., .75], [.75, 2.]
-                ]
-            ]
-        ],
-        [
-            [
-                [
-                    [.5, -.5], [-.5, 4.]
-                ],
-                [
-                    [-2., -.5], [-.5, -10.]
-                ]
-            ],
-            [
-                [
-                    [-3., 1.], [1., -14.]
-                ],
-                [
-                    [0., .375], [.375, 6.]
-                ]
-            ],
-            [
-                [
-                    [-.5, .5], [.5, 8.]
-                ],
-                [
-                    [-1.75, .5], [.5, -6.]
-                ]
-            ]
-        ]
-    ])
-    actual_hessian = diff.hessian(y, d_x)
-
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.isclose(actual_curl_0, expected_curl[..., :1]).all()
+    assert np.isclose(actual_curl_1, expected_curl[..., 1:2]).all()
+    assert np.isclose(actual_curl_2, expected_curl[..., 2:]).all()
 
 
 def test_3pcfdm_laplacian():
@@ -741,33 +561,6 @@ def test_3pcfdm_laplacian():
     actual_lapl = diff.laplacian(y, d_x)
 
     assert np.isclose(actual_lapl, expected_lapl).all()
-
-
-def test_3pcfdm_anti_derivative():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    y = np.random.random((20, 20, 1))
-    x_axis = 0
-    d_x = .07
-    tol = 1e-12
-
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = -1.
-    value[y.shape[0] - 1, :] = 5.
-    mask = ~np.isnan(value)
-    value = value[mask]
-    y_constraint = Constraint(value, mask)
-
-    y[..., 0][mask] = value
-
-    d_y_over_d_x = diff.derivative(y, d_x, x_axis)
-
-    anti_derivative = diff.anti_derivative(
-        d_y_over_d_x, x_axis, d_x, tol, y_constraint)
-
-    assert np.isclose(
-        diff.derivative(anti_derivative, d_x, x_axis),
-        d_y_over_d_x).all()
-    assert np.isclose(anti_derivative, y).all()
 
 
 def test_3pcfdm_anti_laplacian():

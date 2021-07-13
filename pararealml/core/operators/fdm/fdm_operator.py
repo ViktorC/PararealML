@@ -5,10 +5,10 @@ import sympy as sp
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis, Constraint
-from pararealml.core.differential_equation import LhsType
-from pararealml.core.differentiator import Differentiator
+from pararealml.core.differential_equation import Lhs
+from pararealml.core.operators.fdm.differentiator import Differentiator
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.integrator import Integrator
+from pararealml.core.operators.fdm.integrator import Integrator
 from pararealml.core.operator import Operator
 from pararealml.core.solution import Solution
 
@@ -92,30 +92,36 @@ class FDMOperator(Operator):
         symbol_map = self._create_symbol_map(cp)
 
         d_y_over_d_t_eq_inds = \
-            eq_sys.equation_indices_by_type(LhsType.D_Y_OVER_D_T)
-        d_y_over_d_t_symbols = eq_sys.symbols_by_type(LhsType.D_Y_OVER_D_T)
+            eq_sys.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
+        d_y_over_d_t_symbols = eq_sys.symbols_by_type(Lhs.D_Y_OVER_D_T)
         d_y_over_d_t_arg_functions = \
             [symbol_map[sym] for sym in d_y_over_d_t_symbols]
         d_y_over_d_t_rhs_lambda = sp.lambdify(
             [d_y_over_d_t_symbols],
-            eq_sys.rhs_by_type(LhsType.D_Y_OVER_D_T),
+            eq_sys.rhs_by_type(Lhs.D_Y_OVER_D_T),
             'numpy')
 
-        y_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y)
-        y_symbols = eq_sys.symbols_by_type(LhsType.Y)
+        y_eq_inds = eq_sys.equation_indices_by_type(Lhs.Y)
+        y_symbols = eq_sys.symbols_by_type(Lhs.Y)
         y_arg_functions = [symbol_map[sym] for sym in y_symbols]
         y_rhs_lambda = sp.lambdify(
-            [y_symbols], eq_sys.rhs_by_type(LhsType.Y), 'numpy')
+            [y_symbols], eq_sys.rhs_by_type(Lhs.Y), 'numpy')
 
-        y_lapl_eq_inds = eq_sys.equation_indices_by_type(LhsType.Y_LAPLACIAN)
-        y_lapl_symbols = eq_sys.symbols_by_type(LhsType.Y_LAPLACIAN)
+        y_lapl_eq_inds = eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN)
+        y_lapl_symbols = eq_sys.symbols_by_type(Lhs.Y_LAPLACIAN)
         y_lapl_arg_functions = [symbol_map[sym] for sym in y_lapl_symbols]
         y_lapl_rhs_lambda = sp.lambdify(
             [y_lapl_symbols],
-            eq_sys.rhs_by_type(LhsType.Y_LAPLACIAN),
+            eq_sys.rhs_by_type(Lhs.Y_LAPLACIAN),
             'numpy')
 
-        d_x = cp.mesh.d_x if diff_eq.x_dimension else None
+        if diff_eq.x_dimension:
+            mesh = cp.mesh
+            self._differentiator.coordinate_system_type = \
+                mesh.coordinate_system_type
+            d_x = mesh.d_x
+        else:
+            d_x = None
 
         boundary_constraints_cache = {}
         y_constraints_cache = {}
@@ -196,7 +202,7 @@ class FDMOperator(Operator):
 
         for i, y_element in enumerate(diff_eq.symbols.y):
             symbol_map[y_element] = \
-                lambda t, y, d_y_bc_func, _i=i: y[..., [_i]]
+                lambda t, y, d_y_bc_func, _i=i: y[..., _i:_i + 1]
 
         if diff_eq.x_dimension:
             d_x = cp.mesh.d_x
@@ -210,31 +216,29 @@ class FDMOperator(Operator):
             for i in range(diff_eq.y_dimension):
                 symbol_map[y_laplacian[i]] = lambda t, y, d_y_bc_func, _i=i: \
                     self._differentiator.laplacian(
-                        y[..., [_i]],
+                        y[..., _i:_i + 1],
                         d_x,
-                        d_y_bc_func(t)[:, [_i]])
+                        d_y_bc_func(t)[:, _i:_i + 1])
 
                 for j in range(diff_eq.x_dimension):
                     symbol_map[y_gradient[i, j]] = \
                         lambda t, y, d_y_bcs, _i=i, _j=j: \
-                        self._differentiator.derivative(
-                            y,
+                        self._differentiator.gradient(
+                            y[..., _i:_i + 1],
                             d_x[_j],
                             _j,
-                            _i,
-                            d_y_bcs(t)[_j, _i])
+                            d_y_bcs(t)[_j, _i:_i + 1])
 
                     for k in range(diff_eq.x_dimension):
                         symbol_map[y_hessian[i, j, k]] = \
                             lambda t, y, d_y_bc_func, _i=i, _j=j, _k=k: \
-                            self._differentiator.second_derivative(
-                                y,
+                            self._differentiator.hessian(
+                                y[..., _i:_i + 1],
                                 d_x[_j],
                                 d_x[_k],
                                 _j,
                                 _k,
-                                _i,
-                                d_y_bc_func(t)[_j, _i])
+                                d_y_bc_func(t)[_j, _i:_i + 1])
 
             for index in np.ndindex(
                     (diff_eq.y_dimension,) * diff_eq.x_dimension):
@@ -244,13 +248,24 @@ class FDMOperator(Operator):
                         y[..., _index],
                         d_x,
                         d_y_bc_func(t)[:, _index])
-                if 2 <= diff_eq.x_dimension <= 3:
+                if diff_eq.x_dimension == 2:
                     symbol_map[y_curl[index]] = \
                         lambda t, y, d_y_bc_func, _index=tuple(index): \
                         self._differentiator.curl(
                             y[..., _index],
                             d_x,
+                            0,
                             d_y_bc_func(t)[:, _index])
+
+            if diff_eq.x_dimension == 3:
+                for index in np.ndindex(((diff_eq.y_dimension,) * 3) + (3,)):
+                    symbol_map[y_curl[index]] = \
+                        lambda t, y, d_y_bc_func, _index=tuple(index): \
+                        self._differentiator.curl(
+                            y[..., _index[:-1]],
+                            d_x,
+                            _index[-1],
+                            d_y_bc_func(t)[:, _index[:-1]])
 
         return symbol_map
 

@@ -11,7 +11,7 @@ from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.constraint import Constraint
 
 from pararealml.core.differential_equation import Symbols
-from pararealml.core.differential_equation import LhsType
+from pararealml.core.differential_equation import Lhs
 from pararealml.core.differential_equation import SymbolicEquationSystem
 from pararealml.core.differential_equation import DifferentialEquation
 from pararealml.core.differential_equation import PopulationGrowthEquation
@@ -27,8 +27,8 @@ from pararealml.core.differential_equation import ShallowWaterEquation
 from pararealml.core.differential_equation import \
     NavierStokesStreamFunctionVorticityEquation
 
-from pararealml.core.differentiator import Differentiator
-from pararealml.core.differentiator import \
+from pararealml.core.operators.fdm.differentiator import Differentiator
+from pararealml.core.operators.fdm.differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 
 from pararealml.core.initial_condition import InitialCondition
@@ -38,23 +38,22 @@ from pararealml.core.initial_condition import GaussianInitialCondition
 
 from pararealml.core.initial_value_problem import InitialValueProblem
 
-from pararealml.core.integrator import Integrator
-from pararealml.core.integrator import ForwardEulerMethod
-from pararealml.core.integrator import ExplicitMidpointMethod
-from pararealml.core.integrator import RK4
-from pararealml.core.integrator import BackwardEulerMethod
-from pararealml.core.integrator import CrankNicolsonMethod
+from pararealml.core.operators.fdm.integrator import Integrator
+from pararealml.core.operators.fdm.integrator import ForwardEulerMethod
+from pararealml.core.operators.fdm.integrator import ExplicitMidpointMethod
+from pararealml.core.operators.fdm.integrator import RK4
+from pararealml.core.operators.fdm.integrator import BackwardEulerMethod
+from pararealml.core.operators.fdm.integrator import CrankNicolsonMethod
 
 from pararealml.core.mesh import Mesh
 
 from pararealml.core.operator import Operator
 
-from pararealml.core.operators.ode_operator import ODEOperator
-from pararealml.core.operators.fdm_operator import FDMOperator
-from pararealml.core.operators.ml_operator import MLOperator
-from pararealml.core.operators.regression_operator import RegressionOperator
-from pararealml.core.operators.deeponet_operator import DeepONetOperator
-from pararealml.core.operators.parareal_operator import PararealOperator
+from pararealml.core.operators.ode.ode_operator import ODEOperator
+from pararealml.core.operators.fdm.fdm_operator import FDMOperator
+from pararealml.core.operators.regression.regression_operator import RegressionOperator
+from pararealml.core.operators.pi_deeponet.pi_deeponet_operator import PIDeepONetOperator
+from pararealml.core.operators.parareal.parareal_operator import PararealOperator
 
 from pararealml.core.solution import Solution
 
@@ -67,7 +66,7 @@ __all__ = [
     'apply_constraints_along_last_axis',
     'Constraint',
     'Symbols',
-    'LhsType',
+    'Lhs',
     'SymbolicEquationSystem',
     'DifferentialEquation',
     'PopulationGrowthEquation',
@@ -98,9 +97,8 @@ __all__ = [
     'Operator',
     'ODEOperator',
     'FDMOperator',
-    'MLOperator',
     'RegressionOperator',
-    'DeepONetOperator',
+    'PIDeepONetOperator',
     'PararealOperator',
     'Solution',
 ]

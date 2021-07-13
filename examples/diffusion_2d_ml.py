@@ -27,7 +27,7 @@ ivp = InitialValueProblem(
     ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-pinn = DeepONetOperator(.1, oracle.vertex_oriented)
+pinn = PIDeepONetOperator(.1, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(.1, oracle.vertex_oriented)
 op_reg = RegressionOperator(.1, oracle.vertex_oriented)
 

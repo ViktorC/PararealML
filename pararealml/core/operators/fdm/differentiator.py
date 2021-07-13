@@ -5,6 +5,7 @@ import numpy as np
 
 from pararealml.core.constraint import Constraint, \
     apply_constraints_along_last_axis
+from pararealml.core.mesh import CoordinateSystem
 
 Slicer = List[Union[int, slice]]
 
@@ -16,93 +17,83 @@ BoundaryConstraintPair = Tuple[
 
 class Differentiator(ABC):
     """
-    A base class for numerical differentiators in Cartesian coordinates.
+    A base class for numerical differentiators.
     """
 
+    def __init__(self):
+        self._coordinate_system_type = CoordinateSystem.CARTESIAN
+
+    @property
+    def coordinate_system_type(self) -> CoordinateSystem:
+        """
+        Returns the coordinate system type of the differentiator.
+        """
+        return self._coordinate_system_type
+
+    @coordinate_system_type.setter
+    def coordinate_system_type(self, coordinate_system_type: CoordinateSystem):
+        """
+        Sets the coordinate system type of the differentiator.
+        """
+        self._coordinate_system_type = coordinate_system_type
+
     @abstractmethod
-    def derivative(
+    def _derivative(
             self,
             y: np.ndarray,
             d_x: float,
             x_axis: int,
-            y_ind: int = 0,
-            derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None
+            derivative_boundary_constraints:
+            Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         """
-        Returns the derivative of the y_ind-th element of y with respect to
-        the spatial dimension defined by x_axis at every point of the mesh.
+        Returns the derivative of y with respect to the spatial dimension
+        defined by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step size of the mesh along the specified axis
-        :param x_axis: the spatial dimension that the y_ind-th element of y is
-            to be differentiated with respect to
-        :param y_ind: the index of the element of y to differentiate (in case y
-            is vector-valued)
-        :param derivative_boundary_constraint_pair: a boundary constraint pair
-            that allows for applying constraints to the calculated first
+        :param x_axis: the spatial dimension that y is to be differentiated
+            with respect to
+        :param derivative_boundary_constraints: a sequence of boundary
+            constraint pairs with an element for each component of y that
+            allows for applying constraints to the calculated first
             derivatives at the boundaries normal to the axis that y is
             differentiated with respect to
-        :return: the derivative of the y_ind-th element of y with respect to
-            the spatial dimension defined by x_axis
+        :return: the derivative of y with respect to the spatial dimension
+            defined by x_axis
         """
 
     @abstractmethod
-    def second_derivative(
+    def _second_derivative(
             self,
             y: np.ndarray,
             d_x1: float,
             d_x2: float,
             x_axis1: int,
             x_axis2: int,
-            y_ind: int = 0,
-            first_derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None
+            derivative_boundary_constraints:
+            Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         """
-        Returns the second derivative of the y_ind-th element of y with respect
-        to the spatial dimensions defined by x_axis1 and x_axis2 at every point
-        of the mesh.
+        Returns the second derivative of y with respect to the spatial
+        dimensions defined by x_axis1 and x_axis2 at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
         :param d_x1: the step size of the mesh along the axis defined by
             x_axis1
         :param d_x2: the step size of the mesh along the axis defined by
             x_axis2
-        :param x_axis1: the first spatial dimension that the y_ind-th element
-            of y is to be differentiated with respect to
-        :param x_axis2: the second spatial dimension that the y_ind-th element
-            of y is to be differentiated with respect to
-        :param y_ind: the index of the element of y to differentiate (in case y
-            is vector-valued)
-        :param first_derivative_boundary_constraint_pair: a boundary constraint
-            pair that allows for applying constraints to the calculated first
+        :param x_axis1: the first spatial dimension that y is to be
+            differentiated with respect to
+        :param x_axis2: the second spatial dimension that y is to be
+            differentiated with respect to
+        :param derivative_boundary_constraints: a sequence of boundary
+            constraint pairs with an element for each component of y
+            that allows for applying constraints to the calculated first
             derivatives at the boundaries normal to the first axis of
             differentiation before computing the second derivatives
-        :return: the second derivative of the y_ind-th element of y with
-            respect to the spatial dimensions defined by x_axis1 and x_axis2
-        """
-
-    @abstractmethod
-    def _calculate_updated_anti_derivative(
-            self,
-            y_hat: np.ndarray,
-            derivative: np.ndarray,
-            x_axis: int,
-            d_x: float
-    ) -> np.ndarray:
-        """
-        Given an estimate, y_hat, of the anti-derivative, it returns an
-        improved estimate.
-
-        :param y_hat: the current estimated values of the anti-derivative at
-            every point of the mesh
-        :param derivative: the derivative of y with respect to the spatial
-            dimension defined by x_axis
-        :param x_axis: the spatial dimension that the anti-derivative is to be
-            calculated with respect to
-        :param d_x: the step size of the mesh along the specified axis
-        :return: an improved estimate of the anti-derivative
+        :return: the second derivative of y with respect to the spatial
+            dimensions defined by x_axis1 and x_axis2
         """
 
     @abstractmethod
@@ -111,7 +102,7 @@ class Differentiator(ABC):
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints: Optional[np.ndarray]
+            derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it returns an improved
@@ -121,50 +112,108 @@ class Differentiator(ABC):
             point of the mesh
         :param laplacian: the Laplacian for which y is to be determined
         :param d_x: the step sizes of the mesh along the spatial axes
-        :param first_derivative_boundary_constraints: an optional 2D array
+        :param derivative_boundary_constraints: an optional 2D array
             (x dimension, y dimension) of boundary constraint pairs that
             specify constraints on the first derivatives of the solution
         :return: an improved estimate of y_hat
         """
 
-    def jacobian(
+    def gradient(
             self,
             y: np.ndarray,
-            d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray] = None
+            d_x: float,
+            x_axis: int,
+            derivative_boundary_constraints:
+            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None
     ) -> np.ndarray:
         """
-        Returns the Jacobian of y with respect to x at every point of the
-        mesh. If y is scalar-valued, it returns the gradient.
+        Returns the column of the Jacobian matrix of y corresponding to the
+        spatial dimension specified by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param d_x: the step sizes used to create the mesh
-        :param derivative_boundary_constraints: a 2D array (x dimension,
-            y dimension) of boundary constraint pairs that allow for applying
-            constraints to the calculated first derivatives
-        :return: the Jacobian of y
+        :param d_x: the step size of the mesh along the specified axis
+        :param x_axis: the spatial dimension that y is to be differentiated
+            with respect to
+        :param derivative_boundary_constraints: a sequence of boundary
+            constraint pairs with an element for each component of y that
+            allows for applying constraints to the calculated first
+            derivatives at the boundaries normal to the axis that y is
+            differentiated with respect to
+        :return: the element(s) of the gradient of y corresponding to the
+            specified axis
         """
-        if y.ndim <= 1:
+        if y.ndim < 2:
             raise ValueError
-        if len(d_x) != y.ndim - 1:
+        if not (0 <= x_axis < y.ndim - 1):
             raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
-                derivative_boundary_constraints, y.shape)
+                derivative_boundary_constraints,
+                None,
+                y.shape[-1])
 
-        jacobian = np.empty(y.shape + (y.ndim - 1,))
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            return self._derivative(
+                y, d_x, x_axis, derivative_boundary_constraints)
+        else:
+            raise ValueError
 
-        for y_ind in range(y.shape[-1]):
-            for axis in range(y.ndim - 1):
-                jacobian[..., y_ind, [axis]] = self.derivative(
-                    y,
-                    d_x[axis],
-                    axis,
-                    y_ind,
-                    derivative_boundary_constraints[axis, y_ind])
+    def hessian(
+            self,
+            y: np.ndarray,
+            d_x1: float,
+            d_x2: float,
+            x_axis1: int,
+            x_axis2: int,
+            derivative_boundary_constraints:
+            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None
+    ) -> np.ndarray:
+        """
+        Returns the column of the Hessian tensor of y corresponding to the
+        spatial dimensions defined by x_axis1 and x_axis2 at every point of
+        the mesh.
 
-        return jacobian
+        :param y: the values of y at every point of the mesh
+        :param d_x1: the step size of the mesh along the axis defined by
+            x_axis1
+        :param d_x2: the step size of the mesh along the axis defined by
+            x_axis2
+        :param x_axis1: the first spatial dimension that y is to be
+            differentiated with respect to
+        :param x_axis2: the second spatial dimension that y is to be
+            differentiated with respect to
+        :param derivative_boundary_constraints: a sequence of boundary
+            constraint pairs with an element for each component of y
+            that allows for applying constraints to the calculated first
+            derivatives at the boundaries normal to the first axis of
+            differentiation before computing the second derivatives
+        :return: the element(s) of the Hessian of y corresponding to the
+            specified axes
+        """
+        if y.ndim < 2:
+            raise ValueError
+        if not (0 <= x_axis1 < y.ndim - 1):
+            raise ValueError
+        if not (0 <= x_axis2 < y.ndim - 1):
+            raise ValueError
+
+        derivative_boundary_constraints = \
+            self._verify_and_get_derivative_boundary_constraints(
+                derivative_boundary_constraints,
+                None,
+                y.shape[-1])
+
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            return self._second_derivative(
+                y,
+                d_x1,
+                d_x2,
+                x_axis1,
+                x_axis2,
+                derivative_boundary_constraints)
+        else:
+            raise ValueError
 
     def divergence(
             self,
@@ -173,8 +222,8 @@ class Differentiator(ABC):
             derivative_boundary_constraints: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
-        Returns the divergence of y with respect to x at every point of the
-        mesh.
+        Returns the divergence of the elements of y defined by y_inds with
+        respect to x at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
@@ -184,22 +233,30 @@ class Differentiator(ABC):
             to compute the divergence
         :return: the divergence of y
         """
-        if y.ndim <= 1:
-            raise ValueError
-        if y.ndim - 1 != y.shape[-1]:
+        if y.ndim < 2:
             raise ValueError
         if len(d_x) != y.ndim - 1:
+            raise ValueError
+        if len(d_x) != y.shape[-1]:
             raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
-                derivative_boundary_constraints, y.shape)
+                derivative_boundary_constraints,
+                y.ndim - 1,
+                y.shape[-1])
 
         div = np.zeros(y.shape[:-1] + (1,))
 
-        for i in range(y.shape[-1]):
-            div += self.derivative(
-                y, d_x[i], i, i, derivative_boundary_constraints[i, i])
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            for i in range(y.shape[-1]):
+                div += self._derivative(
+                    y[..., i:i + 1],
+                    d_x[i],
+                    i,
+                    derivative_boundary_constraints[i, i:i + 1])
+        else:
+            raise ValueError
 
         return div
 
@@ -207,189 +264,139 @@ class Differentiator(ABC):
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
+            curl_ind: int = 0,
             derivative_boundary_constraints: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
-        Returns the curl of y with respect to x at every point of the
-        mesh.
+        Returns the curl_ind-th component of the curl of y at every point of
+        the mesh.
+
+        If y is a two dimensional vector field, curl_ind is ignored.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
+        :param curl_ind: the index of the component of the curl of y to compute
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the curl
         :return: the curl of y
         """
-        if not (2 <= y.shape[-1] <= 3):
+        if not (2 <= (y.ndim - 1) <= 3):
             raise ValueError
-        if y.ndim - 1 != y.shape[-1]:
+        if len(d_x) != y.ndim - 1:
+            raise ValueError
+        if len(d_x) != y.shape[-1]:
+            raise ValueError
+        if not (0 <= curl_ind < len(d_x)):
+            raise ValueError
+
+        derivative_boundary_constraints = \
+            self._verify_and_get_derivative_boundary_constraints(
+                derivative_boundary_constraints,
+                y.ndim - 1,
+                y.shape[-1])
+
+        if len(d_x) == 2:
+            if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+                return self._derivative(
+                    y[..., 1:],
+                    d_x[0],
+                    0,
+                    derivative_boundary_constraints[0, 1:]
+                ) - self._derivative(
+                    y[..., :1],
+                    d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, :1])
+            else:
+                raise ValueError
+
+        elif len(d_x) == 3:
+            if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+                if curl_ind == 0:
+                    return self._derivative(
+                        y[..., 2:],
+                        d_x[1],
+                        1,
+                        derivative_boundary_constraints[1, 2:]
+                    ) - self._derivative(
+                        y[..., 1:2],
+                        d_x[2],
+                        2,
+                        derivative_boundary_constraints[2, 1:2])
+                if curl_ind == 1:
+                    return self._derivative(
+                        y[..., :1],
+                        d_x[2],
+                        2,
+                        derivative_boundary_constraints[2, :1]
+                    ) - self._derivative(
+                        y[..., 2:],
+                        d_x[0],
+                        0,
+                        derivative_boundary_constraints[0, 2:])
+                else:
+                    return self._derivative(
+                        y[..., 1:2],
+                        d_x[0],
+                        0,
+                        derivative_boundary_constraints[0, 1:2]
+                    ) - self._derivative(
+                        y[..., :1],
+                        d_x[1],
+                        1,
+                        derivative_boundary_constraints[1, :1])
+            else:
+                raise ValueError
+
+        else:
+            raise ValueError
+
+    def laplacian(
+            self,
+            y: np.ndarray,
+            d_x: Tuple[float, ...],
+            derivative_boundary_constraints:
+            Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """
+        Returns the Laplacian of y at every point of the mesh.
+
+        :param y: the values of y at every point of the mesh
+        :param d_x: the step sizes used to create the mesh
+        :param derivative_boundary_constraints: a 2D array (x dimension,
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the second derivatives and the Laplacian
+        :return: the Laplacian of y
+        """
+        if y.ndim < 2:
             raise ValueError
         if len(d_x) != y.ndim - 1:
             raise ValueError
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
-                derivative_boundary_constraints, y.shape)
-
-        if y.shape[-1] == 2:
-            curl = self.derivative(
-                y, d_x[0], 0, 1, derivative_boundary_constraints[0, 1]) - \
-                self.derivative(
-                    y, d_x[1], 1, 0, derivative_boundary_constraints[1, 0])
-        else:
-            curl = np.empty(y.shape)
-            curl[..., 0] = (
-                    self.derivative(
-                        y, d_x[1], 1, 2,
-                        derivative_boundary_constraints[1, 2]) -
-                    self.derivative(
-                        y, d_x[2], 2, 1,
-                        derivative_boundary_constraints[2, 1]))[..., 0]
-            curl[..., 1] = (
-                    self.derivative(
-                        y, d_x[2], 2, 0,
-                        derivative_boundary_constraints[2, 0]) -
-                    self.derivative(
-                        y, d_x[0], 0, 2,
-                        derivative_boundary_constraints[0, 2]))[..., 0]
-            curl[..., 2] = (
-                    self.derivative(
-                        y, d_x[0], 0, 1,
-                        derivative_boundary_constraints[0, 1]) -
-                    self.derivative(
-                        y, d_x[1], 1, 0,
-                        derivative_boundary_constraints[1, 0]))[..., 0]
-
-        return curl
-
-    def hessian(
-            self,
-            y: np.ndarray,
-            d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints:
-            Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """
-        Returns the Hessian of y with respect to x at every point of the
-        mesh.
-
-        :param y: the values of y at every point of the mesh
-        :param d_x: the step sizes used to create the mesh
-        :param first_derivative_boundary_constraints: a 2D array (x dimension,
-            y dimension) of boundary constraint pairs that allow for applying
-            constraints to the calculated first derivatives before using them
-            to compute the second derivatives and the Hessian
-        :return: the Hessian of y
-        """
-        if y.ndim <= 1:
-            raise ValueError
-        if len(d_x) != y.ndim - 1:
-            raise ValueError
-
-        first_derivative_boundary_constraints = \
-            self._verify_and_get_derivative_boundary_constraints(
-                first_derivative_boundary_constraints, y.shape)
-
-        hessian = np.empty(y.shape + (y.ndim - 1,) * 2)
-
-        for y_ind in range(y.shape[-1]):
-            for axis_1 in range(y.ndim - 1):
-                constraint_function = \
-                    first_derivative_boundary_constraints[axis_1, y_ind]
-                for axis_2 in range(y.ndim - 1):
-                    hessian[..., y_ind, axis_1, axis_2] = \
-                        self.second_derivative(
-                            y,
-                            d_x[axis_1],
-                            d_x[axis_2],
-                            axis_1,
-                            axis_2,
-                            y_ind,
-                            constraint_function)[..., 0]
-
-        return hessian
-
-    def laplacian(
-            self,
-            y: np.ndarray,
-            d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints:
-            Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """
-        Returns the Laplacian of y with respect to x at every point of the
-        mesh.
-
-        :param y: the values of y at every point of the mesh
-        :param d_x: the step sizes used to create the mesh
-        :param first_derivative_boundary_constraints: a 2D array (x dimension,
-            y dimension) of boundary constraint pairs that allow for applying
-            constraints to the calculated first derivatives before using them
-            to compute the second derivatives and the Laplacian
-        :return: the Laplacian of y
-        """
-        if y.ndim <= 1:
-            raise ValueError
-        if len(d_x) != y.ndim - 1:
-            raise ValueError
-
-        first_derivative_boundary_constraints = \
-            self._verify_and_get_derivative_boundary_constraints(
-                first_derivative_boundary_constraints, y.shape)
+                derivative_boundary_constraints,
+                y.ndim - 1,
+                y.shape[-1])
 
         laplacian = np.zeros(y.shape)
 
-        for y_ind in range(y.shape[-1]):
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
             for axis in range(y.ndim - 1):
-                laplacian[..., y_ind] += self.second_derivative(
+                laplacian += self._second_derivative(
                     y,
                     d_x[axis],
                     d_x[axis],
                     axis,
                     axis,
-                    y_ind,
-                    first_derivative_boundary_constraints[axis, y_ind])[..., 0]
-
-        return laplacian
-
-    def anti_derivative(
-            self,
-            derivative: np.ndarray,
-            x_axis: int,
-            d_x: float,
-            tol: float,
-            y_constraint: Optional[Constraint],
-            y_init: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """
-        Returns an array whose derivative with respect to the specified axis
-        closely matches the provided values.
-
-        :param derivative: the right-hand side of the equation
-        :param x_axis: the spatial dimension that the anti-derivative is to be
-            calculated with respect to
-        :param d_x: the step sizes of the mesh along the spatial axes
-        :param tol: the stopping criterion for the Jacobi algorithm; once the
-            second norm of the difference of the estimate and the updated
-            estimate drops below this threshold, the equation is considered to
-            be solved
-        :param y_constraint: a constraint on the values of y that allows for
-            solving for the anti-derivative; it must constrain the boundary
-            values
-        :param y_init: an optional initial estimate of the solution; if it is
-            None, a random array is used
-        :return: the array representing the solution
-        """
-        if y_constraint is None:
+                    derivative_boundary_constraints[axis, :])
+        else:
             raise ValueError
 
-        def update(y: np.ndarray) -> np.ndarray:
-            return self._calculate_updated_anti_derivative(
-                y, derivative, x_axis, d_x)
-
-        return self._solve_with_jacobi_method(
-            update, derivative.shape, tol, y_init, [y_constraint])
+        return laplacian
 
     def anti_laplacian(
             self,
@@ -397,7 +404,7 @@ class Differentiator(ABC):
             d_x: Tuple[float, ...],
             tol: float,
             y_constraints: Sequence[Optional[Constraint]],
-            first_derivative_boundary_constraints: Optional[np.ndarray] = None,
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
             y_init: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
@@ -414,7 +421,7 @@ class Differentiator(ABC):
             solution containing a constraint for each element of y; each
             constraint must constrain the boundary values of corresponding
             element of y for the system to be solvable
-        :param first_derivative_boundary_constraints: an optional 2D array
+        :param derivative_boundary_constraints: an optional 2D array
             (x dimension, y dimension) of boundary constraint pairs that
             specify constraints on the first derivatives of the solution
         :param y_init: an optional initial estimate of the solution; if it is
@@ -422,21 +429,28 @@ class Differentiator(ABC):
         :return: the array representing the solution to Poisson's equation at
             every point of the mesh
         """
+        if len(d_x) != laplacian.ndim - 1:
+            raise ValueError
         if y_constraints is None:
             raise ValueError
         if len(y_constraints) != laplacian.shape[-1]:
             raise ValueError
 
-        first_derivative_boundary_constraints = \
+        if self._coordinate_system_type != CoordinateSystem.CARTESIAN:
+            raise ValueError
+
+        derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
-                first_derivative_boundary_constraints, laplacian.shape)
+                derivative_boundary_constraints,
+                laplacian.ndim - 1,
+                laplacian.shape[-1])
 
         def update(y: np.ndarray) -> np.ndarray:
             return self._calculate_updated_anti_laplacian(
                 y,
                 laplacian,
                 d_x,
-                first_derivative_boundary_constraints)
+                derivative_boundary_constraints)
 
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraints)
@@ -466,7 +480,7 @@ class Differentiator(ABC):
             solution containing a constraint for each element of y
         :return: the inverse of the differential operation
         """
-        if len(y_shape) <= 1:
+        if len(y_shape) < 2:
             raise ValueError
         if len(y_constraints) != y_shape[-1]:
             raise ValueError
@@ -492,8 +506,10 @@ class Differentiator(ABC):
 
     @staticmethod
     def _verify_and_get_derivative_boundary_constraints(
-            derivative_boundary_constraints: Optional[np.ndarray],
-            y_shape: Tuple[int, ...]
+            derivative_boundary_constraints:
+            Optional[Union[np.ndarray, Sequence]],
+            x_axes: Optional[int],
+            y_elements: int
     ) -> np.ndarray:
         """
         If the provided derivative boundary constraints are not None, it just
@@ -501,20 +517,25 @@ class Differentiator(ABC):
         it. Otherwise it creates an array of empty objects of the correct
         shape and returns that.
 
-        :param derivative_boundary_constraints: a potentially None 2D array
-            (x dimension, y dimension) of derivative boundary constraint pairs
-        :param y_shape: the shape of the array representing the discretised y
-            which is to be differentiated
+        :param derivative_boundary_constraints: an array of derivative boundary
+            constraint pairs
+        :param x_axes: the number of spatial dimensions
+        :param y_elements: the number of elements y has
         :return: an array of derivative boundary constraint pairs or empty
             objects depending on whether the input array is None
         """
         if derivative_boundary_constraints is not None:
-            if derivative_boundary_constraints.shape != \
-                    (len(y_shape) - 1, y_shape[-1]):
+            if x_axes is not None:
+                if derivative_boundary_constraints.shape != \
+                        (x_axes, y_elements):
+                    raise ValueError
+            elif len(derivative_boundary_constraints) != y_elements:
                 raise ValueError
             return derivative_boundary_constraints
         else:
-            return np.empty((len(y_shape) - 1, y_shape[-1]), dtype=object)
+            return np.empty(
+                (x_axes, y_elements) if x_axes is not None else (y_elements,),
+                dtype=object)
 
 
 class ThreePointCentralFiniteDifferenceMethod(Differentiator):
@@ -523,38 +544,25 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
     difference.
     """
 
-    def derivative(
+    def _derivative(
             self,
             y: np.ndarray,
             d_x: float,
             x_axis: int,
-            y_ind: int = 0,
-            derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None
+            derivative_boundary_constraints:
+            Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         if y.shape[x_axis] <= 2:
             raise ValueError
-        if not (0 <= x_axis < y.ndim - 1):
-            raise ValueError
-        if not (0 <= y_ind < y.shape[-1]):
+        if len(derivative_boundary_constraints) != y.shape[-1]:
             raise ValueError
 
-        derivative_shape = y.shape[:-1] + (1,)
-        derivative = np.empty(derivative_shape)
+        derivative = np.empty(y.shape)
 
         y_slicer: Slicer = [slice(None)] * y.ndim
-        derivative_slicer: Slicer = [slice(None)] * len(derivative_shape)
-
-        y_slicer[-1] = y_ind
-        derivative_slicer[-1] = 0
+        derivative_slicer: Slicer = [slice(None)] * len(y.shape)
 
         two_d_x = 2. * d_x
-
-        if derivative_boundary_constraint_pair is not None:
-            lower_boundary_constraint = derivative_boundary_constraint_pair[0]
-            upper_boundary_constraint = derivative_boundary_constraint_pair[1]
-        else:
-            lower_boundary_constraint = upper_boundary_constraint = None
 
         # Lower boundary.
         y_slicer[x_axis] = 1
@@ -562,11 +570,15 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
         y_diff = y_next / two_d_x
 
-        if lower_boundary_constraint is not None:
-            if y.ndim - 1 > 1:
-                lower_boundary_constraint.apply(y_diff)
-            elif lower_boundary_constraint.mask:
-                y_diff = lower_boundary_constraint.value
+        for i, constraint_pair in enumerate(derivative_boundary_constraints):
+            if constraint_pair is None:
+                continue
+            lower_boundary_constraint = constraint_pair[0]
+            if lower_boundary_constraint is not None:
+                if y.ndim > 2:
+                    lower_boundary_constraint.apply(y_diff[..., i])
+                elif lower_boundary_constraint.mask:
+                    y_diff[..., i] = lower_boundary_constraint.value
 
         derivative_slicer[x_axis] = 0
         derivative[tuple(derivative_slicer)] = y_diff
@@ -588,65 +600,52 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
         y_diff = -y_prev / two_d_x
 
-        if upper_boundary_constraint is not None:
-            if y.ndim - 1 > 1:
-                upper_boundary_constraint.apply(y_diff)
-            elif upper_boundary_constraint.mask:
-                y_diff = upper_boundary_constraint.value
+        for i, constraint_pair in enumerate(derivative_boundary_constraints):
+            if constraint_pair is None:
+                continue
+            upper_boundary_constraint = constraint_pair[1]
+            if upper_boundary_constraint is not None:
+                if y.ndim > 2:
+                    upper_boundary_constraint.apply(y_diff[..., i])
+                elif upper_boundary_constraint.mask:
+                    y_diff[..., i] = upper_boundary_constraint.value
 
         derivative_slicer[x_axis] = -1
         derivative[tuple(derivative_slicer)] = y_diff
 
         return derivative
 
-    def second_derivative(
+    def _second_derivative(
             self,
             y: np.ndarray,
             d_x1: float,
             d_x2: float,
             x_axis1: int,
             x_axis2: int,
-            y_ind: int = 0,
-            first_derivative_boundary_constraint_pair:
-            Optional[BoundaryConstraintPair] = None
+            derivative_boundary_constraints:
+            Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
-        if y.ndim <= 1:
-            raise ValueError
-        if not (0 <= x_axis1 < y.ndim - 1):
-            raise ValueError
-        if not (0 <= x_axis2 < y.ndim - 1):
-            raise ValueError
-        if not (0 <= y_ind < y.shape[-1]):
-            raise ValueError
-
         if x_axis1 != x_axis2:
-            first_derivative = self.derivative(
+            first_derivative = self._derivative(
                 y,
                 d_x1,
                 x_axis1,
-                y_ind,
-                first_derivative_boundary_constraint_pair)
-            return self.derivative(first_derivative, d_x2, x_axis2)
+                derivative_boundary_constraints)
+            return self._derivative(
+                first_derivative,
+                d_x2,
+                x_axis2,
+                [None] * y.shape[-1])
 
-        second_derivative_shape = y.shape[:-1] + (1,)
-        second_derivative = np.empty(second_derivative_shape)
+        if y.shape[x_axis1] <= 2:
+            raise ValueError
+
+        second_derivative = np.empty(y.shape)
 
         y_slicer: Slicer = [slice(None)] * y.ndim
-        second_derivative_slicer: Slicer = \
-            [slice(None)] * len(second_derivative_shape)
-
-        y_slicer[-1] = y_ind
-        second_derivative_slicer[-1] = 0
+        second_derivative_slicer: Slicer = [slice(None)] * len(y.shape)
 
         d_x_squared = d_x1 * d_x2
-
-        if first_derivative_boundary_constraint_pair is not None:
-            lower_boundary_constraint = \
-                first_derivative_boundary_constraint_pair[0]
-            upper_boundary_constraint = \
-                first_derivative_boundary_constraint_pair[1]
-        else:
-            lower_boundary_constraint = upper_boundary_constraint = None
 
         # Lower boundary.
         y_slicer[x_axis1] = 0
@@ -654,14 +653,19 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_slicer[x_axis1] = 1
         y_next = y[tuple(y_slicer)]
 
-        y_prev = .0
+        y_prev = np.zeros(y_next.shape)
 
-        if lower_boundary_constraint is not None:
-            if y.ndim - 1 > 1:
-                y_prev = lower_boundary_constraint.multiply_and_add(
-                    y_next, -2. * d_x1, np.zeros(y_next.shape))
-            elif lower_boundary_constraint.mask:
-                y_prev = y_next - 2. * d_x1 * lower_boundary_constraint.value
+        for i, constraint_pair in enumerate(derivative_boundary_constraints):
+            if constraint_pair is None:
+                continue
+            lower_boundary_constraint = constraint_pair[0]
+            if lower_boundary_constraint is not None:
+                if y.ndim > 2:
+                    lower_boundary_constraint.multiply_and_add(
+                        y_next[..., i], -2. * d_x1, y_prev[..., i])
+                elif lower_boundary_constraint.mask:
+                    y_prev[..., i] = y_next[..., i] - \
+                        2. * d_x1 * lower_boundary_constraint.value
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -687,14 +691,19 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         y_slicer[x_axis1] = -1
         y_curr = y[tuple(y_slicer)]
 
-        y_next = .0
+        y_next = np.zeros(y_prev.shape)
 
-        if upper_boundary_constraint is not None:
-            if y.ndim - 1 > 1:
-                y_next = upper_boundary_constraint.multiply_and_add(
-                    y_prev, 2. * d_x1, np.zeros(y_prev.shape))
-            elif upper_boundary_constraint.mask:
-                y_next = y_prev + 2. * d_x1 * upper_boundary_constraint.value
+        for i, constraint_pair in enumerate(derivative_boundary_constraints):
+            if constraint_pair is None:
+                continue
+            upper_boundary_constraint = constraint_pair[1]
+            if upper_boundary_constraint is not None:
+                if y.ndim > 2:
+                    upper_boundary_constraint.multiply_and_add(
+                        y_prev[..., i], 2. * d_x1, y_next[..., i])
+                elif upper_boundary_constraint.mask:
+                    y_next[..., i] = y_prev[..., i] + \
+                        2. * d_x1 * upper_boundary_constraint.value
 
         y_diff = (y_next - 2. * y_curr + y_prev) / d_x_squared
 
@@ -703,60 +712,12 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
 
         return second_derivative
 
-    def _calculate_updated_anti_derivative(
-            self,
-            y_hat: np.ndarray,
-            derivative: np.ndarray,
-            x_axis: int,
-            d_x: float
-    ) -> np.ndarray:
-        if y_hat.shape[x_axis] <= 2:
-            raise ValueError
-        if not (0 <= x_axis < y_hat.ndim - 1):
-            raise ValueError
-        if y_hat.shape != derivative.shape:
-            raise ValueError
-        if y_hat.shape[-1] != 1:
-            raise ValueError
-
-        anti_derivative = np.empty(y_hat.shape)
-
-        slicer: Slicer = [slice(None)] * y_hat.ndim
-
-        two_d_x = 2. * d_x
-
-        # Lower boundary and internal points.
-        slicer[x_axis] = slice(2, y_hat.shape[x_axis])
-        y_next = y_hat[tuple(slicer)]
-        slicer[x_axis] = slice(1, y_hat.shape[x_axis] - 1)
-        y_diff = derivative[tuple(slicer)]
-
-        y_prev = y_next - two_d_x * y_diff
-
-        slicer[x_axis] = slice(0, y_hat.shape[x_axis] - 2)
-        anti_derivative[tuple(slicer)] = y_prev
-
-        # Second uppermost points.
-        slicer[x_axis] = -1
-        y_diff = derivative[tuple(slicer)]
-
-        y_prev = -two_d_x * y_diff
-
-        slicer[x_axis] = -2
-        anti_derivative[tuple(slicer)] = y_prev
-
-        # Upper boundary
-        slicer[x_axis] = -1
-        anti_derivative[tuple(slicer)] = 0.
-
-        return anti_derivative
-
     def _calculate_updated_anti_laplacian(
             self,
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            first_derivative_boundary_constraints: Optional[np.ndarray]
+            derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
         if y_hat.ndim <= 1:
             raise ValueError
@@ -790,7 +751,7 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             y_upper_boundary_adjacent = y_hat[tuple(slicer)]
 
             for y_ind, boundary_constraint_pair in \
-                    enumerate(first_derivative_boundary_constraints[axis, :]):
+                    enumerate(derivative_boundary_constraints[axis, :]):
                 if boundary_constraint_pair is None:
                     continue
 

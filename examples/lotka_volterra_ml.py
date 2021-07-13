@@ -16,7 +16,7 @@ ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 oracle = ODEOperator('DOP853', 1e-3)
-pinn = DeepONetOperator(.1, oracle.vertex_oriented)
+pinn = PIDeepONetOperator(.1, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(.1, oracle.vertex_oriented)
 op_reg = RegressionOperator(.1, oracle.vertex_oriented)
 

@@ -1,12 +1,11 @@
 from copy import deepcopy, copy
-from typing import Tuple, Optional, Callable, Sequence
+from typing import Tuple, Optional, Callable, Sequence, List, Union
 
 import numpy as np
 
 from pararealml.core.boundary_condition import BoundaryCondition
 from pararealml.core.constraint import Constraint
 from pararealml.core.differential_equation import DifferentialEquation
-from pararealml.core.differentiator import Slicer
 from pararealml.core.mesh import Mesh
 
 BoundaryConditionPair = Tuple[BoundaryCondition, BoundaryCondition]
@@ -229,7 +228,8 @@ class ConstrainedProblem:
 
         y_constraints = np.empty(self._diff_eq.y_dimension, dtype=object)
 
-        slicer: Slicer = [slice(None)] * len(self._y_vertices_shape[:-1])
+        slicer: List[Union[int, slice]] = \
+            [slice(None)] * len(self._y_vertices_shape[:-1])
 
         single_y = np.empty(self._y_vertices_shape[:-1])
         for y_ind in range(self._diff_eq.y_dimension):
