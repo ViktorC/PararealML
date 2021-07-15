@@ -24,7 +24,7 @@ ic = DiscreteInitialCondition(
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-pinn = PIDeepONetOperator(1.25, oracle.vertex_oriented)
+pinn = PIDONOperator(1.25, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(1.25, oracle.vertex_oriented)
 op_reg = RegressionOperator(1.25, oracle.vertex_oriented)
 

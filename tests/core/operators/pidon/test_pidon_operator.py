@@ -9,7 +9,7 @@ from pararealml.core.differential_equation import PopulationGrowthEquation, \
 from pararealml.core.initial_condition import ContinuousInitialCondition, GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
-from pararealml.core.operators.pi_deeponet.pi_deeponet_operator import PIDeepONetOperator
+from pararealml.core.operators.pidon.pidon_operator import PIDONOperator
 
 
 def test_pi_deeponet_operator_on_ode():
@@ -18,7 +18,7 @@ def test_pi_deeponet_operator_on_ode():
     ic = ContinuousInitialCondition(cp, lambda _: (100.,))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    batch_pinn_op = PIDeepONetOperator(2.5, True)
+    batch_pinn_op = PIDONOperator(2.5, True)
     batch_pinn_op.train(...)
     batch_solution = batch_pinn_op.solve(ivp)
 
@@ -27,7 +27,7 @@ def test_pi_deeponet_operator_on_ode():
     assert batch_solution.x_coordinates() is None
     assert batch_solution.discrete_y().shape == (4, 1)
 
-    non_batch_pinn_op = PIDeepONetOperator(2.5, True)
+    non_batch_pinn_op = PIDONOperator(2.5, True)
     non_batch_pinn_op.model = batch_pinn_op.model
     non_batch_solution = non_batch_pinn_op.solve(ivp)
 
@@ -50,7 +50,7 @@ def test_pi_deeponet_operator_on_pde():
         ((np.array([12.5, 12.5]), np.array([[10., 0.], [0., 10.]])),), (20.,))
     ivp = InitialValueProblem(cp, (0., 5.), ic)
 
-    batch_pinn_op = PIDeepONetOperator(1.25, False)
+    batch_pinn_op = PIDONOperator(1.25, False)
     batch_pinn_op.train(...)
     batch_solution = batch_pinn_op.solve(ivp)
 
@@ -60,7 +60,7 @@ def test_pi_deeponet_operator_on_pde():
         batch_solution.x_coordinates(), [np.linspace(2.5, 47.5, 10)] * 2)
     assert batch_solution.discrete_y().shape == (4, 10, 10, 1)
 
-    non_batch_pinn_op = PIDeepONetOperator(.25, False)
+    non_batch_pinn_op = PIDONOperator(.25, False)
     non_batch_pinn_op.model = batch_pinn_op.model
     non_batch_solution = non_batch_pinn_op.solve(ivp)
 
@@ -82,7 +82,7 @@ def test_pi_deeponet_operator_on_pde_with_dynamic_boundary_conditions():
         (20.,))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    batch_pinn_op = PIDeepONetOperator(2.5, True)
+    batch_pinn_op = PIDONOperator(2.5, True)
     batch_pinn_op.train(...)
     batch_solution = batch_pinn_op.solve(ivp)
 

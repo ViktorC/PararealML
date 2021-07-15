@@ -52,7 +52,7 @@ from pararealml.core.operator import Operator
 from pararealml.core.operators.ode.ode_operator import ODEOperator
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.regression.regression_operator import RegressionOperator
-from pararealml.core.operators.pi_deeponet.pi_deeponet_operator import PIDeepONetOperator
+from pararealml.core.operators.pidon.pidon_operator import PIDONOperator
 from pararealml.core.operators.parareal.parareal_operator import PararealOperator
 
 from pararealml.core.solution import Solution
@@ -98,7 +98,7 @@ __all__ = [
     'ODEOperator',
     'FDMOperator',
     'RegressionOperator',
-    'PIDeepONetOperator',
+    'PIDONOperator',
     'PararealOperator',
     'Solution',
 ]

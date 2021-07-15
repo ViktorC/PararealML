@@ -8,15 +8,15 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import Lhs, DifferentialEquation
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator
-from pararealml.core.operators.pi_deeponet.deeponet import DeepONet
-from pararealml.core.operators.pi_deeponet.differentiator import Differentiator
+from pararealml.core.operators.pidon.deeponet import DeepONet
+from pararealml.core.operators.pidon.differentiator import Differentiator
 from pararealml.core.solution import Solution
 
 
-class PIDeepONetOperator(Operator):
+class PIDONOperator(Operator):
     """
     A physics informed DeepONet based unsupervised machine learning operator
-    for solving initial value problems using the DeepXDE library.
+    for solving initial value problems.
     """
 
     def __init__(
