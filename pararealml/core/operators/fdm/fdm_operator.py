@@ -4,7 +4,8 @@ import numpy as np
 import sympy as sp
 
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.constraint import apply_constraints_along_last_axis, Constraint
+from pararealml.core.constraint import apply_constraints_along_last_axis, \
+    Constraint
 from pararealml.core.differential_equation import Lhs
 from pararealml.core.operators.fdm.differentiator import Differentiator
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -256,16 +257,16 @@ class FDMOperator(Operator):
                             d_x,
                             0,
                             d_y_bc_func(t)[:, _index])
-
-            if diff_eq.x_dimension == 3:
-                for index in np.ndindex(((diff_eq.y_dimension,) * 3) + (3,)):
-                    symbol_map[y_curl[index]] = \
-                        lambda t, y, d_y_bc_func, _index=tuple(index): \
-                        self._differentiator.curl(
-                            y[..., _index[:-1]],
-                            d_x,
-                            _index[-1],
-                            d_y_bc_func(t)[:, _index[:-1]])
+                elif diff_eq.x_dimension == 3:
+                    for curl_ind in range(3):
+                        symbol_map[y_curl[index + (curl_ind,)]] = \
+                            (lambda t, y, d_y_bc_func, _index=tuple(index),
+                                _curl_ind=curl_ind:
+                                self._differentiator.curl(
+                                    y[..., _index],
+                                    d_x,
+                                    _curl_ind,
+                                    d_y_bc_func(t)[:, _index]))
 
         return symbol_map
 

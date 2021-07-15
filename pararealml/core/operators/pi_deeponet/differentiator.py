@@ -1,5 +1,3 @@
-from typing import List
-
 from tensorflow import Tensor, gradients, math, stack
 
 from pararealml.core.mesh import CoordinateSystem
@@ -7,7 +5,8 @@ from pararealml.core.mesh import CoordinateSystem
 
 class Differentiator:
     """
-
+    A differentiator providing various differential operators for TensorFlow
+    tensors.
     """
 
     def __init__(self):
@@ -16,113 +15,125 @@ class Differentiator:
     @property
     def coordinate_system_type(self) -> CoordinateSystem:
         """
-
-        @return:
+        Returns the coordinate system type of the differentiator.
         """
         return self._coordinate_system_type
 
     @coordinate_system_type.setter
     def coordinate_system_type(self, coordinate_system_type: CoordinateSystem):
         """
-
-        @param coordinate_system_type:
-        @return:
+        Sets the coordinate system type of the differentiator.
         """
         self._coordinate_system_type = coordinate_system_type
 
-    def gradient(self, x: Tensor, y: Tensor, i: int, j: int) -> Tensor:
+    def gradient(self, x: Tensor, y: Tensor, x_axis: int) -> Tensor:
         """
 
-        @param x:
-        @param y:
-        @param i:
-        @param j:
-        @return:
+        :param x:
+        :param y:
+        :param x_axis:
+        :return:
         """
+        if x.shape[0] != y.shape[0]:
+            raise ValueError
+        if not (0 <= x_axis < x.shape[-1]):
+            raise ValueError
+
         if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
-            return gradients(y[:, i:i + 1], x)[0][:, j:j + 1]
+            return gradients(y, x)[0][:, x_axis:x_axis + 1]
         else:
             raise ValueError
 
-    def hessian(self, x: Tensor, y: Tensor, i: int, j: int, k: int) -> Tensor:
+    def hessian(
+            self, x: Tensor, y: Tensor, x_axis1: int, x_axis2: int) -> Tensor:
         """
 
-        @param x:
-        @param y:
-        @param i:
-        @param j:
-        @param k:
-        @return:
+        :param x:
+        :param y:
+        :param x_axis1:
+        :param x_axis2:
+        :return:
         """
+        if x.shape[0] != y.shape[0]:
+            raise ValueError
+        if not (0 <= x_axis1 < x.shape[-1]):
+            raise ValueError
+        if not (0 <= x_axis2 < x.shape[-1]):
+            raise ValueError
+
         if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
-            return gradients(self.gradient(x, y, i, j), x)[0][:, k:k + 1]
+            return gradients(
+                self.gradient(x, y, x_axis1), x
+            )[0][:, x_axis2:x_axis2 + 1]
         else:
             raise ValueError
 
-    def divergence(self, x: Tensor, y: Tensor, index: List[int]) -> Tensor:
+    def divergence(self, x: Tensor, y: Tensor) -> Tensor:
         """
 
-        @param x:
-        @param y:
-        @param index:
-        @return:
+        :param x:
+        :param y:
+        :return:
         """
+        if x.shape != y.shape:
+            raise ValueError
+
         if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
             return math.reduce_sum(
                 stack([
-                    self.gradient(x, y, index[i], i)
+                    self.gradient(x, y[..., i:i + 1], i)
                     for i in range(len(x.shape[-1]) - 1)
                 ]),
                 axis=0)
         else:
             raise ValueError
 
-    def curl(self, x: Tensor, y: Tensor, index: List[int]) -> Tensor:
+    def curl(self, x: Tensor, y: Tensor, curl_ind: int = 0) -> Tensor:
         """
 
-        @param x:
-        @param y:
-        @param index:
-        @return:
+        :param x:
+        :param y:
+        :param curl_ind:
+        :return:
         """
-        x_dimension = len(x.shape[-1]) - 1
+        if x.shape != y.shape:
+            raise ValueError
+
+        x_dimension = x.shape[-1]
         if x_dimension == 2:
             if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
-                return self.gradient(x, y, index[1], 0) - \
-                       self.gradient(x, y, index[0], 1)
+                return self.gradient(x, y[..., 1:], 0) - \
+                       self.gradient(x, y[..., :1], 1)
             else:
                 raise ValueError
         elif x_dimension == 3:
             if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
-                return stack(
-                    [
-                        self.gradient(x, y, index[2], 1) -
-                        self.gradient(x, y, index[1], 2),
-                        self.gradient(x, y, index[0], 2) -
-                        self.gradient(x, y, index[2], 0),
-                        self.gradient(x, y, index[1], 0) -
-                        self.gradient(x, y, index[0], 1)
-                    ],
-                    axis=-1)
+                return [
+                    self.gradient(x, y[..., 2:], 1) -
+                    self.gradient(x, y[..., 1:2], 2),
+                    self.gradient(x, y[..., :1], 2) -
+                    self.gradient(x, y[..., 2:], 0),
+                    self.gradient(x, y[..., 1:2], 0) -
+                    self.gradient(x, y[..., :1], 1)
+                ][curl_ind]
             else:
                 raise ValueError
         else:
             raise ValueError
 
-    def laplacian(self, x: Tensor, y: Tensor, i: int) -> Tensor:
+    def laplacian(self, x: Tensor, y: Tensor) -> Tensor:
         """
 
-        @param x:
-        @param y:
-        @param i:
-        @return:
+        :param x:
+        :param y:
+        :return:
         """
+        if x.shape[0] != y.shape[0]:
+            raise ValueError
+
         if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
             return math.reduce_sum(
-                stack([
-                    self.hessian(x, y, i, j, j)
-                    for j in range(len(x.shape[-1]) - 1)
-                ]),
+                stack([self.hessian(x, y, i, i) for i in range(x.shape[-1])]),
                 axis=0)
         else:
             raise ValueError
