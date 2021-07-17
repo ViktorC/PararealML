@@ -32,10 +32,10 @@ RegressionModel = Union[
 ]
 
 
-class RegressionOperator(Operator):
+class AutoRegressionOperator(Operator):
     """
-    A supervised machine learning operator that uses regression to model
-    another operator for solving initial value problems.
+    A supervised machine learning operator that uses auto regression to model
+    a high fidelity operator for solving initial value problems.
     """
 
     def __init__(

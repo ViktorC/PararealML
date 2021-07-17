@@ -26,7 +26,7 @@ ivp = InitialValueProblem(cp, (0., 5.), ic)
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 pinn = PIDONOperator(1.25, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(1.25, oracle.vertex_oriented)
-op_reg = RegressionOperator(1.25, oracle.vertex_oriented)
+op_reg = AutoRegressionOperator(1.25, oracle.vertex_oriented)
 
 oracle_solution_name = 'cahn_hilliard_oracle'
 pinn_solution_name = 'cahn_hilliard_pinn'

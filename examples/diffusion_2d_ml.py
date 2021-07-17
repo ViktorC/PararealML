@@ -29,7 +29,7 @@ ivp = InitialValueProblem(
 oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 pinn = PIDONOperator(.1, oracle.vertex_oriented)
 sol_reg = StatelessRegressionOperator(.1, oracle.vertex_oriented)
-op_reg = RegressionOperator(.1, oracle.vertex_oriented)
+op_reg = AutoRegressionOperator(.1, oracle.vertex_oriented)
 
 oracle_solution_name = 'diffusion_oracle'
 pinn_solution_name = 'diffusion_pinn'
