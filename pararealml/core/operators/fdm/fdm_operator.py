@@ -116,14 +116,6 @@ class FDMOperator(Operator):
             eq_sys.rhs_by_type(Lhs.Y_LAPLACIAN),
             'numpy')
 
-        if diff_eq.x_dimension:
-            mesh = cp.mesh
-            self._differentiator.coordinate_system_type = \
-                mesh.coordinate_system_type
-            d_x = mesh.d_x
-        else:
-            d_x = None
-
         boundary_constraints_cache = {}
         y_constraints_cache = {}
         y_c_func, d_y_c_func = self._create_constraint_functions(
@@ -157,10 +149,11 @@ class FDMOperator(Operator):
                 y_next[..., y_lapl_eq_inds] = \
                     self._differentiator.anti_laplacian(
                         np.concatenate(y_lapl_rhs_lambda(args), axis=-1),
-                        d_x,
+                        cp.mesh.d_x,
                         self._tol,
                         y_c,
-                        d_y_c)
+                        d_y_c,
+                        coordinate_system_type=cp.mesh.coordinate_system_type)
 
             if not cp.are_all_boundary_conditions_static \
                     and t > (last_t[0] + self.d_t) \
@@ -206,7 +199,9 @@ class FDMOperator(Operator):
                 lambda t, y, d_y_bc_func, _i=i: y[..., _i:_i + 1]
 
         if diff_eq.x_dimension:
-            d_x = cp.mesh.d_x
+            mesh = cp.mesh
+            d_x = mesh.d_x
+            coordinate_system_type = mesh.coordinate_system_type
 
             y_gradient = diff_eq.symbols.y_gradient
             y_hessian = diff_eq.symbols.y_hessian
@@ -219,7 +214,8 @@ class FDMOperator(Operator):
                     self._differentiator.laplacian(
                         y[..., _i:_i + 1],
                         d_x,
-                        d_y_bc_func(t)[:, _i:_i + 1])
+                        d_y_bc_func(t)[:, _i:_i + 1],
+                        coordinate_system_type)
 
                 for j in range(diff_eq.x_dimension):
                     symbol_map[y_gradient[i, j]] = \
@@ -228,7 +224,8 @@ class FDMOperator(Operator):
                             y[..., _i:_i + 1],
                             d_x[_j],
                             _j,
-                            d_y_bcs(t)[_j, _i:_i + 1])
+                            d_y_bcs(t)[_j, _i:_i + 1],
+                            coordinate_system_type)
 
                     for k in range(diff_eq.x_dimension):
                         symbol_map[y_hessian[i, j, k]] = \
@@ -239,7 +236,8 @@ class FDMOperator(Operator):
                                 d_x[_k],
                                 _j,
                                 _k,
-                                d_y_bc_func(t)[_j, _i:_i + 1])
+                                d_y_bc_func(t)[_j, _i:_i + 1],
+                                coordinate_system_type)
 
             for index in np.ndindex(
                     (diff_eq.y_dimension,) * diff_eq.x_dimension):
@@ -248,7 +246,8 @@ class FDMOperator(Operator):
                     self._differentiator.divergence(
                         y[..., _index],
                         d_x,
-                        d_y_bc_func(t)[:, _index])
+                        d_y_bc_func(t)[:, _index],
+                        coordinate_system_type)
                 if diff_eq.x_dimension == 2:
                     symbol_map[y_curl[index]] = \
                         lambda t, y, d_y_bc_func, _index=tuple(index): \
@@ -256,7 +255,8 @@ class FDMOperator(Operator):
                             y[..., _index],
                             d_x,
                             0,
-                            d_y_bc_func(t)[:, _index])
+                            d_y_bc_func(t)[:, _index],
+                            coordinate_system_type)
                 elif diff_eq.x_dimension == 3:
                     for curl_ind in range(3):
                         symbol_map[y_curl[index + (curl_ind,)]] = \
@@ -266,7 +266,8 @@ class FDMOperator(Operator):
                                     y[..., _index],
                                     d_x,
                                     _curl_ind,
-                                    d_y_bc_func(t)[:, _index]))
+                                    d_y_bc_func(t)[:, _index],
+                                    coordinate_system_type))
 
         return symbol_map
 

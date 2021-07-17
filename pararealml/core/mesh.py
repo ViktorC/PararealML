@@ -19,8 +19,8 @@ class CoordinateSystem(Enum):
 
 class Mesh:
     """
-    A hypercube of arbitrary dimensionality and shape with a uniform spacing of
-    grid points along each axis.
+    A hyper-rectangular grid of arbitrary dimensionality and shape with a
+    uniform spacing of grid points along each axis.
     """
 
     def __init__(
@@ -61,6 +61,11 @@ class Mesh:
         self._cell_center_coordinates = self._calculate_coordinates(False)
         self._coordinate_system_type = coordinate_system_type
 
+        self._x_interval_lengths = np.array([
+            interval[1] - interval[0] for interval in x_intervals
+        ])
+        self._generalised_volume = self._x_interval_lengths.prod()
+
         self._x_vertex_offset = np.array(
             [coordinates[0] for coordinates in self._vertex_coordinates])
         self._x_cell_center_offset = np.array(
@@ -69,53 +74,64 @@ class Mesh:
     @property
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         """
-        Returns the bounds of each axis of the domain
+        The bounds of each axis of the domain
         """
         return deepcopy(self._x_intervals)
 
     @property
+    def x_interval_lengths(self) -> Sequence[float]:
+        """
+        The length of the hyper-rectangle along each axis.
+        """
+        return copy(self._x_interval_lengths)
+
+    @property
+    def generalised_volume(self) -> float:
+        """
+        The generalised volume of the hyper-rectangle.
+        """
+        return self._generalised_volume
+
+    @property
     def d_x(self) -> Tuple[float, ...]:
         """
-        Returns the step sizes along the dimensions of the domain.
+        The step sizes along each axis of the domain.
         """
         return tuple(self._d_x)
 
     @property
     def coordinate_system_type(self) -> CoordinateSystem:
         """
-        Returns the coordinate system type used by the mesh.
+        The coordinate system type used by the mesh.
         """
         return self._coordinate_system_type
 
     @property
     def vertices_shape(self) -> Tuple[int, ...]:
         """
-        Returns the shape of the array of the vertices of the discretised
-        domain.
+        The shape of the array of the vertices of the discretised domain.
         """
         return copy(self._vertices_shape)
 
     @property
     def cells_shape(self) -> Tuple[int, ...]:
         """
-        Returns the shape of the array of the cell centers of the discretised
-        domain.
+        The shape of the array of the cell centers of the discretised domain.
         """
         return copy(self._cells_shape)
 
     @property
     def vertex_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
-        Returns a tuple of the coordinates of the vertices of the mesh along
-        each axis.
+        A tuple of the coordinates of the vertices of the mesh along each axis.
         """
         return deepcopy(self._vertex_coordinates)
 
     @property
     def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
-        Returns a tuple of the coordinates of the cell centers of the mesh
-        along each axis.
+        A tuple of the coordinates of the cell centers of the mesh along each
+        axis.
         """
         return deepcopy(self._cell_center_coordinates)
 

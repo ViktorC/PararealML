@@ -158,15 +158,14 @@ class SymbolicEquationSystem:
     @property
     def rhs(self) -> Sequence[Expr]:
         """
-        Returns the right hand side of the symbolic equation system.
+        The right hand side of the symbolic equation system.
         """
         return copy(self._rhs)
 
     @property
     def lhs_types(self) -> Sequence[Lhs]:
         """
-        Returns the types of the left hand side of the symbolic equation
-        system.
+        The types of the left hand side of the symbolic equation system.
         """
         return copy(self._lhs_types)
 
@@ -227,25 +226,24 @@ class DifferentialEquation(ABC):
     @property
     def x_dimension(self) -> int:
         """
-        Returns the dimension of the non-temporal domain of the differential
-        equation's solution. If the differential equation is an ODE, it returns
-        0.
+        The dimension of the non-temporal domain of the differential equation's
+        solution. If the differential equation is an ODE, it is 0.
         """
         return self._x_dimension
 
     @property
     def y_dimension(self) -> int:
         """
-        Returns the dimension of the image of the differential equation's
-        solution. If the solution is not vector-valued, its dimension is 1.
+        The dimension of the image of the differential equation's solution. If
+        the solution is not vector-valued, its dimension is 1.
         """
         return self._y_dimension
 
     @property
     def symbols(self) -> Symbols:
         """
-        Returns all valid symbols that can be used to define a differential
-        equation of this many spatial dimensions and unknown variables.
+        All valid symbols that can be used to define a differential equation of
+        this many spatial dimensions and unknown variables.
         """
         return self._symbols
 

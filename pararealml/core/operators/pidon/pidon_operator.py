@@ -9,7 +9,8 @@ from pararealml.core.differential_equation import Lhs, DifferentialEquation
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator
 from pararealml.core.operators.pidon.deeponet import DeepONet
-from pararealml.core.operators.pidon.differentiator import Differentiator
+from pararealml.core.operators.pidon.differentiation import gradient, \
+    hessian, divergence, curl, laplacian
 from pararealml.core.solution import Solution
 
 
@@ -34,7 +35,6 @@ class PIDONOperator(Operator):
 
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
-        self._differentiator = Differentiator()
         self._model: Optional[DeepONet] = None
 
     @property
@@ -48,15 +48,12 @@ class PIDONOperator(Operator):
     @property
     def model(self) -> Optional[DeepONet]:
         """
-        Returns the DeepONet model behind the operator.
+        The DeepONet model behind the operator.
         """
         return self._model
 
     @model.setter
     def model(self, model: Optional[DeepONet]):
-        """
-        Sets the DeepONet model behind the operator.
-        """
         self._model = model
 
     def solve(
@@ -81,10 +78,6 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        if diff_eq.x_dimension:
-            self._differentiator.coordinate_system_type = \
-                cp.mesh.coordinate_system_type
-
         symbol_set = set()
         symbolic_equation_system = diff_eq.symbolic_equation_system
         for rhs_element in symbolic_equation_system.rhs:
@@ -98,7 +91,7 @@ class PIDONOperator(Operator):
             symbolic_equation_system.rhs,
             'numpy')
 
-        lhs_functions = self._create_lhs_functions(diff_eq)
+        lhs_functions = self._create_lhs_functions(cp)
 
         def diff_eq_error(
                 x: tf.Tensor,
@@ -114,38 +107,41 @@ class PIDONOperator(Operator):
 
         ...
 
+    @staticmethod
     def _create_lhs_functions(
-            self,
-            diff_eq: DifferentialEquation
+            cp: ConstrainedProblem
     ) -> Sequence[Callable[[tf.Tensor, tf.Tensor], tf.Tensor]]:
         """
         Returns a list of functions for calculating the left hand sides of the
         differential equation given x and y.
 
-        :param diff_eq: the differential equation to compute the left hand
-        sides for
+        :param cp: the constrained problem to compute the left hand sides for
         :return: a list of functions
         """
+        diff_eq = cp.differential_equation
         lhs_functions = []
         for i, lhs_type in \
                 enumerate(diff_eq.symbolic_equation_system.lhs_types):
             if lhs_type == Lhs.D_Y_OVER_D_T:
                 lhs_functions.append(
                     lambda x, y, _i=i:
-                    self._differentiator.gradient(x[:, -1:], y[:, i:i+1], 0))
+                    gradient(x[:, -1:], y[:, _i:_i + 1], 0))
             elif lhs_type == Lhs.Y:
                 lhs_functions.append(lambda x, y, _i=i: y[:, _i:_i + 1])
             elif lhs_type == Lhs.Y_LAPLACIAN:
                 lhs_functions.append(
                     lambda x, y, _i=i:
-                    self._differentiator.laplacian(x[:, :-1], y[:, i:i+1]))
+                    laplacian(
+                        x[:, :-1],
+                        y[:, _i:_i + 1],
+                        cp.mesh.coordinate_system_type))
             else:
                 raise ValueError
 
         return lhs_functions
 
+    @staticmethod
     def _create_symbol_map(
-            self,
             cp: ConstrainedProblem
     ) -> Dict[sp.Symbol, Callable[[tf.Tensor, tf.Tensor], tf.Tensor]]:
         """
@@ -163,6 +159,8 @@ class PIDONOperator(Operator):
             symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
 
         if diff_eq.x_dimension:
+            coordinate_system_type = cp.mesh.coordinate_system_type
+
             y_gradient = diff_eq.symbols.y_gradient
             y_hessian = diff_eq.symbols.y_hessian
             y_laplacian = diff_eq.symbols.y_laplacian
@@ -172,33 +170,49 @@ class PIDONOperator(Operator):
             for i in range(diff_eq.y_dimension):
                 symbol_map[y_laplacian[i]] = \
                     lambda x, y, _i=i: \
-                    self._differentiator.laplacian(x[:, :-1], y[:, i:i + 1])
+                    laplacian(
+                        x[:, :-1],
+                        y[:, _i:_i + 1],
+                        coordinate_system_type)
 
                 for j in range(diff_eq.x_dimension):
                     symbol_map[y_gradient[i, j]] = \
                         lambda x, y, _i=i, _j=j: \
-                        self._differentiator.gradient(
-                            x[:, :-1], y[:, i:i + 1], _j)
+                        gradient(
+                            x[:, :-1],
+                            y[:, _i:_i + 1],
+                            _j,
+                            coordinate_system_type)
 
                     for k in range(diff_eq.x_dimension):
                         symbol_map[y_hessian[i, j, k]] = \
                             lambda x, y, _i=i, _j=j, _k=k: \
-                            self._differentiator.hessian(
-                                x[:, :-1], y[:, i:i + 1], _j, _k)
+                            hessian(
+                                x[:, :-1],
+                                y[:, _i:_i + 1],
+                                _j,
+                                _k,
+                                coordinate_system_type)
 
             for index in np.ndindex(
                     (diff_eq.y_dimension,) * diff_eq.x_dimension):
                 symbol_map[y_divergence[index]] = lambda x, y, _index=index: \
-                    self._differentiator.divergence(x[:, :-1], y[:, _index])
+                    divergence(x[:, :-1], y[:, _index], coordinate_system_type)
                 if diff_eq.x_dimension == 2:
                     symbol_map[y_curl[index]] = \
                         lambda x, y, _index=index: \
-                        self._differentiator.curl(x[:, :-1], y[:, _index])
+                        curl(
+                            x[:, :-1],
+                            y[:, _index],
+                            coordinate_system_type=coordinate_system_type)
                 elif diff_eq.x_dimension == 3:
                     for curl_ind in range(3):
                         symbol_map[y_curl[index + (curl_ind,)]] = \
                             lambda x, y, _index=index, _curl_ind=curl_ind: \
-                            self._differentiator.curl(
-                                x[:, :-1], y[:, _index], curl_ind)
+                            curl(
+                                x[:, :-1],
+                                y[:, _index],
+                                _curl_ind,
+                                coordinate_system_type)
 
         return symbol_map

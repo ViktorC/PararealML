@@ -11,23 +11,22 @@ class BoundaryCondition(ABC):
     @abstractmethod
     def is_static(self) -> bool:
         """
-        Returns whether the boundary condition is only dependent on x or also
-        on t.
+        Whether the boundary condition is only dependent on x or also on t.
         """
 
     @property
     @abstractmethod
     def has_y_condition(self) -> bool:
         """
-        Returns whether the boundary conditions restrict the value of y.
+        Whether the boundary conditions restrict the value of y.
         """
 
     @property
     @abstractmethod
     def has_d_y_condition(self) -> bool:
         """
-        Returns whether the boundary conditions restrict the value of the
-        derivative of y with respect to the normal vector of the boundary.
+        Whether the boundary conditions restrict the value of the derivative of
+        y with respect to the normal vector of the boundary.
         """
 
     @abstractmethod

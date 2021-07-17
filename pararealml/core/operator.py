@@ -18,16 +18,16 @@ class Operator(ABC):
     @abstractmethod
     def d_t(self) -> float:
         """
-        Returns the temporal step size of the operator.
+        The temporal step size of the operator.
         """
 
     @property
     @abstractmethod
     def vertex_oriented(self) -> Optional[bool]:
         """
-        Returns whether the operator evaluates the solutions at the vertices
-        of the spatial mesh or at the cell centers. If the operator is only an
-        ODE solver, it can return None.
+        Whether the operator evaluates the solutions at the vertices of the
+        spatial mesh or at the cell centers. If the operator is only an ODE
+        solver, it may be None.
         """
 
     @abstractmethod

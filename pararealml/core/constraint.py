@@ -23,15 +23,14 @@ class Constraint:
     @property
     def value(self) -> np.ndarray:
         """
-        Returns the constraint values.
+        The constraint values.
         """
         return np.copy(self._value)
 
     @property
     def mask(self) -> np.ndarray:
         """
-        Returns the mask denoting the elements of the array that are to be
-        constrained.
+        The mask denoting the elements of the array that are to be constrained.
         """
         return np.copy(self._mask)
 

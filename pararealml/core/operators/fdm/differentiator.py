@@ -20,23 +20,6 @@ class Differentiator(ABC):
     A base class for numerical differentiators.
     """
 
-    def __init__(self):
-        self._coordinate_system_type = CoordinateSystem.CARTESIAN
-
-    @property
-    def coordinate_system_type(self) -> CoordinateSystem:
-        """
-        Returns the coordinate system type of the differentiator.
-        """
-        return self._coordinate_system_type
-
-    @coordinate_system_type.setter
-    def coordinate_system_type(self, coordinate_system_type: CoordinateSystem):
-        """
-        Sets the coordinate system type of the differentiator.
-        """
-        self._coordinate_system_type = coordinate_system_type
-
     @abstractmethod
     def _derivative(
             self,
@@ -102,7 +85,8 @@ class Differentiator(ABC):
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray]
+            derivative_boundary_constraints: Optional[np.ndarray],
+            coordinate_system_type: CoordinateSystem
     ) -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it returns an improved
@@ -115,6 +99,8 @@ class Differentiator(ABC):
         :param derivative_boundary_constraints: an optional 2D array
             (x dimension, y dimension) of boundary constraint pairs that
             specify constraints on the first derivatives of the solution
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: an improved estimate of y_hat
         """
 
@@ -124,7 +110,9 @@ class Differentiator(ABC):
             d_x: float,
             x_axis: int,
             derivative_boundary_constraints:
-            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None
+            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the column of the Jacobian matrix of y corresponding to the
@@ -139,6 +127,8 @@ class Differentiator(ABC):
             allows for applying constraints to the calculated first
             derivatives at the boundaries normal to the axis that y is
             differentiated with respect to
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the element(s) of the gradient of y corresponding to the
             specified axis
         """
@@ -153,7 +143,7 @@ class Differentiator(ABC):
                 None,
                 y.shape[-1])
 
-        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return self._derivative(
                 y, d_x, x_axis, derivative_boundary_constraints)
         else:
@@ -167,7 +157,9 @@ class Differentiator(ABC):
             x_axis1: int,
             x_axis2: int,
             derivative_boundary_constraints:
-            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None
+            Optional[Sequence[Optional[BoundaryConstraintPair]]] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the column of the Hessian tensor of y corresponding to the
@@ -188,6 +180,8 @@ class Differentiator(ABC):
             that allows for applying constraints to the calculated first
             derivatives at the boundaries normal to the first axis of
             differentiation before computing the second derivatives
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the element(s) of the Hessian of y corresponding to the
             specified axes
         """
@@ -204,7 +198,7 @@ class Differentiator(ABC):
                 None,
                 y.shape[-1])
 
-        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return self._second_derivative(
                 y,
                 d_x1,
@@ -219,7 +213,9 @@ class Differentiator(ABC):
             self,
             y: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray] = None
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the divergence of the elements of y defined by y_inds with
@@ -231,6 +227,8 @@ class Differentiator(ABC):
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the divergence
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the divergence of y
         """
         if y.ndim < 2:
@@ -248,7 +246,7 @@ class Differentiator(ABC):
 
         div = np.zeros(y.shape[:-1] + (1,))
 
-        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        if coordinate_system_type == CoordinateSystem.CARTESIAN:
             for i in range(y.shape[-1]):
                 div += self._derivative(
                     y[..., i:i + 1],
@@ -265,21 +263,24 @@ class Differentiator(ABC):
             y: np.ndarray,
             d_x: Tuple[float, ...],
             curl_ind: int = 0,
-            derivative_boundary_constraints: Optional[np.ndarray] = None
+            derivative_boundary_constraints: Optional[np.ndarray] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the curl_ind-th component of the curl of y at every point of
         the mesh.
 
-        If y is a two dimensional vector field, curl_ind is ignored.
-
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
-        :param curl_ind: the index of the component of the curl of y to compute
+        :param curl_ind: the index of the component of the curl of y to
+            compute; if y is a two dimensional vector field, it must be 0
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the curl
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the curl of y
         """
         if not (2 <= (y.ndim - 1) <= 3):
@@ -297,8 +298,12 @@ class Differentiator(ABC):
                 y.ndim - 1,
                 y.shape[-1])
 
-        if len(d_x) == 2:
-            if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        x_dimension = len(d_x)
+        if x_dimension == 2:
+            if curl_ind != 0:
+                raise ValueError
+
+            if coordinate_system_type == CoordinateSystem.CARTESIAN:
                 return self._derivative(
                     y[..., 1:],
                     d_x[0],
@@ -312,8 +317,8 @@ class Differentiator(ABC):
             else:
                 raise ValueError
 
-        elif len(d_x) == 3:
-            if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        elif x_dimension == 3:
+            if coordinate_system_type == CoordinateSystem.CARTESIAN:
                 if curl_ind == 0:
                     return self._derivative(
                         y[..., 2:],
@@ -358,7 +363,9 @@ class Differentiator(ABC):
             y: np.ndarray,
             d_x: Tuple[float, ...],
             derivative_boundary_constraints:
-            Optional[np.ndarray] = None
+            Optional[np.ndarray] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the Laplacian of y at every point of the mesh.
@@ -369,6 +376,8 @@ class Differentiator(ABC):
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the second derivatives and the Laplacian
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the Laplacian of y
         """
         if y.ndim < 2:
@@ -384,7 +393,7 @@ class Differentiator(ABC):
 
         laplacian = np.zeros(y.shape)
 
-        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+        if coordinate_system_type == CoordinateSystem.CARTESIAN:
             for axis in range(y.ndim - 1):
                 laplacian += self._second_derivative(
                     y,
@@ -405,7 +414,9 @@ class Differentiator(ABC):
             tol: float,
             y_constraints: Sequence[Optional[Constraint]],
             derivative_boundary_constraints: Optional[np.ndarray] = None,
-            y_init: Optional[np.ndarray] = None
+            y_init: Optional[np.ndarray] = None,
+            coordinate_system_type: CoordinateSystem =
+            CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
         Returns the solution to Poisson's equation defined by the provided
@@ -426,6 +437,8 @@ class Differentiator(ABC):
             specify constraints on the first derivatives of the solution
         :param y_init: an optional initial estimate of the solution; if it is
             None, a random array is used
+        :param coordinate_system_type: the type of the coordinate system the
+            grid of data points is from
         :return: the array representing the solution to Poisson's equation at
             every point of the mesh
         """
@@ -434,9 +447,6 @@ class Differentiator(ABC):
         if y_constraints is None:
             raise ValueError
         if len(y_constraints) != laplacian.shape[-1]:
-            raise ValueError
-
-        if self._coordinate_system_type != CoordinateSystem.CARTESIAN:
             raise ValueError
 
         derivative_boundary_constraints = \
@@ -450,7 +460,8 @@ class Differentiator(ABC):
                 y,
                 laplacian,
                 d_x,
-                derivative_boundary_constraints)
+                derivative_boundary_constraints,
+                coordinate_system_type)
 
         return self._solve_with_jacobi_method(
             update, laplacian.shape, tol, y_init, y_constraints)
@@ -717,7 +728,8 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             d_x: Tuple[float, ...],
-            derivative_boundary_constraints: Optional[np.ndarray]
+            derivative_boundary_constraints: Optional[np.ndarray],
+            coordinate_system_type: CoordinateSystem
     ) -> np.ndarray:
         if y_hat.ndim <= 1:
             raise ValueError
@@ -726,6 +738,9 @@ class ThreePointCentralFiniteDifferenceMethod(Differentiator):
         if len(d_x) != y_hat.ndim - 1:
             raise ValueError
         if laplacian.shape != y_hat.shape:
+            raise ValueError
+
+        if coordinate_system_type != CoordinateSystem.CARTESIAN:
             raise ValueError
 
         anti_laplacian = np.zeros(y_hat.shape)

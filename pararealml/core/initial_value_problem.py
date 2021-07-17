@@ -52,28 +52,28 @@ class InitialValueProblem:
     @property
     def constrained_problem(self) -> ConstrainedProblem:
         """
-        Returns the constrained problem the IVP is based on.
+        The constrained problem the IVP is based on.
         """
         return self._cp
 
     @property
     def t_interval(self) -> TemporalDomainInterval:
         """
-        Returns the bounds of the temporal domain of the differential equation.
+        The bounds of the temporal domain of the differential equation.
         """
         return copy(self._t_interval)
 
     @property
     def initial_condition(self) -> InitialCondition:
         """
-        Returns the initial condition of the IVP.
+        The initial condition of the IVP.
         """
         return self._initial_condition
 
     @property
     def has_exact_solution(self) -> bool:
         """
-        Returns whether the differential equation has an analytic solution
+        Whether the differential equation has an analytic solution
         """
         return self._exact_y is not None
 

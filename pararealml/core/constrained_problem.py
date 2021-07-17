@@ -100,14 +100,14 @@ class ConstrainedProblem:
     @property
     def differential_equation(self) -> DifferentialEquation:
         """
-        Returns the differential equation.
+        The differential equation.
         """
         return self._diff_eq
 
     @property
     def mesh(self) -> Optional[Mesh]:
         """
-        Returns the mesh over which the differential equation is to be solved
+        The mesh over which the differential equation is to be solved.
         """
         return self._mesh
 
@@ -115,84 +115,83 @@ class ConstrainedProblem:
     def boundary_conditions(self) \
             -> Optional[Tuple[BoundaryConditionPair, ...]]:
         """
-        Returns the boundary conditions of the differential equation. In case
-        the differential equation is an ODE, it returns None.
+        The boundary conditions of the differential equation. If differential
+        equation is an ODE, it is None.
         """
         return deepcopy(self._boundary_conditions)
 
     @property
     def are_all_boundary_conditions_static(self) -> bool:
         """
-        Returns whether all boundary conditions of the constrained problem are
-        static.
+        Whether all boundary conditions of the constrained problem are static.
         """
         return self._are_all_bcs_static
 
     @property
     def static_y_boundary_vertex_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 2D array (x dimension, y dimension) of boundary value
-        constraint pairs that represent the lower and upper boundary conditions
-        of y evaluated on the boundary vertices of the corresponding axes of
-        the mesh. If the differential equation is an ODE, it returns None.
+        A 2D array (x dimension, y dimension) of boundary value constraint
+        pairs that represent the lower and upper boundary conditions of y
+        evaluated on the boundary vertices of the corresponding axes of the
+        mesh. If the differential equation is an ODE, it is None.
         """
         return copy(self._y_boundary_vertex_constraints)
 
     @property
     def static_y_boundary_cell_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 2D array (x dimension, y dimension) of boundary value
-        constraint pairs that represent the lower and upper boundary conditions
-        of y evaluated on the exterior faces of the boundary cells of the
+        A 2D array (x dimension, y dimension) of boundary value constraint
+        pairs that represent the lower and upper boundary conditions of y
+        evaluated on the exterior faces of the boundary cells of the
         corresponding axes of the mesh. If the differential equation is an ODE,
-        it returns None.
+        it is None.
         """
         return copy(self._y_boundary_cell_constraints)
 
     @property
     def static_d_y_boundary_vertex_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 2D array (x dimension, y dimension) of boundary value
-        constraint pairs that represent the lower and upper boundary conditions
-        of the spatial derivative of y normal to the boundaries evaluated on
-        the boundary vertices of the corresponding axes of the mesh. If the
-        differential equation is an ODE, it returns None.
+        A 2D array (x dimension, y dimension) of boundary value constraint
+        pairs that represent the lower and upper boundary conditions of the
+        spatial derivative of y normal to the boundaries evaluated on the
+        boundary vertices of the corresponding axes of the mesh. If the
+        differential equation is an ODE, it is None.
         """
         return copy(self._d_y_boundary_vertex_constraints)
 
     @property
     def static_d_y_boundary_cell_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 2D array (x dimension, y dimension) of boundary value
-        constraint pairs that represent the lower and upper boundary conditions
-        of the spatial derivative of y normal to the boundaries evaluated on
-        the exterior faces of the boundary cells of the corresponding axes of
-        the mesh. If the differential equation is an ODE, it returns None.
+        A 2D array (x dimension, y dimension) of boundary value constraint
+        pairs that represent the lower and upper boundary conditions of the
+        spatial derivative of y normal to the boundaries evaluated on the
+        exterior faces of the boundary cells of the corresponding axes of the
+        mesh. If the differential equation is an ODE, it is None.
         """
         return copy(self._d_y_boundary_cell_constraints)
 
     @property
     def static_y_vertex_constraints(self) -> Optional[np.ndarray]:
         """
-        Returns a 1D array (y dimension) of solution constraints that represent
-        the boundary conditions of y evaluated on all vertices of the mesh.
-        If the differential equation is an ODE, it returns None.
+        A 1D array (y dimension) of solution constraints that represent the
+        boundary conditions of y evaluated on all vertices of the mesh. If the
+        differential equation is an ODE, it returns None.
         """
         return copy(self._y_vertex_constraints)
 
     @property
     def y_vertices_shape(self) -> Tuple[int, ...]:
         """
-        Returns the shape of the array representing the vertices of the
-        discretised solution to the constrained problem.
+        The shape of the array representing the vertices of the discretised
+        solution to the constrained problem.
         """
         return copy(self._y_vertices_shape)
 
     @property
     def y_cells_shape(self) -> Tuple[int, ...]:
         """
-        Returns the shape of the array representing the cell centers of the
-        discretised solution to the constrained problem.
+        The shape of the array representing the cell centers of the discretised
+        solution to the constrained problem.
         """
         return copy(self._y_cells_shape)
 
