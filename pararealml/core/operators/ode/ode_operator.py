@@ -5,7 +5,7 @@ import sympy as sp
 from scipy.integrate import solve_ivp, OdeSolver
 
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.operator import Operator
+from pararealml.core.operator import Operator, discretise_time_domain
 from pararealml.core.solution import Solution
 
 
@@ -48,7 +48,7 @@ class ODEOperator(Operator):
             raise ValueError
 
         t_interval = ivp.t_interval
-        time_points = self._discretise_time_domain(t_interval, self._d_t)
+        time_points = discretise_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_points[0], time_points[-1])
 
         sym = diff_eq.symbols

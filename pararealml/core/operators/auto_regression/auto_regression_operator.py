@@ -13,7 +13,7 @@ from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.operator import Operator
+from pararealml.core.operator import Operator, discretise_time_domain
 from pararealml.core.solution import Solution
 
 SKLearnRegressionModel = Union[
@@ -85,8 +85,7 @@ class AutoRegressionOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        time_points = self._discretise_time_domain(
-            ivp.t_interval, self._d_t)
+        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
 
         y_shape = cp.y_shape(self._vertex_oriented)
 
@@ -178,7 +177,7 @@ class AutoRegressionOperator(Operator):
         n_spatial_points = np.prod(cp.mesh.shape(self._vertex_oriented)) \
             if diff_eq.x_dimension else 1
 
-        time_points = self._discretise_time_domain(ivp.t_interval, self._d_t)
+        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
         last_sub_ivp_start_time_point = len(time_points) - 2
 
         x_batch = self._create_input_batch(cp, time_points[:-1])
@@ -224,7 +223,7 @@ class AutoRegressionOperator(Operator):
                 all_y[time_point_offset:time_point_offset + n_spatial_points,
                       :] = y_i.reshape((-1, diff_eq.y_dimension))
 
-        train_score, test_score = self._train_model(
+        train_score, test_score = train_model(
             model, all_x, all_y, test_size, score_func)
         self._model = model
 
@@ -280,61 +279,41 @@ class AutoRegressionOperator(Operator):
 
         return x
 
-    @staticmethod
-    def model_input_shape(ivp: InitialValueProblem) -> Tuple[int]:
-        """
-        Returns the shape of the input of the model for the provided IVP.
-        :param ivp: the initial value problem to solve
-        :return: the expected input shape
-        """
-        diff_eq = ivp.constrained_problem.differential_equation
-        return diff_eq.x_dimension + 1 + diff_eq.y_dimension,
 
-    @staticmethod
-    def model_output_shape(ivp: InitialValueProblem) -> Tuple[int]:
-        """
-        Returns the shape of the output of the model for the provided IVP.
-        :param ivp: the initial value problem to solve
-        :return: the expected output shape
-        """
-        diff_eq = ivp.constrained_problem.differential_equation
-        return diff_eq.y_dimension,
+def train_model(
+        model: RegressionModel,
+        x: np.ndarray,
+        y: np.ndarray,
+        test_size: float,
+        score_func: Callable[[np.ndarray, np.ndarray], float]
+) -> Tuple[float, float]:
+    """
+    Fits the regression model to the training share of the provided data
+    points using random splitting and it returns the loss of the model
+    evaluated on both the training and test data sets.
 
-    @staticmethod
-    def _train_model(
-            model: RegressionModel,
-            x: np.ndarray,
-            y: np.ndarray,
-            test_size: float,
-            score_func: Callable[[np.ndarray, np.ndarray], float]
-    ) -> Tuple[float, float]:
-        """
-        Fits the regression model to the training share of the provided data
-        points using random splitting and it returns the loss of the model
-        evaluated on both the training and test data sets.
+    :param model: the regression model to train
+    :param x: the inputs
+    :param y: the target outputs
+    :param test_size: the fraction of all data points that should be used
+        for testing
+    :param score_func: the prediction scoring function to use
+    :return: the training and test losses
+    """
+    if not 0. <= test_size < 1.:
+        raise ValueError
+    train_size = 1. - test_size
 
-        :param model: the regression model to train
-        :param x: the inputs
-        :param y: the target outputs
-        :param test_size: the fraction of all data points that should be used
-            for testing
-        :param score_func: the prediction scoring function to use
-        :return: the training and test losses
-        """
-        if not 0. <= test_size < 1.:
-            raise ValueError
-        train_size = 1. - test_size
+    x_train, x_test, y_train, y_test = train_test_split(
+        x,
+        y,
+        train_size=train_size,
+        test_size=test_size)
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            x,
-            y,
-            train_size=train_size,
-            test_size=test_size)
+    model.fit(x_train, y_train)
 
-        model.fit(x_train, y_train)
-
-        y_train_hat = model.predict(x_train)
-        y_test_hat = model.predict(x_test)
-        train_score = score_func(y_train, y_train_hat)
-        test_score = score_func(y_test, y_test_hat)
-        return train_score, test_score
+    y_train_hat = model.predict(x_train)
+    y_test_hat = model.predict(x_test)
+    train_score = score_func(y_train, y_train_hat)
+    test_score = score_func(y_test, y_test_hat)
+    return train_score, test_score

@@ -1,16 +1,16 @@
-from typing import Union, Callable, Sequence, Dict, Optional
+from typing import Union, Callable, Sequence, Optional
 
-import numpy as np
 import sympy as sp
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.differential_equation import Lhs, DifferentialEquation
+from pararealml.core.differential_equation import Lhs
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator
 from pararealml.core.operators.pidon.deeponet import DeepONet
 from pararealml.core.operators.pidon.differentiation import gradient, \
-    hessian, divergence, curl, laplacian
+    laplacian
+from pararealml.core.operators.pidon.pidon_symbol_mapper import PIDONSymbolMapper
 from pararealml.core.solution import Solution
 
 
@@ -83,7 +83,8 @@ class PIDONOperator(Operator):
         for rhs_element in symbolic_equation_system.rhs:
             symbol_set.update(rhs_element.free_symbols)
 
-        symbol_map = self._create_symbol_map(ivp.constrained_problem)
+        symbol_mapper = PIDONSymbolMapper(cp)
+        symbol_map = symbol_mapper.create_symbol_map()
         symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
 
         rhs_lambda = sp.lambdify(
@@ -139,80 +140,3 @@ class PIDONOperator(Operator):
                 raise ValueError
 
         return lhs_functions
-
-    @staticmethod
-    def _create_symbol_map(
-            cp: ConstrainedProblem
-    ) -> Dict[sp.Symbol, Callable[[tf.Tensor, tf.Tensor], tf.Tensor]]:
-        """
-        Creates a dictionary mapping symbols to functions returning the values
-        of these symbols given x and y.
-
-        :param cp: the constrained problem to create a symbol map for
-        :return: a dictionary mapping symbols to functions
-        """
-        diff_eq = cp.differential_equation
-
-        symbol_map = {diff_eq.symbols.t: lambda x, y: x[:, -1:]}
-
-        for i, y_element in enumerate(diff_eq.symbols.y):
-            symbol_map[y_element] = lambda x, y, _i=i: y[:, _i:_i + 1]
-
-        if diff_eq.x_dimension:
-            coordinate_system_type = cp.mesh.coordinate_system_type
-
-            y_gradient = diff_eq.symbols.y_gradient
-            y_hessian = diff_eq.symbols.y_hessian
-            y_laplacian = diff_eq.symbols.y_laplacian
-            y_divergence = diff_eq.symbols.y_divergence
-            y_curl = diff_eq.symbols.y_curl
-
-            for i in range(diff_eq.y_dimension):
-                symbol_map[y_laplacian[i]] = \
-                    lambda x, y, _i=i: \
-                    laplacian(
-                        x[:, :-1],
-                        y[:, _i:_i + 1],
-                        coordinate_system_type)
-
-                for j in range(diff_eq.x_dimension):
-                    symbol_map[y_gradient[i, j]] = \
-                        lambda x, y, _i=i, _j=j: \
-                        gradient(
-                            x[:, :-1],
-                            y[:, _i:_i + 1],
-                            _j,
-                            coordinate_system_type)
-
-                    for k in range(diff_eq.x_dimension):
-                        symbol_map[y_hessian[i, j, k]] = \
-                            lambda x, y, _i=i, _j=j, _k=k: \
-                            hessian(
-                                x[:, :-1],
-                                y[:, _i:_i + 1],
-                                _j,
-                                _k,
-                                coordinate_system_type)
-
-            for index in np.ndindex(
-                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                symbol_map[y_divergence[index]] = lambda x, y, _index=index: \
-                    divergence(x[:, :-1], y[:, _index], coordinate_system_type)
-                if diff_eq.x_dimension == 2:
-                    symbol_map[y_curl[index]] = \
-                        lambda x, y, _index=index: \
-                        curl(
-                            x[:, :-1],
-                            y[:, _index],
-                            coordinate_system_type=coordinate_system_type)
-                elif diff_eq.x_dimension == 3:
-                    for curl_ind in range(3):
-                        symbol_map[y_curl[index + (curl_ind,)]] = \
-                            lambda x, y, _index=index, _curl_ind=curl_ind: \
-                            curl(
-                                x[:, :-1],
-                                y[:, _index],
-                                _curl_ind,
-                                coordinate_system_type)
-
-        return symbol_map

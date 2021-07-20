@@ -44,21 +44,21 @@ class Operator(ABC):
         :return: the solution of the IVP
         """
 
-    @staticmethod
-    def _discretise_time_domain(
-            t: TemporalDomainInterval,
-            d_t: float
-    ) -> np.ndarray:
-        """
-        Returns a discretisation of the interval [t_a, t_b^) using the provided
-        temporal step size d_t, where t_b^ = t_a + n * d_t and n E Z,
-        n = argmin |t_b^ - t_b|.
 
-        :param t: the time interval to discretise
-        :param d_t: the temporal step size
-        :return: the array containing the discretised temporal domain
-        """
-        t_0 = t[0]
-        steps = int(round((t[1] - t_0) / d_t))
-        t_1 = t_0 + steps * d_t
-        return np.linspace(t_0, t_1, steps + 1)
+def discretise_time_domain(
+        t: TemporalDomainInterval,
+        d_t: float
+) -> np.ndarray:
+    """
+    Returns a discretisation of the interval [t_a, t_b^) using the provided
+    temporal step size d_t, where t_b^ = t_a + n * d_t and n E Z,
+    n = argmin |t_b^ - t_b|.
+
+    :param t: the time interval to discretise
+    :param d_t: the temporal step size
+    :return: the array containing the discretised temporal domain
+    """
+    t_0 = t[0]
+    steps = int(round((t[1] - t_0) / d_t))
+    t_1 = t_0 + steps * d_t
+    return np.linspace(t_0, t_1, steps + 1)

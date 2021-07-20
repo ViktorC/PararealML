@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from copy import copy
 from enum import Enum
-from typing import Optional, Tuple, Sequence, Set
+from typing import Optional, Sequence, Set
+from typing import Tuple
 
 import numpy as np
 from sympy import symarray, Expr, Symbol
@@ -24,20 +25,19 @@ class Symbols:
 
         if x_dimension:
             self._y_gradient = symarray(
-                'y_gradient', (y_dimension, x_dimension))
+                'y-gradient', (y_dimension, x_dimension))
             self._y_hessian = symarray(
-                'y_hessian', (y_dimension, x_dimension, x_dimension))
+                'y-hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
-                'y_divergence', (y_dimension,) * x_dimension)
+                'y-divergence', (y_dimension,) * x_dimension)
             if x_dimension == 2:
-                self._y_curl = symarray('y_curl', (y_dimension,) * x_dimension)
+                self._y_curl = symarray('y-curl', (y_dimension,) * x_dimension)
             elif x_dimension == 3:
                 self._y_curl = symarray(
-                    'y_curl',
-                    ((y_dimension,) * x_dimension) + (x_dimension,))
+                    'y-curl', ((y_dimension,) * x_dimension) + (x_dimension,))
             else:
                 self._y_curl = None
-            self._y_laplacian = symarray('y_laplacian', (y_dimension,))
+            self._y_laplacian = symarray('y-laplacian', (y_dimension,))
         else:
             self._y_gradient = None
             self._y_hessian = None

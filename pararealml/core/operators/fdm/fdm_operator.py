@@ -1,16 +1,16 @@
-from typing import Optional, Tuple, Callable, Sequence, Dict
+from typing import Optional, Tuple, Callable, Dict
 
 import numpy as np
 import sympy as sp
 
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.constraint import apply_constraints_along_last_axis, \
-    Constraint
+from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.differential_equation import Lhs
-from pararealml.core.operators.fdm.differentiator import Differentiator
 from pararealml.core.initial_value_problem import InitialValueProblem
+from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operators.fdm.differentiator import Differentiator
+from pararealml.core.operators.fdm.fdm_symbol_mapper import FDMSymbolMapper
 from pararealml.core.operators.fdm.integrator import Integrator
-from pararealml.core.operator import Operator
 from pararealml.core.solution import Solution
 
 
@@ -56,8 +56,7 @@ class FDMOperator(Operator):
         cp = ivp.constrained_problem
         y_next = self._create_y_next_function(ivp)
 
-        time_points = self._discretise_time_domain(
-            ivp.t_interval, self._d_t)
+        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
 
         y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
 
@@ -90,7 +89,8 @@ class FDMOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
         eq_sys = diff_eq.symbolic_equation_system
-        symbol_map = self._create_symbol_map(cp)
+        symbol_mapper = FDMSymbolMapper(cp, self._differentiator)
+        symbol_map = symbol_mapper.create_symbol_map()
 
         d_y_over_d_t_eq_inds = \
             eq_sys.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
@@ -165,111 +165,6 @@ class FDMOperator(Operator):
             return y_next
 
         return y_next_function
-
-    def _create_symbol_map(
-            self,
-            cp: ConstrainedProblem
-    ) -> Dict[
-         sp.Symbol,
-         Callable[
-             [
-                 float,
-                 np.ndarray,
-                 Callable[
-                     [Optional[float]],
-                     Optional[Sequence[Constraint]]
-                 ]
-             ],
-             np.ndarray
-         ]
-    ]:
-        """
-        Creates a dictionary mapping symbols to functions returning the values
-        of these symbols given t and y.
-
-        :param cp: the constrained problem to create a symbol map for
-        :return: a dictionary mapping symbols to functions
-        """
-        diff_eq = cp.differential_equation
-
-        symbol_map = {diff_eq.symbols.t: lambda t, y, d_y_bc_func: t}
-
-        for i, y_element in enumerate(diff_eq.symbols.y):
-            symbol_map[y_element] = \
-                lambda t, y, d_y_bc_func, _i=i: y[..., _i:_i + 1]
-
-        if diff_eq.x_dimension:
-            mesh = cp.mesh
-            d_x = mesh.d_x
-            coordinate_system_type = mesh.coordinate_system_type
-
-            y_gradient = diff_eq.symbols.y_gradient
-            y_hessian = diff_eq.symbols.y_hessian
-            y_laplacian = diff_eq.symbols.y_laplacian
-            y_divergence = diff_eq.symbols.y_divergence
-            y_curl = diff_eq.symbols.y_curl
-
-            for i in range(diff_eq.y_dimension):
-                symbol_map[y_laplacian[i]] = lambda t, y, d_y_bc_func, _i=i: \
-                    self._differentiator.laplacian(
-                        y[..., _i:_i + 1],
-                        d_x,
-                        d_y_bc_func(t)[:, _i:_i + 1],
-                        coordinate_system_type)
-
-                for j in range(diff_eq.x_dimension):
-                    symbol_map[y_gradient[i, j]] = \
-                        lambda t, y, d_y_bcs, _i=i, _j=j: \
-                        self._differentiator.gradient(
-                            y[..., _i:_i + 1],
-                            d_x[_j],
-                            _j,
-                            d_y_bcs(t)[_j, _i:_i + 1],
-                            coordinate_system_type)
-
-                    for k in range(diff_eq.x_dimension):
-                        symbol_map[y_hessian[i, j, k]] = \
-                            lambda t, y, d_y_bc_func, _i=i, _j=j, _k=k: \
-                            self._differentiator.hessian(
-                                y[..., _i:_i + 1],
-                                d_x[_j],
-                                d_x[_k],
-                                _j,
-                                _k,
-                                d_y_bc_func(t)[_j, _i:_i + 1],
-                                coordinate_system_type)
-
-            for index in np.ndindex(
-                    (diff_eq.y_dimension,) * diff_eq.x_dimension):
-                symbol_map[y_divergence[index]] = \
-                    lambda t, y, d_y_bc_func, _index=tuple(index): \
-                    self._differentiator.divergence(
-                        y[..., _index],
-                        d_x,
-                        d_y_bc_func(t)[:, _index],
-                        coordinate_system_type)
-                if diff_eq.x_dimension == 2:
-                    symbol_map[y_curl[index]] = \
-                        lambda t, y, d_y_bc_func, _index=tuple(index): \
-                        self._differentiator.curl(
-                            y[..., _index],
-                            d_x,
-                            0,
-                            d_y_bc_func(t)[:, _index],
-                            coordinate_system_type)
-                elif diff_eq.x_dimension == 3:
-                    for curl_ind in range(3):
-                        symbol_map[y_curl[index + (curl_ind,)]] = \
-                            (lambda t, y, d_y_bc_func, _index=tuple(index),
-                                _curl_ind=curl_ind:
-                                self._differentiator.curl(
-                                    y[..., _index],
-                                    d_x,
-                                    _curl_ind,
-                                    d_y_bc_func(t)[:, _index],
-                                    coordinate_system_type))
-
-        return symbol_map
 
     @staticmethod
     def _create_constraint_functions(
