@@ -60,7 +60,7 @@ class CollocationPointSampler(ABC):
     """
 
     @abstractmethod
-    def _sample_domain_points(
+    def sample_domain_points(
             self,
             ivp: InitialValueProblem,
             n_points: int,
@@ -77,7 +77,7 @@ class CollocationPointSampler(ABC):
         """
 
     @abstractmethod
-    def _sample_boundary_points(
+    def sample_boundary_points(
             self,
             ivp: InitialValueProblem,
             n_points: int) -> Sequence[Tuple[np.ndarray, np.ndarray]]:
@@ -116,9 +116,9 @@ class CollocationPointSampler(ABC):
         if n_domain < 0 or n_initial < 0 or n_boundary < 0:
             raise ValueError
 
-        domain_points = self._sample_domain_points(ivp, n_domain, False)
-        initial_points = self._sample_domain_points(ivp, n_initial, True)
-        boundary_points = self._sample_boundary_points(ivp, n_boundary) \
+        domain_points = self.sample_domain_points(ivp, n_domain, False)
+        initial_points = self.sample_domain_points(ivp, n_initial, True)
+        boundary_points = self.sample_boundary_points(ivp, n_boundary) \
             if x_dimension else None
 
         return CollocationPointSet(
@@ -130,21 +130,20 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
     A uniform random collocation point sampler.
     """
 
-    def _sample_domain_points(
+    def sample_domain_points(
             self,
             ivp: InitialValueProblem,
             n_points: int,
             initial: bool) -> np.ndarray:
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
-        lower_bounds, upper_bounds = \
-            self._get_time_space_bounds(ivp, initial)
+        lower_bounds, upper_bounds = time_space_bounds(ivp, initial)
         return np.random.uniform(
             lower_bounds,
             upper_bounds,
             (n_points, diff_eq.x_dimension + 1))
 
-    def _sample_boundary_points(
+    def sample_boundary_points(
             self,
             ivp: InitialValueProblem,
             n_points: int) -> Sequence[Tuple[np.ndarray, np.ndarray]]:
@@ -152,7 +151,7 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
         diff_eq = cp.differential_equation
         mesh = cp.mesh
 
-        lower_bounds, upper_bounds = self._get_time_space_bounds(ivp, False)
+        lower_bounds, upper_bounds = time_space_bounds(ivp, False)
 
         domain_size = mesh.generalised_volume
         boundary_sizes_at_ends_of_axes = np.array([
@@ -187,31 +186,31 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
 
         return boundary_points
 
-    @staticmethod
-    def _get_time_space_bounds(
-            ivp: InitialValueProblem,
-            initial: bool) -> Tuple[Sequence[float], Sequence[float]]:
-        """
-        Returns the bounds of the space time domain of the IVP.
 
-        :param ivp: the IVP whose domain's bounds are to be computed
-        :param initial: whether the temporal domain should be bound to the
-            initial time point
-        :return: the time space bounds in the form of two sequences where
-            the first sequence represents the lower bounds and the second
-            sequence represents the upper bounds; the first element of each
-            array is the time bound and the subsequent elements, if the IVP is
-            a PDE, are the spatial bounds
-        """
-        t_interval = (ivp.t_interval[0],) * 2 if initial else ivp.t_interval
+def time_space_bounds(
+        ivp: InitialValueProblem,
+        initial: bool) -> Tuple[Sequence[float], Sequence[float]]:
+    """
+    Returns the bounds of the space time domain of the IVP.
 
-        cp = ivp.constrained_problem
-        if not cp.differential_equation.x_dimension:
-            return [t_interval[0]], [t_interval[1]]
+    :param ivp: the IVP whose domain's bounds are to be computed
+    :param initial: whether the temporal domain should be bound to the
+        initial time point
+    :return: the time space bounds in the form of two sequences where
+        the first sequence represents the lower bounds and the second
+        sequence represents the upper bounds; the first element of each
+        array is the time bound and the subsequent elements, if the IVP is
+        a PDE, are the spatial bounds
+    """
+    t_interval = (ivp.t_interval[0],) * 2 if initial else ivp.t_interval
 
-        mesh = ivp.constrained_problem.mesh
-        lower_bounds, upper_bounds = zip(*mesh.x_intervals)
-        lower_bounds = [t_interval[0]] + lower_bounds
-        upper_bounds = [t_interval[1]] + upper_bounds
+    cp = ivp.constrained_problem
+    if not cp.differential_equation.x_dimension:
+        return [t_interval[0]], [t_interval[1]]
 
-        return lower_bounds, upper_bounds
+    mesh = ivp.constrained_problem.mesh
+    lower_bounds, upper_bounds = zip(*mesh.x_intervals)
+    lower_bounds = [t_interval[0]] + lower_bounds
+    upper_bounds = [t_interval[1]] + upper_bounds
+
+    return lower_bounds, upper_bounds

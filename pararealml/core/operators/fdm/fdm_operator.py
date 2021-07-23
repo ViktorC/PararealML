@@ -1,7 +1,6 @@
 from typing import Optional, Tuple, Callable, Dict
 
 import numpy as np
-import sympy as sp
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
@@ -90,31 +89,19 @@ class FDMOperator(Operator):
         diff_eq = cp.differential_equation
         eq_sys = diff_eq.symbolic_equation_system
         symbol_mapper = FDMSymbolMapper(cp, self._differentiator)
-        symbol_map = symbol_mapper.create_symbol_map()
 
         d_y_over_d_t_eq_inds = \
             eq_sys.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
-        d_y_over_d_t_symbols = eq_sys.symbols_by_type(Lhs.D_Y_OVER_D_T)
-        d_y_over_d_t_arg_functions = \
-            [symbol_map[sym] for sym in d_y_over_d_t_symbols]
-        d_y_over_d_t_rhs_lambda = sp.lambdify(
-            [d_y_over_d_t_symbols],
-            eq_sys.rhs_by_type(Lhs.D_Y_OVER_D_T),
-            'numpy')
+        d_y_over_d_t_rhs_lambda, d_y_over_d_t_arg_functions = \
+            symbol_mapper.create_rhs_lambda_and_arg_functions(Lhs.D_Y_OVER_D_T)
 
         y_eq_inds = eq_sys.equation_indices_by_type(Lhs.Y)
-        y_symbols = eq_sys.symbols_by_type(Lhs.Y)
-        y_arg_functions = [symbol_map[sym] for sym in y_symbols]
-        y_rhs_lambda = sp.lambdify(
-            [y_symbols], eq_sys.rhs_by_type(Lhs.Y), 'numpy')
+        y_rhs_lambda, y_arg_functions = \
+            symbol_mapper.create_rhs_lambda_and_arg_functions(Lhs.Y)
 
         y_lapl_eq_inds = eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN)
-        y_lapl_symbols = eq_sys.symbols_by_type(Lhs.Y_LAPLACIAN)
-        y_lapl_arg_functions = [symbol_map[sym] for sym in y_lapl_symbols]
-        y_lapl_rhs_lambda = sp.lambdify(
-            [y_lapl_symbols],
-            eq_sys.rhs_by_type(Lhs.Y_LAPLACIAN),
-            'numpy')
+        y_lapl_rhs_lambda, y_lapl_arg_functions = \
+            symbol_mapper.create_rhs_lambda_and_arg_functions(Lhs.Y_LAPLACIAN)
 
         boundary_constraints_cache = {}
         y_constraints_cache = {}

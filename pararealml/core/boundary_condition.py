@@ -42,7 +42,7 @@ class BoundaryCondition(ABC):
 
         :param x: the coordinates in the hyperplane of the boundary
         :param t: the time value; if the condition is static, it may be None
-        :return: the value of y(x)
+        :return: the value of y(x, t)
         """
 
     @abstractmethod
@@ -60,7 +60,7 @@ class BoundaryCondition(ABC):
 
         :param x: the coordinates in the hyperplane of the boundary
         :param t: the time value; if the condition is static, it may be None
-        :return: the constrained value of dy(x) / dn
+        :return: the constrained value of dy(x, t) / dn
         """
 
 

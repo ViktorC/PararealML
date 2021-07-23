@@ -169,6 +169,16 @@ class SymbolicEquationSystem:
         """
         return copy(self._lhs_types)
 
+    @property
+    def all_symbols(self) -> Set[Symbol]:
+        """
+        All the symbols in the right hand side of the symbolic equation system.
+        """
+        symbols = set()
+        for lhs_type in Lhs:
+            symbols.update(self._symbols_by_type[lhs_type])
+        return symbols
+
     def equation_indices_by_type(self, lhs_type: Lhs) -> Sequence[int]:
         """
         Returns a sequence of integers denoting the indices of all equations of

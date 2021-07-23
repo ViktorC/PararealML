@@ -7,9 +7,9 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import Lhs
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator
-from pararealml.core.operators.pidon.deeponet import DeepONet
 from pararealml.core.operators.pidon.differentiation import gradient, \
     laplacian
+from pararealml.core.operators.pidon.pi_deeponet import PIDeepONet
 from pararealml.core.operators.pidon.pidon_symbol_mapper import PIDONSymbolMapper
 from pararealml.core.solution import Solution
 
@@ -35,7 +35,7 @@ class PIDONOperator(Operator):
 
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
-        self._model: Optional[DeepONet] = None
+        self._model: Optional[PIDeepONet] = None
 
     @property
     def d_t(self) -> float:
@@ -46,14 +46,14 @@ class PIDONOperator(Operator):
         return self._vertex_oriented
 
     @property
-    def model(self) -> Optional[DeepONet]:
+    def model(self) -> Optional[PIDeepONet]:
         """
         The DeepONet model behind the operator.
         """
         return self._model
 
     @model.setter
-    def model(self, model: Optional[DeepONet]):
+    def model(self, model: Optional[PIDeepONet]):
         self._model = model
 
     def solve(
@@ -84,13 +84,8 @@ class PIDONOperator(Operator):
             symbol_set.update(rhs_element.free_symbols)
 
         symbol_mapper = PIDONSymbolMapper(cp)
-        symbol_map = symbol_mapper.create_symbol_map()
-        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
-
-        rhs_lambda = sp.lambdify(
-            [symbol_set],
-            symbolic_equation_system.rhs,
-            'numpy')
+        rhs_lambda, symbol_arg_funcs = \
+            symbol_mapper.create_rhs_lambda_and_arg_functions()
 
         lhs_functions = self._create_lhs_functions(cp)
 

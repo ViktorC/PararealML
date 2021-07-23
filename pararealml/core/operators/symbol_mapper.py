@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Dict
+from typing import Callable, Sequence, Dict, Optional, Tuple
 
 import numpy as np
 import sympy as sp
@@ -105,19 +105,26 @@ class SymbolMapper(ABC):
         :return: the substitution function for the Laplacian of y
         """
 
-    def create_symbol_map(self) -> Dict[sp.Symbol, Callable]:
+    def create_symbol_map(
+            self,
+            lhs_type: Optional[Lhs] = None) -> Dict[sp.Symbol, Callable]:
         """
         Creates a dictionary mapping the symbols present in the differential
         equation instance associated with the symbol mapper to a set of
         functions used to substitute the symbols for numerical values.
+
+        :param lhs_type: the type of the left hand side of the equations in the
+            differential equation system for whose right hand side the symbol
+            map is to be created
+        :return: the symbol map
         """
         symbol_map = {}
 
         x_dimension = self._diff_eq.x_dimension
         eq_sys = self._diff_eq.symbolic_equation_system
-        symbols = set()
-        for lhs_type in Lhs:
-            symbols.update(eq_sys.symbols_by_type(lhs_type))
+
+        symbols = eq_sys.all_symbols if lhs_type is None \
+            else eq_sys.symbols_by_type(lhs_type)
 
         for symbol in symbols:
             symbol_name_tokens = symbol.name.split('_')
@@ -155,3 +162,30 @@ class SymbolMapper(ABC):
                             y_indices, indices_contiguous, curl_ind)
 
         return symbol_map
+
+    def create_rhs_lambda_and_arg_functions(
+            self,
+            lhs_type: Optional[Lhs] = None
+    ) -> Tuple[Callable, Sequence[Callable]]:
+        """
+        Creates a lambda function for numerically evaluating the right hand
+        side of a symbolic differential equation system and it also creates
+        a list of functions that, when invoked with the parameters expected by
+        the substitution functions, return the arguments to the right hand side
+        lambda function.
+
+        :param lhs_type: the type of the left hand side of the equations in the
+            differential equation system for whom the right hand side lambda
+            and the argument functions are to be created
+        :return: a tuple of the right hand side lambda and a list of the
+            argument functions
+        """
+        eq_sys = self._diff_eq.symbolic_equation_system
+        symbol_map = self.create_symbol_map(lhs_type)
+        symbol_set = symbol_map.keys()
+        rhs_lambda = sp.lambdify(
+            [symbol_set],
+            eq_sys.rhs if lhs_type is None else eq_sys.rhs_by_type(lhs_type),
+            'numpy')
+        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
+        return rhs_lambda, symbol_arg_funcs
