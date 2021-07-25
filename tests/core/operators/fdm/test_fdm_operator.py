@@ -10,11 +10,11 @@ from pararealml.core.initial_condition import DiscreteInitialCondition, \
     ContinuousInitialCondition, GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
-from pararealml.core.operators.fdm.differentiator import \
+from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
-from pararealml.core.operators.fdm.integrator import ForwardEulerMethod, RK4, \
-    CrankNicolsonMethod
+from pararealml.core.operators.fdm.numerical_integrator import \
+    ForwardEulerMethod, RK4, CrankNicolsonMethod
 
 
 def test_fdm_operator_on_ode_with_analytic_solution():

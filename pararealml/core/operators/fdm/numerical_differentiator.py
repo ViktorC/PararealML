@@ -15,7 +15,7 @@ BoundaryConstraintPair = Tuple[
 ]
 
 
-class Differentiator(ABC):
+class NumericalDifferentiator(ABC):
     """
     A base class for numerical differentiators.
     """
@@ -549,7 +549,7 @@ class Differentiator(ABC):
                 dtype=object)
 
 
-class ThreePointCentralFiniteDifferenceMethod(Differentiator):
+class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
     """
     A numerical differentiator using a three-point (second order) central
     difference.

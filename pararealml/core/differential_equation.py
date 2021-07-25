@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import copy
 from enum import Enum
-from typing import Optional, Sequence, Set
+from typing import Optional, Sequence
 from typing import Tuple
 
 import numpy as np
@@ -148,12 +148,8 @@ class SymbolicEquationSystem:
         self._lhs_types = copy(lhs_types)
 
         self._equation_indices_by_type = {lhs_type: [] for lhs_type in Lhs}
-        self._rhs_by_type = {lhs_type: [] for lhs_type in Lhs}
-        self._symbols_by_type = {lhs_type: set() for lhs_type in Lhs}
         for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
             self._equation_indices_by_type[lhs_type].append(i)
-            self._rhs_by_type[lhs_type].append(rhs_element)
-            self._symbols_by_type[lhs_type].update(rhs_element.free_symbols)
 
     @property
     def rhs(self) -> Sequence[Expr]:
@@ -169,16 +165,6 @@ class SymbolicEquationSystem:
         """
         return copy(self._lhs_types)
 
-    @property
-    def all_symbols(self) -> Set[Symbol]:
-        """
-        All the symbols in the right hand side of the symbolic equation system.
-        """
-        symbols = set()
-        for lhs_type in Lhs:
-            symbols.update(self._symbols_by_type[lhs_type])
-        return symbols
-
     def equation_indices_by_type(self, lhs_type: Lhs) -> Sequence[int]:
         """
         Returns a sequence of integers denoting the indices of all equations of
@@ -188,27 +174,6 @@ class SymbolicEquationSystem:
         :return: the sequence of indices
         """
         return copy(self._equation_indices_by_type[lhs_type])
-
-    def rhs_by_type(self, lhs_type: Lhs) -> Sequence[Expr]:
-        """
-        Returns a sequence of expressions representing the right hand sides of
-        all the equations of the equation system whose left hand sides match
-        the specified type.
-
-        :param lhs_type: the type of left hand side
-        :return: a sequence of expressions
-        """
-        return copy(self._rhs_by_type[lhs_type])
-
-    def symbols_by_type(self, lhs_type: Lhs) -> Set[Symbol]:
-        """
-        Returns a set of symbols representing all the symbols included in all
-        the equations whose left hand sides match the specified type.
-
-        :param lhs_type: the type of left hand side
-        :return: a set of symbols
-        """
-        return copy(self._symbols_by_type[lhs_type])
 
 
 class DifferentialEquation(ABC):

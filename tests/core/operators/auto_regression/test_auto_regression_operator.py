@@ -8,10 +8,10 @@ from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
-from pararealml.core.operators.fdm.differentiator import \
+from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
-from pararealml.core.operators.fdm.integrator import RK4
+from pararealml.core.operators.fdm.numerical_integrator import RK4
 from pararealml.core.operators.ode.ode_operator import ODEOperator
 from pararealml.core.operators.auto_regression.auto_regression_operator \
     import AutoRegressionOperator

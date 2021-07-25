@@ -1,7 +1,4 @@
-import math
-
 import numpy as np
-from scipy.interpolate import interp2d
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
@@ -9,7 +6,7 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation
-from pararealml.core.operators.fdm.differentiator import \
+from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.mesh import Mesh
 

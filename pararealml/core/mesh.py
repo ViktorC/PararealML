@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Tuple, Sequence
+from typing import Tuple, Sequence, Callable, Iterable
 
 import numpy as np
 
@@ -61,11 +61,6 @@ class Mesh:
         self._cell_center_coordinates = self._calculate_coordinates(False)
         self._coordinate_system_type = coordinate_system_type
 
-        self._x_interval_lengths = np.array([
-            interval[1] - interval[0] for interval in x_intervals
-        ])
-        self._generalised_volume = self._x_interval_lengths.prod()
-
         self._x_vertex_offset = np.array(
             [coordinates[0] for coordinates in self._vertex_coordinates])
         self._x_cell_center_offset = np.array(
@@ -77,20 +72,6 @@ class Mesh:
         The bounds of each axis of the domain
         """
         return deepcopy(self._x_intervals)
-
-    @property
-    def x_interval_lengths(self) -> Sequence[float]:
-        """
-        The length of the hyper-rectangle along each axis.
-        """
-        return copy(self._x_interval_lengths)
-
-    @property
-    def generalised_volume(self) -> float:
-        """
-        The generalised volume of the hyper-rectangle.
-        """
-        return self._generalised_volume
 
     @property
     def d_x(self) -> Tuple[float, ...]:
@@ -135,23 +116,38 @@ class Mesh:
         """
         return deepcopy(self._cell_center_coordinates)
 
-    def x(self, index: Tuple[int, ...], vertex: bool) -> Tuple[float, ...]:
+    def x(
+            self,
+            index: Tuple[int, ...],
+            vertex_oriented: bool) -> Tuple[float, ...]:
         """
         Returns the coordinates of the point in the domain corresponding to the
         vertex or cell center of the mesh specified by the provided index.
 
         :param index: the index of a vertex or cell center of the mesh
-        :param vertex: whether the point is a vertex or a cell center
+        :param vertex_oriented: whether the point is a vertex or a cell center
         :return: the coordinates of the corresponding point of the domain
         """
-        if len(index) != len(self._x_intervals):
-            raise ValueError
-
-        offset = self._x_vertex_offset if vertex \
+        offset = self._x_vertex_offset if vertex_oriented \
             else self._x_cell_center_offset
         return tuple(offset + self._d_x * index)
 
-    def shape(self, vertex_oriented: bool):
+    def all_x(self, vertex_oriented: bool) -> np.ndarray:
+        """
+        Returns a 2D array containing all the points of the mesh where every
+        row represents the coordinates of a single point along all axes of the
+        spatial domain.
+
+        :param vertex_oriented: whether the coordinates should be those of the
+            vertices or the cell centers
+        :return: a 2D array of point coordinates
+        """
+        shape = self.shape(vertex_oriented)
+        return np.stack([
+            self.x(index, vertex_oriented) for index in np.ndindex(shape)
+        ], axis=0)
+
+    def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
         """
         Returns the shape of the array of the discretised domain.
 
@@ -173,6 +169,40 @@ class Mesh:
         """
         return self.vertex_coordinates if vertex_oriented \
             else self.cell_center_coordinates
+
+    def evaluate_fields(
+            self,
+            fields: Iterable[Callable[[Sequence[float]], Sequence[float]]],
+            vertex_oriented: bool,
+            flatten: bool = False) -> np.ndarray:
+        """
+        Evaluates the provided scalar or vector fields over the mesh.
+
+        :param fields: the field functions
+        :param vertex_oriented: whether the fields are to be evaluated over the
+            vertices or the cell centers of the mesh
+        :param flatten: whether the field values should be flattened into a
+            2D array such that every row represents a field and every column
+            represents a single component of the field over a single point on
+            the mesh
+        :return: an array of field values
+        """
+        all_x = self.all_x(vertex_oriented)
+
+        all_field_values = []
+        for field in fields:
+            field_values = []
+            for i in range(all_x.shape[0]):
+                sensor_point = all_x[i]
+                field_values.append(field(sensor_point))
+
+            all_field_values.append(field_values)
+
+        all_field_values = np.array(all_field_values)
+        if flatten:
+            all_field_values = all_field_values.reshape(
+                (all_field_values.shape[0], -1))
+        return all_field_values
 
     def _calculate_shape(
             self,

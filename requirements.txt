@@ -3,7 +3,7 @@ mypy~=0.770
 pytest~=5.0.0
 coverage~=5.3
 numpy~=1.19.5
-scipy~=1.4.1
+scipy~=1.5.0
 matplotlib<3.3.0
 mpi4py~=3.0.3
 sympy~=1.6.2

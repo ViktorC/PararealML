@@ -295,7 +295,8 @@ class ConstrainedProblem:
             y_boundary_constraint_pairs, d_y_boundary_constraint_pairs = \
                 self._create_boundary_constraint_pairs_for_all_y(
                     boundary_condition_pair,
-                    boundary_shape, d_x_arr,
+                    boundary_shape,
+                    d_x_arr,
                     t,
                     vertex_oriented)
 

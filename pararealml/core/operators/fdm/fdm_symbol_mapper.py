@@ -1,19 +1,38 @@
-from typing import Callable, Sequence
+from typing import Callable, Sequence, NamedTuple
 
+import numpy as np
+
+from pararealml import Lhs
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.operators.fdm.differentiator import Differentiator
+from pararealml.core.operators.fdm.numerical_differentiator import \
+    NumericalDifferentiator
 from pararealml.core.operators.symbol_mapper import SymbolMapper
 
 
-class FDMSymbolMapper(SymbolMapper):
+class FDMSymbolMapArg(NamedTuple):
+    """
+    The arguments to the FDM map functions.
+    """
+    t: float
+    y: np.ndarray
+    d_y_constraint_function: Callable[[float], np.ndarray]
+
+
+FDMSymbolMapFunction = Callable[[FDMSymbolMapArg], np.ndarray]
+
+
+class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     """
     A symbol mapper implementation for the FDM operator.
     """
 
-    def __init__(self, cp: ConstrainedProblem, differentiator: Differentiator):
+    def __init__(
+            self,
+            cp: ConstrainedProblem,
+            differentiator: NumericalDifferentiator):
         """
         :param cp: the constrained problem to create a symbol mapper for
-        :param differentiator: the differentiator instance to use
+        :param differentiator: the numerical differentiator instance to use
         """
         diff_eq = cp.differential_equation
 
@@ -26,70 +45,93 @@ class FDMSymbolMapper(SymbolMapper):
             self._d_x = mesh.d_x
             self._coordinate_system_type = mesh.coordinate_system_type
 
-    def t(self) -> Callable:
-        return lambda t, y, d_y_bc_func: t
+    def t_map_function(self) -> FDMSymbolMapFunction:
+        return lambda arg: np.ndarray([arg.t])
 
-    def y(self, y_ind: int) -> Callable:
-        return lambda t, y, d_y_bc_func: y[..., y_ind:y_ind + 1]
+    def y_map_function(self, y_ind: int) -> FDMSymbolMapFunction:
+        return lambda arg: arg.y[..., y_ind:y_ind + 1]
 
-    def y_gradient(self, y_ind: int, x_axis: int) -> Callable:
-        return lambda t, y, d_y_bc_func: self._differentiator.gradient(
-            y[..., y_ind:y_ind + 1],
+    def y_gradient_map_function(
+            self,
+            y_ind: int,
+            x_axis: int) -> FDMSymbolMapFunction:
+        return lambda arg: self._differentiator.gradient(
+            arg.y[..., y_ind:y_ind + 1],
             self._d_x[x_axis],
             x_axis,
-            d_y_bc_func(t)[x_axis, y_ind:y_ind + 1],
+            arg.d_y_constraint_function(arg.t)[x_axis, y_ind:y_ind + 1],
             self._coordinate_system_type)
 
-    def y_hessian(self, y_ind: int, x_axis1: int, x_axis2: int) -> Callable:
-        return lambda t, y, d_y_bc_func: self._differentiator.hessian(
-            y[..., y_ind:y_ind + 1],
+    def y_hessian_map_function(
+            self,
+            y_ind: int,
+            x_axis1: int,
+            x_axis2: int) -> FDMSymbolMapFunction:
+        return lambda arg: self._differentiator.hessian(
+            arg.y[..., y_ind:y_ind + 1],
             self._d_x[x_axis1],
             self._d_x[x_axis2],
             x_axis1,
             x_axis2,
-            d_y_bc_func(t)[x_axis1, y_ind:y_ind + 1],
+            arg.d_y_constraint_function(arg.t)[x_axis1, y_ind:y_ind + 1],
             self._coordinate_system_type)
 
-    def y_divergence(
+    def y_divergence_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool) -> Callable:
+            indices_contiguous: bool) -> FDMSymbolMapFunction:
         if indices_contiguous:
-            return lambda t, y, d_y_bc_func: self._differentiator.divergence(
-                y[..., y_indices[0]:y_indices[-1] + 1],
+            return lambda arg: self._differentiator.divergence(
+                arg.y[..., y_indices[0]:y_indices[-1] + 1],
                 self._d_x,
-                d_y_bc_func(t)[:, y_indices[0]:y_indices[-1] + 1],
+                arg.d_y_constraint_function(
+                    arg.t)[:, y_indices[0]:y_indices[-1] + 1],
                 self._coordinate_system_type)
         else:
-            return lambda t, y, d_y_bc_func: self._differentiator.divergence(
-                y[..., y_indices],
+            return lambda arg: self._differentiator.divergence(
+                arg.y[..., y_indices],
                 self._d_x,
-                d_y_bc_func(t)[:, y_indices],
+                arg.d_y_constraint_function(arg.t)[:, y_indices],
                 self._coordinate_system_type)
 
-    def y_curl(
+    def y_curl_map_function(
             self,
             y_indices: Sequence[int],
             indices_contiguous: bool,
-            curl_ind: int) -> Callable:
+            curl_ind: int) -> FDMSymbolMapFunction:
         if indices_contiguous:
-            return lambda t, y, d_y_bc_func: self._differentiator.curl(
-                y[..., y_indices[0]:y_indices[-1] + 1],
+            return lambda arg: self._differentiator.curl(
+                arg.y[..., y_indices[0]:y_indices[-1] + 1],
                 self._d_x,
                 curl_ind,
-                d_y_bc_func(t)[:, y_indices[0]:y_indices[-1] + 1],
+                arg.d_y_constraint_function(
+                    arg.t)[:, y_indices[0]:y_indices[-1] + 1],
                 self._coordinate_system_type)
         else:
-            return lambda t, y, d_y_bc_func: self._differentiator.curl(
-                y[..., y_indices],
+            return lambda arg: self._differentiator.curl(
+                arg.y[..., y_indices],
                 self._d_x,
                 curl_ind,
-                d_y_bc_func(t)[:, y_indices],
+                arg.d_y_constraint_function(arg.t)[:, y_indices],
                 self._coordinate_system_type)
 
-    def y_laplacian(self, y_ind: int) -> Callable:
-        return lambda t, y, d_y_bc_func: self._differentiator.laplacian(
-            y[..., y_ind:y_ind + 1],
+    def y_laplacian_map_function(
+            self,
+            y_ind: int) -> FDMSymbolMapFunction:
+        return lambda arg: self._differentiator.laplacian(
+            arg.y[..., y_ind:y_ind + 1],
             self._d_x,
-            d_y_bc_func(t)[:, y_ind:y_ind + 1],
+            arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1],
             self._coordinate_system_type)
+
+    def map_concatenated(
+            self,
+            arg: FDMSymbolMapArg,
+            lhs_type: Lhs
+    ) -> np.ndarray:
+        """
+        Evaluates the right hand side of the differential equation system
+        given the map argument and concatenates the resulting sequence of map
+        value arrays along the last axis.
+        """
+        return np.concatenate(self.map(arg, lhs_type), axis=-1)

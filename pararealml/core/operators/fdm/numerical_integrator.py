@@ -8,7 +8,7 @@ from pararealml.core.constraint import Constraint, \
     apply_constraints_along_last_axis
 
 
-class Integrator(ABC):
+class NumericalIntegrator(ABC):
     """
     A base class for numerical integrators.
     """
@@ -40,7 +40,7 @@ class Integrator(ABC):
         """
 
 
-class ForwardEulerMethod(Integrator):
+class ForwardEulerMethod(NumericalIntegrator):
     """
     The forward Euler method, an explicit first order Runge-Kutta method.
     """
@@ -61,7 +61,7 @@ class ForwardEulerMethod(Integrator):
             y + d_t * d_y_over_d_t(t, y))
 
 
-class ExplicitMidpointMethod(Integrator):
+class ExplicitMidpointMethod(NumericalIntegrator):
     """
     The explicit midpoint method, a second order Runge-Kutta method.
     """
@@ -86,7 +86,7 @@ class ExplicitMidpointMethod(Integrator):
             y + d_t * d_y_over_d_t(t + half_d_t, y_hat))
 
 
-class RK4(Integrator):
+class RK4(NumericalIntegrator):
     """
     The RK4 method, an explicit fourth order Runge-Kutta method.
     """
@@ -126,7 +126,7 @@ class RK4(Integrator):
             y + (k1 + 2 * k2 + 2 * k3 + k4) / 6)
 
 
-class BackwardEulerMethod(Integrator):
+class BackwardEulerMethod(NumericalIntegrator):
     """
     The backward Euler method, an implicit first order Runge-Kutta method.
     """
@@ -157,7 +157,7 @@ class BackwardEulerMethod(Integrator):
         return y_next_hat
 
 
-class CrankNicolsonMethod(Integrator):
+class CrankNicolsonMethod(NumericalIntegrator):
     """
     A first order implicit-explicit method combining the forward and backward
     Euler methods.

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Dict, Optional, Tuple
+from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional
 
 import numpy as np
 import sympy as sp
@@ -8,10 +8,14 @@ from pararealml import Lhs
 from pararealml.core.differential_equation import DifferentialEquation
 
 
-class SymbolMapper(ABC):
+SymbolMapArg = TypeVar('SymbolMapArg')
+SymbolMapValue = TypeVar('SymbolMapValue')
+SymbolMapFunction = Callable[[SymbolMapArg], SymbolMapValue]
+
+
+class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
     """
-    A class for mapping the symbols of differential equation to functions
-    for replacing the symbols with numerical values.
+    A class for mapping symbolic differential equation to numerical values.
     """
 
     def __init__(self, diff_eq: DifferentialEquation):
@@ -19,129 +23,133 @@ class SymbolMapper(ABC):
         :param diff_eq: the differential equation to create a symbol mapper for
         """
         self._diff_eq = diff_eq
+        self._symbol_map = self.create_symbol_map()
+
+        eq_sys = diff_eq.symbolic_equation_system
+        self._rhs_functions = {
+            None: self.create_rhs_map_function(range(len(eq_sys.rhs)))
+        }
+        for lhs_type in Lhs:
+            self._rhs_functions[lhs_type] = self.create_rhs_map_function(
+                eq_sys.equation_indices_by_type(lhs_type))
 
     @abstractmethod
-    def t(self) -> Callable:
+    def t_map_function(self) -> SymbolMapFunction:
         """
-        Returns a function for substituting t for a numerical value.
-        """
-
-    @abstractmethod
-    def y(self, y_ind: int) -> Callable:
-        """
-        Returns a function for substituting a component of y for a numerical
-        value.
-
-        :param y_ind: the component of y to substitute for
-        :return: the substitution function for y
+        Returns a function for mapping t to a numerical value.
         """
 
     @abstractmethod
-    def y_gradient(self, y_ind: int, x_axis: int) -> Callable:
+    def y_map_function(self, y_ind: int) -> SymbolMapFunction:
         """
-        Returns a function for substituting a component of the gradient of y
-        for a numerical value.
+        Returns a function for mapping a component of y to a numerical value.
 
-        :param y_ind: the component of y whose gradient to substitute for
+        :param y_ind: the component of y to return a map for
+        :return: the mapper function for y
+        """
+
+    @abstractmethod
+    def y_gradient_map_function(
+            self,
+            y_ind: int,
+            x_axis: int) -> SymbolMapFunction:
+        """
+        Returns a function for mapping a component of the gradient of y to a
+        numerical value.
+
+        :param y_ind: the component of y whose gradient to return a map for
         :param x_axis: the x axis denoting the element of the gradient to
-            substitute for
-        :return: the substitution function for the gradient of y
+            return a map for
+        :return: the mapper function for the gradient of y
         """
 
     @abstractmethod
-    def y_hessian(self, y_ind: int, x_axis1: int, x_axis2: int) -> Callable:
+    def y_hessian_map_function(
+            self,
+            y_ind: int,
+            x_axis1: int,
+            x_axis2: int) -> SymbolMapFunction:
         """
-        Returns a function for substituting a component of the Hessian of y
-        for a numerical value.
+        Returns a function for mapping a component of the Hessian of y to a
+        numerical value.
 
-        :param y_ind: the component of y whose Hessian to substitute for
+        :param y_ind: the component of y whose Hessian to return a map for
         :param x_axis1: the first x axis denoting the element of the gradient
-            to substitute for
+            to return a map for
         :param x_axis2: the second x axis denoting the element of the gradient
-            to substitute for
-        :return: the substitution function for the Hessian of y
+            to return a map for
+        :return: the mapper function for the Hessian of y
         """
 
     @abstractmethod
-    def y_divergence(
+    def y_divergence_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool) -> Callable:
+            indices_contiguous: bool) -> SymbolMapFunction:
         """
-        Returns a function for substituting the divergence of a set of
-        components of y for a numerical value.
+        Returns a function for mapping the divergence of a set of components of
+        y to a numerical value.
 
-        :param y_indices: the components of y whose divergence is to be
-            substituted for
+        :param y_indices: the components of y whose divergence to return a map
+            for
         :param indices_contiguous: whether the indices are contiguous
-        :return: the substitution function for the divergence of y
+        :return: the mapper function for the divergence of y
         """
 
     @abstractmethod
-    def y_curl(
+    def y_curl_map_function(
             self,
             y_indices: Sequence[int],
             indices_contiguous: bool,
-            curl_ind: int) -> Callable:
+            curl_ind: int) -> SymbolMapFunction:
         """
-        Returns a function for substituting the curl of a set of components of
-        y for a numerical value.
+        Returns a function for mapping the curl of a set of components of y to
+        a numerical value.
 
-        :param y_indices: the components of y whose curl is to be substituted
-            for
+        :param y_indices: the components of y whose curl to return a map for
         :param indices_contiguous: whether the indices are contiguous
-        :param curl_ind: the index of the component of the curl to substitute
-            for
-        :return: the substitution function for the curl of y
+        :param curl_ind: the index of the component of the curl to map
+        :return: the mapper function for the curl of y
         """
 
     @abstractmethod
-    def y_laplacian(self, y_ind: int) -> Callable:
+    def y_laplacian_map_function(self, y_ind: int) -> SymbolMapFunction:
         """
-        Returns a function for substituting a component of the Hessian of y
-        for a numerical value.
+        Returns a function for mapping a component of the Laplacian of y to a
+        numerical value.
 
-        :param y_ind: the component of y whose Laplacian to substitute for
-        :return: the substitution function for the Laplacian of y
+        :param y_ind: the component of y whose Laplacian to return a mp for
+        :return: the mapper function for the Laplacian of y
         """
 
-    def create_symbol_map(
-            self,
-            lhs_type: Optional[Lhs] = None) -> Dict[sp.Symbol, Callable]:
+    def create_symbol_map(self) -> Dict[sp.Symbol, SymbolMapFunction]:
         """
-        Creates a dictionary mapping the symbols present in the differential
+        Creates a dictionary linking the symbols present in the differential
         equation instance associated with the symbol mapper to a set of
-        functions used to substitute the symbols for numerical values.
-
-        :param lhs_type: the type of the left hand side of the equations in the
-            differential equation system for whose right hand side the symbol
-            map is to be created
-        :return: the symbol map
+        functions used to map the symbols to numerical values.
         """
         symbol_map = {}
 
         x_dimension = self._diff_eq.x_dimension
         eq_sys = self._diff_eq.symbolic_equation_system
+        all_symbols = set.union(*[rhs.free_symbols for rhs in eq_sys.rhs])
 
-        symbols = eq_sys.all_symbols if lhs_type is None \
-            else eq_sys.symbols_by_type(lhs_type)
-
-        for symbol in symbols:
+        for symbol in all_symbols:
             symbol_name_tokens = symbol.name.split('_')
             prefix = symbol_name_tokens[0]
             indices = [int(ind) for ind in symbol_name_tokens[1:]] \
                 if len(symbol_name_tokens) > 1 else []
 
             if prefix == 't':
-                symbol_map[symbol] = self.t()
+                symbol_map[symbol] = self.t_map_function()
             elif prefix == 'y':
-                symbol_map[symbol] = self.y(*indices)
+                symbol_map[symbol] = self.y_map_function(*indices)
             elif prefix == 'y-gradient':
-                symbol_map[symbol] = self.y_gradient(*indices)
+                symbol_map[symbol] = self.y_gradient_map_function(*indices)
             elif prefix == 'y-hessian':
-                symbol_map[symbol] = self.y_hessian(*indices)
+                symbol_map[symbol] = self.y_hessian_map_function(*indices)
             elif prefix == 'y-laplacian':
-                symbol_map[symbol] = self.y_laplacian(*indices)
+                symbol_map[symbol] = self.y_laplacian_map_function(*indices)
             else:
                 indices_contiguous = np.all([
                     indices[i] == indices[i + 1] - 1
@@ -149,43 +157,66 @@ class SymbolMapper(ABC):
                 ])
 
                 if prefix == 'y-divergence':
-                    symbol_map[symbol] = self.y_divergence(
+                    symbol_map[symbol] = self.y_divergence_map_function(
                         indices, indices_contiguous)
                 elif prefix == 'y-curl':
                     if x_dimension == 2:
-                        symbol_map[symbol] = self.y_curl(
+                        symbol_map[symbol] = self.y_curl_map_function(
                             indices, indices_contiguous, 0)
                     else:
                         y_indices = indices[:-1]
                         curl_ind = indices[-1]
-                        symbol_map[symbol] = self.y_curl(
+                        symbol_map[symbol] = self.y_curl_map_function(
                             y_indices, indices_contiguous, curl_ind)
 
         return symbol_map
 
-    def create_rhs_lambda_and_arg_functions(
+    def create_rhs_map_function(
             self,
-            lhs_type: Optional[Lhs] = None
-    ) -> Tuple[Callable, Sequence[Callable]]:
+            indices: Sequence[int]
+    ) -> Callable[[SymbolMapArg], Sequence[SymbolMapValue]]:
         """
-        Creates a lambda function for numerically evaluating the right hand
-        side of a symbolic differential equation system and it also creates
-        a list of functions that, when invoked with the parameters expected by
-        the substitution functions, return the arguments to the right hand side
-        lambda function.
+        Creates a function for evaluating the right hand sides of the equations
+        denoted by the provided indices.
 
-        :param lhs_type: the type of the left hand side of the equations in the
-            differential equation system for whom the right hand side lambda
-            and the argument functions are to be created
-        :return: a tuple of the right hand side lambda and a list of the
-            argument functions
+        :param indices: the indices of the equations within the differential
+            equation system whose evaluation function is to be created
+        :return: a function that returns the numerical value of the right hand
+            sides given a substitution argument
         """
-        eq_sys = self._diff_eq.symbolic_equation_system
-        symbol_map = self.create_symbol_map(lhs_type)
-        symbol_set = symbol_map.keys()
-        rhs_lambda = sp.lambdify(
-            [symbol_set],
-            eq_sys.rhs if lhs_type is None else eq_sys.rhs_by_type(lhs_type),
-            'numpy')
-        symbol_arg_funcs = [symbol_map[symbol] for symbol in symbol_set]
-        return rhs_lambda, symbol_arg_funcs
+        rhs = self._diff_eq.symbolic_equation_system.rhs
+
+        selected_rhs = []
+        selected_rhs_symbols = set()
+        for i in indices:
+            rhs_i = rhs[i]
+            selected_rhs.append(rhs_i)
+            selected_rhs_symbols.update(rhs_i.free_symbols)
+
+        subst_functions = \
+            [self._symbol_map[symbol] for symbol in selected_rhs_symbols]
+        rhs_lambda = sp.lambdify([selected_rhs_symbols], selected_rhs, 'numpy')
+
+        def rhs(arg: SymbolMapArg) -> Sequence[SymbolMapValue]:
+            return rhs_lambda(
+                [subst_function(arg) for subst_function in subst_functions])
+
+        return rhs
+
+    def map(self,
+            arg: SymbolMapArg,
+            lhs_type: Optional[Lhs] = None) -> Sequence[SymbolMapValue]:
+        """
+        Evaluates the right hand side of the differential equation system
+        given the map argument.
+
+        :param arg: the map argument that the numerical values of the right
+            hand sides depend on
+        :param lhs_type: the left hand type of the equations whose right hand
+            sides are to be evaluated; if None, the whole differential equation
+            system's right hand side is evaluated
+        :return: the numerical value of the right hand side of the differential
+            equation as a sequence of map values where each element corresponds
+            to an equation within the system
+        """
+        return self._rhs_functions[lhs_type](arg)
