@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import copy
 from enum import Enum
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Dict, List
 from typing import Tuple
 
 import numpy as np
@@ -147,7 +147,8 @@ class SymbolicEquationSystem:
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
 
-        self._equation_indices_by_type = {lhs_type: [] for lhs_type in Lhs}
+        self._equation_indices_by_type: Dict[Lhs, List[int]] = \
+            {lhs_type: [] for lhs_type in Lhs}
         for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
             self._equation_indices_by_type[lhs_type].append(i)
 

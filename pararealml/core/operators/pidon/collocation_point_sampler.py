@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence, NamedTuple, Optional
+from typing import Sequence, NamedTuple, Optional, List
 
 import numpy as np
 
@@ -119,7 +119,7 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
                 (n_lower_boundary_points,
                  n_boundary_points - n_lower_boundary_points)
             axial_bounds = (lower_x_bounds[axis], upper_x_bounds[axis])
-            axial_boundary_points = []
+            axial_boundary_points: List[Optional[CollocationPoints]] = []
 
             for axis_end in range(2):
                 n_samples = n_axial_boundary_points[axis_end]

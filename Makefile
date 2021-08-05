@@ -6,7 +6,7 @@ lint:
 	flake8 pararealml/ tests/
 
 type-check:
-	mypy --ignore-missing-imports pararealml/
+	mypy --ignore-missing-imports --no-strict-optional pararealml/
 
 test:
 	pytest -sv tests/

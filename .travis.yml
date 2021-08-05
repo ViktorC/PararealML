@@ -28,5 +28,6 @@ addons:
 
 script:
   - make lint
+  - make type-check
   - make coverage
   - sonar-scanner

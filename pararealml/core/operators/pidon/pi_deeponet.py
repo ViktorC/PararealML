@@ -1,4 +1,5 @@
-from typing import Optional, Sequence, Dict, Any, Union, Tuple, NamedTuple
+from typing import Optional, Sequence, Dict, Any, Union, Tuple, NamedTuple, \
+    List
 
 import tensorflow as tf
 from tensorflow.python.keras import Sequential
@@ -7,9 +8,9 @@ from tensorflow.python.keras.layers import Dense
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import Lhs
-from pararealml.core.operators.pidon.data_set import DataSet
 from pararealml.core.operators.pidon.auto_differentiator import \
     AutoDifferentiator
+from pararealml.core.operators.pidon.data_set import DataSet
 from pararealml.core.operators.pidon.pidon_symbol_mapper import \
     PIDONSymbolMapper, PIDONSymbolMapArg, PIDONSymbolMapFunction
 
@@ -37,8 +38,8 @@ class PIDeepONet:
             self,
             cp: ConstrainedProblem,
             latent_output_size: int,
-            branch_net_hidden_layer_sizes: Optional[Sequence[int]] = None,
-            trunk_net_hidden_layer_sizes: Optional[Sequence[int]] = None,
+            branch_net_hidden_layer_sizes: Optional[List[int]] = None,
+            trunk_net_hidden_layer_sizes: Optional[List[int]] = None,
             activation: str = 'relu',
             initialisation: str = 'he_normal'
     ):
@@ -173,7 +174,7 @@ class PIDeepONet:
         if iterations_before_test < 1:
             raise ValueError
 
-        optimizer = tf.keras.optimizers.get(optimizer)
+        optimizer_instance = tf.keras.optimizers.get(optimizer)
 
         training_loss_history = []
         test_loss_history = []
@@ -220,7 +221,7 @@ class PIDeepONet:
                               training_losses.total_weighted_loss,
                               'Test -', test_losses.total_weighted_loss)
 
-            optimizer.minimize(
+            optimizer_instance.minimize(
                 training_losses.total_weighted_loss,
                 self._branch_net.trainable_variables +
                 self._trunk_net.trainable_variables,

@@ -153,8 +153,7 @@ class BackwardEulerMethod(NumericalIntegrator):
                 y_next_constraints,
                 y + d_t * d_y_over_d_t(t_next, y_next))
 
-        y_next_hat: np.ndarray = newton(f, y_next_hat)
-        return y_next_hat
+        return newton(f, y_next_hat)
 
 
 class CrankNicolsonMethod(NumericalIntegrator):
@@ -198,5 +197,4 @@ class CrankNicolsonMethod(NumericalIntegrator):
                 self._a * d_t * d_y_over_d_t(t_next, y_next) +
                 self._b * forward_update)
 
-        y_next_hat: np.ndarray = newton(f, y_next_hat)
-        return y_next_hat
+        return newton(f, y_next_hat)

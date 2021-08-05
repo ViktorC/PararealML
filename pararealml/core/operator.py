@@ -50,9 +50,8 @@ def discretise_time_domain(
         d_t: float
 ) -> np.ndarray:
     """
-    Returns a discretisation of the interval [t_a, t_b^) using the provided
-    temporal step size d_t, where t_b^ = t_a + n * d_t and n E Z,
-    n = argmin |t_b^ - t_b|.
+    Returns a discretisation of the temporal interval using the provided
+    temporal step size.
 
     :param t: the time interval to discretise
     :param d_t: the temporal step size

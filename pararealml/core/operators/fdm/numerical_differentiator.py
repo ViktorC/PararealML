@@ -535,18 +535,18 @@ class NumericalDifferentiator(ABC):
         :return: an array of derivative boundary constraint pairs or empty
             objects depending on whether the input array is None
         """
-        if derivative_boundary_constraints is not None:
-            if x_axes is not None:
-                if derivative_boundary_constraints.shape != \
-                        (x_axes, y_elements):
-                    raise ValueError
-            elif len(derivative_boundary_constraints) != y_elements:
-                raise ValueError
-            return derivative_boundary_constraints
-        else:
+        if derivative_boundary_constraints is None:
             return np.empty(
                 (x_axes, y_elements) if x_axes is not None else (y_elements,),
                 dtype=object)
+
+        if x_axes and isinstance(derivative_boundary_constraints, np.ndarray):
+            if derivative_boundary_constraints.shape != (x_axes, y_elements):
+                raise ValueError
+        elif len(derivative_boundary_constraints) != y_elements:
+            raise ValueError
+
+        return derivative_boundary_constraints
 
 
 class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):

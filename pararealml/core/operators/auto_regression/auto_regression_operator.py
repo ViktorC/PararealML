@@ -1,13 +1,11 @@
-from typing import Union, Tuple, Callable, Optional
+from typing import Union, Tuple, Callable, Optional, Protocol
 
 import numpy as np
 
-from sklearn.base import RegressorMixin
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
     train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.utils import all_estimators
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 from pararealml.core.constrained_problem import ConstrainedProblem
@@ -16,12 +14,12 @@ from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator, discretise_time_domain
 from pararealml.core.solution import Solution
 
-SKLearnRegressionModel = Union[
-    tuple([
-        _class for _, _class in all_estimators()
-        if issubclass(_class, RegressorMixin)
-    ])
-]
+
+class SKLearnRegressionModel(Protocol):
+    def fit(self, x, y, sample_weight=None): ...
+    def predict(self, x): ...
+    def score(self, x, y, sample_weight=None): ...
+
 
 RegressionModel = Union[
     SKLearnRegressionModel,

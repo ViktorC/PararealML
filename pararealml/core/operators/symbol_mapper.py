@@ -26,7 +26,10 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         self._symbol_map = self.create_symbol_map()
 
         eq_sys = diff_eq.symbolic_equation_system
-        self._rhs_functions = {
+        self._rhs_functions: Dict[
+            Optional[Lhs],
+            Callable[[SymbolMapArg], Sequence[SymbolMapValue]]
+        ] = {
             None: self.create_rhs_map_function(range(len(eq_sys.rhs)))
         }
         for lhs_type in Lhs:
@@ -197,11 +200,11 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
             [self._symbol_map[symbol] for symbol in selected_rhs_symbols]
         rhs_lambda = sp.lambdify([selected_rhs_symbols], selected_rhs, 'numpy')
 
-        def rhs(arg: SymbolMapArg) -> Sequence[SymbolMapValue]:
+        def rhs_map_function(arg: SymbolMapArg) -> Sequence[SymbolMapValue]:
             return rhs_lambda(
                 [subst_function(arg) for subst_function in subst_functions])
 
-        return rhs
+        return rhs_map_function
 
     def map(self,
             arg: SymbolMapArg,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, Any, NamedTuple
+from typing import Optional, Sequence, Any, NamedTuple, List
 
 import numpy as np
 from mpi4py import MPI
@@ -203,7 +203,7 @@ class Solution:
             raise ValueError
 
         matching_time_points = []
-        all_diffs = []
+        all_diffs: List[List[np.ndarray]] = []
 
         all_time_points = [self._t_coordinates]
         all_time_steps = [self._d_t]

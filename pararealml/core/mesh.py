@@ -198,11 +198,11 @@ class Mesh:
 
             all_field_values.append(field_values)
 
-        all_field_values = np.array(all_field_values)
+        all_field_values_arr = np.array(all_field_values)
         if flatten:
-            all_field_values = all_field_values.reshape(
-                (all_field_values.shape[0], -1))
-        return all_field_values
+            all_field_values_arr = all_field_values_arr.reshape(
+                (all_field_values_arr.shape[0], -1))
+        return all_field_values_arr
 
     def _calculate_shape(
             self,

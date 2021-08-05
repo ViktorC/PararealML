@@ -15,6 +15,13 @@ from pararealml.core.operators.fdm.numerical_integrator import \
     NumericalIntegrator
 from pararealml.core.solution import Solution
 
+BoundaryConstraintsCache = Dict[
+    Optional[float],
+    Tuple[Optional[np.ndarray], Optional[np.ndarray]]
+]
+
+YConstraintsCache = Dict[Optional[float], Optional[np.ndarray]]
+
 
 class FDMOperator(Operator):
     """
@@ -56,13 +63,10 @@ class FDMOperator(Operator):
             parallel_enabled: bool = True
     ) -> Solution:
         cp = ivp.constrained_problem
-        y_next = self._create_y_next_function(ivp)
-
         time_points = discretise_time_domain(ivp.t_interval, self._d_t)
-
         y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
-
         y_i = ivp.initial_condition.discrete_y_0(True)
+
         if not cp.are_all_boundary_conditions_static:
             init_boundary_constraints = cp.create_boundary_constraints(
                 True, time_points[0])
@@ -70,20 +74,34 @@ class FDMOperator(Operator):
                 init_boundary_constraints[0])
             apply_constraints_along_last_axis(init_y_constraints, y_i)
 
+        y_constraints_cache: YConstraintsCache = {}
+        boundary_constraints_cache: BoundaryConstraintsCache = {}
+        y_next = self._create_y_next_function(
+            ivp, y_constraints_cache, boundary_constraints_cache)
+
         for i, t_i in enumerate(time_points[:-1]):
             y[i] = y_i = y_next(t_i, y_i)
+            if not cp.are_all_boundary_conditions_static:
+                y_constraints_cache.clear()
+                boundary_constraints_cache.clear()
 
         return Solution(
             cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
     def _create_y_next_function(
             self,
-            ivp: InitialValueProblem
+            ivp: InitialValueProblem,
+            y_constraints_cache: YConstraintsCache,
+            boundary_constraints_cache: BoundaryConstraintsCache
     ) -> Callable[[float, np.ndarray], np.ndarray]:
         """
         Creates a function that returns the value of y(t + d_t) given t and y.
 
         :param ivp: the initial value problem
+        :param boundary_constraints_cache: a cache for boundary constraints for
+            different t values
+        :param y_constraints_cache: a cache for overall y constraints for
+            different t values
         :return: the function defining the value of y at the next time point
         """
         cp = ivp.constrained_problem
@@ -97,11 +115,8 @@ class FDMOperator(Operator):
         y_laplacian_eq_indices = \
             eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN)
 
-        boundary_constraints_cache = {}
-        y_constraints_cache = {}
         y_c_func, d_y_c_func = self._create_constraint_functions(
-            cp, boundary_constraints_cache, y_constraints_cache)
-        last_t = np.array([ivp.t_interval[0]])
+            cp, y_constraints_cache, boundary_constraints_cache)
 
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
@@ -135,13 +150,6 @@ class FDMOperator(Operator):
                         y_laplacian_rhs, cp.mesh.d_x, self._tol, y_c, d_y_c,
                         coordinate_system_type=cp.mesh.coordinate_system_type)
 
-            if not cp.are_all_boundary_conditions_static \
-                    and t > (last_t[0] + self.d_t) \
-                    and not np.isclose(t, last_t[0] + self.d_t):
-                last_t[0] = t
-                boundary_constraints_cache.clear()
-                y_constraints_cache.clear()
-
             return y_next
 
         return y_next_function
@@ -149,14 +157,8 @@ class FDMOperator(Operator):
     @staticmethod
     def _create_constraint_functions(
             cp: ConstrainedProblem,
-            boundary_constraints_cache: Dict[
-                Optional[float],
-                Tuple[Optional[np.ndarray], Optional[np.ndarray]]
-            ],
-            y_constraints_cache: Dict[
-                Optional[float],
-                Optional[np.ndarray]
-            ]
+            y_constraints_cache: YConstraintsCache,
+            boundary_constraints_cache: BoundaryConstraintsCache
     ) -> Tuple[
         Callable[[float], Optional[np.ndarray]],
         Callable[[float], Optional[np.ndarray]]
@@ -170,8 +172,8 @@ class FDMOperator(Operator):
             for
         :param boundary_constraints_cache: a cache for boundary constraints for
             different t values
-        :param y_constraints_cache: a cache for y constraints for different t
-            values
+        :param y_constraints_cache: a cache for overall y constraints for
+            different t values
         :return: a tuple of two functions that return the two different
             constraints given t
         """
