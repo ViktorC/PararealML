@@ -120,7 +120,7 @@ The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/pyt
 ## Setup
 To use the Parareal operator, an implementation of the MPI standard must be installed (e.g. [MPICH](https://www.mpich.org/)). To save animated plots, [ImageMagick](https://imagemagick.org/index.php) must be installed. These programs can be easily installed using [Anaconda](https://www.anaconda.com/). If they are already installed and available on the system, you can skip to step 6 of the setup guide.
  1. make sure you have a working Anaconda installation (see the [guide](https://docs.anaconda.com/anaconda/install/))
- 1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.7`
+ 1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.8`
  1. `conda activate {environment_name}`
  1. `conda install -c conda-forge mpi4py`
  1. `conda install -c conda-forge imagemagick`
