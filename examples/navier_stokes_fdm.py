@@ -1,4 +1,5 @@
 from pararealml import *
+from pararealml.core.operators.fdm import *
 
 diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
 mesh = Mesh(((-2.5, 2.5), (0., 4.)), (.05, .05))

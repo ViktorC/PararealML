@@ -1,6 +1,7 @@
 import numpy as np
 
 from pararealml import *
+from pararealml.core.operators.fdm import *
 
 diff_eq = ShallowWaterEquation(.5)
 mesh = Mesh(((-5., 5.), (-5., 5.)), (.1, .1))

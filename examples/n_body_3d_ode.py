@@ -1,4 +1,5 @@
 from pararealml import *
+from pararealml.core.operators.ode import *
 
 # Initial conditions gathered from
 # https://www.aanda.org/articles/aa/full/2002/08/aa1405/aa1405.right.html

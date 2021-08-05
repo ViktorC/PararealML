@@ -1,4 +1,6 @@
 from pararealml import *
+from pararealml.core.operators.fdm import *
+from pararealml.core.operators.parareal import *
 from pararealml.utils.time import time_with_args
 
 diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)

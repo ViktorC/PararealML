@@ -1,6 +1,7 @@
 import numpy as np
 
 from pararealml import *
+from pararealml.core.operators.fdm import *
 
 diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
 mesh = Mesh(((0., 50.), (0., 50.)), (.5, .5))

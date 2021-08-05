@@ -1,10 +1,13 @@
 import numpy as np
 
 from pararealml import *
+from pararealml.core.operators.fdm import *
 
-diff_eq = CahnHilliardEquation(2)
-mesh = Mesh(((0., 10.), (0., 10.)), (.1, .1))
+diff_eq = CahnHilliardEquation(3, d=.25, gamma=.1)
+mesh = Mesh(((0., 25.), (0., 25.), (0., 25.)), (.5, .5, .5))
 bcs = (
+    (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
+     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
     (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
      NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
     (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
@@ -15,8 +18,8 @@ ic = DiscreteInitialCondition(
     cp,
     .05 * np.random.uniform(-1., 1., cp.y_shape(True)),
     True)
-ivp = InitialValueProblem(cp, (0., 7.5), ic)
+ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0005)
+solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 solution = solver.solve(ivp)
 solution.plot('cahn_hilliard')
