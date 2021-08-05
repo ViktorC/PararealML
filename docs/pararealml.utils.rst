@@ -52,7 +52,6 @@ pararealml.utils.time module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

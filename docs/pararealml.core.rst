@@ -1,6 +1,14 @@
 pararealml.core package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pararealml.core.operators
+
 Submodules
 ----------
 
@@ -36,14 +44,6 @@ pararealml.core.differential\_equation module
    :undoc-members:
    :show-inheritance:
 
-pararealml.core.differentiator module
--------------------------------------
-
-.. automodule:: pararealml.core.differentiator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pararealml.core.initial\_condition module
 -----------------------------------------
 
@@ -56,14 +56,6 @@ pararealml.core.initial\_value\_problem module
 ----------------------------------------------
 
 .. automodule:: pararealml.core.initial_value_problem
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pararealml.core.integrator module
----------------------------------
-
-.. automodule:: pararealml.core.integrator
    :members:
    :undoc-members:
    :show-inheritance:
@@ -84,14 +76,6 @@ pararealml.core.operator module
    :undoc-members:
    :show-inheritance:
 
-pararealml.core.parareal module
--------------------------------
-
-.. automodule:: pararealml.core.parareal
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pararealml.core.solution module
 -------------------------------
 
@@ -99,7 +83,6 @@ pararealml.core.solution module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------
