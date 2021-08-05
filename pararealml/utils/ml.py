@@ -1,30 +1,9 @@
-from typing import Union, Callable, Tuple, Sequence, Any
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
-from sklearn.base import RegressorMixin
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
-    train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.utils import all_estimators
 from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
-
-SKLearnRegressionModel = Union[
-    tuple([_class for name, _class in all_estimators()
-           if issubclass(_class, RegressorMixin)])
-]
-
-RegressionModel = Union[
-    SKLearnRegressionModel,
-    KerasRegressor,
-    GridSearchCV,
-    RandomizedSearchCV,
-    Pipeline
-]
 
 
 def limit_visible_gpus():
@@ -41,7 +20,7 @@ def limit_visible_gpus():
 
 
 def create_keras_regressor(
-        layers: Sequence[Layer],
+        model: Sequential,
         optimiser: str = 'adam',
         loss: str = 'mse',
         epochs: int = 1000,
@@ -52,7 +31,7 @@ def create_keras_regressor(
     """
     Creates a Keras regression model.
 
-    :param layers: the layers of the neural network
+    :param model: the neural network
     :param optimiser: the optimiser to use
     :param loss: the loss function to use
     :param epochs: the number of training epochs
@@ -63,7 +42,6 @@ def create_keras_regressor(
     :return: the regression model
     """
     def build_model():
-        model = Sequential(layers)
         model.compile(optimizer=optimiser, loss=loss)
         return model
 
@@ -73,57 +51,3 @@ def create_keras_regressor(
         batch_size=batch_size,
         verbose=verbose,
         **kwargs)
-
-
-def root_mean_squared_error(
-        y_true: np.ndarray,
-        y_pred: np.ndarray
-) -> Union[float, np.ndarray]:
-    """
-    Calculates the root mean squared error.
-
-    :param y_true: the target values
-    :param y_pred: the predictions
-    :return: the root mean squared error
-    """
-    return mean_squared_error(y_true, y_pred, squared=False)
-
-
-def train_regression_model(
-        model: RegressionModel,
-        x: np.ndarray,
-        y: np.ndarray,
-        test_size: float = .2,
-        score_func: Callable[[np.ndarray, np.ndarray], float] =
-        root_mean_squared_error
-) -> Tuple[float, float]:
-    """
-    Fits the regression model to the training share of the provided data points
-    using random splitting and it returns the loss of the model evaluated on
-    both the training and test data sets.
-
-    :param model: the regression model to train
-    :param x: the inputs
-    :param y: the target outputs
-    :param test_size: the fraction of all data points that should be used
-        for testing
-    :param score_func: the prediction scoring function to use
-    :return: the training and test losses
-    """
-    if not 0. <= test_size < 1.:
-        raise ValueError
-    train_size = 1. - test_size
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        train_size=train_size,
-        test_size=test_size)
-
-    model.fit(x_train, y_train)
-
-    y_train_hat = model.predict(x_train)
-    y_test_hat = model.predict(x_test)
-    train_score = score_func(y_train, y_train_hat)
-    test_score = score_func(y_test, y_test_hat)
-    return train_score, test_score

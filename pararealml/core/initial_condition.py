@@ -187,24 +187,6 @@ class GaussianInitialCondition(ContinuousInitialCondition):
 
         super(GaussianInitialCondition, self).__init__(cp, self._y_0_func)
 
-    @staticmethod
-    def multivariate_gaussian(
-            x: np.ndarray, mean: np.ndarray, cov: np.ndarray
-    ) -> float:
-        """
-        Returns the value of a Gaussian probability distribution function
-        defined by the provided mean and covariance at the coordinates
-        specified by x.
-
-        :param x: the point at which the value of the PDF is to be calculated
-        :param mean: the mean of the PDF
-        :param cov: the covariance of the PDF
-        :return: the value of the multivariate Gaussian PDF at x
-        """
-        centered_x = x - mean
-        return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
-            np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
-
     def _y_0_func(self, x: Optional[Sequence[float]]) -> Sequence[float]:
         """
         Calculates and returns the values of the multivariate Gaussian PDFs
@@ -214,6 +196,23 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :return: the initial value of y at the coordinates
         """
         x_arr = np.array(x)
-        return [self.multivariate_gaussian(x_arr, mean, cov) *
+        return [multivariate_gaussian(x_arr, mean, cov) *
                 self._multipliers[i] for i, (mean, cov) in
                 enumerate(self._means_and_covs)]
+
+
+def multivariate_gaussian(
+        x: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> float:
+    """
+    Returns the value of a Gaussian probability distribution function
+    defined by the provided mean and covariance at the coordinates
+    specified by x.
+
+    :param x: the point at which the value of the PDF is to be calculated
+    :param mean: the mean of the PDF
+    :param cov: the covariance of the PDF
+    :return: the value of the multivariate Gaussian PDF at x
+    """
+    centered_x = x - mean
+    return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
+        np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)

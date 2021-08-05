@@ -54,7 +54,7 @@ class Solution:
     @property
     def constrained_problem(self):
         """
-        Returns the constrained problem that the IVP whose solution this object
+        The constrained problem that the IVP whose solution this object
         represents is based on.
         """
         return self._cp
@@ -62,22 +62,22 @@ class Solution:
     @property
     def vertex_oriented(self) -> Optional[bool]:
         """
-        Returns whether the solution is vertex or cell oriented along the
-        spatial domain. If the solution is that of an ODE, it returns None.
+        Whether the solution is vertex or cell oriented along the spatial
+        domain. If the solution is that of an ODE, it is None.
         """
         return self._vertex_oriented
 
     @property
     def d_t(self) -> float:
         """
-        Returns the temporal step size of the solution.
+        The temporal step size of the solution.
         """
         return self._d_t
 
     @property
     def t_coordinates(self) -> np.ndarray:
         """
-        Returns the time coordinates at which the solution is evaluated.
+        The time coordinates at which the solution is evaluated.
         """
         return np.copy(self._t_coordinates)
 

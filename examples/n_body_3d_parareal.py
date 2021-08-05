@@ -1,6 +1,8 @@
 import numpy as np
 
 from pararealml import *
+from pararealml.core.operators.ode import *
+from pararealml.core.operators.parareal import *
 from pararealml.utils.time import time_with_args
 
 n_planets = 10

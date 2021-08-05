@@ -6,9 +6,9 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation
-from pararealml.core.differentiator import \
+from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
-from pararealml.core.mesh import UniformGrid
+from pararealml.core.mesh import Mesh
 
 
 def test_cp_with_ode():
@@ -27,7 +27,7 @@ def test_cp_with_ode():
 
 def test_2d_cp():
     diff_eq = WaveEquation(2)
-    mesh = UniformGrid(
+    mesh = Mesh(
             ((2., 6.), (-3., 3.)),
             (.1, .2))
     bcs = (
@@ -58,14 +58,14 @@ def test_2d_cp():
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
 
-    d_y_0_d_x_0 = diff.derivative(
-        y, mesh.d_x[0], 0, 0, d_y_boundary_constraints[0, 0])
+    d_y_0_d_x_0 = diff.gradient(
+        y[..., :1], mesh.d_x[0], 0, d_y_boundary_constraints[0, :1])
 
     assert np.all(d_y_0_d_x_0[d_y_0_d_x_0.shape[0] - 1, :, :] == 100.)
     assert np.all(d_y_0_d_x_0[:d_y_0_d_x_0.shape[0] - 1, :, :] == 0.)
 
-    d_y_0_d_x_1 = diff.derivative(
-        y, mesh.d_x[1], 1, 0, d_y_boundary_constraints[1, 0])
+    d_y_0_d_x_1 = diff.gradient(
+        y[..., :1], mesh.d_x[1], 1, d_y_boundary_constraints[1, :1])
 
     assert np.isclose(
         d_y_0_d_x_1[:, 0, 0],
@@ -73,20 +73,20 @@ def test_2d_cp():
             0, -((y.shape[0] - 1) * mesh.d_x[0]), y.shape[0])).all()
     assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
 
-    d_y_1_d_x_0 = diff.derivative(
-        y, mesh.d_x[0], 0, 1, d_y_boundary_constraints[0, 1])
+    d_y_1_d_x_0 = diff.gradient(
+        y[..., 1:], mesh.d_x[0], 0, d_y_boundary_constraints[0, 1:])
 
     assert np.all(d_y_1_d_x_0[d_y_1_d_x_0.shape[0] - 1, :, :] == -100.)
     assert np.all(d_y_1_d_x_0[:d_y_1_d_x_0.shape[0] - 1, :, :] == 0.)
 
-    d_y_1_d_x_1 = diff.derivative(
-        y, mesh.d_x[1], 1, 1, d_y_boundary_constraints[1, 1])
+    d_y_1_d_x_1 = diff.gradient(
+        y[..., 1:], mesh.d_x[1], 1, d_y_boundary_constraints[1, 1:])
 
     assert np.all(d_y_1_d_x_1 == 0.)
 
 
 def test_3d_cp():
-    mesh = UniformGrid(
+    mesh = Mesh(
         ((2., 6.), (-3., 3.), (10., 12.)),
         (.1, .2, .5))
 
