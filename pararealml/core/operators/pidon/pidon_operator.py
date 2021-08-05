@@ -1,4 +1,5 @@
-from typing import Callable, Sequence, Optional, Dict, Iterable, Tuple, NamedTuple
+from typing import Callable, Sequence, Optional, Dict, Iterable, Tuple, \
+    NamedTuple
 
 import numpy as np
 import tensorflow as tf

@@ -29,6 +29,8 @@ class LossTensors(NamedTuple):
 class PIDeepONet:
     """
     A Physics Informed DeepONet model.
+
+    See: https://arxiv.org/abs/2103.10974
     """
 
     def __init__(
@@ -227,7 +229,11 @@ class PIDeepONet:
         return training_loss_history, test_loss_history
 
     @tf.function
-    def predict(self, u: tf.Tensor, t: tf.Tensor, x: Optional[tf.Tensor]) -> tf.Tensor:
+    def predict(
+            self,
+            u: tf.Tensor,
+            t: tf.Tensor,
+            x: Optional[tf.Tensor]) -> tf.Tensor:
         """
         Predicts (y ∘ u)(t, x).
 
