@@ -1,7 +1,7 @@
 from pararealml import *
 from pararealml.core.operators.ode import *
 
-# Initial conditions gathered from
+# Initial conditions taken from
 # https://www.aanda.org/articles/aa/full/2002/08/aa1405/aa1405.right.html
 
 astronomical_unit = 1.496e11
@@ -50,9 +50,9 @@ ic = ContinuousInitialCondition(
     cp,
     lambda _: [pos * astronomical_unit for pos in positions_au] +
               [vel * astronomical_unit / day for vel in velocities_au_d])
-ivp = InitialValueProblem(cp, (0., 300. * 365. * 24. * 3600.), ic)
+ivp = InitialValueProblem(cp, (0., 300. * 365. * day), ic)
 
-solver = ODEOperator('DOP853', 12. * 3600.)
+solver = ODEOperator('DOP853', day / 2.)
 solution = solver.solve(ivp)
 solution.plot(
     'fine', n_images=30, smallest_marker_size=1e-6, trajectory_line_width=.05)
