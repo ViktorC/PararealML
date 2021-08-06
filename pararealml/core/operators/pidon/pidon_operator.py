@@ -170,7 +170,8 @@ class PIDONOperator(Operator):
             test_data_set = DataSet(
                 cp,
                 t_interval,
-                y_0_functions if test_y_0_functions is None else y_0_functions,
+                y_0_functions if test_y_0_functions is None
+                else test_y_0_functions,
                 self._sampler,
                 n_test_domain_points,
                 n_test_boundary_points)
