@@ -11,8 +11,8 @@ bcs = (
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = ContinuousInitialCondition(cp, lambda x: (.0, .0))
-ivp = InitialValueProblem(cp, (0., 10.), ic)
+ivp = InitialValueProblem(cp, (0., 100.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .02)
 solution = solver.solve(ivp)
-solution.plot('navier_stokes', n_images=8)
+solution.plot('navier_stokes', n_images=50)
