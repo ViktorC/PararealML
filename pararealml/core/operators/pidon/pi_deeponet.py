@@ -2,15 +2,14 @@ from typing import Optional, Sequence, Dict, Any, Union, Tuple, NamedTuple, \
     List
 
 import tensorflow as tf
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.engine.input_layer import InputLayer
-from tensorflow.python.keras.layers import Dense
+from tensorflow.keras import Sequential
+from tensorflow.keras.layers import Dense, InputLayer
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import Lhs
 from pararealml.core.operators.pidon.auto_differentiator import \
     AutoDifferentiator
-from pararealml.core.operators.pidon.data_set import DataSet
+from pararealml.core.operators.pidon.data_set import DataSetIterator, DataBatch
 from pararealml.core.operators.pidon.pidon_symbol_mapper import \
     PIDONSymbolMapper, PIDONSymbolMapArg, PIDONSymbolMapFunction
 
@@ -123,109 +122,103 @@ class PIDeepONet:
 
     def train(
             self,
-            iterations: int,
+            epochs: int,
             optimizer: Union[str, Dict[str, Any]],
-            training_data: DataSet,
-            training_domain_batch_size: int,
-            training_boundary_batch_size: int = 0,
-            test_data: Optional[DataSet] = None,
-            test_domain_batch_size: int = 0,
-            test_boundary_batch_size: int = 0,
-            iterations_before_test: int = 10,
+            training_data: DataSetIterator,
+            test_data: Optional[DataSetIterator] = None,
             diff_eq_loss_weight: float = 1,
             ic_loss_weight: float = 1,
             bc_loss_weight: float = 1,
-            verbose: bool = False
+            verbose: bool = True
     ) -> Tuple[Sequence[LossTensors], Sequence[LossTensors]]:
         """
         Trains the branch and trunk net parameters by minimising the physics
-        informed loss function over various initial conditions.
+        informed loss function.
 
-        :param iterations: the number of training batches/iterations
+        :param epochs: the number of epochs over the training data
         :param optimizer: the optimizer to use to minimize the loss function
         :param training_data: the data set providing the training mini batches
-        :param training_domain_batch_size: the training domain data batch size
-        :param training_boundary_batch_size: the training boundary data batch
-            size
         :param test_data: the data set providing the test mini batches
-        :param test_domain_batch_size: the test domain data batch size
-        :param test_boundary_batch_size: the test boundary data batch size
-        :param iterations_before_test: the number of training iterations to
-            perform before performing a test iteration
         :param diff_eq_loss_weight: the weight of the differential equation
             part of the total physics informed loss
         :param ic_loss_weight: the weight of the initial condition part of the
             total physics informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
             total physics informed loss
-            between tests
         :param verbose: whether loss information should be periodically printed
             to the console
         :return: the training and test loss histories
         """
-        if iterations < 1:
-            raise ValueError
-        if training_domain_batch_size <= 0 or training_boundary_batch_size < 0:
-            raise ValueError
-        if test_domain_batch_size < 0 or test_boundary_batch_size < 0:
-            raise ValueError
-        if test_data and test_domain_batch_size <= 0:
-            raise ValueError
-        if iterations_before_test < 1:
+        if epochs < 1:
             raise ValueError
 
         optimizer_instance = tf.keras.optimizers.get(optimizer)
 
         training_loss_history = []
         test_loss_history = []
-        for i in range(iterations):
-            with tf.GradientTape(persistent=True) as tape:
-                self._differentiator.tape = tape
-
-                training_losses = self._total_loss(
-                        training_data,
-                        training_domain_batch_size,
-                        training_boundary_batch_size,
+        for i in range(epochs):
+            training_batch_losses = []
+            for batch in training_data:
+                with tf.GradientTape(persistent=True) as tape:
+                    self._differentiator.tape = tape
+                    loss = self._batch_loss(
+                        batch,
                         diff_eq_loss_weight,
                         ic_loss_weight,
                         bc_loss_weight)
-                training_loss_history.append(training_losses)
 
-                if test_data and \
-                        (i == 0 or (i + 1) % iterations_before_test == 0):
-                    test_losses = self._total_loss(
-                            test_data,
-                            test_domain_batch_size,
-                            test_boundary_batch_size,
+                training_batch_losses.append(loss)
+                optimizer_instance.minimize(
+                    loss.total_weighted_loss,
+                    self._branch_net.trainable_variables +
+                    self._trunk_net.trainable_variables,
+                    tape=tape)
+
+            training_epoch_loss = average_loss_tensors(training_batch_losses)
+            training_loss_history.append(training_epoch_loss)
+            training_data.reset()
+
+            if test_data:
+                test_batch_losses = []
+                for batch in test_data:
+                    with tf.GradientTape(persistent=True) as tape:
+                        self._differentiator.tape = tape
+                        loss = self._batch_loss(
+                            batch,
                             diff_eq_loss_weight,
                             ic_loss_weight,
                             bc_loss_weight)
-                    test_loss_history.append(test_losses)
 
-                    if verbose:
-                        print('Iteration: ', i)
-                        print('DE Loss:',
-                              'Training -', training_losses.diff_eq_loss,
-                              'Test -', test_losses.diff_eq_loss)
-                        print('IC Loss:',
-                              'Training -', training_losses.ic_loss,
-                              'Test -', test_losses.ic_loss)
-                        print('Dirichlet BC Loss:',
-                              'Training -', training_losses.dirichlet_bc_loss,
-                              'Test -', test_losses.dirichlet_bc_loss)
-                        print('Neumann BC Loss:',
-                              'Training -', training_losses.neumann_bc_loss,
-                              'Test -', test_losses.neumann_bc_loss)
-                        print('Total Loss:',
-                              'Training -',
-                              training_losses.total_weighted_loss,
-                              'Test -', test_losses.total_weighted_loss)
+                    test_batch_losses.append(loss)
 
-            optimizer_instance.minimize(
-                training_losses.total_weighted_loss,
-                self._branch_net.trainable_variables +
-                self._trunk_net.trainable_variables,
-                tape=tape)
+                test_epoch_loss = average_loss_tensors(test_batch_losses)
+                test_loss_history.append(test_epoch_loss)
+                test_data.reset()
+            else:
+                test_epoch_loss = None
+
+            if verbose:
+                print('Epoch: ', i)
+                print('DE Loss:',
+                      'Training -', training_epoch_loss.diff_eq_loss,
+                      'Test -', None if test_epoch_loss is None
+                      else test_epoch_loss.diff_eq_loss)
+                print('IC Loss:',
+                      'Training -', training_epoch_loss.ic_loss,
+                      'Test -', None if test_epoch_loss is None
+                      else test_epoch_loss.ic_loss)
+                print('Dirichlet BC Loss:',
+                      'Training -', training_epoch_loss.dirichlet_bc_loss,
+                      'Test -', None if test_epoch_loss is None
+                      else test_epoch_loss.dirichlet_bc_loss)
+                print('Neumann BC Loss:',
+                      'Training -', training_epoch_loss.neumann_bc_loss,
+                      'Test -', None if test_epoch_loss is None
+                      else test_epoch_loss.neumann_bc_loss)
+                print('Total Loss:',
+                      'Training -', training_epoch_loss.total_weighted_loss,
+                      'Test -', None if test_epoch_loss is None
+                      else test_epoch_loss.total_weighted_loss)
 
         return training_loss_history, test_loss_history
 
@@ -259,47 +252,65 @@ class PIDeepONet:
         combined_output = branch_output * trunk_output
         return tf.math.reduce_sum(combined_output, axis=-1)
 
-    def _total_loss(
+    def _batch_loss(
             self,
-            data_set: DataSet,
-            domain_batch_size: int,
-            boundary_batch_size: Optional[int],
+            batch: DataBatch,
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
             bc_loss_weight: float
     ) -> LossTensors:
         """
-        Computes and returns the weighted total loss, the differential equation
-        loss, the initial condition loss, the Dirichlet boundary condition
-        loss, and the Neumann boundary condition loss.
+        Computes all the losses over the batch.
 
-        :param data_set: the data set to sample the batches from
-        :param domain_batch_size: the domain data batch size
-        :param boundary_batch_size: the boundary data batch size
+        :param batch: the batch to compute the losses over
         :param diff_eq_loss_weight: the weight of the differential equation
             part of the total physics informed loss
         :param ic_loss_weight: the weight of the initial condition part of the
             total physics informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
             total physics informed loss
-        :return: the weighted total loss and the mean squared differential
-            equation, initial condition, Dirichlet boundary condition, and
-            Neumann boundary condition losses
+        :return: the various losses over the batch
         """
-        diff_eq_loss, ic_loss = self._domain_loss(data_set, domain_batch_size)
-        dirichlet_bc_loss, neumann_bc_loss = \
-            self._boundary_loss(data_set, boundary_batch_size)
+        diff_eq = self._cp.differential_equation
+        x_dimension = diff_eq.x_dimension
+        y_dimension = diff_eq.y_dimension
+
+        domain_batch = batch.domain
+        if domain_batch:
+            diff_eq_loss = self._mean_squared_differential_equation_error(
+                domain_batch.u, domain_batch.t, domain_batch.x)
+
+            if x_dimension:
+                sensor_x = tf.convert_to_tensor(
+                    self._sensor_points, tf.float32)
+                sensor_t = tf.zeros((sensor_x.shape[0], 1))
+            else:
+                sensor_x = None
+                sensor_t = tf.zeros((1, 1))
+
+            ic_loss = self._mean_squared_initial_condition_error(
+                domain_batch.u, sensor_t, sensor_x)
+        else:
+            diff_eq_loss = tf.zeros((y_dimension,))
+            ic_loss = tf.zeros((y_dimension,))
+
+        boundary_batch = batch.boundary
+        if boundary_batch:
+            dirichlet_bc_loss, neumann_bc_loss = \
+                self._mean_squared_boundary_condition_errors(
+                    boundary_batch.u,
+                    boundary_batch.t,
+                    boundary_batch.y,
+                    boundary_batch.d_y_over_d_n,
+                    boundary_batch.axes)
+        else:
+            dirichlet_bc_loss = tf.zeros((1, y_dimension))
+            neumann_bc_loss = tf.zeros((1, y_dimension))
 
         total_weighted_loss = \
-            tf.math.scalar_mul(
-                diff_eq_loss_weight,
-                diff_eq_loss) + \
-            tf.math.scalar_mul(
-                ic_loss_weight,
-                ic_loss) + \
-            tf.math.scalar_mul(
-                bc_loss_weight,
-                dirichlet_bc_loss + neumann_bc_loss)
+            diff_eq_loss_weight * diff_eq_loss + \
+            ic_loss_weight * ic_loss + \
+            bc_loss_weight * (dirichlet_bc_loss + neumann_bc_loss)
 
         return LossTensors(
             total_weighted_loss,
@@ -307,84 +318,6 @@ class PIDeepONet:
             ic_loss,
             dirichlet_bc_loss,
             neumann_bc_loss)
-
-    def _domain_loss(
-            self,
-            data_set: DataSet,
-            batch_size: int) -> Tuple[tf.Tensor, tf.Tensor]:
-        """
-        Computes and returns the differential equation loss and the initial
-        condition loss over the domain of the IVP.
-
-        :param data_set: the data set to sample a domain data batch from
-        :param batch_size: the size of the batch to sample
-        :return: the mean squared differential equation and initial condition
-            errors
-        """
-        diff_eq = self._cp.differential_equation
-        x_dimension = diff_eq.x_dimension
-
-        domain_batch = data_set.get_domain_batch(batch_size)
-        domain_u_tensor = tf.convert_to_tensor(
-            data_set.get_initial_condition_batch(batch_size), dtype=tf.float32)
-        domain_t_tensor = tf.convert_to_tensor(
-            domain_batch.t, dtype=tf.float32)
-
-        if x_dimension:
-            domain_x_tensor = tf.convert_to_tensor(
-                domain_batch.x, dtype=tf.float32)
-            sensor_x_tensor = tf.convert_to_tensor(
-                self._sensor_points, dtype=tf.float32)
-            sensor_t_tensor = tf.zeros((sensor_x_tensor.shape[0], 1))
-        else:
-            domain_x_tensor = None
-            sensor_x_tensor = None
-            sensor_t_tensor = tf.zeros((1, 1))
-
-        diff_eq_loss = self._mean_squared_differential_equation_error(
-            domain_u_tensor, domain_t_tensor, domain_x_tensor)
-        ic_loss = self._mean_squared_initial_condition_error(
-            domain_u_tensor, sensor_t_tensor, sensor_x_tensor)
-        return diff_eq_loss, ic_loss
-
-    def _boundary_loss(
-            self,
-            data_set: DataSet,
-            batch_size: int) -> Tuple[tf.Tensor, tf.Tensor]:
-        """
-        Computes and returns the boundary condition loss.
-
-        :param data_set: the data set to sample a boundary data batch from
-        :param batch_size: the size of the batch to sample
-        :return: the mean squared Dirichlet and Neumann boundary condition
-            errors
-        """
-        diff_eq = self._cp.differential_equation
-        if not diff_eq.x_dimension or batch_size < 1:
-            return tf.zeros((diff_eq.y_dimension,)), \
-                tf.zeros((diff_eq.y_dimension,))
-
-        boundary_batch = data_set.get_boundary_batch(batch_size)
-        boundary_u_tensor = tf.convert_to_tensor(
-            data_set.get_initial_condition_batch(batch_size), dtype=tf.float32)
-        boundary_t_tensor = tf.convert_to_tensor(
-            boundary_batch.collocation_points.t, dtype=tf.float32)
-        boundary_x_tensor = tf.convert_to_tensor(
-            boundary_batch.collocation_points.x, dtype=tf.float32)
-        boundary_y_tensor = tf.convert_to_tensor(
-            boundary_batch.y, dtype=tf.float32)
-        boundary_d_y_over_d_n_tensor = tf.convert_to_tensor(
-            boundary_batch.d_y_over_d_n, dtype=tf.float32)
-        boundary_axes_tensor = tf.convert_to_tensor(
-            boundary_batch.axes, dtype=tf.float32)
-
-        return self._mean_squared_boundary_condition_errors(
-                boundary_u_tensor,
-                boundary_t_tensor,
-                boundary_x_tensor,
-                boundary_y_tensor,
-                boundary_d_y_over_d_n_tensor,
-                boundary_axes_tensor)
 
     @tf.function
     def _mean_squared_differential_equation_error(
@@ -554,3 +487,30 @@ def create_fnn(
             kernel_initializer=initialisation))
     model.add(Dense(layer_sizes[-1], kernel_initializer=initialisation))
     return model
+
+
+def average_loss_tensors(losses: Sequence[LossTensors]) -> LossTensors:
+    """
+    Computes the average of the provided loss tensors.
+
+    :param losses: the losses to average over
+    :return: the mean loss tensors
+    """
+    total_weighted_losses = []
+    diff_eq_losses = []
+    ic_losses = []
+    dirichlet_bc_losses = []
+    neumann_bc_losses = []
+    for loss_tensor in losses:
+        total_weighted_losses.append(loss_tensor.total_weighted_loss)
+        diff_eq_losses.append(loss_tensor.diff_eq_loss)
+        ic_losses.append(loss_tensor.ic_loss)
+        dirichlet_bc_losses.append(loss_tensor.dirichlet_bc_loss)
+        neumann_bc_losses.append(loss_tensor.neumann_bc_loss)
+
+    return LossTensors(
+        tf.reduce_mean(tf.stack(total_weighted_losses), axis=0),
+        tf.reduce_mean(tf.stack(diff_eq_losses), axis=0),
+        tf.reduce_mean(tf.stack(ic_losses), axis=0),
+        tf.reduce_mean(tf.stack(dirichlet_bc_losses), axis=0),
+        tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0))

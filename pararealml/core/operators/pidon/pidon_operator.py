@@ -118,15 +118,19 @@ class PIDONOperator(Operator):
             self,
             cp: ConstrainedProblem,
             t_interval: TemporalDomainInterval,
-            y_0_functions: Iterable[
+            training_y_0_functions: Iterable[
                 Callable[[Optional[Sequence[float]]], Sequence[float]]
             ],
             model_arguments: Dict,
             training_arguments: Dict,
             n_training_domain_points: int,
+            training_domain_batch_size: int,
             n_training_boundary_points: int = 0,
+            training_boundary_batch_size: int = 0,
             n_test_domain_points: int = 0,
+            test_domain_batch_size: int = 0,
             n_test_boundary_points: int = 0,
+            test_boundary_batch_size: int = 0,
             test_y_0_functions: Optional[Iterable[
                 Callable[[Optional[Sequence[float]]], Sequence[float]]
             ]] = None
@@ -139,19 +143,24 @@ class PIDONOperator(Operator):
 
         :param cp: the constrained problem to train the operator on
         :param t_interval: the time interval to train the operator on
-        :param y_0_functions: the set of initial condition functions to train
-            the operator on
+        :param training_y_0_functions: the set of initial condition functions
+            to train the operator on
         :param model_arguments: the physics-informed DeepONet model arguments
         :param training_arguments: the physics informed DeepONet model training
             arguments
         :param n_training_domain_points: the number of domain points to
             generate for the training of the physics-informed DeepONet model
+        :param training_domain_batch_size: the training domain data batch size
         :param n_training_boundary_points: the number of boundary points to
             generate for the training of the physics-informed DeepONet model
+        :param training_boundary_batch_size: the training boundary data batch
+            size
         :param n_test_domain_points: the number of domain points to
             generate for the testing of the physics-informed DeepONet model
+        :param test_domain_batch_size: the test domain data batch size
         :param n_test_boundary_points: the number of boundary points to
             generate for the testing of the physics-informed DeepONet model
+        :param test_boundary_batch_size: the test boundary data batch size
         :param test_y_0_functions: the set of initial condition functions to
             test the operator on
         :return: the training loss history and the test loss history
@@ -162,25 +171,32 @@ class PIDONOperator(Operator):
         training_data_set = DataSet(
             cp,
             t_interval,
-            y_0_functions,
+            training_y_0_functions,
             self._sampler,
             n_training_domain_points,
             n_training_boundary_points)
+        training_data = training_data_set.get_iterator(
+            training_domain_batch_size, training_boundary_batch_size)
+
         if n_test_domain_points > 0:
             test_data_set = DataSet(
                 cp,
                 t_interval,
-                y_0_functions if test_y_0_functions is None
+                training_y_0_functions if test_y_0_functions is None
                 else test_y_0_functions,
                 self._sampler,
                 n_test_domain_points,
                 n_test_boundary_points)
+            test_data = test_data_set.get_iterator(
+                test_domain_batch_size,
+                test_boundary_batch_size,
+                shuffle=False)
         else:
-            test_data_set = None
+            test_data = None
 
         loss_tensor_histories = model.train(
-            training_data=training_data_set,
-            test_data=test_data_set,
+            training_data=training_data,
+            test_data=test_data,
             **training_arguments)
 
         self._model = model

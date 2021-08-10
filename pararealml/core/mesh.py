@@ -116,6 +116,29 @@ class Mesh:
         """
         return deepcopy(self._cell_center_coordinates)
 
+    def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
+        """
+        Returns the shape of the array of the discretised domain.
+
+        :param vertex_oriented: whether the shape of the vertices or the cells
+            of the mesh is to be returned
+        :return: the shape of the vertices or the cells
+        """
+        return self.vertices_shape if vertex_oriented else self.cells_shape
+
+    def coordinates(self, vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of the coordinates of the vertices or cell centers
+        of the mesh along each axis.
+
+        :param vertex_oriented: whether the coordinates of the vertices or the
+            cells of the mesh is to be returned
+        :return: a tuple of arrays each representing the coordinates along the
+            corresponding axis
+        """
+        return self.vertex_coordinates if vertex_oriented \
+            else self.cell_center_coordinates
+
     def x(
             self,
             index: Tuple[int, ...],
@@ -147,29 +170,6 @@ class Mesh:
             self.x(index, vertex_oriented) for index in np.ndindex(shape)
         ], axis=0)
 
-    def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
-        """
-        Returns the shape of the array of the discretised domain.
-
-        :param vertex_oriented: whether the shape of the vertices or the cells
-            of the mesh is to be returned
-        :return: the shape of the vertices or the cells
-        """
-        return self.vertices_shape if vertex_oriented else self.cells_shape
-
-    def coordinates(self, vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
-        """
-        Returns a tuple of the coordinates of the vertices or cell centers
-        of the mesh along each axis.
-
-        :param vertex_oriented: whether the coordinates of the vertices or the
-            cells of the mesh is to be returned
-        :return: a tuple of arrays each representing the coordinates along the
-            corresponding axis
-        """
-        return self.vertex_coordinates if vertex_oriented \
-            else self.cell_center_coordinates
-
     def evaluate_fields(
             self,
             fields: Iterable[Callable[[Sequence[float]], Sequence[float]]],
@@ -185,7 +185,8 @@ class Mesh:
             2D array such that every row represents a field and every column
             represents a single component of the field over a single point on
             the mesh
-        :return: an array of field values
+        :return: an 3D array where the first axis corresponds to the different
+            fields, the second axis corresponds to the flattened
         """
         all_x = self.all_x(vertex_oriented)
 

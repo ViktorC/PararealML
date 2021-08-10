@@ -11,7 +11,7 @@ from pararealml.core.operators.fdm.numerical_differentiator import \
 from pararealml.core.mesh import Mesh
 
 
-def test_cp_with_ode():
+def test_cp_ode():
     diff_eq = LotkaVolterraEquation()
     cp = ConstrainedProblem(diff_eq)
 
@@ -25,7 +25,7 @@ def test_cp_with_ode():
     assert cp.y_shape(True) == cp.y_shape(False) == (diff_eq.y_dimension,)
 
 
-def test_2d_cp():
+def test_cp_2d_pde():
     diff_eq = WaveEquation(2)
     mesh = Mesh(
             ((2., 6.), (-3., 3.)),
@@ -85,7 +85,7 @@ def test_2d_cp():
     assert np.all(d_y_1_d_x_1 == 0.)
 
 
-def test_3d_cp():
+def test_cp_3d_pde():
     mesh = Mesh(
         ((2., 6.), (-3., 3.), (10., 12.)),
         (.1, .2, .5))
