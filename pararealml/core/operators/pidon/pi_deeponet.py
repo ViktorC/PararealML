@@ -126,9 +126,9 @@ class PIDeepONet:
             optimizer: Union[str, Dict[str, Any]],
             training_data: DataSetIterator,
             test_data: Optional[DataSetIterator] = None,
-            diff_eq_loss_weight: float = 1,
-            ic_loss_weight: float = 1,
-            bc_loss_weight: float = 1,
+            diff_eq_loss_weight: float = 1.,
+            ic_loss_weight: float = 1.,
+            bc_loss_weight: float = 1.,
             verbose: bool = True
     ) -> Tuple[Sequence[LossTensors], Sequence[LossTensors]]:
         """
