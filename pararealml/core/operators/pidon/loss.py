@@ -43,7 +43,8 @@ class Loss:
                 tf.scalar_mul(bc_loss_weight, bc_losses[0] + bc_losses[1])
 
     def __str__(self):
-        string = f'DE: {self._diff_eq_loss.numpy()}; ' + \
+        string = f'Total Weighted: {self._total_weighted_loss.numpy()}; ' + \
+            f'DE: {self._diff_eq_loss.numpy()}; ' + \
             f'IC: {self._ic_loss.numpy()}'
 
         if self._bc_losses:

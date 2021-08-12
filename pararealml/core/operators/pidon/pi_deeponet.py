@@ -170,7 +170,7 @@ class PIDeepONet:
                 optimizer_instance)
             training_loss_history.append(training_epoch_loss)
             if verbose:
-                print('Training: ', training_epoch_loss)
+                print('Training MSE - ', training_epoch_loss)
 
             if test_data:
                 test_epoch_loss = self._compute_epoch_loss(
@@ -181,7 +181,7 @@ class PIDeepONet:
                     None)
                 test_loss_history.append(test_epoch_loss)
                 if verbose:
-                    print('Test: ', test_epoch_loss)
+                    print('Test MSE - ', test_epoch_loss)
 
         return training_loss_history, test_loss_history
 
