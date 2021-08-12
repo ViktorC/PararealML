@@ -6,10 +6,11 @@ from pararealml.core.operators.pidon import *
 
 diff_eq = PopulationGrowthEquation()
 cp = ConstrainedProblem(diff_eq)
-t_interval = (0., 100.)
+t_interval = (0., 50.)
 
 sampler = UniformRandomCollocationPointSampler()
 op = PIDONOperator(sampler, .1, True)
+
 training_y_0_functions = [
     lambda _: [98.5],
     lambda _: [99.25],
@@ -22,29 +23,36 @@ test_y_0_functions = [lambda _: [99.5], lambda _: [100.5]]
 op.train(
     cp,
     t_interval,
-    model_arguments={
-        'latent_output_size': 100,
-        'branch_net_hidden_layer_sizes': [100, 100, 100, 100],
-        'trunk_net_hidden_layer_sizes': [100, 100, 100, 100],
-        'activation': 'relu',
-        'initialisation': 'he_normal'
+    training_data_args=DataArgs(
+        y_0_functions=training_y_0_functions,
+        n_domain_points=100,
+        domain_batch_size=250
+    ),
+    test_data_args=DataArgs(
+        y_0_functions=test_y_0_functions,
+        n_domain_points=50,
+        domain_batch_size=100
+    ),
+    model_args={
+        'branch_net_layer_sizes': [100, 100, 100, 100],
+        'branch_initialisation': 'he_normal',
+        'branch_activation': 'relu',
+        'trunk_net_layer_sizes': [100, 100, 100, 100],
+        'trunk_initialisation': 'he_normal',
+        'trunk_activation': 'relu'
     },
-    training_y_0_functions=training_y_0_functions,
-    test_y_0_functions=test_y_0_functions,
-    training_arguments={
+    optimization_args={
         'epochs': 500,
         'optimizer': {
-            'class_name': 'SGD',
+            'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    1e-8, decay_steps=50, decay_rate=0.8)
+                    1e-4, decay_steps=50, decay_rate=0.95)
             }
         },
+        'diff_eq_loss_weight': 1.,
+        'ic_loss_weight': 1.
     },
-    n_training_domain_points=200,
-    training_domain_batch_size=500,
-    n_test_domain_points=50,
-    test_domain_batch_size=100,
 )
 
 for y_0 in [99, 100, 101]:

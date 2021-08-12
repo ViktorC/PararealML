@@ -11,20 +11,23 @@ from pararealml.core.operator import Operator, discretise_time_domain
 from pararealml.core.operators.pidon.collocation_point_sampler import \
     CollocationPointSampler
 from pararealml.core.operators.pidon.data_set import DataSet
+from pararealml.core.operators.pidon.loss import Loss
 from pararealml.core.operators.pidon.pi_deeponet import PIDeepONet
 from pararealml.core.solution import Solution
 
 
-class LossArrays(NamedTuple):
+class DataArgs(NamedTuple):
     """
-    A collection of the various losses of a physics-informed DeepONet in
-    array form.
+    A container class for arguments pertaining to the generation and traversal
+    of PIDON data sets.
     """
-    total_weighted_loss: np.ndarray
-    diff_eq_loss: np.ndarray
-    ic_loss: np.ndarray
-    dirichlet_bc_loss: np.ndarray
-    neumann_bc_loss: np.ndarray
+    y_0_functions: Iterable[
+        Callable[[Optional[Sequence[float]]], Sequence[float]]
+    ]
+    n_domain_points: int
+    domain_batch_size: int
+    n_boundary_points: int = 0
+    boundary_batch_size: int = 0
 
 
 class PIDONOperator(Operator):
@@ -118,23 +121,12 @@ class PIDONOperator(Operator):
             self,
             cp: ConstrainedProblem,
             t_interval: TemporalDomainInterval,
-            training_y_0_functions: Iterable[
-                Callable[[Optional[Sequence[float]]], Sequence[float]]
-            ],
-            model_arguments: Dict,
-            training_arguments: Dict,
-            n_training_domain_points: int,
-            training_domain_batch_size: int,
-            n_training_boundary_points: int = 0,
-            training_boundary_batch_size: int = 0,
-            n_test_domain_points: int = 0,
-            test_domain_batch_size: int = 0,
-            n_test_boundary_points: int = 0,
-            test_boundary_batch_size: int = 0,
-            test_y_0_functions: Optional[Iterable[
-                Callable[[Optional[Sequence[float]]], Sequence[float]]
-            ]] = None
-    ) -> Tuple[Sequence[LossArrays], Sequence[LossArrays]]:
+            *,
+            training_data_args: DataArgs,
+            model_args: Dict,
+            optimization_args: Dict,
+            test_data_args: Optional[DataArgs] = None
+    ) -> Tuple[Sequence[Loss], Sequence[Loss]]:
         """
         Trains a physics-informed DeepONet model on the provided constrained
         problem, time interval, and initial condition functions using the model
@@ -143,73 +135,49 @@ class PIDONOperator(Operator):
 
         :param cp: the constrained problem to train the operator on
         :param t_interval: the time interval to train the operator on
-        :param training_y_0_functions: the set of initial condition functions
-            to train the operator on
-        :param model_arguments: the physics-informed DeepONet model arguments
-        :param training_arguments: the physics informed DeepONet model training
+        :param training_data_args: the training data generation and batch size
             arguments
-        :param n_training_domain_points: the number of domain points to
-            generate for the training of the physics-informed DeepONet model
-        :param training_domain_batch_size: the training domain data batch size
-        :param n_training_boundary_points: the number of boundary points to
-            generate for the training of the physics-informed DeepONet model
-        :param training_boundary_batch_size: the training boundary data batch
-            size
-        :param n_test_domain_points: the number of domain points to
-            generate for the testing of the physics-informed DeepONet model
-        :param test_domain_batch_size: the test domain data batch size
-        :param n_test_boundary_points: the number of boundary points to
-            generate for the testing of the physics-informed DeepONet model
-        :param test_boundary_batch_size: the test boundary data batch size
-        :param test_y_0_functions: the set of initial condition functions to
-            test the operator on
+        :param model_args: the physics-informed DeepONet model arguments
+        :param optimization_args: the physics informed DeepONet model
+            optimization arguments
+        :param test_data_args: the test data generation and batch size
+            arguments
         :return: the training loss history and the test loss history
         """
-        model = PIDeepONet(cp, **model_arguments)
+        model = PIDeepONet(cp, **model_args)
         model.init()
 
         training_data_set = DataSet(
             cp,
             t_interval,
-            training_y_0_functions,
+            training_data_args.y_0_functions,
             self._sampler,
-            n_training_domain_points,
-            n_training_boundary_points)
+            training_data_args.n_domain_points,
+            training_data_args.n_boundary_points)
         training_data = training_data_set.get_iterator(
-            training_domain_batch_size, training_boundary_batch_size)
+            training_data_args.domain_batch_size,
+            training_data_args.boundary_batch_size)
 
-        if n_test_domain_points > 0:
+        if test_data_args:
             test_data_set = DataSet(
                 cp,
                 t_interval,
-                training_y_0_functions if test_y_0_functions is None
-                else test_y_0_functions,
+                test_data_args.y_0_functions,
                 self._sampler,
-                n_test_domain_points,
-                n_test_boundary_points)
+                test_data_args.n_domain_points,
+                test_data_args.n_boundary_points)
             test_data = test_data_set.get_iterator(
-                test_domain_batch_size,
-                test_boundary_batch_size,
+                test_data_args.domain_batch_size,
+                test_data_args.boundary_batch_size,
                 shuffle=False)
         else:
             test_data = None
 
-        loss_tensor_histories = model.train(
+        loss_histories = model.train(
             training_data=training_data,
             test_data=test_data,
-            **training_arguments)
+            **optimization_args)
 
         self._model = model
 
-        loss_array_histories = [
-            [
-                LossArrays(
-                    loss_tensors.total_weighted_loss.numpy(),
-                    loss_tensors.diff_eq_loss.numpy(),
-                    loss_tensors.ic_loss.numpy(),
-                    loss_tensors.dirichlet_bc_loss.numpy(),
-                    loss_tensors.neumann_bc_loss.numpy())
-                for loss_tensors in loss_tensor_history
-            ] for loss_tensor_history in loss_tensor_histories
-        ]
-        return loss_array_histories[0], loss_array_histories[1]
+        return loss_histories
