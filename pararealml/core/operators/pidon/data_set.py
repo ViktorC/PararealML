@@ -315,14 +315,65 @@ class DataSetIterator(Iterator):
                 self._boundary_counter >= self._total_boundary_data_size:
             raise StopIteration
 
+        batch = self._get_batch(
+            self._domain_batch_size, self._boundary_batch_size)
+
+        self._domain_counter += self._domain_batch_size
+        self._boundary_counter += self._boundary_batch_size
+
+        return batch
+
+    @property
+    def domain_batch_size(self) -> int:
+        """
+        The domain batch size used by the iterator.
+        """
+        return self._domain_batch_size
+
+    @property
+    def boundary_batch_size(self) -> int:
+        """
+        The boundary batch size used by the iterator.
+        """
+        return self._boundary_batch_size
+
+    def get_full_batch(self) -> DataBatch:
+        """
+        Returns the full cartesian product of all the initial condition data
+        and all the domain and boundary data contained within the data set the
+        iterator is built on top of.
+        """
+        self.reset()
+        return self._get_batch(
+            self._total_domain_data_size, self._total_boundary_data_size)
+
+    def reset(self):
+        """
+        Resets the iterator so that the data set can be iterated over again.
+        """
+        self._domain_counter = 0
+        self._boundary_counter = 0
+
+    def _get_batch(
+            self,
+            domain_batch_size: int,
+            boundary_batch_size: int) -> DataBatch:
+        """
+        Returns a batch of the specified domain data size and boundary data
+        size.
+
+        :param domain_batch_size: the domain data batch size
+        :param boundary_batch_size: the boundary data batch size
+        :return: the data batch
+        """
         diff_eq = self._data_set.constrained_problem.differential_equation
         x_dimension = diff_eq.x_dimension
         y_dimension = diff_eq.y_dimension
 
         domain_indices = self._domain_indices[
-            self._domain_counter:
-            self._domain_counter + self._domain_batch_size,
-            :]
+                self._domain_counter:
+                self._domain_counter + domain_batch_size,
+                :]
         domain_ic_data_indices = domain_indices[:, 0]
         domain_collocation_data_indices = domain_indices[:, 1]
         domain_ic_data = \
@@ -338,13 +389,13 @@ class DataSetIterator(Iterator):
                 domain_collocation_data[:, 1:], tf.float32)
             if x_dimension else None)
 
-        if self._boundary_batch_size == 0:
+        if boundary_batch_size == 0:
             boundary_data = None
         else:
             boundary_indices = self._boundary_indices[
-                 self._boundary_counter:
-                 self._boundary_counter + self._boundary_batch_size,
-                 :]
+                    self._boundary_counter:
+                    self._boundary_counter + boundary_batch_size,
+                    :]
             boundary_ic_data_indices = boundary_indices[:, 0]
             boundary_collocation_data_indices = boundary_indices[:, 1]
             boundary_ic_data = self._data_set.ic_data[boundary_ic_data_indices]
@@ -375,28 +426,4 @@ class DataSetIterator(Iterator):
                 tf.convert_to_tensor(
                     boundary_collocation_data[:, axes_offset:], tf.float32))
 
-        self._domain_counter += self._domain_batch_size
-        self._boundary_counter += self._boundary_batch_size
-
         return DataBatch(domain_data, boundary_data)
-
-    @property
-    def domain_batch_size(self) -> int:
-        """
-        The domain batch size used by the iterator.
-        """
-        return self._domain_batch_size
-
-    @property
-    def boundary_batch_size(self) -> int:
-        """
-        The boundary batch size used by the iterator.
-        """
-        return self._boundary_batch_size
-
-    def reset(self):
-        """
-        Resets the iterator so that the data set can be iterated over again.
-        """
-        self._domain_counter = 0
-        self._boundary_counter = 0

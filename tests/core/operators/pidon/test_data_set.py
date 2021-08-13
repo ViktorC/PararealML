@@ -106,14 +106,24 @@ def test_iterator_ode():
     n_points = 5
 
     data_set = DataSet(cp, t_interval, y_0_functions, sampler, n_points)
+    iterator = data_set.get_iterator(2)
 
-    shuffled_batches = [batch for batch in data_set.get_iterator(2)]
+    shuffled_batches = [batch for batch in iterator]
     assert len(shuffled_batches) == 5
     for batch in shuffled_batches:
         assert batch.domain.u.shape == (2, 2)
         assert batch.domain.t.shape == (2, 1)
         assert batch.domain.x is None
         assert batch.boundary is None
+
+    iterator.reset()
+    assert len([batch for batch in iterator]) == 5
+
+    full_batch = iterator.get_full_batch()
+    assert full_batch.domain.u.shape == (10, 2)
+    assert full_batch.domain.t.shape == (10, 1)
+    assert full_batch.domain.x is None
+    assert full_batch.boundary is None
 
     batches = [batch for batch in data_set.get_iterator(2, shuffle=False)]
     assert len(batches) == 5
@@ -160,8 +170,9 @@ def test_iterator_pde():
         sampler,
         n_domain_points,
         n_boundary_points)
+    iterator = data_set.get_iterator(40, 10)
 
-    batches = [batch for batch in data_set.get_iterator(40, 10)]
+    batches = [batch for batch in iterator]
     assert len(batches) == 10
     for batch in batches:
         assert batch.domain.u.shape == (40, 2500)
@@ -176,3 +187,17 @@ def test_iterator_pde():
 
         assert np.all(batch.boundary.y.numpy() == 0.)
         assert np.isnan(batch.boundary.d_y_over_d_n.numpy()).all()
+
+    iterator.reset()
+    assert len([batch for batch in iterator]) == 10
+
+    full_batch = iterator.get_full_batch()
+    assert full_batch.domain.u.shape == (400, 2500)
+    assert full_batch.domain.t.shape == (400, 1)
+    assert full_batch.domain.x.shape == (400, 2)
+    assert full_batch.boundary.u.shape == (100, 2500)
+    assert full_batch.boundary.t.shape == (100, 1)
+    assert full_batch.boundary.x.shape == (100, 2)
+    assert full_batch.boundary.y.shape == (100, 1)
+    assert full_batch.boundary.d_y_over_d_n.shape == (100, 1)
+    assert full_batch.boundary.axes.shape == (100, 1)
