@@ -1,5 +1,5 @@
 from typing import Callable, Sequence, Optional, Dict, Iterable, Tuple, \
-    NamedTuple
+    NamedTuple, List, Union, Any
 
 import numpy as np
 import tensorflow as tf
@@ -28,6 +28,32 @@ class DataArgs(NamedTuple):
     domain_batch_size: int
     n_boundary_points: int = 0
     boundary_batch_size: int = 0
+
+
+class ModelArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the architecture of a PIDON
+    model.
+    """
+    branch_net_layer_sizes: List[int]
+    trunk_net_layer_sizes: List[int]
+    branch_initialisation: Optional[str] = None,
+    trunk_initialisation: Optional[str] = None,
+    branch_activation: Optional[str] = 'tanh',
+    trunk_activation: Optional[str] = 'tanh'
+
+
+class OptimizationArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the training of a PIDON
+    model.
+    """
+    optimizer: Union[str, Dict[str, Any]]
+    epochs: int
+    diff_eq_loss_weight: float = 1.,
+    ic_loss_weight: float = 1.,
+    bc_loss_weight: float = 1.,
+    verbose: bool = True
 
 
 class PIDONOperator(Operator):
@@ -123,8 +149,8 @@ class PIDONOperator(Operator):
             t_interval: TemporalDomainInterval,
             *,
             training_data_args: DataArgs,
-            model_args: Dict,
-            optimization_args: Dict,
+            model_args: ModelArgs,
+            optimization_args: OptimizationArgs,
             test_data_args: Optional[DataArgs] = None
     ) -> Tuple[Sequence[Loss], Sequence[Loss]]:
         """
@@ -138,46 +164,55 @@ class PIDONOperator(Operator):
         :param training_data_args: the training data generation and batch size
             arguments
         :param model_args: the physics-informed DeepONet model arguments
-        :param optimization_args: the physics informed DeepONet model
+        :param optimization_args: the physics-informed DeepONet model
             optimization arguments
         :param test_data_args: the test data generation and batch size
             arguments
         :return: the training loss history and the test loss history
         """
-        model = PIDeepONet(cp, **model_args)
-        model.init()
-
         training_data_set = DataSet(
             cp,
             t_interval,
-            training_data_args.y_0_functions,
-            self._sampler,
-            training_data_args.n_domain_points,
-            training_data_args.n_boundary_points)
+            y_0_functions=training_data_args.y_0_functions,
+            point_sampler=self._sampler,
+            n_domain_points=training_data_args.n_domain_points,
+            n_boundary_points=training_data_args.n_boundary_points)
         training_data = training_data_set.get_iterator(
-            training_data_args.domain_batch_size,
-            training_data_args.boundary_batch_size)
+            domain_batch_size=training_data_args.domain_batch_size,
+            boundary_batch_size=training_data_args.boundary_batch_size)
 
         if test_data_args:
             test_data_set = DataSet(
                 cp,
                 t_interval,
-                test_data_args.y_0_functions,
-                self._sampler,
-                test_data_args.n_domain_points,
-                test_data_args.n_boundary_points)
+                y_0_functions=test_data_args.y_0_functions,
+                point_sampler=self._sampler,
+                n_domain_points=test_data_args.n_domain_points,
+                n_boundary_points=test_data_args.n_boundary_points)
             test_data = test_data_set.get_iterator(
-                test_data_args.domain_batch_size,
-                test_data_args.boundary_batch_size,
+                domain_batch_size=test_data_args.domain_batch_size,
+                boundary_batch_size=test_data_args.boundary_batch_size,
                 shuffle=False)
         else:
             test_data = None
 
+        model = PIDeepONet(
+            cp,
+            branch_net_layer_sizes=model_args.branch_net_layer_sizes,
+            trunk_net_layer_sizes=model_args.trunk_net_layer_sizes,
+            branch_initialisation=model_args.branch_initialisation,
+            trunk_initialisation=model_args.trunk_initialisation,
+            branch_activation=model_args.branch_activation,
+            trunk_activation=model_args.trunk_activation)
+        model.init()
         loss_histories = model.train(
             training_data=training_data,
             test_data=test_data,
-            **optimization_args)
-
+            optimizer=optimization_args.optimizer,
+            epochs=optimization_args.epochs,
+            diff_eq_loss_weight=optimization_args.diff_eq_loss_weight,
+            ic_loss_weight=optimization_args.ic_loss_weight,
+            bc_loss_weight=optimization_args.bc_loss_weight,
+            verbose=optimization_args.verbose)
         self._model = model
-
         return loss_histories
