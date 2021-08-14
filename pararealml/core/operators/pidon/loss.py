@@ -1,25 +1,44 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Tuple, Sequence, NamedTuple
 
 import tensorflow as tf
 
 
-class Loss:
+class Loss(NamedTuple):
     """
     A collection of the various losses of a physics-informed DeepONet in
     tensor form.
     """
+    diff_eq_loss: tf.Tensor
+    ic_loss: tf.Tensor
+    bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]]
+    weighted_total_loss: tf.Tensor
 
-    def __init__(
-            self,
+    def __str__(self):
+        string = f'Weighted Total: {self.weighted_total_loss}; ' + \
+                 f'DE: {self.diff_eq_loss}; ' + \
+                 f'IC: {self.ic_loss}'
+
+        if self.bc_losses:
+            string += f'; Dirichlet BC: {self.bc_losses[0]}; ' + \
+                      f'Neumann BC: {self.bc_losses[1]}'
+
+        return string
+
+    @classmethod
+    def construct(
+            cls,
             diff_eq_loss: tf.Tensor,
             ic_loss: tf.Tensor,
             bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
-            bc_loss_weight: float):
+            bc_loss_weight: float) -> Loss:
         """
+        Calculates the weighted total loss given the weights for the different
+        components of the total loss and returns a Loss instance.
+
         :param diff_eq_loss: the differential equation loss tensor
         :param ic_loss: the initial condition loss tensor
         :param bc_losses: a tuple of the Dirichlet and Neumann boundary
@@ -30,59 +49,19 @@ class Loss:
             total physics informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
             total physics informed loss
+        :return: the losses including the weighted total
         """
-        self._diff_eq_loss = diff_eq_loss
-        self._ic_loss = ic_loss
-        self._bc_losses = bc_losses
-
-        self._total_weighted_loss = \
+        weighted_total_loss = \
             tf.scalar_mul(diff_eq_loss_weight, diff_eq_loss) + \
             tf.scalar_mul(ic_loss_weight, ic_loss)
         if bc_losses:
-            self._total_weighted_loss += \
+            weighted_total_loss += \
                 tf.scalar_mul(bc_loss_weight, bc_losses[0] + bc_losses[1])
+        return Loss(diff_eq_loss, ic_loss, bc_losses, weighted_total_loss)
 
-    def __str__(self):
-        string = f'Total Weighted: {self._total_weighted_loss.numpy()}; ' + \
-            f'DE: {self._diff_eq_loss.numpy()}; ' + \
-            f'IC: {self._ic_loss.numpy()}'
-
-        if self._bc_losses:
-            string += f'; Dirichlet BC: {self._bc_losses[0].numpy()}; ' + \
-                f'Neumann BC: {self._bc_losses[1].numpy()}'
-
-        return string
-
-    @property
-    def diff_eq_loss(self) -> tf.Tensor:
-        """
-        The differential equation loss tensor.
-        """
-        return self._diff_eq_loss
-
-    @property
-    def ic_loss(self) -> tf.Tensor:
-        """
-        The initial condition loss tensor.
-        """
-        return self._ic_loss
-
-    @property
-    def bc_losses(self) -> Optional[Tuple[tf.Tensor, tf.Tensor]]:
-        """
-        The Dirichlet and Neumann boundary condition loss tensors.
-        """
-        return self._bc_losses
-
-    @property
-    def total_weighted_loss(self) -> tf.Tensor:
-        """
-        The total weighted loss tensor.
-        """
-        return self._total_weighted_loss
-
-    @staticmethod
+    @classmethod
     def mean(
+            cls,
             losses: Sequence[Loss],
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
@@ -117,7 +96,7 @@ class Loss:
             else (tf.reduce_mean(tf.stack(dirichlet_bc_losses), axis=0),
                   tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0))
 
-        return Loss(
+        return cls.construct(
             mean_diff_eq_loss,
             mean_ic_loss,
             mean_bc_losses,

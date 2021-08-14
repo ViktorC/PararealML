@@ -37,9 +37,9 @@ class ModelArgs(NamedTuple):
     """
     branch_net_layer_sizes: List[int]
     trunk_net_layer_sizes: List[int]
-    branch_initialisation: Optional[str] = None,
-    trunk_initialisation: Optional[str] = None,
-    branch_activation: Optional[str] = 'tanh',
+    branch_initialisation: Optional[str] = None
+    trunk_initialisation: Optional[str] = None
+    branch_activation: Optional[str] = 'tanh'
     trunk_activation: Optional[str] = 'tanh'
 
 
@@ -50,9 +50,9 @@ class OptimizationArgs(NamedTuple):
     """
     optimizer: Union[str, Dict[str, Any]]
     epochs: int
-    diff_eq_loss_weight: float = 1.,
-    ic_loss_weight: float = 1.,
-    bc_loss_weight: float = 1.,
+    diff_eq_loss_weight: float = 1.
+    ic_loss_weight: float = 1.
+    bc_loss_weight: float = 1.
     verbose: bool = True
 
 

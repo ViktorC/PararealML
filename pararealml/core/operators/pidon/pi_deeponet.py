@@ -81,9 +81,7 @@ class PIDeepONet:
                 y_dimension
             ])
 
-        self._differentiator = AutoDifferentiator()
-
-        self._symbol_mapper = PIDONSymbolMapper(cp, self._differentiator)
+        self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
 
     @property
@@ -162,24 +160,40 @@ class PIDeepONet:
             if verbose:
                 print('Epoch:', i)
 
-            training_epoch_loss = self._compute_epoch_loss(
-                training_data,
+            training_batch_losses = []
+            for batch in training_data:
+                training_batch_losses.append(self._step(
+                    batch,
+                    optimizer_instance,
+                    diff_eq_loss_weight,
+                    ic_loss_weight,
+                    bc_loss_weight))
+            training_epoch_loss = Loss.mean(
+                training_batch_losses,
                 diff_eq_loss_weight,
                 ic_loss_weight,
-                bc_loss_weight,
-                optimizer_instance)
+                bc_loss_weight)
             training_loss_history.append(training_epoch_loss)
+
             if verbose:
                 print('Training MSE -', training_epoch_loss)
 
             if test_data:
-                test_epoch_loss = self._compute_epoch_loss(
-                    test_data,
+                test_batch_losses = []
+                for batch in test_data:
+                    test_batch_losses.append(self._step(
+                        batch,
+                        None,
+                        diff_eq_loss_weight,
+                        ic_loss_weight,
+                        bc_loss_weight))
+                test_epoch_loss = Loss.mean(
+                    test_batch_losses,
                     diff_eq_loss_weight,
                     ic_loss_weight,
-                    bc_loss_weight,
-                    None)
-                test_loss_history.append(test_epoch_loss)
+                    bc_loss_weight)
+                test_loss_history.append(training_epoch_loss)
+
                 if verbose:
                     print('Test MSE -', test_epoch_loss)
 
@@ -211,98 +225,65 @@ class PIDeepONet:
 
         return combiner_output
 
-    def _compute_epoch_loss(
-            self,
-            data: DataSetIterator,
-            diff_eq_loss_weight: float,
-            ic_loss_weight: float,
-            bc_loss_weight: float,
-            optimizer: Optional[Optimizer]) -> Loss:
-        """
-        Computes the mean epoch loss and if an optimizer is provided, it
-        updates the parameters of the model after every batch as well.
-
-        :param data: the data set iterator providing the epoch data
-        :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics informed loss
-        :param optimizer: the optimizer to use to update parameters of the
-            model
-        :return: the mean losses over the epoch
-        """
-        batch_losses = []
-        for batch in data:
-            with tf.GradientTape(persistent=True) as tape:
-                self._differentiator.tape = tape
-                loss = self._compute_batch_loss(
-                    batch,
-                    diff_eq_loss_weight,
-                    ic_loss_weight,
-                    bc_loss_weight)
-
-            batch_losses.append(loss)
-
-            if optimizer is not None:
-                optimizer.minimize(
-                    loss.total_weighted_loss,
-                    self._branch_net.trainable_variables +
-                    self._trunk_net.trainable_variables +
-                    self._combiner_net.trainable_variables,
-                    tape=tape)
-
-        data.reset()
-        return Loss.mean(
-            batch_losses,
-            diff_eq_loss_weight,
-            ic_loss_weight,
-            bc_loss_weight)
-
-    def _compute_batch_loss(
+    @tf.function
+    def _step(
             self,
             batch: DataBatch,
+            optimizer: Optional[Optimizer],
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
             bc_loss_weight: float
     ) -> Loss:
         """
-        Computes all the losses over the batch.
+        Performs a forward pass on the batch, computes the batch loss, and
+        updates the model parameters.
 
         :param batch: the batch to compute the losses over
+        :param optimizer: the optimizer to use to update parameters of the
+            model; if None, the model parameters are not updated
         :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics informed loss
+            part of the total physics-informed loss
         :param ic_loss_weight: the weight of the initial condition part of the
-            total physics informed loss
+            total physics-informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics informed loss
+            total physics-informed loss
         :return: the various losses over the batch
         """
-        domain_batch = batch.domain
-        diff_eq_loss = self._compute_mean_squared_differential_equation_error(
-            domain_batch.u, domain_batch.t, domain_batch.x)
-        ic_loss = self._compute_mean_squared_initial_condition_error(
-            domain_batch.u)
+        domain_batch, boundary_batch = batch
 
-        boundary_batch = batch.boundary
-        bc_losses = self._compute_mean_squared_boundary_condition_errors(
-            boundary_batch.u,
-            boundary_batch.t,
-            boundary_batch.y,
-            boundary_batch.d_y_over_d_n,
-            boundary_batch.axes) if boundary_batch else None
+        with AutoDifferentiator() as auto_diff:
+            diff_eq_loss = self._mean_squared_differential_equation_error(
+                domain_batch.u, domain_batch.t, domain_batch.x)
+            ic_loss = self._mean_squared_initial_condition_error(
+                domain_batch.u)
+            bc_losses = self._mean_squared_boundary_condition_errors(
+                boundary_batch.u,
+                boundary_batch.t,
+                boundary_batch.x,
+                boundary_batch.y,
+                boundary_batch.d_y_over_d_n,
+                boundary_batch.axes) if boundary_batch else None
 
-        return Loss(
-            diff_eq_loss,
-            ic_loss,
-            bc_losses,
-            diff_eq_loss_weight,
-            ic_loss_weight,
-            bc_loss_weight)
+            loss = Loss.construct(
+                diff_eq_loss,
+                ic_loss,
+                bc_losses,
+                diff_eq_loss_weight,
+                ic_loss_weight,
+                bc_loss_weight)
+
+        if optimizer:
+            optimizer.minimize(
+                loss.weighted_total_loss,
+                self._branch_net.trainable_variables +
+                self._trunk_net.trainable_variables +
+                self._combiner_net.trainable_variables,
+                tape=auto_diff)
+
+        return loss
 
     @tf.function
-    def _compute_mean_squared_differential_equation_error(
+    def _mean_squared_differential_equation_error(
             self,
             u: tf.Tensor,
             t: tf.Tensor,
@@ -315,26 +296,26 @@ class PIDeepONet:
         :param x: the space points; if the IVP is based on an ODE, None
         :return: the mean squared differential equation error
         """
-        self._differentiator.tape.watch(t)
-        if x is not None:
-            self._differentiator.tape.watch(x)
+        with AutoDifferentiator(persistent=True) as auto_diff:
+            auto_diff.watch(t)
+            if x is not None:
+                auto_diff.watch(x)
 
-        y_hat = self.predict(u, t, x)
+            y_hat = self.predict(u, t, x)
 
-        symbol_map_arg = PIDONSymbolMapArg(t, x, y_hat)
-        rhs = self._symbol_mapper.map(symbol_map_arg)
+            symbol_map_arg = PIDONSymbolMapArg(auto_diff, t, x, y_hat)
+            rhs = self._symbol_mapper.map(symbol_map_arg)
 
-        diff_eq_residual = []
-        for i in range(len(rhs)):
-            lhs = self._diff_eq_lhs_functions[i](symbol_map_arg)
-            rhs = rhs[i]
-            diff_eq_residual.append(lhs - rhs)
+            diff_eq_residual = tf.concat([
+                self._diff_eq_lhs_functions[i](symbol_map_arg) - rhs[i]
+                for i in range(len(rhs))
+            ], axis=1)
 
-        squared_diff_eq_error = tf.square(tf.concat(diff_eq_residual, axis=1))
+        squared_diff_eq_error = tf.square(diff_eq_residual)
         return tf.reduce_mean(squared_diff_eq_error, axis=0)
 
     @tf.function
-    def _compute_mean_squared_initial_condition_error(
+    def _mean_squared_initial_condition_error(
             self,
             u: tf.Tensor) -> tf.Tensor:
         """
@@ -344,28 +325,23 @@ class PIDeepONet:
         :return: the mean squared initial condition error
         """
         if self._cp.differential_equation.x_dimension:
+            t = tf.zeros((self._sensor_points.shape[0], 1))
             x = tf.convert_to_tensor(self._sensor_points, tf.float32)
-            t = tf.zeros((x.shape[0], 1))
         else:
-            x = None
             t = tf.zeros((1, 1))
+            x = None
 
-        y_hat = tf.stack([
-            self.predict(
-                tf.tile(u[i:i + 1, :], (t.shape[0], 1)),
-                t,
-                x
-            ) for i in range(u.shape[0])
-        ], axis=0)
+        y_hat = tf.map_fn(
+            fn=lambda u_i: self.predict(
+                tf.tile(tf.reshape(u_i, (1, -1)), (t.shape[0], 1)), t, x),
+            elems=u)
 
         squared_ic_error = tf.reduce_mean(
-            tf.square(tf.reshape(y_hat, u.shape) - u),
-            axis=1,
-            keepdims=True)
+            tf.square(y_hat - tf.reshape(u, y_hat.shape)), axis=1)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
     @tf.function
-    def _compute_mean_squared_boundary_condition_errors(
+    def _mean_squared_boundary_condition_errors(
             self,
             u: tf.Tensor,
             t: tf.Tensor,
@@ -388,15 +364,16 @@ class PIDeepONet:
         :return: the mean squared Dirichlet and Neumann boundary condition
             errors
         """
-        self._differentiator.tape.watch(x)
+        with AutoDifferentiator() as auto_diff:
+            auto_diff.watch(x)
+            y_hat = self.predict(u, t, x)
 
-        y_hat = self.predict(u, t, x)
-        d_y_over_d_n_hat = self._differentiator.gradient(x, y_hat, axes)
+        d_y_over_d_n_hat = auto_diff.batch_gradient(x, y_hat, axes)
 
         dirichlet_bc_error = y_hat - y
         dirichlet_bc_error = tf.where(
-            tf.math.is_nan(dirichlet_bc_error),
-            tf.zeros_like(dirichlet_bc_error),
+            tf.math.is_nan(y),
+            tf.zeros_like(y),
             dirichlet_bc_error)
         squared_dirichlet_bc_error = tf.square(dirichlet_bc_error)
         mean_squared_dirichlet_bc_error = \
@@ -404,8 +381,8 @@ class PIDeepONet:
 
         neumann_bc_error = d_y_over_d_n_hat - d_y_over_d_n
         neumann_bc_error = tf.where(
-            tf.math.is_nan(neumann_bc_error),
-            tf.zeros_like(neumann_bc_error),
+            tf.math.is_nan(d_y_over_d_n),
+            tf.zeros_like(d_y_over_d_n),
             neumann_bc_error)
         squared_neumann_bc_error = tf.square(neumann_bc_error)
         mean_squared_neumann_bc_error = \
@@ -427,16 +404,14 @@ class PIDeepONet:
                 enumerate(diff_eq.symbolic_equation_system.lhs_types):
             if lhs_type == Lhs.D_Y_OVER_D_T:
                 lhs_functions.append(
-                    lambda arg, _y_ind=y_ind:
-                    self._differentiator.gradient(
+                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
                         arg.t, arg.y_hat[:, _y_ind:_y_ind + 1], 0))
             elif lhs_type == Lhs.Y:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.y_hat[:, _y_ind:_y_ind + 1])
             elif lhs_type == Lhs.Y_LAPLACIAN:
                 lhs_functions.append(
-                    lambda arg, _y_ind=y_ind:
-                    self._differentiator.laplacian(
+                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_laplacian(
                         arg.x,
                         arg.y_hat[:, _y_ind:_y_ind + 1],
                         self._cp.mesh.coordinate_system_type))

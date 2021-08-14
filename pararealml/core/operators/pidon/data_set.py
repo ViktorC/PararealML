@@ -308,6 +308,7 @@ class DataSetIterator(Iterator):
         self._boundary_counter = 0
 
     def __iter__(self) -> DataSetIterator:
+        self.reset()
         return self
 
     def __next__(self) -> DataBatch:

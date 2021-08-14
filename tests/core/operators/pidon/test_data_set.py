@@ -116,7 +116,6 @@ def test_iterator_ode():
         assert batch.domain.x is None
         assert batch.boundary is None
 
-    iterator.reset()
     assert len([batch for batch in iterator]) == 5
 
     full_batch = iterator.get_full_batch()
@@ -188,7 +187,6 @@ def test_iterator_pde():
         assert np.all(batch.boundary.y.numpy() == 0.)
         assert np.isnan(batch.boundary.d_y_over_d_n.numpy()).all()
 
-    iterator.reset()
     assert len([batch for batch in iterator]) == 10
 
     full_batch = iterator.get_full_batch()

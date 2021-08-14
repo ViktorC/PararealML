@@ -1,35 +1,30 @@
-from typing import Optional, Union
+from typing import Union
 
 import tensorflow as tf
 
 from pararealml.core.mesh import CoordinateSystem
 
 
-class AutoDifferentiator:
+class AutoDifferentiator(tf.GradientTape):
     """
     A class providing various differential operators using TensorFlow's
     auto-differentiation capabilities.
     """
 
-    def __init__(self, tape: Optional[tf.GradientTape] = None):
+    def __init__(
+            self,
+            persistent: bool = False,
+            watch_accessed_variables: bool = True):
         """
-        :param tape: a persistent gradient tape with a memory of the operations
-            that are to be differentiated
+        :param persistent: whether the gradient tape should be persistent
+            allowing for the calculation of multiple differential operators
+        :param watch_accessed_variables: whether to automatically watch all
+            accessed variables within the context of the differentiator
         """
-        self._tape = tape
+        super(AutoDifferentiator, self).__init__(
+            persistent, watch_accessed_variables)
 
-    @property
-    def tape(self) -> Optional[tf.GradientTape]:
-        """
-        The gradient tape used by the differentiator.
-        """
-        return self._tape
-
-    @tape.setter
-    def tape(self, tape: tf.GradientTape):
-        self._tape = tape
-
-    def gradient(
+    def batch_gradient(
             self,
             x: tf.Tensor,
             y: tf.Tensor,
@@ -61,13 +56,13 @@ class AutoDifferentiator:
             raise ValueError
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
-            gradient = self._tape.batch_jacobian(y, x)
+            gradient = self.batch_jacobian(y, x)
             return tf.gather(gradient, x_axis, axis=2, batch_dims=1) \
                 if isinstance(x_axis, tf.Tensor) else gradient[:, :, x_axis]
         else:
             raise ValueError
 
-    def hessian(
+    def batch_hessian(
             self,
             x: tf.Tensor,
             y: tf.Tensor,
@@ -95,11 +90,12 @@ class AutoDifferentiator:
             raise ValueError
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
-            return self.gradient(x, self.gradient(x, y, x_axis1), x_axis2)
+            return self.batch_gradient(
+                x, self.batch_gradient(x, y, x_axis1), x_axis2)
         else:
             raise ValueError
 
-    def divergence(
+    def batch_divergence(
             self,
             x: tf.Tensor,
             y: tf.Tensor,
@@ -121,14 +117,14 @@ class AutoDifferentiator:
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
                 tf.stack([
-                    self.gradient(x, y[..., i:i + 1], i)
+                    self.batch_gradient(x, y[..., i:i + 1], i)
                     for i in range(x.shape[-1])
                 ]),
                 axis=0)
         else:
             raise ValueError
 
-    def curl(
+    def batch_curl(
             self,
             x: tf.Tensor,
             y: tf.Tensor,
@@ -156,26 +152,26 @@ class AutoDifferentiator:
                 raise ValueError
 
             if coordinate_system_type == CoordinateSystem.CARTESIAN:
-                return self.gradient(x, y[..., 1:], 0) - \
-                    self.gradient(x, y[..., :1], 1)
+                return self.batch_gradient(x, y[..., 1:], 0) - \
+                    self.batch_gradient(x, y[..., :1], 1)
             else:
                 raise ValueError
         elif x_dimension == 3:
             if coordinate_system_type == CoordinateSystem.CARTESIAN:
                 return [
-                    self.gradient(x, y[..., 2:], 1) -
-                    self.gradient(x, y[..., 1:2], 2),
-                    self.gradient(x, y[..., :1], 2) -
-                    self.gradient(x, y[..., 2:], 0),
-                    self.gradient(x, y[..., 1:2], 0) -
-                    self.gradient(x, y[..., :1], 1)
+                    self.batch_gradient(x, y[..., 2:], 1) -
+                    self.batch_gradient(x, y[..., 1:2], 2),
+                    self.batch_gradient(x, y[..., :1], 2) -
+                    self.batch_gradient(x, y[..., 2:], 0),
+                    self.batch_gradient(x, y[..., 1:2], 0) -
+                    self.batch_gradient(x, y[..., :1], 1)
                 ][curl_ind]
             else:
                 raise ValueError
         else:
             raise ValueError
 
-    def laplacian(
+    def batch_laplacian(
             self,
             x: tf.Tensor,
             y: tf.Tensor,
@@ -197,7 +193,7 @@ class AutoDifferentiator:
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
                 tf.stack([
-                    self.hessian(x, y, i, i) for i in range(x.shape[-1])
+                    self.batch_hessian(x, y, i, i) for i in range(x.shape[-1])
                 ]),
                 axis=0)
         else:
