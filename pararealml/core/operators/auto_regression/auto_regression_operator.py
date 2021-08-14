@@ -3,9 +3,7 @@ from typing import Union, Tuple, Callable, Optional, Protocol
 import numpy as np
 
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, \
-    train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 from pararealml.core.constrained_problem import ConstrainedProblem
@@ -15,19 +13,13 @@ from pararealml.core.operator import Operator, discretise_time_domain
 from pararealml.core.solution import Solution
 
 
-class SKLearnRegressionModel(Protocol):
+class SKLearnRegressor(Protocol):
     def fit(self, x, y, sample_weight=None): ...
     def predict(self, x): ...
     def score(self, x, y, sample_weight=None): ...
 
 
-RegressionModel = Union[
-    SKLearnRegressionModel,
-    KerasRegressor,
-    GridSearchCV,
-    RandomizedSearchCV,
-    Pipeline
-]
+RegressionModel = Union[SKLearnRegressor, KerasRegressor]
 
 
 class AutoRegressionOperator(Operator):
