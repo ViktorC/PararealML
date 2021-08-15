@@ -37,7 +37,7 @@ class DataSet:
             points
         :param n_domain_points: the number of domain points to sample
         :param n_boundary_points: the number of boundary points to sample; if
-            the IVP is based on an ODE, it should be None
+            the constrained problem is an ODE, it should be 0
         """
         x_dimension = cp.differential_equation.x_dimension
 

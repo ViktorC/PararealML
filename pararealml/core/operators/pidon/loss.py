@@ -7,8 +7,7 @@ import tensorflow as tf
 
 class Loss(NamedTuple):
     """
-    A collection of the various losses of a physics-informed DeepONet in
-    tensor form.
+    A collection of the various losses of a physics-informed DeepONet.
     """
     diff_eq_loss: tf.Tensor
     ic_loss: tf.Tensor
@@ -44,11 +43,11 @@ class Loss(NamedTuple):
         :param bc_losses: a tuple of the Dirichlet and Neumann boundary
             condition loss tensors
         :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics informed loss
+            part of the total physics-informed loss
         :param ic_loss_weight: the weight of the initial condition part of the
-            total physics informed loss
+            total physics-informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics informed loss
+            total physics-informed loss
         :return: the losses including the weighted total
         """
         weighted_total_loss = \
@@ -71,11 +70,11 @@ class Loss(NamedTuple):
 
         :param losses: the losses to average over
         :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics informed loss
+            part of the total physics-informed loss
         :param ic_loss_weight: the weight of the initial condition part of the
-            total physics informed loss
+            total physics-informed loss
         :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics informed loss
+            total physics-informed loss
         :return: the mean loss
         """
         diff_eq_losses = []
