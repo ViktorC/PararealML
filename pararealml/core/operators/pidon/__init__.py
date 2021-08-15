@@ -8,7 +8,7 @@ from pararealml.core.operators.pidon.data_set import DataSet
 from pararealml.core.operators.pidon.loss import Loss
 from pararealml.core.operators.pidon.pi_deeponet import PIDeepONet
 from pararealml.core.operators.pidon.pidon_operator import DataArgs, \
-    ModelArgs, OptimizationArgs, PIDONOperator
+    ModelArgs, OptimizationArgs, SecondaryOptimizationArgs, PIDONOperator
 
 __all__ = [
     'AutoDifferentiator',
@@ -20,5 +20,6 @@ __all__ = [
     'DataArgs',
     'ModelArgs',
     'OptimizationArgs',
+    'SecondaryOptimizationArgs',
     'PIDONOperator',
 ]

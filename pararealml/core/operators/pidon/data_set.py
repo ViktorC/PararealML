@@ -383,11 +383,11 @@ class DataSetIterator(Iterator):
             domain_collocation_data_indices]
 
         domain_data = DomainDataBatch(
-            tf.convert_to_tensor(domain_ic_data, tf.float32),
+            tf.convert_to_tensor(domain_ic_data, dtype=tf.float32),
             tf.convert_to_tensor(
-                domain_collocation_data[:, :1], tf.float32),
+                domain_collocation_data[:, :1], dtype=tf.float32),
             tf.convert_to_tensor(
-                domain_collocation_data[:, 1:], tf.float32)
+                domain_collocation_data[:, 1:], dtype=tf.float32)
             if x_dimension else None)
 
         if boundary_batch_size == 0:
@@ -410,21 +410,22 @@ class DataSetIterator(Iterator):
             axes_offset = d_y_over_d_n_offset + y_dimension
 
             boundary_data = BoundaryDataBatch(
-                tf.convert_to_tensor(boundary_ic_data, tf.float32),
+                tf.convert_to_tensor(boundary_ic_data, dtype=tf.float32),
                 tf.convert_to_tensor(
-                    boundary_collocation_data[:, :x_offset], tf.float32),
+                    boundary_collocation_data[:, :x_offset], dtype=tf.float32),
                 tf.convert_to_tensor(
                     boundary_collocation_data[:, x_offset:y_offset],
-                    tf.float32),
+                    dtype=tf.float32),
                 tf.convert_to_tensor(
                     boundary_collocation_data[:, y_offset:d_y_over_d_n_offset],
-                    tf.float32),
+                    dtype=tf.float32),
                 tf.convert_to_tensor(
                     boundary_collocation_data[
                         :,
                         d_y_over_d_n_offset:axes_offset],
-                    tf.float32),
+                    dtype=tf.float32),
                 tf.convert_to_tensor(
-                    boundary_collocation_data[:, axes_offset:], tf.float32))
+                    boundary_collocation_data[:, axes_offset:],
+                    dtype=tf.float32))
 
         return DataBatch(domain_data, boundary_data)

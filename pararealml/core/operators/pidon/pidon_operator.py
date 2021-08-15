@@ -56,9 +56,23 @@ class OptimizationArgs(NamedTuple):
     verbose: bool = True
 
 
+class SecondaryOptimizationArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the training of a PIDON
+    model using a second order optimization method to fine tune the model
+    parameters.
+    """
+    max_iterations: int = 50
+    gradient_tol: float = 1e-8
+    diff_eq_loss_weight: float = 1.
+    ic_loss_weight: float = 1.
+    bc_loss_weight: float = 1.
+    verbose: bool = True
+
+
 class PIDONOperator(Operator):
     """
-    A physics informed DeepONet based unsupervised machine learning operator
+    A physics-informed DeepONet based unsupervised machine learning operator
     for solving initial value problems.
     """
 
@@ -151,7 +165,9 @@ class PIDONOperator(Operator):
             training_data_args: DataArgs,
             model_args: ModelArgs,
             optimization_args: OptimizationArgs,
-            test_data_args: Optional[DataArgs] = None
+            test_data_args: Optional[DataArgs] = None,
+            secondary_optimization_args: Optional[SecondaryOptimizationArgs] =
+            None
     ) -> Tuple[Sequence[Loss], Sequence[Loss]]:
         """
         Trains a physics-informed DeepONet model on the provided constrained
@@ -168,13 +184,16 @@ class PIDONOperator(Operator):
             optimization arguments
         :param test_data_args: the test data generation and batch size
             arguments
+        :param secondary_optimization_args: the physics-informed DeepONet model
+            optimization arguments for fine tuning the model parameters using
+            a (quasi) second order optimization method
         :return: the training loss history and the test loss history
         """
         training_data_set = DataSet(
             cp,
             t_interval,
-            y_0_functions=training_data_args.y_0_functions,
             point_sampler=self._sampler,
+            y_0_functions=training_data_args.y_0_functions,
             n_domain_points=training_data_args.n_domain_points,
             n_boundary_points=training_data_args.n_boundary_points)
         training_data = training_data_set.get_iterator(
@@ -185,8 +204,8 @@ class PIDONOperator(Operator):
             test_data_set = DataSet(
                 cp,
                 t_interval,
-                y_0_functions=test_data_args.y_0_functions,
                 point_sampler=self._sampler,
+                y_0_functions=test_data_args.y_0_functions,
                 n_domain_points=test_data_args.n_domain_points,
                 n_boundary_points=test_data_args.n_boundary_points)
             test_data = test_data_set.get_iterator(
@@ -196,23 +215,24 @@ class PIDONOperator(Operator):
         else:
             test_data = None
 
-        model = PIDeepONet(
-            cp,
-            branch_net_layer_sizes=model_args.branch_net_layer_sizes,
-            trunk_net_layer_sizes=model_args.trunk_net_layer_sizes,
-            branch_initialisation=model_args.branch_initialisation,
-            trunk_initialisation=model_args.trunk_initialisation,
-            branch_activation=model_args.branch_activation,
-            trunk_activation=model_args.trunk_activation)
+        model = PIDeepONet(cp, **model_args._asdict())
         model.init()
-        loss_histories = model.train(
+
+        loss_histories = model.fit(
             training_data=training_data,
             test_data=test_data,
-            optimizer=optimization_args.optimizer,
-            epochs=optimization_args.epochs,
-            diff_eq_loss_weight=optimization_args.diff_eq_loss_weight,
-            ic_loss_weight=optimization_args.ic_loss_weight,
-            bc_loss_weight=optimization_args.bc_loss_weight,
-            verbose=optimization_args.verbose)
+            **optimization_args._asdict())
+
+        if secondary_optimization_args:
+            secondary_losses = model.fit_with_lbfgs(
+                training_data=training_data,
+                test_data=test_data,
+                **secondary_optimization_args._asdict())
+
+            loss_histories[0].append(secondary_losses[0])
+            if secondary_losses[1] is not None:
+                loss_histories[1].append(secondary_losses[1])
+
         self._model = model
+
         return loss_histories
