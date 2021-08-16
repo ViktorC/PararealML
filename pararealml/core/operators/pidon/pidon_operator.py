@@ -35,8 +35,9 @@ class ModelArgs(NamedTuple):
     A container class for arguments pertaining to the architecture of a PIDON
     model.
     """
-    branch_net_layer_sizes: List[int]
-    trunk_net_layer_sizes: List[int]
+    latent_output_size: int
+    branch_hidden_layer_sizes: Optional[List[int]] = None
+    trunk_hidden_layer_sizes: Optional[List[int]] = None
     branch_initialisation: Optional[str] = None
     trunk_initialisation: Optional[str] = None
     branch_activation: Optional[str] = 'tanh'

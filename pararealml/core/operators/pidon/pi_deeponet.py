@@ -27,8 +27,9 @@ class PIDeepONet:
     def __init__(
             self,
             cp: ConstrainedProblem,
-            branch_net_layer_sizes: List[int],
-            trunk_net_layer_sizes: List[int],
+            latent_output_size: int,
+            branch_hidden_layer_sizes: Optional[List[int]] = None,
+            trunk_hidden_layer_sizes: Optional[List[int]] = None,
             branch_initialisation: Optional[str] = None,
             trunk_initialisation: Optional[str] = None,
             branch_activation: Optional[str] = 'tanh',
@@ -37,10 +38,12 @@ class PIDeepONet:
         """
         :param cp: the constrained problem to build a physics-informed neural
             network around
-        :param branch_net_layer_sizes: a list of the sizes of the hidden and
-            output layers of the branch net
-        :param trunk_net_layer_sizes: a list of the sizes of the hidden and
-            output layers of the trunk net
+        :param latent_output_size: the size of the latent output of the
+            branch and trunk networks of the DeepONet model
+        :param branch_hidden_layer_sizes: a list of the sizes of the hidden
+            layers of the branch net
+        :param trunk_hidden_layer_sizes: a list of the sizes of the hidden
+            layers of the trunk net
         :param branch_initialisation: the initialisation method to use for the
             weights of the branch net
         :param trunk_initialisation: the initialisation method to use for the
@@ -50,9 +53,7 @@ class PIDeepONet:
         :param trunk_activation: the activation function to use for the layers
             of the trunk net
         """
-        if len(branch_net_layer_sizes) < 1:
-            raise ValueError
-        if len(trunk_net_layer_sizes) < 1:
+        if latent_output_size < 1:
             raise ValueError
 
         diff_eq = cp.differential_equation
@@ -60,6 +61,7 @@ class PIDeepONet:
         y_dimension = diff_eq.y_dimension
 
         self._cp = cp
+        self._latent_output_size = latent_output_size
 
         if x_dimension:
             mesh = cp.mesh
@@ -69,19 +71,23 @@ class PIDeepONet:
             self._sensor_points = None
             sensor_input_size = y_dimension
 
-        self._branch_net = create_fnn(
-            [sensor_input_size] + branch_net_layer_sizes,
+        if branch_hidden_layer_sizes is None:
+            branch_hidden_layer_sizes = []
+        if trunk_hidden_layer_sizes is None:
+            trunk_hidden_layer_sizes = []
+
+        self._branch_net = create_regression_fnn(
+            [sensor_input_size] +
+            branch_hidden_layer_sizes +
+            [latent_output_size * y_dimension],
             branch_initialisation,
             branch_activation)
-        self._trunk_net = create_fnn(
-            [1 + x_dimension] + trunk_net_layer_sizes,
+        self._trunk_net = create_regression_fnn(
+            [x_dimension + 1] +
+            trunk_hidden_layer_sizes +
+            [latent_output_size * y_dimension],
             trunk_initialisation,
             trunk_activation)
-        self._combiner_net = create_fnn(
-            [
-                branch_net_layer_sizes[-1] + trunk_net_layer_sizes[-1],
-                y_dimension
-            ])
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
@@ -101,13 +107,6 @@ class PIDeepONet:
         return self._branch_net
 
     @property
-    def combiner_net(self) -> Sequential:
-        """
-        The combiner neural network of the model.
-        """
-        return self._combiner_net
-
-    @property
     def trunk_net(self) -> Sequential:
         """
         The trunk neural network of the model.
@@ -116,11 +115,10 @@ class PIDeepONet:
 
     def init(self):
         """
-        Initialises the branch, trunk, and combiner networks.
+        Initialises the branch and trunk networks.
         """
         self._branch_net.build()
         self._trunk_net.build()
-        self._combiner_net.build()
 
     def fit(
             self,
@@ -134,7 +132,7 @@ class PIDeepONet:
             verbose: bool = True
     ) -> Tuple[List[Loss], List[Loss]]:
         """
-        Fits the branch, trunk, and combiner net parameters by minimising the
+        Fits the branch and trunk net parameters by minimising the
         physics-informed loss function over the provided training data set. It
         also evaluates the loss over both the training data and the test data,
         if provided, for every epoch.
@@ -216,7 +214,7 @@ class PIDeepONet:
             bc_loss_weight: float = 1.,
             verbose: bool = True) -> Tuple[Loss, Optional[Loss]]:
         """
-        Fits the branch, trunk, and combiner net parameters by minimising the
+        Fits the branch and trunk net parameters by minimising the
         physics-informed loss function over the provided training data set
         using the L-BFGS optimization method. It also evaluates the loss over
         both the training data and the test data, if provided, for every epoch.
@@ -243,10 +241,8 @@ class PIDeepONet:
         @tf.function
         def set_model_parameters(parameters: tf.Tensor):
             offset = 0
-            for var in \
-                    self._branch_net.trainable_variables + \
-                    self._trunk_net.trainable_variables + \
-                    self._combiner_net.trainable_variables:
+            for var in self._branch_net.trainable_variables + \
+                    self._trunk_net.trainable_variables:
                 var_size = tf.reduce_prod(var.shape)
                 var.assign(tf.reshape(
                     parameters[0, offset:offset + var_size], var.shape))
@@ -267,8 +263,7 @@ class PIDeepONet:
             gradients = auto_diff.gradient(
                 value,
                 self._branch_net.trainable_variables +
-                self._trunk_net.trainable_variables +
-                self._combiner_net.trainable_variables)
+                self._trunk_net.trainable_variables)
             flattened_gradients = tf.concat([
                 tf.reshape(gradient, (1, -1)) for gradient in gradients
             ], axis=1)
@@ -281,8 +276,7 @@ class PIDeepONet:
         flattened_parameters = tf.concat([
             tf.reshape(var, (1, -1)) for var in
             self._branch_net.trainable_variables +
-            self._trunk_net.trainable_variables +
-            self._combiner_net.trainable_variables
+            self._trunk_net.trainable_variables
         ], axis=1)
         results = tfp.optimizer.lbfgs_minimize(
             value_and_gradients_function=value_and_gradients_function,
@@ -326,16 +320,17 @@ class PIDeepONet:
         :param x: the spatial input variables of the composed function
         :return: the predicted value of (y ∘ u)(t, x)
         """
-        branch_output = self._branch_net(u)
+        diff_eq = self._cp.differential_equation
+        x_dimension = diff_eq.x_dimension
+        y_dimension = diff_eq.y_dimension
 
-        trunk_input = tf.concat([t, x], axis=1) \
-            if self._cp.differential_equation.x_dimension else t
-        trunk_output = self._trunk_net(trunk_input)
-
-        combiner_input = tf.concat([branch_output, trunk_output], axis=1)
-        combiner_output = self._combiner_net(combiner_input)
-
-        return combiner_output
+        branch_output = tf.reshape(
+            self._branch_net(u),
+            (-1, self._latent_output_size, y_dimension))
+        trunk_output = tf.reshape(
+            self._trunk_net(tf.concat([t, x], axis=1) if x_dimension else t),
+            (-1, self._latent_output_size, y_dimension))
+        return tf.math.reduce_sum(branch_output * trunk_output, axis=1)
 
     @tf.function
     def _step(
@@ -368,8 +363,7 @@ class PIDeepONet:
         optimizer.minimize(
             loss.weighted_total_loss,
             self._branch_net.trainable_variables +
-            self._trunk_net.trainable_variables +
-            self._combiner_net.trainable_variables,
+            self._trunk_net.trainable_variables,
             tape=auto_diff)
 
         return loss
@@ -557,20 +551,19 @@ class PIDeepONet:
         return lhs_functions
 
 
-def create_fnn(
+def create_regression_fnn(
         layer_sizes: Sequence[int],
         initialisation: Optional[str] = None,
         activation: Optional[str] = None
 ) -> Sequential:
     """
-    Creates a fully-connected neural network model.
+    Creates a fully-connected feedforward neural network regression model.
 
     :param layer_sizes: a list of the sizes of the layers including the input
         layer
     :param initialisation: the initialisation method to use for the weights of
         the layers
-    :param activation: the activation function to use for the hidden and output
-        layers
+    :param activation: the activation function to use for the hidden layers
     :return: the fully-connected neural network model
     """
     if len(layer_sizes) < 2:
@@ -581,10 +574,11 @@ def create_fnn(
 
     model = Sequential()
     model.add(InputLayer(input_shape=layer_sizes[0]))
-    for layer_size in layer_sizes[1:]:
+    for layer_size in layer_sizes[1:-1]:
         model.add(Dense(
             layer_size,
             kernel_initializer=initialisation,
             activation=activation))
+    model.add(Dense(layer_sizes[-1], kernel_initializer=initialisation))
 
     return model
