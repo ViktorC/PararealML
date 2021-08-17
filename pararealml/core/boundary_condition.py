@@ -11,7 +11,7 @@ class BoundaryCondition(ABC):
     @abstractmethod
     def is_static(self) -> bool:
         """
-        Whether the boundary condition is only dependent on x or also on t.
+        Whether the boundary condition is time independent.
         """
 
     @property
@@ -80,7 +80,7 @@ class DirichletBoundaryCondition(BoundaryCondition):
         """
         :param y_condition: the function that determines the value of y at the
         coordinates along the boundary specified by x
-        :param is_static: whether the boundary condition is static
+        :param is_static: whether the boundary condition is time independent
         """
         self._y_condition = y_condition
         self._is_static = is_static
@@ -130,7 +130,7 @@ class NeumannBoundaryCondition(BoundaryCondition):
             derivative of y at the coordinates along the boundary specified by
             x with respect to the normal vector to the boundary passing through
             the same point
-        :param is_static: whether the boundary condition is static
+        :param is_static: whether the boundary condition is time independent
         """
         self._d_y_condition = d_y_condition
         self._is_static = is_static
@@ -185,7 +185,7 @@ class CauchyBoundaryCondition(BoundaryCondition):
             derivative of y at the coordinates along the boundary specified by
             x with respect to the normal vector to the boundary passing through
             the same point
-        :param is_static: whether the boundary condition is static
+        :param is_static: whether the boundary condition is time independent
         """
         self._y_condition = y_condition
         self._d_y_condition = d_y_condition
