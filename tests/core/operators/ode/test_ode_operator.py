@@ -13,7 +13,7 @@ from pararealml.core.mesh import Mesh
 from pararealml.core.operators.ode.ode_operator import ODEOperator
 
 
-def test_ode_and_fdm_operators_on_ode_with_analytic_solution():
+def test_ode_operator_on_ode_with_analytic_solution():
     r = .02
     y_0 = 100.
 
