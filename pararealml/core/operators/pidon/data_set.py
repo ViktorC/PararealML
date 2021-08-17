@@ -425,7 +425,7 @@ class DataSetIterator(Iterator):
                         d_y_over_d_n_offset:axes_offset],
                     dtype=tf.float32),
                 tf.convert_to_tensor(
-                    boundary_collocation_data[:, axes_offset:],
-                    dtype=tf.float32))
+                    boundary_collocation_data[:, axes_offset],
+                    dtype=tf.int32))
 
         return DataBatch(domain_data, boundary_data)
