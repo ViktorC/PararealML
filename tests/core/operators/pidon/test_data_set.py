@@ -182,7 +182,7 @@ def test_iterator_pde():
         assert batch.boundary.x.shape == (10, 2)
         assert batch.boundary.y.shape == (10, 1)
         assert batch.boundary.d_y_over_d_n.shape == (10, 1)
-        assert batch.boundary.axes.shape == (10, 1)
+        assert batch.boundary.axes.shape == (10,)
 
         assert np.all(batch.boundary.y.numpy() == 0.)
         assert np.isnan(batch.boundary.d_y_over_d_n.numpy()).all()
@@ -198,4 +198,4 @@ def test_iterator_pde():
     assert full_batch.boundary.x.shape == (100, 2)
     assert full_batch.boundary.y.shape == (100, 1)
     assert full_batch.boundary.d_y_over_d_n.shape == (100, 1)
-    assert full_batch.boundary.axes.shape == (100, 1)
+    assert full_batch.boundary.axes.shape == (100,)
