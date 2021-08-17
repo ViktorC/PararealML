@@ -44,7 +44,7 @@ def test_fdm_operator_on_ode_with_analytic_solution():
     assert np.allclose(analytic_y, solution.discrete_y())
 
 
-def test_fdm_operator_conserves_density_on_no_flux_diffusion_equation():
+def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
     diff_eq = DiffusionEquation(1, 5.)
     mesh = Mesh(((0., 500.),), (.1,))
     bcs = (
