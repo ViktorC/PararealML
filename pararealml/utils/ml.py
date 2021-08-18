@@ -6,6 +6,13 @@ from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 
+def use_cpu():
+    """
+    Ensures that Tensorflow does not use any GPUs.
+    """
+    tf.config.experimental.set_visible_devices([], 'GPU')
+
+
 def limit_visible_gpus():
     """
     If there are GPUs available, it sets the GPU corresponding to the MPI rank
