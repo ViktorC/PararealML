@@ -13,12 +13,10 @@ from pararealml.core.operators.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
 from pararealml.core.operators.pidon.pidon_operator import PIDONOperator, \
     DataArgs, ModelArgs, OptimizationArgs, SecondaryOptimizationArgs
-from pararealml.utils.ml import use_cpu
 from pararealml.utils.rand import set_random_seed
 
 
 def test_pidon_operator_on_ode_with_analytic_solution():
-    use_cpu()
     set_random_seed(0)
 
     r = 4.
@@ -82,7 +80,6 @@ def test_pidon_operator_on_ode_with_analytic_solution():
 
 
 def test_pidon_operator_on_ode_system():
-    use_cpu()
     set_random_seed(0)
 
     diff_eq = LotkaVolterraEquation()
@@ -155,7 +152,6 @@ def test_pidon_operator_on_ode_system():
 
 
 def test_pidon_operator_on_pde():
-    use_cpu()
     set_random_seed(0)
 
     diff_eq = DiffusionEquation(1, .25)
