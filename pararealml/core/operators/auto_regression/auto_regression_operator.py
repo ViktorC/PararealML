@@ -91,8 +91,8 @@ class AutoRegressionOperator(Operator):
             .reshape(-1, diff_eq.y_dimension)
 
         for i, t_i in enumerate(time_points[:-1]):
-            x[:, diff_eq.x_dimension] = t_i
-            x[:, diff_eq.x_dimension + 1:] = y_i
+            x[:, 0] = t_i
+            x[:, 1 + diff_eq.x_dimension:] = y_i
             y_i = self._model.predict(x).reshape(
                 x.shape[0], diff_eq.y_dimension)
             y[i, ...] = y_i.reshape(y_shape)
@@ -227,21 +227,17 @@ class AutoRegressionOperator(Operator):
         Creates a placeholder array for the ML model inputs. If the constrained
         problem is an ODE, it returns an empty array of shape (1, 1) into which
         t can be substituted to create x. If the constrained problem is a PDE,
-        it returns an array of shape (n_mesh_points, x_dimension + 1) whose
+        it returns an array of shape (n_mesh_points, 1 + x_dimension) whose
         each row is populated with the spatial coordinates of the corresponding
-        mesh point in addition to an empty column for t.
+        mesh point in addition to an empty leading column for t.
         :param cp: the constrained problem to base the inputs on
         :return: the placeholder array for the ML inputs
         """
         diff_eq = cp.differential_equation
 
         if diff_eq.x_dimension:
-            mesh = cp.mesh
-            mesh_shape = mesh.shape(self._vertex_oriented)
-            n_points = np.prod(mesh_shape)
-            x = np.empty((n_points, diff_eq.x_dimension + 1))
-            for row_ind, index in enumerate(np.ndindex(mesh_shape)):
-                x[row_ind, :-1] = mesh.x(index, self._vertex_oriented)
+            x = cp.mesh.all_x(self._vertex_oriented)
+            x = np.hstack((np.empty((x.shape[0], 1)), x))
         else:
             x = np.empty((1, 1))
 
@@ -265,7 +261,7 @@ class AutoRegressionOperator(Operator):
 
         x = np.tile(input_placeholder, (len(time_points), 1))
         t = np.repeat(time_points, n_mesh_points)
-        x[:, cp.differential_equation.x_dimension] = t
+        x[:, 0] = t
 
         return x
 
