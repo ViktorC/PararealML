@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Union, List, Optional, Tuple, Sequence
+from typing import Union, List, Optional, Tuple, Sequence
 
 import numpy as np
 
@@ -30,7 +30,7 @@ class NumericalDifferentiator(ABC):
             Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         """
-        Returns the derivative of y with respect to the spatial dimension
+        Computes the derivative of y with respect to the spatial dimension
         defined by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
@@ -58,7 +58,7 @@ class NumericalDifferentiator(ABC):
             Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         """
-        Returns the second derivative of y with respect to the spatial
+        Computes the second derivative of y with respect to the spatial
         dimensions defined by x_axis1 and x_axis2 at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
@@ -80,7 +80,7 @@ class NumericalDifferentiator(ABC):
         """
 
     @abstractmethod
-    def _calculate_updated_anti_laplacian(
+    def _next_anti_laplacian_estimate(
             self,
             y_hat: np.ndarray,
             laplacian: np.ndarray,
@@ -89,7 +89,7 @@ class NumericalDifferentiator(ABC):
             coordinate_system_type: CoordinateSystem
     ) -> np.ndarray:
         """
-        Given an estimate of the anti-Laplacian, it returns an improved
+        Given an estimate of the anti-Laplacian, it computes an improved
         estimate.
 
         :param y_hat: the current estimated values of the solution at every
@@ -115,7 +115,7 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the column of the Jacobian matrix of y corresponding to the
+        Computes the column of the Jacobian matrix of y corresponding to the
         spatial dimension specified by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
@@ -162,7 +162,7 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the column of the Hessian tensor of y corresponding to the
+        Computes the column of the Hessian tensor of y corresponding to the
         spatial dimensions defined by x_axis1 and x_axis2 at every point of
         the mesh.
 
@@ -218,8 +218,8 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the divergence of the elements of y defined by y_inds with
-        respect to x at every point of the mesh.
+        Computes the divergence of y with respect to x at every point of the
+        mesh.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
@@ -268,7 +268,7 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the curl_ind-th component of the curl of y at every point of
+        Computes the curl_ind-th component of the curl of y at every point of
         the mesh.
 
         :param y: the values of y at every point of the mesh
@@ -368,7 +368,7 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the Laplacian of y at every point of the mesh.
+        Computes the Laplacian of y at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
         :param d_x: the step sizes used to create the mesh
@@ -419,8 +419,7 @@ class NumericalDifferentiator(ABC):
             CoordinateSystem.CARTESIAN
     ) -> np.ndarray:
         """
-        Returns the solution to Poisson's equation defined by the provided
-        Laplacian.
+        Computes the anti-Laplacian using the Jacobi method.
 
         :param laplacian: the right-hand side of the equation
         :param d_x: the step sizes of the mesh along the spatial axes
@@ -455,65 +454,29 @@ class NumericalDifferentiator(ABC):
                 laplacian.ndim - 1,
                 laplacian.shape[-1])
 
-        def update(y: np.ndarray) -> np.ndarray:
-            return self._calculate_updated_anti_laplacian(
+        if y_init is None:
+            y = np.random.random(laplacian.shape)
+        else:
+            if y_init.shape != laplacian.shape:
+                raise ValueError
+            y = y_init
+
+        apply_constraints_along_last_axis(y_constraints, y)
+
+        diff = float('inf')
+        while diff > tol:
+            y_next = self._next_anti_laplacian_estimate(
                 y,
                 laplacian,
                 d_x,
                 derivative_boundary_constraints,
                 coordinate_system_type)
+            apply_constraints_along_last_axis(y_constraints, y_next)
 
-        return self._solve_with_jacobi_method(
-            update, laplacian.shape, tol, y_init, y_constraints)
+            diff = np.linalg.norm(y - y_next)
+            y = y_next
 
-    @staticmethod
-    def _solve_with_jacobi_method(
-            update_func: Callable[[np.ndarray], np.ndarray],
-            y_shape: Tuple[int, ...],
-            tol: float,
-            y_init: Optional[np.ndarray],
-            y_constraints: Sequence[Optional[Constraint]]
-    ) -> np.ndarray:
-        """
-        Calculates the inverse of a differential operation using the Jacobi
-        method.
-
-        :param update_func: the function to calculate the updated
-            anti-differential
-        :param y_shape: the shape of the solution
-        :param tol: the stopping criterion for the Jacobi algorithm; once the
-            second norm of the difference of the estimate and the updated
-            estimate drops below this threshold, the equation is considered to
-            be solved
-        :param y_init: an optional initial estimate of the solution; if it is
-            None, a random array is used
-        :param y_constraints: a sequence of constraints on the values of the
-            solution containing a constraint for each element of y
-        :return: the inverse of the differential operation
-        """
-        if len(y_shape) < 2:
-            raise ValueError
-        if len(y_constraints) != y_shape[-1]:
-            raise ValueError
-
-        if y_init is None:
-            y_init = np.random.random(y_shape)
-        else:
-            if y_init.shape != y_shape:
-                raise ValueError
-
-        apply_constraints_along_last_axis(y_constraints, y_init)
-
-        diff = float('inf')
-
-        while diff > tol:
-            y = update_func(y_init)
-            apply_constraints_along_last_axis(y_constraints, y)
-
-            diff = np.linalg.norm(y - y_init)
-            y_init = y
-
-        return y_init
+        return y
 
     @staticmethod
     def _verify_and_get_derivative_boundary_constraints(
@@ -723,7 +686,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
 
         return second_derivative
 
-    def _calculate_updated_anti_laplacian(
+    def _next_anti_laplacian_estimate(
             self,
             y_hat: np.ndarray,
             laplacian: np.ndarray,
