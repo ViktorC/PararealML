@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, Sequence
 
+BoundaryConditionFunction = Callable[
+    [Sequence[float], Optional[float]],
+    Sequence[Optional[float]]
+]
+
 
 class BoundaryCondition(ABC):
     """
@@ -72,10 +77,7 @@ class DirichletBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: Callable[
-                [Sequence[float], Optional[float]],
-                Sequence[Optional[float]]
-            ],
+            y_condition: BoundaryConditionFunction,
             is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
@@ -120,10 +122,7 @@ class NeumannBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            d_y_condition: Callable[
-                [Sequence[float], Optional[float]],
-                Sequence[Optional[float]]
-            ],
+            d_y_condition: BoundaryConditionFunction,
             is_static: bool = False):
         """
         :param d_y_condition: the function that determines the value of the
@@ -169,14 +168,8 @@ class CauchyBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: Callable[
-                [Sequence[float], Optional[float]],
-                Sequence[Optional[float]]
-            ],
-            d_y_condition: Callable[
-                [Sequence[float], Optional[float]],
-                Sequence[Optional[float]]
-            ],
+            y_condition: BoundaryConditionFunction,
+            d_y_condition: BoundaryConditionFunction,
             is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the

@@ -1,9 +1,10 @@
 from copy import deepcopy, copy
-from typing import Tuple, Optional, Callable, Sequence, List, Union
+from typing import Tuple, Optional, Sequence, List, Union
 
 import numpy as np
 
-from pararealml.core.boundary_condition import BoundaryCondition
+from pararealml.core.boundary_condition import BoundaryCondition, \
+    BoundaryConditionFunction
 from pararealml.core.constraint import Constraint
 from pararealml.core.differential_equation import DifferentialEquation
 from pararealml.core.mesh import Mesh
@@ -366,10 +367,7 @@ class ConstrainedProblem:
     def _create_boundary_constraints_for_all_y(
             self,
             has_condition: bool,
-            condition_function: Callable[
-                [Sequence[float], Optional[float]],
-                Optional[Sequence[Optional[float]]]
-            ],
+            condition_function: BoundaryConditionFunction,
             boundary_shape: Tuple[int, ...],
             d_x_arr: np.ndarray,
             t: Optional[float],
