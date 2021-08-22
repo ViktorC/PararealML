@@ -20,19 +20,22 @@ class Constraint:
         self._value = np.copy(value)
         self._mask = np.copy(mask)
 
+        self._value.setflags(write=False)
+        self._mask.setflags(write=False)
+
     @property
     def value(self) -> np.ndarray:
         """
         The constraint values.
         """
-        return np.copy(self._value)
+        return self._value
 
     @property
     def mask(self) -> np.ndarray:
         """
         The mask denoting the elements of the array that are to be constrained.
         """
-        return np.copy(self._mask)
+        return self._mask
 
     def apply(self, array: np.ndarray) -> np.ndarray:
         """

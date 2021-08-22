@@ -1,4 +1,3 @@
-from copy import copy, deepcopy
 from enum import Enum
 from typing import Tuple, Sequence, Callable, Iterable
 
@@ -53,10 +52,11 @@ class Mesh:
                 and len(d_x) != 3:
             raise ValueError
 
-        self._x_intervals = tuple(deepcopy(x_intervals))
+        self._dimensions = len(x_intervals)
+        self._x_intervals = tuple(x_intervals)
         self._vertices_shape = self._calculate_shape(d_x, True)
         self._cells_shape = self._calculate_shape(d_x, False)
-        self._d_x = np.array(copy(d_x))
+        self._d_x = tuple(d_x)
         self._vertex_coordinates = self._calculate_coordinates(True)
         self._cell_center_coordinates = self._calculate_coordinates(False)
         self._coordinate_system_type = coordinate_system_type
@@ -67,18 +67,25 @@ class Mesh:
             [coordinates[0] for coordinates in self._cell_center_coordinates])
 
     @property
+    def dimensions(self) -> int:
+        """
+        The number of spatial dimensions the mesh spans.
+        """
+        return self._dimensions
+
+    @property
     def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
         """
         The bounds of each axis of the domain
         """
-        return deepcopy(self._x_intervals)
+        return self._x_intervals
 
     @property
     def d_x(self) -> Tuple[float, ...]:
         """
         The step sizes along each axis of the domain.
         """
-        return tuple(self._d_x)
+        return self._d_x
 
     @property
     def coordinate_system_type(self) -> CoordinateSystem:
@@ -92,21 +99,21 @@ class Mesh:
         """
         The shape of the array of the vertices of the discretised domain.
         """
-        return copy(self._vertices_shape)
+        return self._vertices_shape
 
     @property
     def cells_shape(self) -> Tuple[int, ...]:
         """
         The shape of the array of the cell centers of the discretised domain.
         """
-        return copy(self._cells_shape)
+        return self._cells_shape
 
     @property
     def vertex_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
         A tuple of the coordinates of the vertices of the mesh along each axis.
         """
-        return deepcopy(self._vertex_coordinates)
+        return self._vertex_coordinates
 
     @property
     def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
@@ -114,7 +121,7 @@ class Mesh:
         A tuple of the coordinates of the cell centers of the mesh along each
         axis.
         """
-        return deepcopy(self._cell_center_coordinates)
+        return self._cell_center_coordinates
 
     def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
         """
@@ -153,7 +160,7 @@ class Mesh:
         """
         offset = self._x_vertex_offset if vertex_oriented \
             else self._x_cell_center_offset
-        return tuple(offset + self._d_x * index)
+        return tuple(offset + np.multiply(self._d_x, index))
 
     def all_x(self, vertex_oriented: bool) -> np.ndarray:
         """
@@ -252,7 +259,8 @@ class Mesh:
                 x_low += half_space_step
                 x_high -= half_space_step
 
-            coordinates.append(
-                np.linspace(x_low, x_high, mesh_shape[i]))
+            axis_coordinates = np.linspace(x_low, x_high, mesh_shape[i])
+            axis_coordinates.setflags(write=False)
+            coordinates.append(axis_coordinates)
 
         return tuple(coordinates)

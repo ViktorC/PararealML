@@ -120,9 +120,11 @@ class DataSet:
             return self._cp.mesh.evaluate_fields(
                 self._y_0_functions, vertex_oriented=False, flatten=True)
 
-        return np.array([
+        ic_data = np.array([
             y_0_function(None) for y_0_function in self._y_0_functions
         ])
+        ic_data.setflags(write=False)
+        return ic_data
 
     def _create_domain_collocation_data(self) -> np.ndarray:
         """
@@ -135,11 +137,15 @@ class DataSet:
                 self._n_domain_points,
                 self._t_interval,
                 self._cp.mesh.x_intervals)
-            return np.concatenate((domain_points.t, domain_points.x), axis=1)
+            domain_collocation_data = \
+                np.concatenate((domain_points.t, domain_points.x), axis=1)
+        else:
+            domain_points = self._point_sampler.sample_domain_points(
+                self._n_domain_points, self._t_interval, None)
+            domain_collocation_data = domain_points.t
 
-        domain_points = self._point_sampler.sample_domain_points(
-            self._n_domain_points, self._t_interval, None)
-        return domain_points.t
+        domain_collocation_data.setflags(write=False)
+        return domain_collocation_data
 
     def _create_boundary_collocation_data(self) -> Optional[np.ndarray]:
         """
@@ -191,13 +197,15 @@ class DataSet:
                         if bc.has_d_y_condition else [np.nan] * y_dimension
                     d_y_over_d_n.append(d_y_over_d_n_i)
 
-        return np.concatenate(
+        boundary_collocation_data = np.concatenate(
             (np.array(t),
              np.array(x),
              np.array(y),
              np.array(d_y_over_d_n),
              np.array(axes)),
             axis=1)
+        boundary_collocation_data.setflags(write=False)
+        return boundary_collocation_data
 
 
 class DomainDataBatch(NamedTuple):

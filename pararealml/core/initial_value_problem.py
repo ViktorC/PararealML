@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import copy
 from typing import Callable, Optional, Tuple, Sequence
 
 from pararealml.core.constrained_problem import ConstrainedProblem
@@ -45,7 +44,7 @@ class InitialValueProblem:
             raise ValueError
 
         self._cp = cp
-        self._t_interval = copy(t_interval)
+        self._t_interval = t_interval
         self._initial_condition = initial_condition
         self._exact_y = exact_y
 
@@ -61,7 +60,7 @@ class InitialValueProblem:
         """
         The bounds of the temporal domain of the differential equation.
         """
-        return copy(self._t_interval)
+        return self._t_interval
 
     @property
     def initial_condition(self) -> InitialCondition:

@@ -142,7 +142,7 @@ class ContinuousInitialCondition(InitialCondition):
                     self._cp.static_y_vertex_constraints,
                     y_0)
         else:
-            y_0 = self._y_0_func(None)
+            y_0 = np.array(self._y_0_func(None))
 
         return y_0
 

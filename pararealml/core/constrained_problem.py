@@ -1,4 +1,4 @@
-from copy import deepcopy, copy
+from copy import deepcopy
 from typing import Tuple, Optional, Sequence, List, Union
 
 import numpy as np
@@ -70,13 +70,19 @@ class ConstrainedProblem:
                 self._y_boundary_vertex_constraints, \
                     self._d_y_boundary_vertex_constraints = \
                     self.create_boundary_constraints(True)
+                self._y_boundary_vertex_constraints.setflags(write=False)
+                self._d_y_boundary_vertex_constraints.setflags(write=False)
+
                 self._y_boundary_cell_constraints, \
                     self._d_y_boundary_cell_constraints = \
                     self.create_boundary_constraints(False)
+                self._y_boundary_cell_constraints.setflags(write=False)
+                self._d_y_boundary_cell_constraints.setflags(write=False)
 
                 self._y_vertex_constraints = \
                     self.create_y_vertex_constraints(
                         self._y_boundary_vertex_constraints)
+                self._y_vertex_constraints.setflags(write=False)
             else:
                 self._y_boundary_vertex_constraints = None
                 self._y_boundary_cell_constraints = None
@@ -119,7 +125,7 @@ class ConstrainedProblem:
         The boundary conditions of the differential equation. If differential
         equation is an ODE, it is None.
         """
-        return deepcopy(self._boundary_conditions)
+        return self._boundary_conditions
 
     @property
     def are_all_boundary_conditions_static(self) -> bool:
@@ -136,7 +142,7 @@ class ConstrainedProblem:
         evaluated on the boundary vertices of the corresponding axes of the
         mesh. If the differential equation is an ODE, it is None.
         """
-        return copy(self._y_boundary_vertex_constraints)
+        return self._y_boundary_vertex_constraints
 
     @property
     def static_y_boundary_cell_constraints(self) -> Optional[np.ndarray]:
@@ -147,7 +153,7 @@ class ConstrainedProblem:
         corresponding axes of the mesh. If the differential equation is an ODE,
         it is None.
         """
-        return copy(self._y_boundary_cell_constraints)
+        return self._y_boundary_cell_constraints
 
     @property
     def static_d_y_boundary_vertex_constraints(self) -> Optional[np.ndarray]:
@@ -158,7 +164,7 @@ class ConstrainedProblem:
         boundary vertices of the corresponding axes of the mesh. If the
         differential equation is an ODE, it is None.
         """
-        return copy(self._d_y_boundary_vertex_constraints)
+        return self._d_y_boundary_vertex_constraints
 
     @property
     def static_d_y_boundary_cell_constraints(self) -> Optional[np.ndarray]:
@@ -169,7 +175,7 @@ class ConstrainedProblem:
         exterior faces of the boundary cells of the corresponding axes of the
         mesh. If the differential equation is an ODE, it is None.
         """
-        return copy(self._d_y_boundary_cell_constraints)
+        return self._d_y_boundary_cell_constraints
 
     @property
     def static_y_vertex_constraints(self) -> Optional[np.ndarray]:
@@ -178,7 +184,7 @@ class ConstrainedProblem:
         boundary conditions of y evaluated on all vertices of the mesh. If the
         differential equation is an ODE, it returns None.
         """
-        return copy(self._y_vertex_constraints)
+        return self._y_vertex_constraints
 
     @property
     def y_vertices_shape(self) -> Tuple[int, ...]:
@@ -186,7 +192,7 @@ class ConstrainedProblem:
         The shape of the array representing the vertices of the discretised
         solution to the constrained problem.
         """
-        return copy(self._y_vertices_shape)
+        return self._y_vertices_shape
 
     @property
     def y_cells_shape(self) -> Tuple[int, ...]:
@@ -194,9 +200,11 @@ class ConstrainedProblem:
         The shape of the array representing the cell centers of the discretised
         solution to the constrained problem.
         """
-        return copy(self._y_cells_shape)
+        return self._y_cells_shape
 
-    def y_shape(self, vertex_oriented: Optional[bool] = None):
+    def y_shape(
+            self,
+            vertex_oriented: Optional[bool] = None) -> Tuple[int, ...]:
         """
         Returns the shape of the array of the array representing the
         discretised solution to the constrained problem.
@@ -208,8 +216,8 @@ class ConstrainedProblem:
         """
         if self._diff_eq.x_dimension and vertex_oriented is None:
             raise ValueError
-        return copy(
-            self._y_vertices_shape if vertex_oriented else self._y_cells_shape)
+        return self._y_vertices_shape if vertex_oriented \
+            else self._y_cells_shape
 
     def create_y_vertex_constraints(
             self,

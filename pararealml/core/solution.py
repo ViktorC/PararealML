@@ -42,9 +42,11 @@ class Solution:
             raise ValueError
 
         self._cp = cp
-        self._t_coordinates = t_coordinates
-        self._discrete_y = discrete_y
+        self._t_coordinates = np.copy(t_coordinates)
+        self._discrete_y = np.copy(discrete_y)
         self._vertex_oriented = vertex_oriented
+
+        self._t_coordinates.setflags(write=False)
 
         if d_t is None:
             d_t = 0. if len(t_coordinates) == 1 \
@@ -79,7 +81,7 @@ class Solution:
         """
         The time coordinates at which the solution is evaluated.
         """
-        return np.copy(self._t_coordinates)
+        return self._t_coordinates
 
     def x_coordinates(
             self,

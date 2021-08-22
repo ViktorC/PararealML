@@ -105,8 +105,7 @@ class FDMOperator(Operator):
         :return: the function defining the value of y at the next time point
         """
         cp = ivp.constrained_problem
-        diff_eq = cp.differential_equation
-        eq_sys = diff_eq.symbolic_equation_system
+        eq_sys = cp.differential_equation.symbolic_equation_system
         symbol_mapper = FDMSymbolMapper(cp, self._differentiator)
 
         d_y_over_d_t_eq_indices = \
@@ -181,10 +180,8 @@ class FDMOperator(Operator):
             return lambda _: None, lambda _: None
 
         if cp.are_all_boundary_conditions_static:
-            static_y_constraints = cp.static_y_vertex_constraints
-            static_d_y_constraints = cp.static_d_y_boundary_vertex_constraints
-            return lambda _: static_y_constraints, \
-                lambda _: static_d_y_constraints
+            return lambda _: cp.static_y_vertex_constraints, \
+                lambda _: cp.static_d_y_boundary_vertex_constraints
 
         def y_constraints_function(
                 t: Optional[float]
