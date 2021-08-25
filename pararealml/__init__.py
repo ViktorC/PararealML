@@ -29,6 +29,8 @@ from pararealml.core.initial_condition import GaussianInitialCondition
 from pararealml.core.initial_condition import InitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
+from pararealml.core.mesh import to_cartesian_coordinates
+from pararealml.core.mesh import from_cartesian_coordinates
 from pararealml.core.solution import Solution
 
 __all__ = [
@@ -60,5 +62,7 @@ __all__ = [
     'GaussianInitialCondition',
     'InitialValueProblem',
     'Mesh',
+    'to_cartesian_coordinates',
+    'from_cartesian_coordinates',
     'Solution',
 ]

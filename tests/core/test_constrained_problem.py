@@ -59,13 +59,13 @@ def test_cp_2d_pde():
     d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
 
     d_y_0_d_x_0 = diff.gradient(
-        y[..., :1], mesh.d_x[0], 0, d_y_boundary_constraints[0, :1])
+        y[..., :1], mesh, 0, d_y_boundary_constraints[:, :1])
 
     assert np.all(d_y_0_d_x_0[d_y_0_d_x_0.shape[0] - 1, :, :] == 100.)
     assert np.all(d_y_0_d_x_0[:d_y_0_d_x_0.shape[0] - 1, :, :] == 0.)
 
     d_y_0_d_x_1 = diff.gradient(
-        y[..., :1], mesh.d_x[1], 1, d_y_boundary_constraints[1, :1])
+        y[..., :1], mesh, 1, d_y_boundary_constraints[:, :1])
 
     assert np.isclose(
         d_y_0_d_x_1[:, 0, 0],
@@ -74,13 +74,13 @@ def test_cp_2d_pde():
     assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
 
     d_y_1_d_x_0 = diff.gradient(
-        y[..., 1:], mesh.d_x[0], 0, d_y_boundary_constraints[0, 1:])
+        y[..., 1:], mesh, 0, d_y_boundary_constraints[:, 1:])
 
     assert np.all(d_y_1_d_x_0[d_y_1_d_x_0.shape[0] - 1, :, :] == -100.)
     assert np.all(d_y_1_d_x_0[:d_y_1_d_x_0.shape[0] - 1, :, :] == 0.)
 
     d_y_1_d_x_1 = diff.gradient(
-        y[..., 1:], mesh.d_x[1], 1, d_y_boundary_constraints[1, 1:])
+        y[..., 1:], mesh, 1, d_y_boundary_constraints[:, 1:])
 
     assert np.all(d_y_1_d_x_1 == 0.)
 

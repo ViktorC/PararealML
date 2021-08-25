@@ -6,6 +6,7 @@ import numpy as np
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
+from pararealml.core.mesh import to_cartesian_coordinates
 from pararealml.core.solution import Solution
 
 
@@ -176,6 +177,8 @@ class GaussianInitialCondition(ContinuousInitialCondition):
                 raise ValueError
             if cov.shape != (diff_eq.x_dimension, diff_eq.x_dimension):
                 raise ValueError
+
+        self._coordinate_system_type = cp.mesh.coordinate_system_type
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
@@ -195,7 +198,8 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
-        x_arr = np.array(x)
+        x_arr = np.array(
+            to_cartesian_coordinates(x, self._coordinate_system_type))
         return [multivariate_gaussian(x_arr, mean, cov) *
                 self._multipliers[i] for i, (mean, cov) in
                 enumerate(self._means_and_covs)]

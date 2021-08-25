@@ -39,11 +39,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
         super(FDMSymbolMapper, self).__init__(diff_eq)
 
         self._differentiator = differentiator
-
-        if diff_eq.x_dimension:
-            mesh = cp.mesh
-            self._d_x = mesh.d_x
-            self._coordinate_system_type = mesh.coordinate_system_type
+        self._mesh = cp.mesh
 
     def t_map_function(self) -> FDMSymbolMapFunction:
         return lambda arg: np.ndarray([arg.t])
@@ -57,10 +53,9 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
             x_axis: int) -> FDMSymbolMapFunction:
         return lambda arg: self._differentiator.gradient(
             arg.y[..., y_ind:y_ind + 1],
-            self._d_x[x_axis],
+            self._mesh,
             x_axis,
-            arg.d_y_constraint_function(arg.t)[x_axis, y_ind:y_ind + 1],
-            self._coordinate_system_type)
+            arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1])
 
     def y_hessian_map_function(
             self,
@@ -69,12 +64,10 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
             x_axis2: int) -> FDMSymbolMapFunction:
         return lambda arg: self._differentiator.hessian(
             arg.y[..., y_ind:y_ind + 1],
-            self._d_x[x_axis1],
-            self._d_x[x_axis2],
+            self._mesh,
             x_axis1,
             x_axis2,
-            arg.d_y_constraint_function(arg.t)[x_axis1, y_ind:y_ind + 1],
-            self._coordinate_system_type)
+            arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1])
 
     def y_divergence_map_function(
             self,
@@ -83,16 +76,14 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
         if indices_contiguous:
             return lambda arg: self._differentiator.divergence(
                 arg.y[..., y_indices[0]:y_indices[-1] + 1],
-                self._d_x,
+                self._mesh,
                 arg.d_y_constraint_function(
-                    arg.t)[:, y_indices[0]:y_indices[-1] + 1],
-                self._coordinate_system_type)
+                    arg.t)[:, y_indices[0]:y_indices[-1] + 1])
         else:
             return lambda arg: self._differentiator.divergence(
                 arg.y[..., y_indices],
-                self._d_x,
-                arg.d_y_constraint_function(arg.t)[:, y_indices],
-                self._coordinate_system_type)
+                self._mesh,
+                arg.d_y_constraint_function(arg.t)[:, y_indices])
 
     def y_curl_map_function(
             self,
@@ -102,27 +93,24 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
         if indices_contiguous:
             return lambda arg: self._differentiator.curl(
                 arg.y[..., y_indices[0]:y_indices[-1] + 1],
-                self._d_x,
+                self._mesh,
                 curl_ind,
                 arg.d_y_constraint_function(
-                    arg.t)[:, y_indices[0]:y_indices[-1] + 1],
-                self._coordinate_system_type)
+                    arg.t)[:, y_indices[0]:y_indices[-1] + 1])
         else:
             return lambda arg: self._differentiator.curl(
                 arg.y[..., y_indices],
-                self._d_x,
+                self._mesh,
                 curl_ind,
-                arg.d_y_constraint_function(arg.t)[:, y_indices],
-                self._coordinate_system_type)
+                arg.d_y_constraint_function(arg.t)[:, y_indices])
 
     def y_laplacian_map_function(
             self,
             y_ind: int) -> FDMSymbolMapFunction:
         return lambda arg: self._differentiator.laplacian(
             arg.y[..., y_ind:y_ind + 1],
-            self._d_x,
-            arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1],
-            self._coordinate_system_type)
+            self._mesh,
+            arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1])
 
     def map_concatenated(
             self,

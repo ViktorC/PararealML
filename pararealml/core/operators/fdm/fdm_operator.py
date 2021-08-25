@@ -140,14 +140,13 @@ class FDMOperator(Operator):
                 y_c = y_c_func(t + self._d_t)
                 y_c = None if y_c is None else y_c[y_laplacian_eq_indices]
                 d_y_c = d_y_c_func(t + self._d_t)
-                d_y_c = \
-                    None if d_y_c is None else d_y_c[:, y_laplacian_eq_indices]
+                d_y_c = None if d_y_c is None \
+                    else d_y_c[:, y_laplacian_eq_indices]
                 y_laplacian_rhs = symbol_mapper.map_concatenated(
                     FDMSymbolMapArg(t, y, d_y_c_func), Lhs.Y_LAPLACIAN)
                 y_next[..., y_laplacian_eq_indices] = \
                     self._differentiator.anti_laplacian(
-                        y_laplacian_rhs, cp.mesh.d_x, self._tol, y_c, d_y_c,
-                        coordinate_system_type=cp.mesh.coordinate_system_type)
+                        y_laplacian_rhs, cp.mesh, self._tol, y_c, d_y_c)
 
             return y_next
 

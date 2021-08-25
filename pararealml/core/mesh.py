@@ -45,21 +45,30 @@ class Mesh:
             if interval[1] <= interval[0]:
                 raise ValueError
 
-        if coordinate_system_type == CoordinateSystem.POLAR and len(d_x) != 2:
-            raise ValueError
-        if (coordinate_system_type == CoordinateSystem.CYLINDRICAL or
-            coordinate_system_type == CoordinateSystem.SPHERICAL) \
-                and len(d_x) != 3:
-            raise ValueError
-
-        self._dimensions = len(x_intervals)
         self._x_intervals = tuple(x_intervals)
+        self._d_x = tuple(d_x)
+        self._coordinate_system_type = coordinate_system_type
+        self._dimensions = len(x_intervals)
+
+        if coordinate_system_type != CoordinateSystem.CARTESIAN:
+            if x_intervals[0][0] < 0:
+                raise ValueError
+            if x_intervals[1][1] - x_intervals[1][0] > 2 * np.pi:
+                raise ValueError
+            if coordinate_system_type == CoordinateSystem.POLAR:
+                if self._dimensions != 2:
+                    raise ValueError
+            else:
+                if self._dimensions != 3:
+                    raise ValueError
+                if coordinate_system_type == CoordinateSystem.SPHERICAL \
+                        and x_intervals[2][1] - x_intervals[2][0] > np.pi:
+                    raise ValueError
+
         self._vertices_shape = self._calculate_shape(d_x, True)
         self._cells_shape = self._calculate_shape(d_x, False)
-        self._d_x = tuple(d_x)
         self._vertex_coordinates = self._calculate_coordinates(True)
         self._cell_center_coordinates = self._calculate_coordinates(False)
-        self._coordinate_system_type = coordinate_system_type
 
         self._x_vertex_offset = np.array(
             [coordinates[0] for coordinates in self._vertex_coordinates])
@@ -264,3 +273,59 @@ class Mesh:
             coordinates.append(axis_coordinates)
 
         return tuple(coordinates)
+
+
+def to_cartesian_coordinates(
+        x: Sequence[float],
+        from_coordinate_system_type: CoordinateSystem) -> Sequence[float]:
+    """
+    Converts the provided coordinates from the specified type of coordinate
+    system to Cartesian coordinates.
+
+    :param x: the coordinates to convert to Cartesian coordinates
+    :param from_coordinate_system_type: the coordinate system the coordinates
+        are from
+    :return: the coordinates converted to Cartesian coordinates
+    """
+    if from_coordinate_system_type == CoordinateSystem.CARTESIAN:
+        return x
+    elif from_coordinate_system_type == CoordinateSystem.POLAR:
+        return [x[0] * np.cos(x[1]), x[0] * np.sin(x[1])]
+    elif from_coordinate_system_type == CoordinateSystem.CYLINDRICAL:
+        return [x[0] * np.cos(x[1]), x[0] * np.sin(x[1]), x[2]]
+    elif from_coordinate_system_type == CoordinateSystem.SPHERICAL:
+        return [
+            x[0] * np.sin(x[2]) * np.cos(x[1]),
+            x[0] * np.sin(x[2]) * np.sin(x[1]),
+            x[0] * np.cos(x[2])
+        ]
+    else:
+        raise ValueError
+
+
+def from_cartesian_coordinates(
+        x: Sequence[float],
+        to_coordinate_system_type: CoordinateSystem) -> Sequence[float]:
+    """
+    Converts the provided Cartesian coordinates to the specified type of
+    coordinate system.
+
+    :param x: the Cartesian coordinates to convert
+    :param to_coordinate_system_type: the coordinate system to convert the
+        Cartesian coordinates to
+    :return: the converted coordinates
+    """
+    if to_coordinate_system_type == CoordinateSystem.CARTESIAN:
+        return x
+    elif to_coordinate_system_type == CoordinateSystem.POLAR:
+        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan(x[1] / x[0])]
+    elif to_coordinate_system_type == CoordinateSystem.CYLINDRICAL:
+        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan(x[1] / x[0]), x[2]]
+    elif to_coordinate_system_type == CoordinateSystem.SPHERICAL:
+        return [
+            np.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2),
+            np.arctan(x[1] / x[0]),
+            np.arctan(np.sqrt(x[0] ** 2 + x[1] ** 2) / x[2])
+        ]
+    else:
+        raise ValueError

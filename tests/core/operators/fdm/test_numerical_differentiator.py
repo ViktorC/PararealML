@@ -2,96 +2,79 @@ import numpy as np
 import pytest
 
 from pararealml.core.constraint import Constraint
+from pararealml.core.mesh import Mesh, CoordinateSystem
 from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 
 
 def test_num_diff_gradient_with_insufficient_dimensions():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
     y = np.arange(1., 5.)
+    mesh = Mesh([(0., 1.)], [1. / 3.])
 
     with pytest.raises(ValueError):
-        diff.gradient(y, d_x, 0, [])
+        diff.gradient(y, mesh, 0)
 
 
-def test_num_diff_derivative_with_out_of_bounds_x_axis():
+def test_num_diff_gradient_with_out_of_bounds_x_axis():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
-    x_axis = 1
     y = np.arange(0., 6.).reshape((3, 2))
+    mesh = Mesh([(0., 1.)], [.5])
+    x_axis = 1
 
     with pytest.raises(ValueError):
-        diff.gradient(y, d_x, x_axis)
+        diff.gradient(y, mesh, x_axis)
 
 
 def test_num_diff_divergence_with_insufficient_dimensions():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.,
+    mesh = Mesh([(0., 3.)], [1.])
     y = np.arange(1., 5.)
 
     with pytest.raises(ValueError):
-        diff.divergence(y, d_x)
+        diff.divergence(y, mesh)
 
 
 def test_num_diff_divergence_with_non_matching_vector_field_dimension():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (1.,) * 2
+    mesh = Mesh([(0., 1.), (0., 1.)], [1., 1.])
     y = np.array([[[0.] * 3] * 2] * 2)
 
     with pytest.raises(ValueError):
-        diff.divergence(y, d_x)
-
-
-def test_num_diff_divergence_with_wrong_d_x_size():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (1.,) * 3
-    y = np.array([[[0.] * 2] * 2] * 2)
-
-    with pytest.raises(ValueError):
-        diff.divergence(y, d_x)
+        diff.divergence(y, mesh)
 
 
 def test_num_diff_1d_curl():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.,
+    mesh = Mesh([(0., 5.)], [1.])
     y = np.array([[0.]])
 
     with pytest.raises(ValueError):
-        diff.curl(y, d_x)
+        diff.curl(y, mesh)
 
 
 def test_num_diff_more_than_3d_curl():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (1.,) * 4
+    mesh = Mesh([(0., 1.)] * 4, [1.] * 4)
     y = np.array([[[[[0.] * 4] * 2] * 2] * 2] * 2)
 
     with pytest.raises(ValueError):
-        diff.curl(y, d_x)
-
-
-def test_num_diff_curl_with_wrong_d_x_size():
-    diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (1.,) * 3
-    y = np.array([[[0.] * 2] * 2] * 2)
-
-    with pytest.raises(ValueError):
-        diff.curl(y, d_x)
+        diff.curl(y, mesh)
 
 
 def test_3pcfdm_gradient_with_insufficient_dimension_extent():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1.
+    mesh = Mesh([(0., 1.), (0., 2.), (0., 1.)], [1., 1., 1.])
     x_axis = 0
     y = np.arange(0., 12.).reshape((2, 3, 2))
 
     with pytest.raises(ValueError):
-        diff.gradient(y, d_x, x_axis)
+        diff.gradient(y, mesh, x_axis)
 
 
 def test_3pcfdm_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 4.), (0., 2.)], [2., 1.])
     x_axis = 0
     y = np.array([
         [
@@ -115,41 +98,40 @@ def test_3pcfdm_gradient():
             [-1.5, -1.], [-1., -1.], [-1.25, .25]
         ]
     ])
-    actual_gradient = diff.gradient(y, d_x, x_axis)
+    actual_gradient = diff.gradient(y, mesh, x_axis)
 
     assert np.isclose(actual_gradient, expected_gradient).all()
 
 
 def test_3pcfdm_1d_constrained_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 6.)], [2.])
     x_axis = 0
     y = np.array([
         [2., 4.], [4., 8.], [-3., 2.], [-3., 2.]
     ])
 
-    first_boundary_constraint_pair = \
-        None, \
+    boundary_constraints = np.empty((1, 2), dtype=object)
+    boundary_constraints[0, 0] = (
+        None,
         Constraint(np.full(1, -9999.), np.array([True]))
-    second_boundary_constraint = \
-        Constraint(np.full(1, 9999.), np.array([True])), \
+    )
+    boundary_constraints[0, 1] = (
+        Constraint(np.full(1, 9999.), np.array([True])),
         None
-    boundary_constraints = [
-        first_boundary_constraint_pair,
-        second_boundary_constraint]
+    )
 
     expected_gradient = np.array([
         [1., 9999.], [-1.25, -.5], [-1.75, -1.5], [-9999., -.5]
     ])
-    actual_gradient = diff.gradient(
-        y, d_x, x_axis, boundary_constraints)
+    actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
 
     assert np.isclose(actual_gradient, expected_gradient).all()
 
 
 def test_3pcfdm_2d_constrained_gradient():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 4.), (0., 2.)], [2., 1.])
     x_axis = 0
     y = np.array([
         [
@@ -163,13 +145,15 @@ def test_3pcfdm_2d_constrained_gradient():
         ]
     ])
 
-    first_boundary_constraint_pair = \
-        None, Constraint(np.full(2, -9999.), np.array([True, False, True]))
-    second_boundary_constraint_pair = \
-        Constraint(np.full(1, 9999.), np.array([False, True, False])), None
-    boundary_constraints = [
-        first_boundary_constraint_pair,
-        second_boundary_constraint_pair]
+    boundary_constraints = np.empty((2, 2), dtype=object)
+    boundary_constraints[0, 0] = (
+        None,
+        Constraint(np.full(2, -9999.), np.array([True, False, True]))
+    )
+    boundary_constraints[0, 1] = (
+        Constraint(np.full(1, 9999.), np.array([False, True, False])),
+        None
+    )
 
     expected_gradient = np.array([
         [
@@ -182,15 +166,14 @@ def test_3pcfdm_2d_constrained_gradient():
             [-9999., -1.], [-1., -1.], [-9999., .25]
         ]
     ])
-    actual_gradient = diff._derivative(
-        y, d_x, x_axis, boundary_constraints)
+    actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
 
     assert np.isclose(actual_gradient, expected_gradient).all()
 
 
 def test_3pcfdm_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 4.), (0., 2.)], [2., 1.])
     x_axis = 0
     y = np.array([
         [
@@ -214,7 +197,7 @@ def test_3pcfdm_hessian():
             [-2.], [0.], [-3.75]
         ]
     ])
-    actual_hessian = diff.hessian(y, d_x, d_x, x_axis, x_axis)
+    actual_hessian = diff.hessian(y, mesh, x_axis, x_axis)
 
     assert np.isclose(
         actual_hessian, expected_hessian).all()
@@ -222,29 +205,30 @@ def test_3pcfdm_hessian():
 
 def test_3pcfdm_1d_constrained_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 6.)], [2.])
     x_axis = 0
     y = np.array([
         [2.], [4.], [-3.], [-3.]
     ])
 
-    boundary_constraint_pair = \
-        Constraint(np.array([0.]), np.array([True])), \
+    boundary_constraints = np.empty((1, 1), dtype=object)
+    boundary_constraints[0, 0] = (
+        Constraint(np.array([0.]), np.array([True])),
         Constraint(np.array([]), np.array([False]))
-    boundary_constraints = [boundary_constraint_pair]
+    )
 
     expected_hessian = np.array([
         [1.], [-2.25], [1.75], [.75]
     ])
     actual_hessian = diff.hessian(
-        y, d_x, d_x, x_axis, x_axis, boundary_constraints)
+        y, mesh, x_axis, x_axis, boundary_constraints)
 
     assert np.isclose(actual_hessian, expected_hessian).all()
 
 
 def test_3pcfdm_2d_constrained_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2.
+    mesh = Mesh([(0., 4.), (0., 4.)], [2., 2.])
     x_axis = 0
     y = np.array([
         [
@@ -258,10 +242,11 @@ def test_3pcfdm_2d_constrained_hessian():
         ]
     ])
 
-    boundary_constraint_pair = \
-        Constraint(np.full(2, -2.), np.array([True, True, False])), \
+    boundary_constraints = np.empty((2, 2), dtype=object)
+    boundary_constraints[0, 1] = (
+        Constraint(np.full(2, -2.), np.array([True, True, False])),
         Constraint(np.full(1, 0.), np.array([False, False, True]))
-    boundary_constraints = [None, boundary_constraint_pair]
+    )
 
     expected_hessian = np.array([
         [
@@ -275,15 +260,14 @@ def test_3pcfdm_2d_constrained_hessian():
         ]
     ])
     actual_hessian = diff.hessian(
-        y, d_x, d_x, x_axis, x_axis, boundary_constraints)
+        y, mesh, x_axis, x_axis, boundary_constraints)
 
     assert np.isclose(actual_hessian, expected_hessian).all()
 
 
 def test_3pcfdm_mixed_hessian():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x1 = 1.
-    d_x2 = .5
+    mesh = Mesh([(0., 2.), (0., 1.)], [1., .5])
     x_axis1 = 0
     x_axis2 = 1
     y = np.array([
@@ -308,14 +292,14 @@ def test_3pcfdm_mixed_hessian():
             [-2.], [.5], [2.]
         ]
     ])
-    actual_hessian = diff.hessian(y, d_x1, d_x2, x_axis1, x_axis2)
+    actual_hessian = diff.hessian(y, mesh, x_axis1, x_axis2)
 
     assert np.isclose(actual_hessian, expected_hessian).all()
 
 
 def test_3pcfdm_2d_divergence():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1., 2.
+    mesh = Mesh([(0., 2.), (0., 4.)], [1., 2.])
     y = np.array([
         [
             [2., 4.], [4., 8.], [-3., 2.]
@@ -338,14 +322,14 @@ def test_3pcfdm_2d_divergence():
             [-2.5], [-1.75], [-3.]
         ]
     ])
-    actual_div = diff.divergence(y, d_x)
+    actual_div = diff.divergence(y, mesh)
 
     assert np.isclose(actual_div, expected_div).all()
 
 
 def test_3pcfdm_3d_divergence():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (.5,) * 3
+    mesh = Mesh([(0., 1.)] * 3, [.5] * 3)
     y = np.array([
         [
             [
@@ -416,14 +400,14 @@ def test_3pcfdm_3d_divergence():
             ]
         ]
     ])
-    actual_div = diff.divergence(y, d_x)
+    actual_div = diff.divergence(y, mesh)
 
     assert np.isclose(actual_div, expected_div).all()
 
 
 def test_3pcfdm_2d_curl():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = (.5,) * 2
+    mesh = Mesh([(0., 1.)] * 2, [.5] * 2)
     y = np.array([
         [
             [1., 3.], [5., 2.], [1., -3.]
@@ -446,14 +430,14 @@ def test_3pcfdm_2d_curl():
             [-6.], [12.], [-4.]
         ]
     ])
-    actual_curl = diff.curl(y, d_x)
+    actual_curl = diff.curl(y, mesh)
 
     assert np.isclose(actual_curl, expected_curl).all()
 
 
 def test_3pcfdm_3d_curl():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 1., 2., .5
+    mesh = Mesh([(0., 2.), (0., 4.), (0., 1.)], [1., 2., .5])
     y = np.array([
         [
             [
@@ -524,9 +508,9 @@ def test_3pcfdm_3d_curl():
             ]
         ]
     ])
-    actual_curl_0 = diff.curl(y, d_x, 0)
-    actual_curl_1 = diff.curl(y, d_x, 1)
-    actual_curl_2 = diff.curl(y, d_x, 2)
+    actual_curl_0 = diff.curl(y, mesh, 0)
+    actual_curl_1 = diff.curl(y, mesh, 1)
+    actual_curl_2 = diff.curl(y, mesh, 2)
 
     assert np.isclose(actual_curl_0, expected_curl[..., :1]).all()
     assert np.isclose(actual_curl_1, expected_curl[..., 1:2]).all()
@@ -535,7 +519,7 @@ def test_3pcfdm_3d_curl():
 
 def test_3pcfdm_laplacian():
     diff = ThreePointCentralFiniteDifferenceMethod()
-    d_x = 2., 1.
+    mesh = Mesh([(0., 4.), (0., 2.)], [2., 1.])
     y = np.array([
         [
             [2., 4.], [4., 8.], [2., 4.]
@@ -547,7 +531,7 @@ def test_3pcfdm_laplacian():
             [2., 6.], [8., 2.], [-2., 4.]
         ]
     ])
-    expected_lapl = np.array([
+    expected_laplacian = np.array([
         [
             [.5, -1.], [-5., -11.], [1.5, -3.]
         ],
@@ -558,15 +542,15 @@ def test_3pcfdm_laplacian():
             [4.5, -12.], [-19., 6.], [15.5, -9.]
         ]
     ])
-    actual_lapl = diff.laplacian(y, d_x)
+    actual_laplacian = diff.laplacian(y, mesh)
 
-    assert np.isclose(actual_lapl, expected_lapl).all()
+    assert np.isclose(actual_laplacian, expected_laplacian).all()
 
 
 def test_3pcfdm_anti_laplacian():
     diff = ThreePointCentralFiniteDifferenceMethod()
     y = np.random.random((20, 20, 2))
-    d_x = .05, .025
+    mesh = Mesh([(0., .95), (0., .475)], [.05, .025])
     tol = 1e-12
 
     value = np.full(y.shape[:-1], np.nan)
@@ -583,21 +567,19 @@ def test_3pcfdm_anti_laplacian():
 
     y_constraints = [y_constraint] * 2
 
-    laplacian = diff.laplacian(y, d_x)
+    laplacian = diff.laplacian(y, mesh)
 
-    anti_laplacian = diff.anti_laplacian(
-        laplacian, d_x, tol, y_constraints)
+    anti_laplacian = diff.anti_laplacian(laplacian, mesh, tol, y_constraints)
 
     assert np.isclose(
-        diff.laplacian(anti_laplacian, d_x),
-        laplacian).all()
+        diff.laplacian(anti_laplacian, mesh), laplacian).all()
     assert np.isclose(anti_laplacian, y).all()
 
 
 def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
     diff = ThreePointCentralFiniteDifferenceMethod()
     y = np.random.random((20, 2))
-    d_x = .05,
+    mesh = Mesh([(0., .95)], [.05])
     tol = 1e-12
 
     value = np.full(y.shape[:-1], np.nan)
@@ -628,13 +610,13 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
         [x_0_derivative_boundary_constraint_pair, None],
     ], dtype=object)
 
-    laplacian = diff.laplacian(y, d_x, derivative_boundary_constraints)
+    laplacian = diff.laplacian(y, mesh, derivative_boundary_constraints)
 
     anti_laplacian = diff.anti_laplacian(
-        laplacian, d_x, tol, y_constraints, derivative_boundary_constraints)
+        laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
 
     assert np.isclose(
-        diff.laplacian(anti_laplacian, d_x, derivative_boundary_constraints),
+        diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
         laplacian).all()
     assert np.isclose(anti_laplacian, y).all()
 
@@ -642,7 +624,7 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
 def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     diff = ThreePointCentralFiniteDifferenceMethod()
     y = np.random.random((20, 20, 2))
-    d_x = .05, .025
+    mesh = Mesh([(0., .95), (0., .475)], [.05, .025])
     tol = 1e-12
 
     value = np.full(y.shape[:-1], np.nan)
@@ -682,12 +664,426 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
         [x_1_derivative_boundary_constraint_pair, None]
     ], dtype=object)
 
-    laplacian = diff.laplacian(y, d_x, derivative_boundary_constraints)
+    laplacian = diff.laplacian(y, mesh, derivative_boundary_constraints)
 
     anti_laplacian = diff.anti_laplacian(
-        laplacian, d_x, tol, y_constraints, derivative_boundary_constraints)
+        laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
 
     assert np.isclose(
-        diff.laplacian(anti_laplacian, d_x, derivative_boundary_constraints),
+        diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
+        laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_3pcfdm_polar_gradient():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh(
+        [(1., 5.), (0., 2 * np.pi)],
+        [2., np.pi],
+        CoordinateSystem.POLAR)
+    x_axis = 0
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_gradient = np.array([
+        [
+            [1.5, 1.], [1., 1.], [1.25, -.25]
+        ],
+        [
+            [0., .5], [1., -1.5], [-1., 1.25]
+        ],
+        [
+            [-1.5, -1.], [-1., -1.], [-1.25, .25]
+        ]
+    ])
+    actual_gradient = diff.gradient(y, mesh, x_axis)
+
+    assert np.isclose(actual_gradient, expected_gradient).all()
+
+
+def test_3pcfdm_constrained_polar_gradient():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh(
+        [(1., 5.), (0., 2.)],
+        [2., 1.],
+        CoordinateSystem.POLAR)
+    x_axis = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+
+    boundary_constraints = np.empty((2, 2), dtype=object)
+    boundary_constraints[1, 0] = (
+        None,
+        Constraint(np.full(2, -9999.), np.array([True, False, True]))
+    )
+    boundary_constraints[1, 1] = (
+        Constraint(np.full(1, 9999.), np.array([False, True, False])),
+        None
+    )
+
+    expected_gradient = np.array([
+        [
+            [2., 4.], [-2.5, -1.], [-9999., -4.]
+        ],
+        [
+            [2. / 3., 9999. / 3.], [-1. / 6., -5. / 6.], [-2. / 3., -2. / 3.]
+        ],
+        [
+            [4. / 5., 1. / 5.], [-9. / 10., 1. / 10.], [-9999. / 5., -1. / 5.]
+        ]
+    ])
+    actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
+
+    assert np.isclose(actual_gradient, expected_gradient).all()
+
+
+def test_3pcfdm_polar_hessian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    x_axis = 0
+    y = np.array([
+        [
+            [4.], [8.], [2.]
+        ],
+        [
+            [4.], [4.], [-1.]
+        ],
+        [
+            [6.], [2.], [7.]
+        ]
+    ])
+    expected_hessian = np.array([
+        [
+            [-1.], [-13.20899389], [5.07471414]
+        ],
+        [
+            [0.5], [-2.14677619], [0.64176195]
+        ],
+        [
+            [-2.], [0.27223984], [0.44961019]
+        ]
+    ])
+    actual_hessian = diff.hessian(y, mesh, x_axis, x_axis)
+
+    assert np.isclose(
+        actual_hessian, expected_hessian).all()
+
+
+def test_3pcfdm_constrained_polar_hessian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    x_axis = 1
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+
+    boundary_constraints = np.empty((2, 2), dtype=object)
+    boundary_constraints[0, 1] = (
+        Constraint(np.full(2, -2.), np.array([True, True, False])),
+        Constraint(np.full(1, 0.), np.array([False, False, True]))
+    )
+
+    expected_hessian = np.array([
+        [
+            [1.5, -2.],
+            [3.91049287, 8.41798777],
+            [0.49798596, -2.57471414]
+        ],
+        [
+            [-0.88888889, -0.27777778],
+            [1.23383299, 1.59122064],
+            [-6.05977131, 3.19157138]
+        ],
+        [
+            [-0.14, -0.6],
+            [-4.374938, -0.11223984],
+            [5.84156445, -4.93259876]
+        ]
+    ])
+    actual_hessian = diff.hessian(
+        y, mesh, x_axis, x_axis, boundary_constraints)
+
+    assert np.isclose(actual_hessian, expected_hessian).all()
+
+
+def test_3pcfdm_mixed_polar_hessian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    x_axis1 = 0
+    x_axis2 = 1
+    y = np.array([
+        [
+            [2.], [4.], [-3.]
+        ],
+        [
+            [6.], [4.], [5.]
+        ],
+        [
+            [2.], [8.], [-7.]
+        ]
+    ])
+    expected_hessian = np.array([
+        [
+            [-1.5], [12.67014202], [5.23334175]
+        ],
+        [
+            [-0.05555556], [1.1421075], [3.4576747]
+        ],
+        [
+            [-0.26], [-5.63824799], [-4.04671867]
+        ]
+    ])
+    actual_hessian = diff.hessian(y, mesh, x_axis1, x_axis2)
+
+    assert np.isclose(actual_hessian, expected_hessian).all()
+
+
+def test_3pcfdm_polar_hessian_is_symmetric():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    x_axis1 = 0
+    x_axis2 = 1
+    y = np.array([
+        [
+            [2.], [4.], [-3.]
+        ],
+        [
+            [6.], [4.], [5.]
+        ],
+        [
+            [2.], [8.], [-7.]
+        ]
+    ])
+
+    assert np.isclose(
+        diff.hessian(y, mesh, x_axis1, x_axis2),
+        diff.hessian(y, mesh, x_axis2, x_axis1)).all()
+
+
+def test_3pcfdm_polar_divergence():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 3.), (0., 4.)], [1., 2.], CoordinateSystem.POLAR)
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [-3., 2.]
+        ],
+        [
+            [6., 4.], [4., 4.], [5., -1.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-7., 7.]
+        ]
+    ])
+    expected_div = np.array([
+        [
+            [7.], [5.5], [-2.5]
+        ],
+        [
+            [3.5], [3.375], [0.]
+        ],
+        [
+            [-13. / 6.], [0.75], [-5.]
+        ]
+    ])
+    actual_div = diff.divergence(y, mesh)
+
+    assert np.isclose(actual_div, expected_div).all()
+
+
+def test_3pcfdm_polar_curl():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 2.)] * 2, [.5] * 2, CoordinateSystem.POLAR)
+    y = np.array([
+        [
+            [1., 3.], [5., 2.], [1., -3.]
+        ],
+        [
+            [4., 7.], [4., -6.], [2., 3.]
+        ],
+        [
+            [3., 5.], [-1., 2.], [-3., -1.]
+        ]
+    ])
+    expected_curl = np.array([
+        [
+            [5.], [-4.], [5.]
+        ],
+        [
+            [4.], [-8. / 3.], [20. / 3.]],
+        [
+            [-4.], [10.], [-4.]
+        ]
+    ])
+    actual_curl = diff.curl(y, mesh)
+
+    assert np.isclose(actual_curl, expected_curl).all()
+
+
+def test_3pcfdm_polar_laplacian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [2., 4.]
+        ],
+        [
+            [6., 4.], [4., 4.], [10., -4.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-2., 4.]
+        ]
+    ])
+    expected_laplacian = np.array([
+        [
+            [2., 0.],
+            [-4., -10.],
+            [4., -4.]
+        ],
+        [
+            [-2.88888889, 0.22222222],
+            [2.22222222, -0.88888889],
+            [-7.11111111, 5.33333333]
+        ],
+        [
+            [0.36, -2.6],
+            [-3.84, 0.04],
+            [3.48, -3.04]
+        ]
+    ])
+    actual_laplacian = diff.laplacian(y, mesh)
+
+    assert np.isclose(actual_laplacian, expected_laplacian).all()
+
+
+def test_3pcfdm_polar_laplacian_is_hessian_trace():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    x_axis1 = 0
+    x_axis2 = 1
+    y = np.array([
+        [
+            [3.5], [8.], [-7.]
+        ],
+        [
+            [-2.], [.5], [3.]
+        ],
+        [
+            [2.5], [-1.], [5.]
+        ]
+    ])
+
+    laplacian = diff.laplacian(y, mesh)
+    trace = diff.hessian(y, mesh, x_axis1, x_axis1) + \
+        diff.hessian(y, mesh, x_axis2, x_axis2)
+
+    assert np.isclose(
+        laplacian,
+        trace).all()
+
+
+def test_3pcfdm_polar_anti_laplacian():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    mesh = Mesh([(1., 2.9), (0., .95)], [.1, .05], CoordinateSystem.POLAR)
+    tol = 1e-12
+
+    value = np.full(y.shape[:-1], np.nan)
+    value[0, :] = 1.
+    value[y.shape[0] - 1, :] = 2.
+    value[:, 0] = 3.
+    value[:, y.shape[1] - 1] = 42.
+    mask = ~np.isnan(value)
+    value = value[mask]
+    y_constraint = Constraint(value, mask)
+
+    y[..., 0][mask] = value
+    y[..., 1][mask] = value
+
+    y_constraints = [y_constraint] * 2
+
+    laplacian = diff.laplacian(y, mesh)
+
+    anti_laplacian = diff.anti_laplacian(laplacian, mesh, tol, y_constraints)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, mesh), laplacian).all()
+    assert np.isclose(anti_laplacian, y).all()
+
+
+def test_3pcfdm_polar_anti_laplacian_with_derivative_constraints():
+    diff = ThreePointCentralFiniteDifferenceMethod()
+    y = np.random.random((20, 20, 2))
+    mesh = Mesh([(1., 2.9), (0., .95)], [.1, .05], CoordinateSystem.POLAR)
+    tol = 1e-12
+
+    value = np.full(y.shape[:-1], np.nan)
+    value[0, :] = 1.
+    value[:, 0] = 3.
+    mask = ~np.isnan(value)
+    value = value[mask]
+    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
+
+    y[..., 0][mask] = value
+
+    value = np.full(y.shape[:-1], np.nan)
+    value[0, :] = -2.
+    value[y.shape[0] - 1, :] = 2.
+    value[:, 0] = 5.
+    value[:, y.shape[1] - 1] = 4.
+    mask = ~np.isnan(value)
+    value = value[mask]
+    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
+
+    y[..., 1][mask] = value
+
+    y_constraints = [y_0_constraint, y_1_constraint]
+
+    x_0_upper_derivative_boundary_constraint = Constraint(
+        np.full(20, -3.), np.ones(20, dtype=bool))
+    x_0_derivative_boundary_constraint_pair = (
+        None, x_0_upper_derivative_boundary_constraint)
+
+    x_1_upper_derivative_boundary_constraint = Constraint(
+        np.full(20, 0.), np.ones(20, dtype=bool))
+    x_1_derivative_boundary_constraint_pair = (
+        None, x_1_upper_derivative_boundary_constraint)
+
+    derivative_boundary_constraints = np.array([
+        [x_0_derivative_boundary_constraint_pair, None],
+        [x_1_derivative_boundary_constraint_pair, None]
+    ], dtype=object)
+
+    laplacian = diff.laplacian(y, mesh, derivative_boundary_constraints)
+
+    anti_laplacian = diff.anti_laplacian(
+        laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
+
+    assert np.isclose(
+        diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
         laplacian).all()
     assert np.isclose(anti_laplacian, y).all()
