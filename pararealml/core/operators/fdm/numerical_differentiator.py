@@ -146,7 +146,7 @@ class NumericalDifferentiator(ABC):
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
             if x_axis == 1:
-                r = mesh.vertex_coordinates[0].reshape((-1, 1, 1))
+                r = mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1))
                 r_rec = np.reciprocal(r)
                 return r_rec * derivative
             return derivative
@@ -205,8 +205,8 @@ class NumericalDifferentiator(ABC):
                 derivative_boundary_constraints[x_axis1])
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
-            r = mesh.vertex_coordinates[0].reshape((-1, 1, 1))
-            theta = mesh.vertex_coordinates[1].reshape((1, -1, 1))
+            r = mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1))
+            theta = mesh.vertex_axis_coordinates[1].reshape((1, -1, 1))
             r_rec = np.reciprocal(r)
             cos_theta = np.cos(theta)
             sin_theta = np.sin(theta)
@@ -316,7 +316,7 @@ class NumericalDifferentiator(ABC):
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
             r_rec = np.reciprocal(
-                mesh.vertex_coordinates[0].reshape((-1, 1, 1)))
+                mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1)))
             y_r = y[:, :, :1]
             y_theta = y[:, :, 1:]
 
@@ -429,7 +429,7 @@ class NumericalDifferentiator(ABC):
                 raise ValueError
 
             r_rec = np.reciprocal(
-                mesh.vertex_coordinates[0].reshape((-1, 1, 1)))
+                mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1)))
             y_r = y[:, :, :1]
             y_theta = y[:, :, 1:]
 
@@ -493,7 +493,7 @@ class NumericalDifferentiator(ABC):
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
             r_rec = np.reciprocal(
-                mesh.vertex_coordinates[0].reshape((-1, 1, 1)))
+                mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1)))
 
             d_y_over_d_r = self._derivative(
                 y, mesh.d_x[0], 0, derivative_boundary_constraints[0])
@@ -844,7 +844,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             return anti_laplacian
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
-            r = mesh.vertex_coordinates[0].reshape((-1, 1, 1))
+            r = mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1))
             r_sqr = np.square(r)
             d_r = d_x[0]
             d_theta = d_x[1]

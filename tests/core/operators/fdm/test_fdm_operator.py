@@ -5,11 +5,11 @@ from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LorenzEquation, DiffusionEquation, CahnHilliardEquation, BurgerEquation, \
-    NavierStokesStreamFunctionVorticityEquation
+    NavierStokesStreamFunctionVorticityEquation, ShallowWaterEquation
 from pararealml.core.initial_condition import DiscreteInitialCondition, \
     ContinuousInitialCondition, GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.mesh import Mesh
+from pararealml.core.mesh import Mesh, CoordinateSystem
 from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
@@ -36,7 +36,6 @@ def test_fdm_operator_on_ode_with_analytic_solution():
     solution = op.solve(ivp)
 
     assert solution.d_t == 1e-4
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (1e5, 1)
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
@@ -83,7 +82,6 @@ def test_fdm_operator_on_ode():
 
     assert solution.vertex_oriented
     assert solution.d_t == .01
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (1000, 3)
 
 
@@ -107,16 +105,6 @@ def test_fdm_operator_on_1d_pde():
     assert solution.discrete_y().shape == (200, 101, 1)
     assert solution.discrete_y(False).shape == (200, 100, 1)
 
-    vertex_oriented_x_coordinates = solution.x_coordinates()
-    cell_oriented_x_coordinates = solution.x_coordinates(False)
-
-    assert len(vertex_oriented_x_coordinates) == \
-        len(cell_oriented_x_coordinates) == 1
-    assert np.all(
-        vertex_oriented_x_coordinates[0] == np.linspace(0., 10., 101))
-    assert np.all(
-        cell_oriented_x_coordinates[0] == np.linspace(.05, 9.95, 100))
-
 
 def test_fdm_operator_on_2d_pde():
     diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
@@ -137,18 +125,6 @@ def test_fdm_operator_on_2d_pde():
     assert solution.d_t == .25
     assert solution.discrete_y().shape == (40, 11, 11, 2)
     assert solution.discrete_y(False).shape == (40, 10, 10, 2)
-
-    vertex_oriented_x_coordinates = solution.x_coordinates()
-    cell_oriented_x_coordinates = solution.x_coordinates(False)
-
-    assert len(vertex_oriented_x_coordinates) == \
-        len(cell_oriented_x_coordinates) == 2
-
-    assert np.all(vertex_oriented_x_coordinates[0] == np.linspace(0., 10., 11))
-    assert np.all(vertex_oriented_x_coordinates[1] == np.linspace(0., 10., 11))
-
-    assert np.all(cell_oriented_x_coordinates[0] == np.linspace(.5, 9.5, 10))
-    assert np.all(cell_oriented_x_coordinates[1] == np.linspace(.5, 9.5, 10))
 
 
 def test_fdm_operator_on_3d_pde():
@@ -176,19 +152,36 @@ def test_fdm_operator_on_3d_pde():
     assert solution.discrete_y().shape == (100, 11, 6, 6, 2)
     assert solution.discrete_y(False).shape == (100, 10, 5, 5, 2)
 
-    vertex_oriented_x_coordinates = solution.x_coordinates()
-    cell_oriented_x_coordinates = solution.x_coordinates(False)
 
-    assert len(vertex_oriented_x_coordinates) == \
-        len(cell_oriented_x_coordinates) == 3
+def test_fdm_operator_on_polar_pde():
+    diff_eq = ShallowWaterEquation(.5)
+    mesh = Mesh(
+        [(1., 11.), (0., 2 * np.pi)],
+        [2., np.pi / 5.],
+        CoordinateSystem.POLAR)
+    bcs = (
+        (NeumannBoundaryCondition(
+            lambda x, t: (.0, None, None), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: (.0, None, None), is_static=True)),
+        (NeumannBoundaryCondition(
+            lambda x, t: (.0, None, None), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: (.0, None, None), is_static=True))
+    )
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        ((np.array([-6., 0.]), np.array([[.25, 0.], [0., .25]])),) * 3,
+        (1., .0, .0))
+    ivp = InitialValueProblem(cp, (0., 5.), ic)
+    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    solution = op.solve(ivp)
 
-    assert np.all(vertex_oriented_x_coordinates[0] == np.linspace(0., 5., 11))
-    assert np.all(vertex_oriented_x_coordinates[1] == np.linspace(0., 5., 6))
-    assert np.all(vertex_oriented_x_coordinates[2] == np.linspace(0., 10., 6))
-
-    assert np.all(cell_oriented_x_coordinates[0] == np.linspace(.25, 4.75, 10))
-    assert np.all(cell_oriented_x_coordinates[1] == np.linspace(.5, 4.5, 5))
-    assert np.all(cell_oriented_x_coordinates[2] == np.linspace(1., 9., 5))
+    assert solution.vertex_oriented
+    assert solution.d_t == .1
+    assert solution.discrete_y().shape == (50, 6, 11, 3)
+    assert solution.discrete_y(False).shape == (50, 5, 10, 3)
 
 
 def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
@@ -212,16 +205,6 @@ def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     assert solution.d_t == .5
     assert y.shape == (20, 11, 1)
     assert solution.discrete_y(False).shape == (20, 10, 1)
-
-    vertex_oriented_x_coordinates = solution.x_coordinates()
-    cell_oriented_x_coordinates = solution.x_coordinates(False)
-
-    assert len(vertex_oriented_x_coordinates) == \
-        len(cell_oriented_x_coordinates) == 1
-    assert np.all(
-        vertex_oriented_x_coordinates[0] == np.linspace(0., 10., 11))
-    assert np.all(
-        cell_oriented_x_coordinates[0] == np.linspace(.5, 9.5, 10))
 
     assert np.isclose(y[0, -1, 0], .1)
     assert np.isclose(y[-1, -1, 0], 2.)

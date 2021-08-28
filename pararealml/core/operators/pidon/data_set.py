@@ -117,7 +117,7 @@ class DataSet:
         functions (over the mesh in case the constrained problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
-            return self._cp.mesh.evaluate_fields(
+            return self._cp.mesh.evaluate(
                 self._y_0_functions, vertex_oriented=False, flatten=True)
 
         ic_data = np.array([

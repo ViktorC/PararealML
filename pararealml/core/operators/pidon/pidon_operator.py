@@ -128,9 +128,10 @@ class PIDONOperator(Operator):
         time_points = discretise_time_domain(ivp.t_interval, self._d_t)
 
         if diff_eq.x_dimension:
-            x = cp.mesh.all_x(self._vertex_oriented)
+            x = cp.mesh.all_index_coordinates(
+                self._vertex_oriented, flatten=True)
             x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
-            u = cp.mesh.evaluate_fields(
+            u = cp.mesh.evaluate(
                 [ivp.initial_condition.y_0],
                 False,
                 True)

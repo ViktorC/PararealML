@@ -129,15 +129,8 @@ class ContinuousInitialCondition(InitialCondition):
             evaluated at the vertices or cell centers of the spatial mesh
         :return: the discretised initial values
         """
-        diff_eq = self._cp.differential_equation
-        if diff_eq.x_dimension:
-            mesh = self._cp.mesh
-
-            y_0 = np.empty(self._cp.y_shape(vertex_oriented))
-            for index in np.ndindex(y_0.shape[:-1]):
-                y_0[(*index, slice(None))] = self._y_0_func(
-                    mesh.x(index, vertex_oriented))
-
+        if self._cp.differential_equation.x_dimension:
+            y_0 = self._cp.mesh.evaluate([self._y_0_func], vertex_oriented)[0]
             if vertex_oriented and self._cp.are_all_boundary_conditions_static:
                 apply_constraints_along_last_axis(
                     self._cp.static_y_vertex_constraints,

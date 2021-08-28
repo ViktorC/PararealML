@@ -236,7 +236,8 @@ class AutoRegressionOperator(Operator):
         diff_eq = cp.differential_equation
 
         if diff_eq.x_dimension:
-            x = cp.mesh.all_x(self._vertex_oriented)
+            x = cp.mesh.all_index_coordinates(
+                self._vertex_oriented, flatten=True)
             x = np.hstack((np.empty((x.shape[0], 1)), x))
         else:
             x = np.empty((1, 1))

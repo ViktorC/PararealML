@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple, Sequence, Callable, Iterable
+from typing import Tuple, Sequence, Callable, Iterable, TypeVar
 
 import numpy as np
 
@@ -65,15 +65,13 @@ class Mesh:
                         and x_intervals[2][1] - x_intervals[2][0] > np.pi:
                     raise ValueError
 
-        self._vertices_shape = self._calculate_shape(d_x, True)
-        self._cells_shape = self._calculate_shape(d_x, False)
-        self._vertex_coordinates = self._calculate_coordinates(True)
-        self._cell_center_coordinates = self._calculate_coordinates(False)
-
-        self._x_vertex_offset = np.array(
-            [coordinates[0] for coordinates in self._vertex_coordinates])
-        self._x_cell_center_offset = np.array(
-            [coordinates[0] for coordinates in self._cell_center_coordinates])
+        self._vertices_shape = self._create_shape(d_x, True)
+        self._cells_shape = self._create_shape(d_x, False)
+        self._vertex_coordinates = self._create_axis_coordinates(True)
+        self._cell_center_coordinates = self._create_axis_coordinates(False)
+        self._vertex_coordinate_grids = self._create_coordinate_grids(True)
+        self._cell_center_coordinate_grids = \
+            self._create_coordinate_grids(False)
 
     @property
     def dimensions(self) -> int:
@@ -118,19 +116,35 @@ class Mesh:
         return self._cells_shape
 
     @property
-    def vertex_coordinates(self) -> Tuple[np.ndarray, ...]:
+    def vertex_axis_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
         A tuple of the coordinates of the vertices of the mesh along each axis.
         """
         return self._vertex_coordinates
 
     @property
-    def cell_center_coordinates(self) -> Tuple[np.ndarray, ...]:
+    def cell_center_axis_coordinates(self) -> Tuple[np.ndarray, ...]:
         """
         A tuple of the coordinates of the cell centers of the mesh along each
         axis.
         """
         return self._cell_center_coordinates
+
+    @property
+    def vertex_coordinate_grids(self) -> Tuple[np.ndarray, ...]:
+        """
+        A tuple of grids where each element contains the coordinates along the
+        corresponding axis at all the vertices of the mesh.
+        """
+        return self._vertex_coordinate_grids
+
+    @property
+    def cell_center_coordinate_grids(self) -> Tuple[np.ndarray, ...]:
+        """
+        A tuple of grids where each element contains the coordinates along the
+        corresponding axis at all the cell centers of the mesh.
+        """
+        return self._cell_center_coordinate_grids
 
     def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
         """
@@ -142,90 +156,174 @@ class Mesh:
         """
         return self.vertices_shape if vertex_oriented else self.cells_shape
 
-    def coordinates(self, vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+    def axis_coordinates(
+            self,
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
         """
         Returns a tuple of the coordinates of the vertices or cell centers
-        of the mesh along each axis.
+        of the mesh along each axis separately.
 
         :param vertex_oriented: whether the coordinates of the vertices or the
-            cells of the mesh is to be returned
+            cell centers of the mesh is to be returned
         :return: a tuple of arrays each representing the coordinates along the
             corresponding axis
         """
-        return self.vertex_coordinates if vertex_oriented \
-            else self.cell_center_coordinates
+        return self.vertex_axis_coordinates if vertex_oriented \
+            else self.cell_center_axis_coordinates
 
-    def x(
+    def coordinate_grids(
             self,
-            index: Tuple[int, ...],
-            vertex_oriented: bool) -> Tuple[float, ...]:
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
         """
-        Returns the coordinates of the point in the domain corresponding to the
-        vertex or cell center of the mesh specified by the provided index.
+        Returns a tuple of grids where each element contains the coordinates
+        along the corresponding axis at all the vertices or cell centers of the
+        mesh.
 
-        :param index: the index of a vertex or cell center of the mesh
-        :param vertex_oriented: whether the point is a vertex or a cell center
-        :return: the coordinates of the corresponding point of the domain
+        :param vertex_oriented: whether to return grids of coordinates at the
+            vertices or the cell centers of the mesh
+        :return: a tuple arrays containing the coordinate grids
         """
-        offset = self._x_vertex_offset if vertex_oriented \
-            else self._x_cell_center_offset
-        return tuple(offset + np.multiply(self._d_x, index))
+        return self._vertex_coordinate_grids if vertex_oriented \
+            else self._cell_center_coordinate_grids
 
-    def all_x(self, vertex_oriented: bool) -> np.ndarray:
-        """
-        Returns a 2D array containing all the points of the mesh where every
-        row represents the coordinates of a single point along all axes of the
-        spatial domain.
-
-        :param vertex_oriented: whether the coordinates should be those of the
-            vertices or the cell centers
-        :return: a 2D array of point coordinates
-        """
-        shape = self.shape(vertex_oriented)
-        return np.stack([
-            self.x(index, vertex_oriented) for index in np.ndindex(shape)
-        ], axis=0)
-
-    def evaluate_fields(
+    def cartesian_coordinate_grids(
             self,
-            fields: Iterable[Callable[[Sequence[float]], Sequence[float]]],
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of grids where each element contains the Cartesian
+        coordinates along the corresponding axis at all the vertices or cell
+        centers of the mesh.
+
+        :param vertex_oriented: whether to return grids of coordinates at the
+            vertices or the cell centers of the mesh
+        :return: a tuple arrays containing the Cartesian coordinate grids
+        """
+        return tuple(to_cartesian_coordinates(
+            self.coordinate_grids(vertex_oriented),
+            self._coordinate_system_type))
+
+    def all_index_coordinates(
+            self,
             vertex_oriented: bool,
             flatten: bool = False) -> np.ndarray:
         """
-        Evaluates the provided scalar or vector fields over the mesh.
+        Returns an array containing the coordinates of all the points of the
+        mesh.
 
-        :param fields: the field functions
-        :param vertex_oriented: whether the fields are to be evaluated over the
-            vertices or the cell centers of the mesh
-        :param flatten: whether the field values should be flattened into a
-            2D array such that every row represents a field and every column
-            represents a single component of the field over a single point on
-            the mesh
-        :return: an 3D array where the first axis corresponds to the different
-            fields, the second axis corresponds to the flattened
+        :param vertex_oriented: whether the coordinates should be those of the
+            vertices or the cell centers
+        :param flatten: whether to flatten the array into a 2D array where each
+            row represents the coordinates of a single point
+        :return: an array of coordinates
         """
-        all_x = self.all_x(vertex_oriented)
-
-        all_field_values = []
-        for field in fields:
-            field_values = []
-            for i in range(all_x.shape[0]):
-                sensor_point = all_x[i]
-                field_values.append(field(sensor_point))
-
-            all_field_values.append(field_values)
-
-        all_field_values_arr = np.array(all_field_values)
+        coordinate_grids = self.coordinate_grids(vertex_oriented)
+        index_coordinates = np.stack(coordinate_grids, axis=-1)
         if flatten:
-            all_field_values_arr = all_field_values_arr.reshape(
-                (all_field_values_arr.shape[0], -1))
-        return all_field_values_arr
+            index_coordinates = \
+                index_coordinates.reshape((-1, self._dimensions))
+        return index_coordinates
 
-    def _calculate_shape(
+    def unit_vector_grids(
+            self,
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+        """
+        Returns a tuple of unit vector grids such that each element of this
+        tuple is an array containing the Cartesian coordinates of one of the
+        unit vectors of the mesh's coordinate system at each vertex or cell
+        center of the mesh.
+
+        :param vertex_oriented: whether to return the unit vectors at the
+            vertices or the cell centers of the mesh
+        :return: a tuple of arrays containing the unit vector grids
+        """
+        unit_vector_grids = []
+
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            for i in range(self._dimensions):
+                unit_vector_grid = np.zeros(
+                    self.shape(vertex_oriented) + (self._dimensions,))
+                unit_vector_grid[..., i] = 1.
+                unit_vector_grids.append(unit_vector_grid)
+
+        elif self._coordinate_system_type == CoordinateSystem.POLAR:
+            r, theta = self.coordinate_grids(vertex_oriented)
+            sin_theta = np.sin(theta)
+            cos_theta = np.cos(theta)
+            unit_vector_grids.append(
+                np.stack((cos_theta, sin_theta), axis=-1))
+            unit_vector_grids.append(
+                np.stack((-sin_theta, cos_theta), axis=-1))
+
+        elif self._coordinate_system_type == CoordinateSystem.CYLINDRICAL:
+            r, theta, z = self.coordinate_grids(vertex_oriented)
+            zero = np.zeros_like(z)
+            one = np.ones_like(z)
+            sin_theta = np.sin(theta)
+            cos_theta = np.cos(theta)
+            unit_vector_grids.append(
+                np.stack((cos_theta, sin_theta, zero), axis=-1))
+            unit_vector_grids.append(
+                np.stack((-sin_theta, cos_theta, zero), axis=-1))
+            unit_vector_grids.append(np.stack((zero, zero, one), axis=-1))
+
+        elif self._coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r, theta, phi = self.coordinate_grids(vertex_oriented)
+            zero = np.zeros_like(r)
+            sin_theta = np.sin(theta)
+            cos_theta = np.cos(theta)
+            sin_phi = np.sin(phi)
+            cos_phi = np.cos(phi)
+            unit_vector_grids.append(
+                np.stack(
+                    (sin_phi * cos_theta, sin_phi * sin_theta, cos_phi),
+                    axis=-1))
+            unit_vector_grids.append(
+                np.stack(
+                    (cos_phi * cos_theta, cos_phi * sin_theta, -sin_phi),
+                    axis=-1))
+            unit_vector_grids.append(
+                np.stack((-sin_theta, cos_theta, zero), axis=-1))
+
+        else:
+            raise ValueError
+
+        return tuple(unit_vector_grids)
+
+    def evaluate(
+            self,
+            functions: Iterable[Callable[[Sequence[float]], Sequence[float]]],
+            vertex_oriented: bool,
+            flatten: bool = False) -> np.ndarray:
+        """
+        Evaluates the provided vector functions over the mesh.
+
+        :param functions: the vector functions of the spatial coordinates; all
+            these functions should output sequences of the same length
+        :param vertex_oriented: whether the functions are to be evaluated over
+            the vertices or the cell centers of the mesh
+        :param flatten: whether to flatten the evaluated values into a 2D array
+            where the first axis corresponds to the different functions and the
+            second axis corresponds to the values of the function evaluated
+            over the vertices or cell centers of the mesh
+        :return: an array containing the values of the vector functions over
+            the vertices or cell centers of the mesh
+        """
+        all_x = self.all_index_coordinates(vertex_oriented, flatten=True)
+        all_values = []
+        for function in functions:
+            values = [function(all_x[i]) for i in range(all_x.shape[0])]
+            all_values.append(values)
+
+        if flatten:
+            return np.array(all_values).reshape((len(all_values), -1))
+
+        return np.array(all_values).reshape(
+            (len(all_values),) + self.shape(vertex_oriented) + (-1,))
+
+    def _create_shape(
             self,
             d_x: Sequence[float],
-            vertex_oriented: bool
-    ) -> Tuple[int, ...]:
+            vertex_oriented: bool) -> Tuple[int, ...]:
         """
         Calculates the shape of the mesh.
 
@@ -242,10 +340,9 @@ class Mesh:
 
         return tuple(shape)
 
-    def _calculate_coordinates(
+    def _create_axis_coordinates(
             self,
-            vertex_oriented: bool
-    ) -> Tuple[np.ndarray, ...]:
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
         """
         Calculates a tuple of the coordinates of the vertices or cell centers
         of the mesh along each axis.
@@ -274,10 +371,31 @@ class Mesh:
 
         return tuple(coordinates)
 
+    def _create_coordinate_grids(
+            self,
+            vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
+        """
+        Creates a tuple of grids where each element contains the coordinates
+        along the corresponding axis at all the vertices or cell centers of the
+        mesh.
+
+        :param vertex_oriented: whether to return grids of coordinates at the
+            vertices or the cell centers of the mesh
+        :return: a tuple arrays containing the coordinate grids
+        """
+        coordinate_grids: Iterable[np.ndarray] = np.meshgrid(
+            *self.axis_coordinates(vertex_oriented), indexing='ij')
+        for coordinate_grid in coordinate_grids:
+            coordinate_grid.setflags(write=False)
+        return tuple(coordinate_grids)
+
+
+Coordinates = TypeVar('Coordinates', Sequence[float], Sequence[np.ndarray])
+
 
 def to_cartesian_coordinates(
-        x: Sequence[float],
-        from_coordinate_system_type: CoordinateSystem) -> Sequence[float]:
+        x: Coordinates,
+        from_coordinate_system_type: CoordinateSystem) -> Coordinates:
     """
     Converts the provided coordinates from the specified type of coordinate
     system to Cartesian coordinates.
@@ -304,8 +422,8 @@ def to_cartesian_coordinates(
 
 
 def from_cartesian_coordinates(
-        x: Sequence[float],
-        to_coordinate_system_type: CoordinateSystem) -> Sequence[float]:
+        x: Coordinates,
+        to_coordinate_system_type: CoordinateSystem) -> Coordinates:
     """
     Converts the provided Cartesian coordinates to the specified type of
     coordinate system.
@@ -318,14 +436,14 @@ def from_cartesian_coordinates(
     if to_coordinate_system_type == CoordinateSystem.CARTESIAN:
         return x
     elif to_coordinate_system_type == CoordinateSystem.POLAR:
-        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan(x[1] / x[0])]
+        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan2(x[1], x[0])]
     elif to_coordinate_system_type == CoordinateSystem.CYLINDRICAL:
-        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan(x[1] / x[0]), x[2]]
+        return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan2(x[1], x[0]), x[2]]
     elif to_coordinate_system_type == CoordinateSystem.SPHERICAL:
         return [
             np.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2),
-            np.arctan(x[1] / x[0]),
-            np.arctan(np.sqrt(x[0] ** 2 + x[1] ** 2) / x[2])
+            np.arctan2(x[1], x[0]),
+            np.arctan2(np.sqrt(x[0] ** 2 + x[1] ** 2), x[2])
         ]
     else:
         raise ValueError

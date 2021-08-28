@@ -70,7 +70,6 @@ def test_pidon_operator_on_ode_with_analytic_solution():
     solution = pidon.solve(ivp)
 
     assert solution.d_t == .001
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (250, 1)
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
@@ -147,7 +146,6 @@ def test_pidon_operator_on_ode_system():
 
     solution = pidon.solve(ivp)
     assert solution.d_t == .01
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (50, 2)
 
 

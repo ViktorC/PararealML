@@ -83,26 +83,6 @@ class Solution:
         """
         return self._t_coordinates
 
-    def x_coordinates(
-            self,
-            vertex_oriented: Optional[bool] = None
-    ) -> Optional[Sequence[np.ndarray]]:
-        """
-        Returns the spatial coordinates at which the solution is evaluated. To
-        get the spatial coordinates of the discrete solution of this instance,
-        call this function with the value of the vertex_oriented property.
-
-        :param vertex_oriented: whether the coordinates of the vertices or the
-            cell centers of the spatial mesh are to be returned
-        :return: a tuple of arrays each representing the coordinates along the
-            corresponding axis
-        """
-        if self._cp.differential_equation.x_dimension:
-            if vertex_oriented is None:
-                vertex_oriented = self._vertex_oriented
-            return self._cp.mesh.coordinates(vertex_oriented)
-        return None
-
     def y(
             self,
             x: Optional[np.ndarray] = None,
@@ -130,7 +110,7 @@ class Solution:
                 raise ValueError
 
             y = interpn(
-                self._cp.mesh.coordinates(self._vertex_oriented),
+                self._cp.mesh.axis_coordinates(self._vertex_oriented),
                 np.moveaxis(self._discrete_y, 0, -2),
                 x,
                 method=interpolation_method,
@@ -173,9 +153,7 @@ class Solution:
                 or (self._vertex_oriented == vertex_oriented):
             return np.copy(self._discrete_y)
 
-        coordinate_system = self._cp.mesh.coordinates(vertex_oriented)
-        mesh_grid = np.meshgrid(*coordinate_system, indexing='ij')
-        coordinates = np.stack(mesh_grid, axis=-1)
+        coordinates = self._cp.mesh.all_index_coordinates(vertex_oriented)
         discrete_y = self.y(coordinates, interpolation_method)
 
         if vertex_oriented:

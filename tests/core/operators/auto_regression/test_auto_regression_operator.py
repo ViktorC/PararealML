@@ -41,7 +41,6 @@ def test_auto_regression_operator_on_ode():
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
-    assert ml_solution.x_coordinates() is None
     assert ml_solution.discrete_y().shape == (4, 3)
 
     diff = ref_solution.diff([ml_solution])
@@ -77,8 +76,6 @@ def test_auto_regression_operator_on_pde():
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
-    assert np.array_equal(
-        ml_solution.x_coordinates(), [np.linspace(-5., 5., 11)] * 2)
     assert ml_solution.discrete_y().shape == (4, 11, 11, 2)
 
     diff = ref_solution.diff([ml_solution])

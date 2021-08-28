@@ -65,7 +65,8 @@ class PIDeepONet:
 
         if x_dimension:
             mesh = cp.mesh
-            self._sensor_points = mesh.all_x(False)
+            self._sensor_points = mesh.all_index_coordinates(
+                False, flatten=True)
             sensor_input_size = self._sensor_points.shape[0] * y_dimension
         else:
             self._sensor_points = None

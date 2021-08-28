@@ -31,7 +31,6 @@ def test_ode_operator_on_ode_with_analytic_solution():
     solution = op.solve(ivp)
 
     assert solution.d_t == 1e-4
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (1e5, 1)
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
@@ -49,7 +48,6 @@ def test_ode_operator_on_ode():
 
     assert solution.vertex_oriented is None
     assert solution.d_t == 1e-3
-    assert solution.x_coordinates() is None
     assert solution.discrete_y().shape == (1e4, 2)
 
 
