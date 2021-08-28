@@ -632,16 +632,20 @@ class ShallowWaterEquation(DifferentialEquation):
             self._symbols.y[1] * self._symbols.y_gradient[0, 0] -
             self._symbols.y[0] * self._symbols.y_gradient[2, 1] -
             self._symbols.y[2] * self._symbols.y_gradient[0, 1],
-            -np.dot(self._symbols.y[1:3], self._symbols.y_gradient[1, :]) +
-            self._f * self._symbols.y[2] -
+
+            self._v * self._symbols.y_laplacian[1] -
+            self._symbols.y[1] * self._symbols.y_gradient[1, 0] -
+            self._symbols.y[2] * self._symbols.y_gradient[1, 1] -
             self._g * self._symbols.y_gradient[0, 0] -
             self._b * self._symbols.y[1] +
-            self._v * self._symbols.y_laplacian[1],
-            -np.dot(self._symbols.y[1:3], self._symbols.y_gradient[2, :]) -
-            self._f * self._symbols.y[1] -
+            self._f * self._symbols.y[2],
+
+            self._v * self._symbols.y_laplacian[2] -
+            self._symbols.y[1] * self._symbols.y_gradient[2, 0] -
+            self._symbols.y[2] * self._symbols.y_gradient[2, 1] -
             self._g * self._symbols.y_gradient[0, 1] -
-            self._b * self._symbols.y[2] +
-            self._v * self._symbols.y_laplacian[2]
+            self._b * self._symbols.y[2] -
+            self._f * self._symbols.y[1]
         ])
 
 
