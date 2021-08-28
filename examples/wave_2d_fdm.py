@@ -20,4 +20,4 @@ ivp = InitialValueProblem(cp, (0., 50.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
 solution = solver.solve(ivp)
-solution.plot('wave_equation', n_images=50)
+solution.plot('2d_wave_equation', n_images=50)
