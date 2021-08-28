@@ -294,7 +294,9 @@ def plot_evolution_of_scalar_field(
         sliced
     :param slice_inds: the indices along the slice axis representing the slices
     """
-    x_coordinates = solution.x_coordinates(solution.vertex_oriented)
+    mesh = solution.constrained_problem.mesh
+    x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+        solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
     x_dim = solution.constrained_problem.differential_equation.x_dimension
 
@@ -320,25 +322,25 @@ def plot_evolution_of_scalar_field(
         first_x_label = f'x {axes[0]}'
         second_x_label = f'x {axes[1]}'
 
-        first_x_axis_coordinates = x_coordinates[axes[0]]
-        second_x_axis_coordinates = x_coordinates[axes[1]]
-        first_x_axis_coordinates, second_x_axis_coordinates = \
-            np.meshgrid(first_x_axis_coordinates, second_x_axis_coordinates)
-
-        slicer: List[Union[slice, int]] = [slice(None)] * len(y.shape)
+        slicer: List[Union[slice, int]] = [slice(None)] * mesh.dimensions
 
         for slice_ind in slice_inds:
-            if not 0 <= slice_ind < y.shape[slice_axis]:
+            if not 0 <= slice_ind < y.shape[slice_axis + 1]:
                 raise ValueError
 
-            slicer[slice_axis + 1] = slice_ind
-            y_slice = y[tuple(slicer)]
+            slicer[slice_axis] = slice_ind
+
+            first_x_axis_coordinates = \
+                x_cartesian_coordinate_grids[axes[0]][tuple(slicer)]
+            second_x_axis_coordinates = \
+                x_cartesian_coordinate_grids[axes[1]][tuple(slicer)]
+            y_slice = y[(slice(None),) + tuple(slicer)]
 
             fig, ax = plt.subplots()
             ax.contourf(
                 first_x_axis_coordinates,
                 second_x_axis_coordinates,
-                y_slice[0, ...].T,
+                y_slice[0, ...],
                 vmin=v_min,
                 vmax=v_max,
                 cmap=color_map)
@@ -355,7 +357,7 @@ def plot_evolution_of_scalar_field(
                 plt.contourf(
                     first_x_axis_coordinates,
                     second_x_axis_coordinates,
-                    y_slice[time_step, ...].T,
+                    y_slice[time_step, ...],
                     vmin=v_min,
                     vmax=v_max,
                     cmap=color_map)
@@ -375,8 +377,7 @@ def plot_evolution_of_scalar_field(
             ax.set_xlabel('x')
             ax.set_ylabel('y')
 
-            x = x_coordinates[0]
-            line_plot, = ax.plot(x, y[0, ...])
+            line_plot, = ax.plot(x_cartesian_coordinate_grids[0], y[0, ...])
 
             plt.ylim(v_min, v_max)
 
@@ -385,10 +386,6 @@ def plot_evolution_of_scalar_field(
         elif x_dim == 2:
             x0_label = 'x 0'
             x1_label = 'x 1'
-
-            x_0 = x_coordinates[0]
-            x_1 = x_coordinates[1]
-            x_0, x_1 = np.meshgrid(x_0, x_1)
 
             if three_d:
                 fig = plt.figure()
@@ -406,7 +403,8 @@ def plot_evolution_of_scalar_field(
                     'cmap': color_map
                 }
 
-                ax.plot_surface(x_0, x_1, y[0, ...].T, **plot_args)
+                ax.plot_surface(
+                    *x_cartesian_coordinate_grids, y[0, ...], **plot_args)
                 ax.set_zlim(v_min, v_max)
 
                 def update_plot(time_step: int):
@@ -415,14 +413,16 @@ def plot_evolution_of_scalar_field(
                     ax.set_ylabel(x1_label)
                     ax.set_zlabel(y_label)
 
-                    ax.plot_surface(x_0, x_1, y[time_step, ...].T, **plot_args)
+                    ax.plot_surface(
+                        *x_cartesian_coordinate_grids,
+                        y[time_step, ...],
+                        **plot_args)
                     ax.set_zlim(v_min, v_max)
             else:
                 fig, ax = plt.subplots()
                 ax.contourf(
-                    x_0,
-                    x_1,
-                    y[0, ...].T,
+                    *x_cartesian_coordinate_grids,
+                    y[0, ...],
                     vmin=v_min,
                     vmax=v_max,
                     cmap=color_map)
@@ -437,9 +437,8 @@ def plot_evolution_of_scalar_field(
 
                 def update_plot(time_step: int):
                     plt.contourf(
-                        x_0,
-                        x_1,
-                        y[time_step, ...].T,
+                        *x_cartesian_coordinate_grids,
+                        y[time_step, ...],
                         vmin=v_min,
                         vmax=v_max,
                         cmap=color_map)
@@ -484,15 +483,19 @@ def plot_evolution_of_vector_field(
     if y_inds is None or len(y_inds) != x_dim:
         raise ValueError
 
-    x_coordinates = solution.x_coordinates(solution.vertex_oriented)
-    y = solution.discrete_y(solution.vertex_oriented)
+    mesh = solution.constrained_problem.mesh
+    x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+        solution.vertex_oriented)
+    unit_vector_grids = mesh.unit_vector_grids(solution.vertex_oriented)
+    y = solution.discrete_y()
+    y_cartesian: np.ndarray = sum([
+        y[..., y_inds[i], np.newaxis] * unit_vector_grids[i][np.newaxis, ...]
+        for i in range(x_dim)
+    ])
 
     if x_dim == 2:
-        x_0 = x_coordinates[0]
-        x_1 = x_coordinates[1]
-
-        y_0 = y[..., y_inds[0]]
-        y_1 = y[..., y_inds[1]]
+        y_0 = y_cartesian[..., 0]
+        y_1 = y_cartesian[..., 1]
 
         if normalise:
             y_magnitude = np.sqrt(np.square(y_0) + np.square(y_1))
@@ -501,7 +504,11 @@ def plot_evolution_of_vector_field(
             y_1[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
 
         fig, ax = plt.subplots()
-        quiver = ax.quiver(x_0, x_1, y_0[0, ...], y_1[0, ...], pivot=pivot)
+        quiver = ax.quiver(
+            *x_cartesian_coordinate_grids,
+            y_0[0, ...],
+            y_1[0, ...],
+            pivot=pivot)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.axis('scaled')
@@ -513,18 +520,14 @@ def plot_evolution_of_vector_field(
         x1_label = 'y'
         x2_label = 'z'
 
-        x_0, x_1, x_2 = np.meshgrid(*x_coordinates)
-
-        y_0 = y[..., y_inds[0]]
-        y_1 = y[..., y_inds[1]]
-        y_2 = y[..., y_inds[2]]
+        y_0 = y_cartesian[..., 0]
+        y_1 = y_cartesian[..., 1]
+        y_2 = y_cartesian[..., 2]
 
         fig = plt.figure()
         ax = Axes3D(fig)
         ax.quiver(
-            x_0,
-            x_1,
-            x_2,
+            *x_cartesian_coordinate_grids,
             y_0[0, ...],
             y_1[0, ...],
             y_2[0, ...],
@@ -537,9 +540,7 @@ def plot_evolution_of_vector_field(
         def update_plot(time_step: int):
             ax.clear()
             ax.quiver(
-                x_0,
-                x_1,
-                x_2,
+                *x_cartesian_coordinate_grids,
                 y_0[time_step, ...],
                 y_1[time_step, ...],
                 y_2[time_step, ...],
