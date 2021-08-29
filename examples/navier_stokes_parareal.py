@@ -3,16 +3,20 @@ from pararealml.core.operators.fdm import *
 from pararealml.core.operators.parareal import *
 from pararealml.utils.time import time_with_args
 
-diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
+diff_eq = NavierStokesEquation(5000.)
 mesh = Mesh(((0., 10.), (0., 10.)), (.2, .2))
 bcs = (
-    (DirichletBoundaryCondition(lambda x, t: (1., .1), is_static=True),
-     DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
-    (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-     DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
+    (DirichletBoundaryCondition(
+        lambda x, t: (1., .1, None, None), is_static=True),
+     DirichletBoundaryCondition(
+         lambda x, t: (.0, .0, None, None), is_static=True)),
+    (DirichletBoundaryCondition(
+        lambda x, t: (.0, .0, None, None), is_static=True),
+     DirichletBoundaryCondition(
+         lambda x, t: (.0, .0, None, None), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
-ic = ContinuousInitialCondition(cp, lambda x: (.0, .0))
+ic = ContinuousInitialCondition(cp, lambda x: (.0, .0, .0, .0))
 ivp = InitialValueProblem(cp, (0., 20.), ic)
 
 f = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

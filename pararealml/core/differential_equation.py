@@ -558,12 +558,12 @@ class CahnHilliardEquation(DifferentialEquation):
         sym = self._symbols
         return SymbolicEquationSystem(
             [
-                sym.y[1] ** 3 - sym.y[1] - self._gamma * sym.y_laplacian[1],
-                self._d * sym.y_laplacian[0]
+                self._d * sym.y_laplacian[1],
+                sym.y[0] ** 3 - sym.y[0] - self._gamma * sym.y_laplacian[0],
             ],
             [
-                Lhs.Y,
-                Lhs.D_Y_OVER_D_T
+                Lhs.D_Y_OVER_D_T,
+                Lhs.Y
             ]
         )
 
@@ -649,10 +649,11 @@ class ShallowWaterEquation(DifferentialEquation):
         ])
 
 
-class NavierStokesStreamFunctionVorticityEquation(DifferentialEquation):
+class NavierStokesEquation(DifferentialEquation):
     """
-    A system of two partial differential equations modelling the vorticity and
-    the stream function of incompressible fluids in two spatial dimensions.
+    A system of four partial differential equations modelling the velocity,
+    vorticity, and stream function of incompressible fluids in two spatial
+    dimensions.
     """
 
     def __init__(self, re: float = 4000.):
@@ -660,21 +661,25 @@ class NavierStokesStreamFunctionVorticityEquation(DifferentialEquation):
         :param re: the Reynolds number
         """
         self._re = re
-        super(NavierStokesStreamFunctionVorticityEquation, self).__init__(2, 2)
+        super(NavierStokesEquation, self).__init__(2, 4)
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
         return SymbolicEquationSystem(
             [
                 (1. / self._re) * self._symbols.y_laplacian[0] -
-                np.cross(
+                np.dot(
+                    self._symbols.y[2:],
                     self._symbols.y_gradient[0, :],
-                    self._symbols.y_gradient[1, :]
                 ),
-                -self._symbols.y[0]
+                -self._symbols.y[0],
+                self._symbols.y_gradient[1, 1],
+                -self._symbols.y_gradient[1, 0]
             ],
             [
                 Lhs.D_Y_OVER_D_T,
-                Lhs.Y_LAPLACIAN
+                Lhs.Y_LAPLACIAN,
+                Lhs.Y,
+                Lhs.Y
             ]
         )

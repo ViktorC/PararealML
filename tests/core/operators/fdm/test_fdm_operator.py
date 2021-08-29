@@ -5,7 +5,7 @@ from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LorenzEquation, DiffusionEquation, CahnHilliardEquation, BurgerEquation, \
-    NavierStokesStreamFunctionVorticityEquation, ShallowWaterEquation
+    NavierStokesEquation, ShallowWaterEquation
 from pararealml.core.initial_condition import DiscreteInitialCondition, \
     ContinuousInitialCondition, GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -107,24 +107,28 @@ def test_fdm_operator_on_1d_pde():
 
 
 def test_fdm_operator_on_2d_pde():
-    diff_eq = NavierStokesStreamFunctionVorticityEquation(5000.)
+    diff_eq = NavierStokesEquation(5000.)
     mesh = Mesh(((0., 10.), (0., 10.)), (1., 1.))
     bcs = (
-        (DirichletBoundaryCondition(lambda x, t: (1., .1), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
-        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
+        (DirichletBoundaryCondition(
+            lambda x, t: (1., .1, None, None), is_static=True),
+         DirichletBoundaryCondition(
+             lambda x, t: (1., .1, None, None), is_static=True)),
+        (DirichletBoundaryCondition(
+            lambda x, t: (1., .1, None, None), is_static=True),
+         DirichletBoundaryCondition(
+             lambda x, t: (1., .1, None, None), is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    ic = ContinuousInitialCondition(cp, lambda x: (.0, .0))
+    ic = ContinuousInitialCondition(cp, lambda x: (.0, .0, .0, .0))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
     assert solution.d_t == .25
-    assert solution.discrete_y().shape == (40, 11, 11, 2)
-    assert solution.discrete_y(False).shape == (40, 10, 10, 2)
+    assert solution.discrete_y().shape == (40, 11, 11, 4)
+    assert solution.discrete_y(False).shape == (40, 10, 10, 4)
 
 
 def test_fdm_operator_on_3d_pde():

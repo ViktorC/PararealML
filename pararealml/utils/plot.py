@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from pararealml.core.differential_equation import NBodyGravitationalEquation, \
     DiffusionEquation, WaveEquation, BurgerEquation, ShallowWaterEquation, \
-    NavierStokesStreamFunctionVorticityEquation
+    NavierStokesEquation, ConvectionDiffusionEquation
 from pararealml.core.solution import Solution
 
 
@@ -461,7 +461,8 @@ def plot_evolution_of_vector_field(
         interval: int,
         file_name: str,
         normalise: bool = True,
-        pivot: str = 'middle'):
+        pivot: str = 'middle',
+        quiver_scale: float = 1.):
     """
     Plots the vector field representing the solution of an IVP based on a PDE
     in 2 or 3 spatial dimensions as a GIF.
@@ -476,6 +477,7 @@ def plot_evolution_of_vector_field(
     :param file_name: the name of the file to save the plot to
     :param normalise: whether the lengths of the arrows should be normalised
     :param pivot: the pivot point of the arrows
+    :param quiver_scale: scales the size of the quivers
     """
     cp = solution.constrained_problem
     x_dim = cp.differential_equation.x_dimension
@@ -508,7 +510,10 @@ def plot_evolution_of_vector_field(
             *x_cartesian_coordinate_grids,
             y_0[0, ...],
             y_1[0, ...],
-            pivot=pivot)
+            pivot=pivot,
+            angles='xy',
+            scale_units='xy',
+            scale=1. / quiver_scale)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.axis('scaled')
@@ -520,9 +525,9 @@ def plot_evolution_of_vector_field(
         x1_label = 'y'
         x2_label = 'z'
 
-        y_0 = y_cartesian[..., 0]
-        y_1 = y_cartesian[..., 1]
-        y_2 = y_cartesian[..., 2]
+        y_0 = y_cartesian[..., 0] * quiver_scale
+        y_1 = y_cartesian[..., 1] * quiver_scale
+        y_2 = y_cartesian[..., 2] * quiver_scale
 
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -573,6 +578,7 @@ def plot_ivp_solution(
         trajectory_line_width: float = .5,
         normalise: bool = True,
         pivot: str = 'middle',
+        quiver_scale: float = 1.,
         three_d: Optional[bool] = None,
         color_map: Optional[Colormap] = None,
         v_min: Optional[float] = None,
@@ -604,6 +610,7 @@ def plot_ivp_solution(
     :param normalise: whether the lengths of the arrows should be normalised
         for vector field plots
     :param pivot: the pivot point of the arrows for vector field plots
+    :param quiver_scale: scales the size of the quivers
     :param three_d: whether a 3D surface plot or a 2D contour plot should be
         used for IVPs based on PDEs in 2 spatial dimensions
     :param color_map: the color map to use for IVPs based on n-body problems or
@@ -626,27 +633,34 @@ def plot_ivp_solution(
 
     if diff_eq.x_dimension:
         if y_vector_field_inds is None:
-            if isinstance(diff_eq, ShallowWaterEquation):
-                y_vector_field_inds = [1, 2]
             if isinstance(diff_eq, BurgerEquation) and diff_eq.x_dimension > 1:
                 y_vector_field_inds = list(range(diff_eq.x_dimension))
+            if isinstance(diff_eq, ShallowWaterEquation):
+                y_vector_field_inds = [1, 2]
+            if isinstance(diff_eq, NavierStokesEquation):
+                y_vector_field_inds = [2, 3]
 
         if three_d is None:
             three_d = isinstance(
                 diff_eq,
                 (DiffusionEquation,
+                 ConvectionDiffusionEquation,
                  WaveEquation,
-                 ShallowWaterEquation,
-                 BurgerEquation))
+                 BurgerEquation,
+                 ShallowWaterEquation))
 
         if color_map is None:
-            if isinstance(diff_eq, (DiffusionEquation, WaveEquation)):
+            if isinstance(
+                    diff_eq,
+                    (DiffusionEquation,
+                     ConvectionDiffusionEquation,
+                     WaveEquation)):
                 color_map = cm.coolwarm
             elif isinstance(
                     diff_eq,
-                    (ShallowWaterEquation,
-                     BurgerEquation,
-                     NavierStokesStreamFunctionVorticityEquation)):
+                    (BurgerEquation,
+                     ShallowWaterEquation,
+                     NavierStokesEquation)):
                 color_map = cm.ocean
             else:
                 color_map = cm.viridis
@@ -680,7 +694,8 @@ def plot_ivp_solution(
                 interval,
                 file_name,
                 normalise=normalise,
-                pivot=pivot)
+                pivot=pivot,
+                quiver_scale=quiver_scale)
     else:
         if isinstance(diff_eq, NBodyGravitationalEquation):
             if color_map is None:

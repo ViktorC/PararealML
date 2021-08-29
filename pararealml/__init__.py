@@ -16,8 +16,7 @@ from pararealml.core.differential_equation import Lhs
 from pararealml.core.differential_equation import LorenzEquation
 from pararealml.core.differential_equation import LotkaVolterraEquation
 from pararealml.core.differential_equation import NBodyGravitationalEquation
-from pararealml.core.differential_equation import \
-    NavierStokesStreamFunctionVorticityEquation
+from pararealml.core.differential_equation import NavierStokesEquation
 from pararealml.core.differential_equation import PopulationGrowthEquation
 from pararealml.core.differential_equation import ShallowWaterEquation
 from pararealml.core.differential_equation import SymbolicEquationSystem
@@ -56,7 +55,7 @@ __all__ = [
     'CahnHilliardEquation',
     'BurgerEquation',
     'ShallowWaterEquation',
-    'NavierStokesStreamFunctionVorticityEquation',
+    'NavierStokesEquation',
     'InitialCondition',
     'DiscreteInitialCondition',
     'ContinuousInitialCondition',
