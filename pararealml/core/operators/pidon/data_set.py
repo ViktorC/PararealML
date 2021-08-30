@@ -187,13 +187,11 @@ class DataSet:
                     x.append(x_i)
                     axes.append([axis])
 
-                    boundary_x_i = np.concatenate([x_i[:axis], x_i[axis + 1:]])
-
-                    y_i = bc.y_condition(boundary_x_i, t_i) \
+                    y_i = bc.y_condition(x_i, t_i) \
                         if bc.has_y_condition else [np.nan] * y_dimension
                     y.append(y_i)
 
-                    d_y_over_d_n_i = bc.d_y_condition(boundary_x_i, t_i) \
+                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i) \
                         if bc.has_d_y_condition else [np.nan] * y_dimension
                     d_y_over_d_n.append(d_y_over_d_n_i)
 

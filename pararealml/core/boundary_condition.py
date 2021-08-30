@@ -43,9 +43,9 @@ class BoundaryCondition(ABC):
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
-        elements of the returned tuple may be NaNs.
+        elements of the returned sequence may be None.
 
-        :param x: the coordinates in the hyperplane of the boundary
+        :param x: the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
         :return: the value of y(x, t)
         """
@@ -61,9 +61,9 @@ class BoundaryCondition(ABC):
         boundary specified by x with respect to the normal vector to the
         boundary passing through the same point. To avoid imposing a condition
         on elements of the spatial derivative of elements of y, the
-        corresponding elements of the returned tuple may be NaNs.
+        corresponding elements of the returned sequence may be None.
 
-        :param x: the coordinates in the hyperplane of the boundary
+        :param x: the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
         :return: the constrained value of dy(x, t) / dn
         """

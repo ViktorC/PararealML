@@ -34,55 +34,77 @@ def test_cp_2d_pde():
         (DirichletBoundaryCondition(lambda x, t: (999., None), is_static=True),
          NeumannBoundaryCondition(lambda x, t: (100., -100.), is_static=True)),
         (NeumannBoundaryCondition(lambda x, t: (-x[0], None), is_static=True),
-         DirichletBoundaryCondition(
-             lambda x, t: (x[0], -999.), is_static=True))
+         DirichletBoundaryCondition(lambda x, t: (x[0], x[1]), is_static=True))
     )
     cp = ConstrainedProblem(
         diff_eq,
         mesh,
         bcs)
 
-    y = np.full(cp.y_shape(True), 13.)
-    apply_constraints_along_last_axis(cp.static_y_vertex_constraints, y)
+    y_vertices = np.full(cp.y_shape(True), 13.)
+    apply_constraints_along_last_axis(
+        cp.static_y_vertex_constraints, y_vertices)
 
-    assert np.all(y[0, :y.shape[1] - 1, 0] == 999.)
-    assert np.all(y[0, :y.shape[1] - 1, 1] == 13.)
-    assert np.all(y[y.shape[0] - 1, :y.shape[1] - 1, :] == 13.)
-    assert np.all(y[1:, 0, :] == 13.)
+    assert np.all(y_vertices[0, :-1, 0] == 999.)
+    assert np.all(y_vertices[0, :-1, 1] == 13.)
+    assert np.all(y_vertices[-1, :-1, :] == 13.)
+    assert np.all(y_vertices[1:, 0, :] == 13.)
     assert np.isclose(
-        y[:, y.shape[1] - 1, 0],
-        np.linspace(0, (y.shape[0] - 1) * mesh.d_x[0], y.shape[0])).all()
-    assert np.all(y[:, y.shape[1] - 1, 1] == -999.)
+        y_vertices[:, -1, 0],
+        np.linspace(2., 6., y_vertices.shape[0])).all()
+    assert np.all(y_vertices[:, -1, 1] == 3.)
 
-    y = np.zeros(cp.y_shape(True))
+    y_vertices = np.zeros(cp.y_shape(True))
     diff = ThreePointCentralFiniteDifferenceMethod()
     d_y_boundary_constraints = cp.static_d_y_boundary_vertex_constraints
 
-    d_y_0_d_x_0 = diff.gradient(
-        y[..., :1], mesh, 0, d_y_boundary_constraints[:, :1])
+    d_y_0_over_d_x_0 = diff.gradient(
+        y_vertices[..., :1], mesh, 0, d_y_boundary_constraints[:, :1])
 
-    assert np.all(d_y_0_d_x_0[d_y_0_d_x_0.shape[0] - 1, :, :] == 100.)
-    assert np.all(d_y_0_d_x_0[:d_y_0_d_x_0.shape[0] - 1, :, :] == 0.)
+    assert np.all(d_y_0_over_d_x_0[-1, :, :] == 100.)
+    assert np.all(d_y_0_over_d_x_0[:-1, :, :] == 0.)
 
-    d_y_0_d_x_1 = diff.gradient(
-        y[..., :1], mesh, 1, d_y_boundary_constraints[:, :1])
+    d_y_0_over_d_x_1 = diff.gradient(
+        y_vertices[..., :1], mesh, 1, d_y_boundary_constraints[:, :1])
 
     assert np.isclose(
-        d_y_0_d_x_1[:, 0, 0],
-        np.linspace(
-            0, -((y.shape[0] - 1) * mesh.d_x[0]), y.shape[0])).all()
-    assert np.all(d_y_0_d_x_1[:, 1:, :] == 0.)
+        d_y_0_over_d_x_1[:, 0, 0],
+        np.linspace(-2., -6., y_vertices.shape[0])).all()
+    assert np.all(d_y_0_over_d_x_1[:, 1:, :] == 0.)
 
-    d_y_1_d_x_0 = diff.gradient(
-        y[..., 1:], mesh, 0, d_y_boundary_constraints[:, 1:])
+    d_y_1_over_d_x_0 = diff.gradient(
+        y_vertices[..., 1:], mesh, 0, d_y_boundary_constraints[:, 1:])
 
-    assert np.all(d_y_1_d_x_0[d_y_1_d_x_0.shape[0] - 1, :, :] == -100.)
-    assert np.all(d_y_1_d_x_0[:d_y_1_d_x_0.shape[0] - 1, :, :] == 0.)
+    assert np.all(d_y_1_over_d_x_0[-1, :, :] == -100.)
+    assert np.all(d_y_1_over_d_x_0[:-1, :, :] == 0.)
 
-    d_y_1_d_x_1 = diff.gradient(
-        y[..., 1:], mesh, 1, d_y_boundary_constraints[:, 1:])
+    d_y_1_over_d_x_1 = diff.gradient(
+        y_vertices[..., 1:], mesh, 1, d_y_boundary_constraints[:, 1:])
 
-    assert np.all(d_y_1_d_x_1 == 0.)
+    assert np.all(d_y_1_over_d_x_1 == 0.)
+
+    y_boundary_cell_constraints = cp.static_y_boundary_cell_constraints
+
+    assert np.all(
+        y_boundary_cell_constraints[0, 0][0].mask ==
+        [True] * cp.y_cells_shape[1])
+    assert np.all(y_boundary_cell_constraints[0, 0][0].value == 999.)
+    assert np.all(
+        y_boundary_cell_constraints[0, 1][0].mask ==
+        [False] * cp.y_cells_shape[1])
+    assert y_boundary_cell_constraints[0, 1][0].value.size == 0
+
+    assert np.all(
+        y_boundary_cell_constraints[1, 0][1].mask ==
+        [True] * cp.y_cells_shape[0])
+    assert np.isclose(
+        y_boundary_cell_constraints[1, 0][1].value,
+        np.linspace(2.05, 5.95, cp.y_cells_shape[0])).all()
+    assert np.all(
+        y_boundary_cell_constraints[1, 1][1].mask ==
+        [True] * cp.y_cells_shape[0])
+    assert np.all(y_boundary_cell_constraints[1, 1][1].value == 3.)
+    assert y_boundary_cell_constraints[1, 0][0] is None
 
 
 def test_cp_3d_pde():
@@ -101,7 +123,8 @@ def test_cp_3d_pde():
           NeumannBoundaryCondition(lambda x, t: (None,), is_static=True)),
          (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
           NeumannBoundaryCondition(lambda x, t: (t,))),
-         (NeumannBoundaryCondition(lambda x, t: (-x[0],), is_static=True),
+         (NeumannBoundaryCondition(
+             lambda x, t: (-x[0] * x[1] * x[2],), is_static=True),
           DirichletBoundaryCondition(lambda x, t: (-999.,), is_static=True))))
 
     assert cp.y_shape(True) == (41, 31, 5, 2)
