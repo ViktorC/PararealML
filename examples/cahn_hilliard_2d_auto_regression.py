@@ -11,10 +11,14 @@ set_random_seed(SEEDS[0])
 diff_eq = CahnHilliardEquation(2, 1., .01)
 mesh = Mesh([(0., 50.), (0., 50.)], [.5, .5])
 bcs = (
-    (NeumannBoundaryCondition(lambda x, t: [0., 0.], is_static=True),
-     NeumannBoundaryCondition(lambda x, t: [0., 0.], is_static=True)),
-    (NeumannBoundaryCondition(lambda x, t: [0., 0.], is_static=True),
-     NeumannBoundaryCondition(lambda x, t: [0., 0.], is_static=True))
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 2)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 2)), is_static=True)),
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 2)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 2)), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(

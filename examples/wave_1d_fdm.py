@@ -6,8 +6,13 @@ from pararealml.core.operators.fdm import *
 diff_eq = WaveEquation(1)
 mesh = Mesh([(-10., 10.)], [.1])
 bcs = (
-    (DirichletBoundaryCondition(lambda x, t: (np.sin(t), np.cos(t))),
-     NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
+    (DirichletBoundaryCondition(
+        lambda x, t: np.concatenate(
+            [np.full((len(x), 1), np.sin(t)), np.full((len(x), 1), np.cos(t))],
+            axis=1)),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 2)),
+         is_static=True)),
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = ContinuousInitialCondition(cp, lambda _: (0., 0.))

@@ -181,18 +181,18 @@ class DataSet:
 
                 for i in range(boundary_points.t.shape[0]):
                     t_i = boundary_points.t[i]
-                    x_i = boundary_points.x[i]
+                    x_i = boundary_points.x[i:i + 1]
 
                     t.append(t_i)
-                    x.append(x_i)
+                    x.append(x_i[0])
                     axes.append([axis])
 
-                    y_i = bc.y_condition(x_i, t_i) \
-                        if bc.has_y_condition else [np.nan] * y_dimension
+                    y_i = bc.y_condition(x_i, t_i)[0] \
+                        if bc.has_y_condition else [None] * y_dimension
                     y.append(y_i)
 
-                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i) \
-                        if bc.has_d_y_condition else [np.nan] * y_dimension
+                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i)[0] \
+                        if bc.has_d_y_condition else [None] * y_dimension
                     d_y_over_d_n.append(d_y_over_d_n_i)
 
         boundary_collocation_data = np.concatenate(

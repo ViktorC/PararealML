@@ -6,7 +6,7 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.differential_equation import Lhs
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operator import Operator, discretize_time_domain
 from pararealml.core.operators.fdm.numerical_differentiator import \
     NumericalDifferentiator
 from pararealml.core.operators.fdm.fdm_symbol_mapper import FDMSymbolMapper, \
@@ -60,10 +60,9 @@ class FDMOperator(Operator):
     def solve(
             self,
             ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
+            parallel_enabled: bool = True) -> Solution:
         cp = ivp.constrained_problem
-        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
+        time_points = discretize_time_domain(ivp.t_interval, self._d_t)
         y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
         y_i = ivp.initial_condition.discrete_y_0(True)
 
@@ -86,7 +85,7 @@ class FDMOperator(Operator):
                 boundary_constraints_cache.clear()
 
         return Solution(
-            cp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
+            ivp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
 
     def _create_y_next_function(
             self,
@@ -180,24 +179,31 @@ class FDMOperator(Operator):
 
         if cp.are_all_boundary_conditions_static:
             return lambda _: cp.static_y_vertex_constraints, \
-                lambda _: cp.static_d_y_boundary_vertex_constraints
+                lambda _: cp.static_boundary_vertex_constraints[1]
 
-        def y_constraints_function(
-                t: Optional[float]
-        ) -> Optional[np.ndarray]:
-            if t in y_constraints_cache:
-                return y_constraints_cache[t]
+        if cp.are_there_boundary_conditions_on_y:
+            def y_constraints_function(
+                    t: Optional[float]
+            ) -> Optional[np.ndarray]:
+                if t in y_constraints_cache:
+                    return y_constraints_cache[t]
 
-            if t in boundary_constraints_cache:
-                boundary_constraints = boundary_constraints_cache[t]
-            else:
-                boundary_constraints = cp.create_boundary_constraints(True, t)
-                boundary_constraints_cache[t] = boundary_constraints
+                if t in boundary_constraints_cache:
+                    boundary_constraints = boundary_constraints_cache[t]
+                else:
+                    boundary_constraints = \
+                        cp.create_boundary_constraints(True, t)
+                    boundary_constraints_cache[t] = boundary_constraints
 
-            y_constraints = \
-                cp.create_y_vertex_constraints(boundary_constraints[0])
-            y_constraints_cache[t] = y_constraints
-            return y_constraints
+                y_constraints = \
+                    cp.create_y_vertex_constraints(boundary_constraints[0])
+                y_constraints_cache[t] = y_constraints
+                return y_constraints
+        else:
+            def y_constraints_function(
+                    _: Optional[float]
+            ) -> Optional[np.ndarray]:
+                return cp.static_y_vertex_constraints
 
         def d_y_constraints_function(
                 t: Optional[float]

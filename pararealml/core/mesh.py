@@ -104,14 +104,14 @@ class Mesh:
     @property
     def vertices_shape(self) -> Tuple[int, ...]:
         """
-        The shape of the array of the vertices of the discretised domain.
+        The shape of the array of the vertices of the discretized domain.
         """
         return self._vertices_shape
 
     @property
     def cells_shape(self) -> Tuple[int, ...]:
         """
-        The shape of the array of the cell centers of the discretised domain.
+        The shape of the array of the cell centers of the discretized domain.
         """
         return self._cells_shape
 
@@ -148,7 +148,7 @@ class Mesh:
 
     def shape(self, vertex_oriented: bool) -> Tuple[int, ...]:
         """
-        Returns the shape of the array of the discretised domain.
+        Returns the shape of the array of the discretized domain.
 
         :param vertex_oriented: whether the shape of the vertices or the cells
             of the mesh is to be returned

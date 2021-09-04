@@ -55,8 +55,8 @@ def test_ode_operator_on_pde():
     diff_eq = DiffusionEquation(1, 1.5)
     mesh = Mesh(((0., 10.),), (.1,))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,)),
-         DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+         DirichletBoundaryCondition(lambda x, t: np.zeros((len(x), 1)))),
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(

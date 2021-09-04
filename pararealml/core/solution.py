@@ -6,7 +6,7 @@ import numpy as np
 from mpi4py import MPI
 from scipy.interpolate import interpn
 
-from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 
 
@@ -17,14 +17,13 @@ class Solution:
 
     def __init__(
             self,
-            cp: ConstrainedProblem,
+            ivp: InitialValueProblem,
             t_coordinates: np.ndarray,
             discrete_y: np.ndarray,
             vertex_oriented: Optional[bool] = None,
             d_t: Optional[float] = None):
         """
-        :param cp: the constrained problem that the initial value problem
-            solved is based on
+        :param ivp: the solved initial value problem
         :param t_coordinates: the time steps at which the solution is evaluated
         :param discrete_y: the solution to the IVP at the specified time steps
         :param vertex_oriented: whether the solution is vertex or cell oriented
@@ -37,11 +36,12 @@ class Solution:
             raise ValueError
         if len(t_coordinates) == 0:
             raise ValueError
-        if discrete_y.shape != \
-                ((len(t_coordinates),) + cp.y_shape(vertex_oriented)):
+        if discrete_y.shape != (
+                (len(t_coordinates),) +
+                ivp.constrained_problem.y_shape(vertex_oriented)):
             raise ValueError
 
-        self._cp = cp
+        self._ivp = ivp
         self._t_coordinates = np.copy(t_coordinates)
         self._discrete_y = np.copy(discrete_y)
         self._vertex_oriented = vertex_oriented
@@ -54,12 +54,11 @@ class Solution:
         self._d_t = d_t
 
     @property
-    def constrained_problem(self):
+    def initial_value_problem(self) -> InitialValueProblem:
         """
-        The constrained problem that the IVP whose solution this object
-        represents is based on.
+        The solved initial value problem.
         """
-        return self._cp
+        return self._ivp
 
     @property
     def vertex_oriented(self) -> Optional[bool]:
@@ -86,53 +85,39 @@ class Solution:
     def y(
             self,
             x: Optional[np.ndarray] = None,
-            interpolation_method: Optional[str] = None
-    ) -> np.ndarray:
+            interpolation_method: str = 'linear') -> np.ndarray:
         """
         Interpolates and returns the values of y at the specified
         spatial coordinates at every time step.
 
         :param x: the spatial coordinates with a shape of (..., x_dimension)
-        :param interpolation_method: the interpolation method to use; if it is
-            None, linear interpolation is used
+        :param interpolation_method: the interpolation method to use
         :return: the interpolated value of y at the provided spatial
             coordinates at every time step
         """
-        if interpolation_method is None:
-            interpolation_method = 'linear'
+        cp = self._ivp.constrained_problem
+        diff_eq = cp.differential_equation
+        if not diff_eq.x_dimension:
+            return np.copy(self._discrete_y)
 
-        diff_eq = self._cp.differential_equation
-
-        if diff_eq.x_dimension:
-            if x is None:
-                raise ValueError
-            if x.shape[-1] != diff_eq.x_dimension:
-                raise ValueError
-
-            y = interpn(
-                self._cp.mesh.axis_coordinates(self._vertex_oriented),
-                np.moveaxis(self._discrete_y, 0, -2),
-                x,
-                method=interpolation_method,
-                bounds_error=False,
-                fill_value=None)
-
-            y = np.moveaxis(y, -2, 0)
-            y = y.reshape(
-                (len(self._t_coordinates),) +
-                x.shape[:-1] +
-                (diff_eq.y_dimension,))
-            y = np.ascontiguousarray(y)
-        else:
-            y = np.copy(self._discrete_y)
-
-        return y
+        y = interpn(
+            cp.mesh.axis_coordinates(self._vertex_oriented),
+            np.moveaxis(self._discrete_y, 0, -2),
+            x,
+            method=interpolation_method,
+            bounds_error=False,
+            fill_value=None)
+        y = np.moveaxis(y, -2, 0)
+        y = y.reshape(
+            (len(self._t_coordinates),) +
+            x.shape[:-1] +
+            (diff_eq.y_dimension,))
+        return np.ascontiguousarray(y)
 
     def discrete_y(
             self,
             vertex_oriented: Optional[bool] = None,
-            interpolation_method: Optional[str] = None
-    ) -> np.ndarray:
+            interpolation_method: str = 'linear') -> np.ndarray:
         """
         Returns the discrete solution evaluated either at vertices or the cell
         centers of the spatial mesh.
@@ -142,31 +127,29 @@ class Solution:
             only interpolation is supported, therefore, it is not possible to
             evaluate the solution at the vertices based on a cell-oriented
             solution
-        :param interpolation_method: the interpolation method to use; if it is
-            None, linear interpolation is used
+        :param interpolation_method: the interpolation method to use
         :return: the discrete solution
         """
         if vertex_oriented is None:
             vertex_oriented = self._vertex_oriented
 
-        if (self._cp.differential_equation.x_dimension == 0) \
-                or (self._vertex_oriented == vertex_oriented):
+        cp = self._ivp.constrained_problem
+        if not cp.differential_equation.x_dimension \
+                or self._vertex_oriented == vertex_oriented:
             return np.copy(self._discrete_y)
 
-        coordinates = self._cp.mesh.all_index_coordinates(vertex_oriented)
+        coordinates = cp.mesh.all_index_coordinates(vertex_oriented)
         discrete_y = self.y(coordinates, interpolation_method)
 
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._cp.static_y_vertex_constraints, discrete_y)
-
+                cp.static_y_vertex_constraints, discrete_y)
         return discrete_y
 
     def diff(
             self,
             solutions: Sequence[Solution],
-            atol: float = 1e-8
-    ) -> Diffs:
+            atol: float = 1e-8) -> Diffs:
         """
         Calculates and returns the difference between the provided solutions
         and this solution at every matching time point across all solutions.

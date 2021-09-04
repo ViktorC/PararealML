@@ -6,7 +6,7 @@ from mpi4py import MPI
 
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operator import Operator, discretize_time_domain
 from pararealml.core.solution import Solution
 
 
@@ -50,8 +50,7 @@ class PararealOperator(Operator):
     def solve(
             self,
             ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
+            parallel_enabled: bool = True) -> Solution:
         if not parallel_enabled:
             return self._f.solve(ivp)
 
@@ -135,7 +134,7 @@ class PararealOperator(Operator):
             if max_update < self._tol:
                 break
 
-        time_points = discretise_time_domain(ivp.t_interval, self._f.d_t)[1:]
+        time_points = discretize_time_domain(ivp.t_interval, self._f.d_t)[1:]
         all_y_fine = np.empty((len(time_points), *y_shape))
         y_fine += new_y_coarse_at_end_points[comm.rank] - y_coarse_at_end_point
         comm.Allgather(
@@ -143,7 +142,7 @@ class PararealOperator(Operator):
             [all_y_fine, MPI.DOUBLE])
 
         return Solution(
-            cp,
+            ivp,
             time_points,
             all_y_fine,
             vertex_oriented=vertex_oriented,

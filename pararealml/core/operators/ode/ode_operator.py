@@ -5,7 +5,7 @@ import sympy as sp
 from scipy.integrate import solve_ivp, OdeSolver
 
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operator import Operator, discretize_time_domain
 from pararealml.core.solution import Solution
 
 
@@ -39,16 +39,13 @@ class ODEOperator(Operator):
     def solve(
             self,
             ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
-        cp = ivp.constrained_problem
-        diff_eq = cp.differential_equation
-
+            parallel_enabled: bool = True) -> Solution:
+        diff_eq = ivp.constrained_problem.differential_equation
         if diff_eq.x_dimension != 0:
             raise ValueError
 
         t_interval = ivp.t_interval
-        time_points = discretise_time_domain(t_interval, self._d_t)
+        time_points = discretize_time_domain(t_interval, self._d_t)
         adjusted_t_interval = (time_points[0], time_points[-1])
 
         sym = diff_eq.symbols
@@ -72,4 +69,4 @@ class ODEOperator(Operator):
                 f'status code: {result.status}, message: {result.message}')
 
         y = np.ascontiguousarray(result.y.T)
-        return Solution(cp, time_points[1:], y, d_t=self._d_t)
+        return Solution(ivp, time_points[1:], y, d_t=self._d_t)

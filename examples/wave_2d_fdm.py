@@ -6,10 +6,14 @@ from pararealml.core.operators.fdm import *
 diff_eq = WaveEquation(2)
 mesh = Mesh(((-5., 5.), (-5., 5.)), (.1, .1))
 bcs = (
-    (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-     DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
-    (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-     DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
+    (DirichletBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 2)), is_static=True),
+     DirichletBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 2)), is_static=True)),
+    (DirichletBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 2)), is_static=True),
+     DirichletBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 2)), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(

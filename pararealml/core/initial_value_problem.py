@@ -34,13 +34,7 @@ class InitialValueProblem:
             initial value problem at time step t and point x. If it is None,
             the problem is assumed to have no analytical solution.
         """
-        if cp is None:
-            raise ValueError
-        if len(t_interval) != 2:
-            raise ValueError
         if t_interval[0] > t_interval[1]:
-            raise ValueError
-        if initial_condition is None:
             raise ValueError
 
         self._cp = cp

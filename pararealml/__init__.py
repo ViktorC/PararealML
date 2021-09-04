@@ -4,6 +4,7 @@ from pararealml.core.boundary_condition import BoundaryCondition
 from pararealml.core.boundary_condition import CauchyBoundaryCondition
 from pararealml.core.boundary_condition import DirichletBoundaryCondition
 from pararealml.core.boundary_condition import NeumannBoundaryCondition
+from pararealml.core.boundary_condition import vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import Constraint
 from pararealml.core.constraint import apply_constraints_along_last_axis
@@ -38,6 +39,7 @@ __all__ = [
     'DirichletBoundaryCondition',
     'NeumannBoundaryCondition',
     'CauchyBoundaryCondition',
+    'vectorize_bc_function',
     'ConstrainedProblem',
     'apply_constraints_along_last_axis',
     'Constraint',

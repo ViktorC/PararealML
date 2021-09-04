@@ -1,7 +1,8 @@
 import numpy as np
 from tensorflow import optimizers
 
-from pararealml.core.boundary_condition import NeumannBoundaryCondition
+from pararealml.core.boundary_condition import NeumannBoundaryCondition, \
+    vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LotkaVolterraEquation, DiffusionEquation
@@ -155,8 +156,10 @@ def test_pidon_operator_on_pde():
     diff_eq = DiffusionEquation(1, .25)
     mesh = Mesh([(0., .5)], (.05,))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: [0.], is_static=True),
-         NeumannBoundaryCondition(lambda x, t: [0.], is_static=True)),
+        (NeumannBoundaryCondition(
+            vectorize_bc_function(lambda x, t: [0.]), is_static=True),
+         NeumannBoundaryCondition(
+             vectorize_bc_function(lambda x, t: [0.]), is_static=True)),
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0., .5)

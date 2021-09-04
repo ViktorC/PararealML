@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-from pararealml.core.boundary_condition import DirichletBoundaryCondition
+from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
+    vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LorenzEquation, WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
@@ -54,10 +55,14 @@ def test_auto_regression_operator_on_pde():
     diff_eq = WaveEquation(2)
     mesh = Mesh(((-5., 5.), (-5., 5.)), (1., 1.))
     bcs = (
-        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
-        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True)),
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(

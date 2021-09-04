@@ -7,7 +7,7 @@ import tensorflow as tf
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_value_problem import InitialValueProblem, \
     TemporalDomainInterval
-from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operator import Operator, discretize_time_domain
 from pararealml.core.operators.pidon.collocation_point_sampler import \
     CollocationPointSampler
 from pararealml.core.operators.pidon.data_set import DataSet
@@ -38,8 +38,8 @@ class ModelArgs(NamedTuple):
     latent_output_size: int
     branch_hidden_layer_sizes: Optional[List[int]] = None
     trunk_hidden_layer_sizes: Optional[List[int]] = None
-    branch_initialisation: Optional[str] = None
-    trunk_initialisation: Optional[str] = None
+    branch_initialization: Optional[str] = None
+    trunk_initialization: Optional[str] = None
     branch_activation: Optional[str] = 'tanh'
     trunk_activation: Optional[str] = 'tanh'
 
@@ -125,7 +125,7 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
+        time_points = discretize_time_domain(ivp.t_interval, self._d_t)
 
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
@@ -153,7 +153,7 @@ class PIDONOperator(Operator):
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
         return Solution(
-            cp,
+            ivp,
             time_points[1:],
             y,
             vertex_oriented=self._vertex_oriented,

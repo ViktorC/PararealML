@@ -6,8 +6,10 @@ from pararealml.core.operators.fdm import *
 diff_eq = BurgerEquation(1, 100)
 mesh = Mesh(((0., 10.),), (.1,))
 bcs = (
-    (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-     NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 1)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 1)), is_static=True)),
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(

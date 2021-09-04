@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
-    NeumannBoundaryCondition
+    NeumannBoundaryCondition, vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LorenzEquation, DiffusionEquation, CahnHilliardEquation, BurgerEquation, \
@@ -47,8 +47,8 @@ def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
     diff_eq = DiffusionEquation(1, 5.)
     mesh = Mesh(((0., 500.),), (.1,))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1)), is_static=True),
+         NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1)), is_static=True)),
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
@@ -89,8 +89,10 @@ def test_fdm_operator_on_1d_pde():
     diff_eq = BurgerEquation(1, 1000.)
     mesh = Mesh(((0., 10.),), (.1,))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
+        (NeumannBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+         NeumannBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0.,)), is_static=True)),
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
@@ -111,13 +113,17 @@ def test_fdm_operator_on_2d_pde():
     mesh = Mesh(((0., 10.), (0., 10.)), (1., 1.))
     bcs = (
         (DirichletBoundaryCondition(
-            lambda x, t: (1., .1, None, None), is_static=True),
+            vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+            is_static=True),
          DirichletBoundaryCondition(
-             lambda x, t: (1., .1, None, None), is_static=True)),
+             vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+             is_static=True)),
         (DirichletBoundaryCondition(
-            lambda x, t: (1., .1, None, None), is_static=True),
+            vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+            is_static=True),
          DirichletBoundaryCondition(
-             lambda x, t: (1., .1, None, None), is_static=True))
+             vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+             is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = ContinuousInitialCondition(cp, lambda x: (.0, .0, .0, .0))
@@ -135,12 +141,18 @@ def test_fdm_operator_on_3d_pde():
     diff_eq = CahnHilliardEquation(3)
     mesh = Mesh(((0., 5.), (0., 5.), (0., 10.)), (.5, 1., 2.))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
-        (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True)),
-        (NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: (0., 0.), is_static=True))
+        (NeumannBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
+         NeumannBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True)),
+        (NeumannBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
+         NeumannBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True)),
+        (NeumannBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
+         NeumannBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = DiscreteInitialCondition(
@@ -165,13 +177,17 @@ def test_fdm_operator_on_polar_pde():
         CoordinateSystem.POLAR)
     bcs = (
         (NeumannBoundaryCondition(
-            lambda x, t: (.0, None, None), is_static=True),
+            vectorize_bc_function(lambda x, t: (.0, None, None)),
+            is_static=True),
          NeumannBoundaryCondition(
-             lambda x, t: (.0, None, None), is_static=True)),
+             vectorize_bc_function(lambda x, t: (.0, None, None)),
+             is_static=True)),
         (NeumannBoundaryCondition(
-            lambda x, t: (.0, None, None), is_static=True),
+            vectorize_bc_function(lambda x, t: (.0, None, None)),
+            is_static=True),
          NeumannBoundaryCondition(
-             lambda x, t: (.0, None, None), is_static=True))
+             vectorize_bc_function(lambda x, t: (.0, None, None)),
+             is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
@@ -192,8 +208,9 @@ def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     diff_eq = DiffusionEquation(1, 1.5)
     mesh = Mesh(((0., 10.),), (1.,))
     bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,)),
-         DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+         DirichletBoundaryCondition(
+             lambda x, t: np.full((len(x), 1), t / 5.))),
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(

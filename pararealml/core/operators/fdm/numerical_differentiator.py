@@ -94,7 +94,7 @@ class NumericalDifferentiator(ABC):
         :param y_hat: the current estimated values of the solution at every
             point of the mesh
         :param laplacian: the Laplacian for which y is to be determined
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: an optional 2D array
             (x dimension, y dimension) of boundary constraint pairs that
             specify constraints on the first derivatives of the solution
@@ -113,7 +113,7 @@ class NumericalDifferentiator(ABC):
         spatial dimension specified by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param x_axis: the spatial dimension that y is to be differentiated
             with respect to
         :param derivative_boundary_constraints: a 2D array (x dimension,
@@ -168,7 +168,7 @@ class NumericalDifferentiator(ABC):
         the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param x_axis1: the first spatial dimension that y is to be
             differentiated with respect to
         :param x_axis2: the second spatial dimension that y is to be
@@ -283,7 +283,7 @@ class NumericalDifferentiator(ABC):
         mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
@@ -348,7 +348,7 @@ class NumericalDifferentiator(ABC):
         the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param curl_ind: the index of the component of the curl of y to
             compute; if y is a two dimensional vector field, it must be 0
         :param derivative_boundary_constraints: a 2D array (x dimension,
@@ -460,7 +460,7 @@ class NumericalDifferentiator(ABC):
         Computes the Laplacian of y at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
@@ -532,7 +532,7 @@ class NumericalDifferentiator(ABC):
         Computes the anti-Laplacian using the Jacobi method.
 
         :param laplacian: the right-hand side of the equation
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param tol: the stopping criterion for the Jacobi algorithm; once the
             second norm of the difference of the estimate and the updated
             estimate drops below this threshold, the equation is considered to
@@ -674,27 +674,19 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             if constraint_pair is None:
                 continue
 
-            derivative_slicer[-1] = y_ind
+            derivative_slicer[-1] = slice(y_ind, y_ind + 1)
 
             lower_boundary_constraint = constraint_pair[0]
             if lower_boundary_constraint is not None:
                 derivative_slicer[x_axis] = 0
-                if y.ndim > 2:
-                    lower_boundary_constraint.apply(
-                        derivative[tuple(derivative_slicer)])
-                elif lower_boundary_constraint.mask:
-                    derivative[tuple(derivative_slicer)] = \
-                        lower_boundary_constraint.value
+                lower_boundary_constraint.apply(
+                    derivative[tuple(derivative_slicer)])
 
             upper_boundary_constraint = constraint_pair[1]
             if upper_boundary_constraint is not None:
                 derivative_slicer[x_axis] = -1
-                if y.ndim > 2:
-                    upper_boundary_constraint.apply(
-                        derivative[tuple(derivative_slicer)])
-                elif upper_boundary_constraint.mask:
-                    derivative[tuple(derivative_slicer)] = \
-                        upper_boundary_constraint.value
+                upper_boundary_constraint.apply(
+                    derivative[tuple(derivative_slicer)])
 
         return derivative
 
@@ -970,26 +962,16 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
 
             lower_boundary_constraint = boundary_constraint_pair[0]
             if lower_boundary_constraint is not None:
-                if y_lower_boundary_adjacent.ndim > 1:
-                    lower_boundary_constraint.multiply_and_add(
-                        y_lower_boundary_adjacent[..., y_ind],
-                        -2. * d_x,
-                        y_lower_halo[..., y_ind])
-                elif lower_boundary_constraint.mask:
-                    y_lower_halo[..., y_ind] = \
-                        y_lower_boundary_adjacent[..., y_ind] - \
-                        2. * d_x * lower_boundary_constraint.value
+                lower_boundary_constraint.multiply_and_add(
+                    y_lower_boundary_adjacent[..., y_ind:y_ind + 1],
+                    -2. * d_x,
+                    y_lower_halo[..., y_ind:y_ind + 1])
 
             upper_boundary_constraint = boundary_constraint_pair[1]
             if upper_boundary_constraint is not None:
-                if y_upper_boundary_adjacent.ndim > 1:
-                    upper_boundary_constraint.multiply_and_add(
-                        y_upper_boundary_adjacent[..., y_ind],
-                        2. * d_x,
-                        y_upper_halo[..., y_ind])
-                elif upper_boundary_constraint.mask:
-                    y_upper_halo[..., y_ind] = \
-                        y_upper_boundary_adjacent[..., y_ind] + \
-                        2. * d_x * upper_boundary_constraint.value
+                upper_boundary_constraint.multiply_and_add(
+                    y_upper_boundary_adjacent[..., y_ind:y_ind + 1],
+                    2. * d_x,
+                    y_upper_halo[..., y_ind:y_ind + 1])
 
         return y_lower_halo, y_upper_halo

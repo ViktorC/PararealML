@@ -3,11 +3,11 @@ from copy import deepcopy, copy
 from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
+from scipy.interpolate import interpn
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.mesh import to_cartesian_coordinates
-from pararealml.core.solution import Solution
 
 
 class InitialCondition(ABC):
@@ -31,12 +31,12 @@ class InitialCondition(ABC):
             vertex_oriented: Optional[bool] = None
     ) -> np.ndarray:
         """
-        Returns the discretised initial values of y evaluated at the vertices
+        Returns the discretized initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
 
         :param vertex_oriented: whether the initial conditions are to be
             evaluated at the vertices or cell centers of the spatial mesh
-        :return: the discretised initial values
+        :return: the discretized initial values
         """
 
 
@@ -50,7 +50,7 @@ class DiscreteInitialCondition(InitialCondition):
             cp: ConstrainedProblem,
             y_0: np.ndarray,
             vertex_oriented: Optional[bool] = None,
-            interpolation_method: Optional[str] = None):
+            interpolation_method: str = 'linear'):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -63,28 +63,57 @@ class DiscreteInitialCondition(InitialCondition):
             calculate values that do not exactly fall on points of the y_0
             grid; if the constrained problem is based on an ODE, it can be None
         """
+        if cp.differential_equation.x_dimension and vertex_oriented is None:
+            raise ValueError
+
+        self._cp = cp
+        self._y_0 = np.copy(y_0)
+        self._vertex_oriented = vertex_oriented
         self._interpolation_method = interpolation_method
 
-        y_0_copy = np.copy(y_0)
-        if vertex_oriented and cp.are_all_boundary_conditions_static:
+        if vertex_oriented:
             apply_constraints_along_last_axis(
-                cp.static_y_vertex_constraints,
-                y_0_copy)
-        y_0_copy = y_0_copy.reshape((1,) + y_0_copy.shape)
-
-        self._y_0_solution = Solution(
-            cp, np.zeros(1), y_0_copy, vertex_oriented)
+                cp.static_y_vertex_constraints, self._y_0)
 
     def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
-        return self._y_0_solution.y(
-            np.asarray(x), self._interpolation_method)[0]
+        if not self._cp.differential_equation.x_dimension:
+            return np.copy(self._y_0)
+
+        return interpn(
+            self._cp.mesh.axis_coordinates(self._vertex_oriented),
+            self._y_0,
+            x,
+            method=self._interpolation_method,
+            bounds_error=False,
+            fill_value=None)
 
     def discrete_y_0(
             self,
             vertex_oriented: Optional[bool] = None
     ) -> np.ndarray:
-        return self._y_0_solution.discrete_y(
-            vertex_oriented, self._interpolation_method)[0]
+        if vertex_oriented is None:
+            vertex_oriented = self._vertex_oriented
+
+        if not self._cp.differential_equation.x_dimension \
+                or vertex_oriented == self._vertex_oriented:
+            return np.copy(self._y_0)
+
+        origin_axis_coordinates = \
+            self._cp.mesh.axis_coordinates(self._vertex_oriented)
+        target_index_coordinates = \
+            self._cp.mesh.all_index_coordinates(vertex_oriented)
+        target_y_0 = interpn(
+            origin_axis_coordinates,
+            self._y_0,
+            target_index_coordinates,
+            method=self._interpolation_method,
+            bounds_error=False,
+            fill_value=None)
+
+        if vertex_oriented:
+            apply_constraints_along_last_axis(
+                self._cp.static_y_vertex_constraints, target_y_0)
+        return target_y_0
 
 
 class ContinuousInitialCondition(InitialCondition):
@@ -122,22 +151,20 @@ class ContinuousInitialCondition(InitialCondition):
 
     def _create_discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
         """
-        Creates the discretised initial values of y evaluated at the vertices
+        Creates the discretized initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
 
         :param vertex_oriented: whether the initial conditions are to be
             evaluated at the vertices or cell centers of the spatial mesh
-        :return: the discretised initial values
+        :return: the discretized initial values
         """
-        if self._cp.differential_equation.x_dimension:
-            y_0 = self._cp.mesh.evaluate([self._y_0_func], vertex_oriented)[0]
-            if vertex_oriented and self._cp.are_all_boundary_conditions_static:
-                apply_constraints_along_last_axis(
-                    self._cp.static_y_vertex_constraints,
-                    y_0)
-        else:
-            y_0 = np.array(self._y_0_func(None))
+        if not self._cp.differential_equation.x_dimension:
+            return np.array(self._y_0_func(None))
 
+        y_0 = self._cp.mesh.evaluate([self._y_0_func], vertex_oriented)[0]
+        if vertex_oriented:
+            apply_constraints_along_last_axis(
+                self._cp.static_y_vertex_constraints, y_0)
         return y_0
 
 

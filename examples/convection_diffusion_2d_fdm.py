@@ -6,10 +6,14 @@ from pararealml.core.operators.fdm import *
 diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
 mesh = Mesh(((0., 50.), (0., 50.)), (.5, .5))
 bcs = (
-    (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-     NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True)),
-    (NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True),
-     NeumannBoundaryCondition(lambda x, t: (0.,), is_static=True))
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 1)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 1)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 1)), is_static=True))
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(

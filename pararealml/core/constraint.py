@@ -102,6 +102,6 @@ def apply_constraints_along_last_axis(
 
         for i, constraint in enumerate(constraints):
             if constraint is not None:
-                constraint.apply(array[..., i])
+                constraint.apply(array[..., i:i + 1])
 
     return array

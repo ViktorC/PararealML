@@ -58,7 +58,7 @@ class Symbols:
         An array of symbols denoting the elements of the solution of the
         differential equation.
         """
-        return np.copy(self._y)
+        return copy(self._y)
 
     @property
     def y_gradient(self) -> Optional[np.ndarray]:
@@ -67,7 +67,7 @@ class Symbols:
         solution where the first rank is the element of the solution and the
         second rank is the spatial axis.
         """
-        return np.copy(self._y_gradient)
+        return copy(self._y_gradient)
 
     @property
     def y_hessian(self) -> Optional[np.ndarray]:
@@ -77,7 +77,7 @@ class Symbols:
         second rank is the first spatial axis, and the third rank is the second
         spatial axis.
         """
-        return np.copy(self._y_hessian)
+        return copy(self._y_hessian)
 
     @property
     def y_divergence(self) -> Optional[np.ndarray]:
@@ -85,7 +85,7 @@ class Symbols:
         A multidimensional array of symbols denoting the spatial divergence of
         the corresponding elements of the differential equation's solution.
         """
-        return np.copy(self._y_divergence)
+        return copy(self._y_divergence)
 
     @property
     def y_curl(self) -> Optional[np.ndarray]:
@@ -100,7 +100,7 @@ class Symbols:
         vector field. For differential equations with less than two or more
         than three spatial dimensions, the curl is not defined.
         """
-        return np.copy(self._y_curl)
+        return copy(self._y_curl)
 
     @property
     def y_laplacian(self) -> Optional[np.ndarray]:
@@ -108,7 +108,7 @@ class Symbols:
         An array of symbols denoting the spatial Laplacians of the elements of
         the differential equation's solution.
         """
-        return np.copy(self._y_laplacian)
+        return copy(self._y_laplacian)
 
 
 class Lhs(Enum):
@@ -260,11 +260,10 @@ class DifferentialEquation(ABC):
             if not rhs_symbols.issubset(all_symbols):
                 raise ValueError
 
-        if self.x_dimension:
-            if Lhs.D_Y_OVER_D_T not in equation_system.lhs_types:
-                raise ValueError
-        elif Lhs.Y in equation_system.lhs_types \
-                or Lhs.Y_LAPLACIAN in equation_system.lhs_types:
+        if Lhs.D_Y_OVER_D_T not in equation_system.lhs_types:
+            raise ValueError
+        if not self.x_dimension \
+                and Lhs.Y_LAPLACIAN in equation_system.lhs_types:
             raise ValueError
 
 
