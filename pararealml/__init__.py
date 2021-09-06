@@ -27,11 +27,12 @@ from pararealml.core.initial_condition import ContinuousInitialCondition
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_condition import GaussianInitialCondition
 from pararealml.core.initial_condition import InitialCondition
+from pararealml.core.initial_condition import vectorize_ic_function
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import CoordinateSystem
 from pararealml.core.mesh import Mesh
-from pararealml.core.mesh import to_cartesian_coordinates
 from pararealml.core.mesh import from_cartesian_coordinates
+from pararealml.core.mesh import to_cartesian_coordinates
 from pararealml.core.solution import Solution
 
 __all__ = [
@@ -62,6 +63,7 @@ __all__ = [
     'DiscreteInitialCondition',
     'ContinuousInitialCondition',
     'GaussianInitialCondition',
+    'vectorize_ic_function',
     'InitialValueProblem',
     'CoordinateSystem',
     'Mesh',

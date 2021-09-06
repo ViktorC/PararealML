@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Tuple, Optional, Sequence, List, Union
 
 import numpy as np
@@ -344,37 +343,37 @@ class ConstrainedProblem:
         slicer: List[Union[int, slice]] = \
             [slice(None)] * all_index_coordinates.ndim
 
-        lower_and_upper_y_bcs = []
-        lower_and_upper_d_y_bcs = []
+        lower_and_upper_y_bcs: List[Sequence[Optional[Constraint]]] = []
+        lower_and_upper_d_y_bcs: List[Sequence[Optional[Constraint]]] = []
         for bc_ind, bc in enumerate(boundary_condition_pair):
             if not bc.is_static and t is None:
-                y_bcs = d_y_bcs = [None] * y_dimension
+                lower_and_upper_y_bcs.append([None] * y_dimension)
+                lower_and_upper_d_y_bcs.append([None] * y_dimension)
             elif bc.is_static and static_boundary_constraints is not None:
-                y_bcs = [
+                lower_and_upper_y_bcs.append([
                     static_boundary_constraints[0][axis, i][bc_ind]
-                    for i in range(y_dimension)]
-                d_y_bcs = [
+                    for i in range(y_dimension)])
+                lower_and_upper_d_y_bcs.append([
                     static_boundary_constraints[1][axis, i][bc_ind]
-                    for i in range(y_dimension)]
+                    for i in range(y_dimension)])
             else:
                 slicer[axis] = bc_ind * -1
                 boundary_index_coordinates = \
                     np.copy(all_index_coordinates[tuple(slicer)])
                 boundary_index_coordinates[..., axis] = \
                     self._mesh.vertex_axis_coordinates[axis][bc_ind * -1]
-                y_bcs = self._create_boundary_constraints_for_all_y(
+                lower_and_upper_y_bcs.append(
+                    self._create_boundary_constraints_for_all_y(
                         bc.has_y_condition,
                         bc.y_condition,
                         boundary_index_coordinates,
-                        t)
-                d_y_bcs = self._create_boundary_constraints_for_all_y(
+                        t))
+                lower_and_upper_d_y_bcs.append(
+                    self._create_boundary_constraints_for_all_y(
                         bc.has_d_y_condition,
                         bc.d_y_condition,
                         boundary_index_coordinates,
-                        t)
-
-            lower_and_upper_y_bcs.append(y_bcs)
-            lower_and_upper_d_y_bcs.append(d_y_bcs)
+                        t))
 
         y_bc_pairs = np.empty(y_dimension, dtype=object)
         y_bc_pairs[:] = list(zip(*lower_and_upper_y_bcs))

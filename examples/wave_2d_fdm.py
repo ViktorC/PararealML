@@ -18,8 +18,17 @@ bcs = (
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
-    ((np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]])),) * 2,
-    (3., .0))
+    [
+        (
+            np.array([0., 2.5]),
+            np.array([
+                [.1, 0.],
+                [0., .1]
+            ])
+        )
+    ] * 2,
+    [3., .0]
+)
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

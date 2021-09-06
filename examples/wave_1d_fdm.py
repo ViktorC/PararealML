@@ -15,7 +15,7 @@ bcs = (
          is_static=True)),
 )
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
-ic = ContinuousInitialCondition(cp, lambda _: (0., 0.))
+ic = ContinuousInitialCondition(cp, lambda x: np.ones((len(x), 2)))
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .005)

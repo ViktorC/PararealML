@@ -24,7 +24,7 @@ def test_auto_regression_operator_on_ode():
 
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (1.,) * 3)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
     oracle = ODEOperator('DOP853', .001)
@@ -67,8 +67,8 @@ def test_auto_regression_operator_on_pde():
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]])),) * 2,
-        (3., .0))
+        [(np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]]))] * 2,
+        [3., .0])
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
     oracle = FDMOperator(

@@ -4,10 +4,14 @@ from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
 from scipy.interpolate import interpn
+from scipy.stats import multivariate_normal
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
 from pararealml.core.mesh import to_cartesian_coordinates
+
+VectorizedInitialConditionFunction = \
+    Callable[[Optional[np.ndarray]], np.ndarray]
 
 
 class InitialCondition(ABC):
@@ -16,20 +20,21 @@ class InitialCondition(ABC):
     """
 
     @abstractmethod
-    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+    def y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         """
-        Returns the initial value of y at the point in the spatial domain
+        Returns the initial value of y at the points in the spatial domain
         defined by x.
 
-        :param x: the spatial coordinates
-        :return: the initial value of y at the coordinates
+        :param x: a 2D array (n, x_dimension) of the spatial coordinates for
+            PDEs and None for ODEs
+        :return: a 2D array (n, y_dimension) of the initial value of y at the
+            coordinates for PDEs and a 1D array (y_dimension) for ODEs
         """
 
     @abstractmethod
     def discrete_y_0(
             self,
-            vertex_oriented: Optional[bool] = None
-    ) -> np.ndarray:
+            vertex_oriented: Optional[bool] = None) -> np.ndarray:
         """
         Returns the discretized initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
@@ -65,6 +70,8 @@ class DiscreteInitialCondition(InitialCondition):
         """
         if cp.differential_equation.x_dimension and vertex_oriented is None:
             raise ValueError
+        if y_0.shape != cp.y_shape(vertex_oriented):
+            raise ValueError
 
         self._cp = cp
         self._y_0 = np.copy(y_0)
@@ -75,7 +82,7 @@ class DiscreteInitialCondition(InitialCondition):
             apply_constraints_along_last_axis(
                 cp.static_y_vertex_constraints, self._y_0)
 
-    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+    def y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         if not self._cp.differential_equation.x_dimension:
             return np.copy(self._y_0)
 
@@ -89,8 +96,7 @@ class DiscreteInitialCondition(InitialCondition):
 
     def discrete_y_0(
             self,
-            vertex_oriented: Optional[bool] = None
-    ) -> np.ndarray:
+            vertex_oriented: Optional[bool] = None) -> np.ndarray:
         if vertex_oriented is None:
             vertex_oriented = self._vertex_oriented
 
@@ -98,22 +104,11 @@ class DiscreteInitialCondition(InitialCondition):
                 or vertex_oriented == self._vertex_oriented:
             return np.copy(self._y_0)
 
-        origin_axis_coordinates = \
-            self._cp.mesh.axis_coordinates(self._vertex_oriented)
-        target_index_coordinates = \
-            self._cp.mesh.all_index_coordinates(vertex_oriented)
-        target_y_0 = interpn(
-            origin_axis_coordinates,
-            self._y_0,
-            target_index_coordinates,
-            method=self._interpolation_method,
-            bounds_error=False,
-            fill_value=None)
-
+        y_0 = self.y_0(self._cp.mesh.all_index_coordinates(vertex_oriented))
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._cp.static_y_vertex_constraints, target_y_0)
-        return target_y_0
+                self._cp.static_y_vertex_constraints, y_0)
+        return y_0
 
 
 class ContinuousInitialCondition(InitialCondition):
@@ -124,8 +119,7 @@ class ContinuousInitialCondition(InitialCondition):
     def __init__(
             self,
             cp: ConstrainedProblem,
-            y_0_func:
-            Callable[[Optional[Sequence[float]]], Sequence[float]]):
+            y_0_func: VectorizedInitialConditionFunction):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -138,13 +132,12 @@ class ContinuousInitialCondition(InitialCondition):
         self._discrete_y_0_vertices = self._create_discrete_y_0(True)
         self._discrete_y_0_cells = self._create_discrete_y_0(False)
 
-    def y_0(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+    def y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         return self._y_0_func(x)
 
     def discrete_y_0(
             self,
-            vertex_oriented: Optional[bool] = None
-    ) -> np.ndarray:
+            vertex_oriented: Optional[bool] = None) -> np.ndarray:
         return np.copy(
             self._discrete_y_0_vertices if vertex_oriented
             else self._discrete_y_0_cells)
@@ -158,10 +151,19 @@ class ContinuousInitialCondition(InitialCondition):
             evaluated at the vertices or cell centers of the spatial mesh
         :return: the discretized initial values
         """
-        if not self._cp.differential_equation.x_dimension:
-            return np.array(self._y_0_func(None))
+        diff_eq = self._cp.differential_equation
+        if not diff_eq.x_dimension:
+            y_0 = np.array(self._y_0_func(None))
+            if y_0.shape != self._cp.y_shape():
+                raise ValueError
+            return y_0
 
-        y_0 = self._cp.mesh.evaluate([self._y_0_func], vertex_oriented)[0]
+        x = self._cp.mesh.all_index_coordinates(vertex_oriented, flatten=True)
+        y_0 = self._y_0_func(x)
+        if y_0.shape != (len(x), diff_eq.y_dimension):
+            raise ValueError
+
+        y_0 = y_0.reshape(self._cp.y_shape(vertex_oriented))
         if vertex_oriented:
             apply_constraints_along_last_axis(
                 self._cp.static_y_vertex_constraints, y_0)
@@ -198,7 +200,6 @@ class GaussianInitialCondition(ContinuousInitialCondition):
             if cov.shape != (diff_eq.x_dimension, diff_eq.x_dimension):
                 raise ValueError
 
-        self._coordinate_system_type = cp.mesh.coordinate_system_type
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
@@ -208,9 +209,9 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         else:
             self._multipliers = [1.] * diff_eq.y_dimension
 
-        super(GaussianInitialCondition, self).__init__(cp, self._y_0_func)
+        super(GaussianInitialCondition, self).__init__(cp, self._y_0)
 
-    def _y_0_func(self, x: Optional[Sequence[float]]) -> Sequence[float]:
+    def _y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         """
         Calculates and returns the values of the multivariate Gaussian PDFs
         corresponding to each element of y_0 at x.
@@ -218,25 +219,42 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
-        x_arr = np.array(
-            to_cartesian_coordinates(x, self._coordinate_system_type))
-        return [multivariate_gaussian(x_arr, mean, cov) *
-                self._multipliers[i] for i, (mean, cov) in
-                enumerate(self._means_and_covs)]
+        cartesian_x = to_cartesian_coordinates(
+            [x[:, i] for i in range(x.shape[1])],
+            self._cp.mesh.coordinate_system_type)
+        cartesian_x = np.stack(cartesian_x, axis=-1)
+
+        y_0 = np.empty((len(x), self._cp.differential_equation.y_dimension))
+        for i in range(self._cp.differential_equation.y_dimension):
+            mean, cov = self._means_and_covs[i]
+            multiplier = self._multipliers[i]
+            y_0_i = multivariate_normal.pdf(cartesian_x, mean=mean, cov=cov)
+            y_0[:, i] = multiplier * y_0_i
+
+        return y_0
 
 
-def multivariate_gaussian(
-        x: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> float:
+def vectorize_ic_function(
+        ic_function: Callable[[Optional[Sequence[float]]], Sequence[float]]
+) -> VectorizedInitialConditionFunction:
     """
-    Returns the value of a Gaussian probability distribution function
-    defined by the provided mean and covariance at the coordinates
-    specified by x.
+    Vectorizes an initial condition function that operates on a single
+    coordinate sequence so that it can operate on an array of coordinate
+    sequences.
 
-    :param x: the point at which the value of the PDF is to be calculated
-    :param mean: the mean of the PDF
-    :param cov: the covariance of the PDF
-    :return: the value of the multivariate Gaussian PDF at x
+    The implementation of the vectorized function is nothing more than a for
+    loop over the rows of coordinate sequences in the x argument.
+
+    :param ic_function: the non-vectorized initial condition function
+    :return: the vectorized initial condition function
     """
-    centered_x = x - mean
-    return 1. / np.sqrt((2 * np.pi) ** 2 * np.linalg.det(cov)) * \
-        np.exp(-.5 * centered_x.T @ np.linalg.inv(cov) @ centered_x)
+    def vectorized_ic_function(x: Optional[np.ndarray]) -> np.ndarray:
+        if x is None:
+            return np.array(ic_function(None))
+
+        values = []
+        for i in range(len(x)):
+            values.append(ic_function(x[i]))
+        return np.array(values)
+
+    return vectorized_ic_function

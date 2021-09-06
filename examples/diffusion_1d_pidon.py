@@ -20,10 +20,7 @@ ic_mean = .25
 training_y_0_functions = [
     GaussianInitialCondition(
         cp,
-        [(
-            np.array([ic_mean]),
-            np.array([[sd]])
-        )]
+        [(np.array([ic_mean]), np.array([[sd]]))]
     ).y_0 for sd in [.0025]
 ]
 

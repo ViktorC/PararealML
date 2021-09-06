@@ -1,3 +1,5 @@
+import numpy as np
+
 from pararealml import *
 from pararealml.core.operators.fdm import *
 
@@ -18,7 +20,7 @@ bcs = [
          is_static=True))
 ]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
-ic = ContinuousInitialCondition(cp, lambda x: (.0, .0, .0, .0))
+ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 4)))
 ivp = InitialValueProblem(cp, (0., 100.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)

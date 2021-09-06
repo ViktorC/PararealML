@@ -4,7 +4,7 @@ from pararealml import *
 from pararealml.core.operators.fdm import *
 
 diff_eq = CahnHilliardEquation(2)
-mesh = Mesh(((0., 10.), (0., 10.)), (.1, .1))
+mesh = Mesh([(0., 10.), (0., 10.)], [.1, .1])
 bcs = (
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 2)), is_static=True),

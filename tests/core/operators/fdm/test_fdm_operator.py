@@ -23,7 +23,7 @@ def test_fdm_operator_on_ode_with_analytic_solution():
 
     diff_eq = PopulationGrowthEquation(r)
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (y_0,))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(
         cp,
         (0., 10.),
@@ -45,11 +45,13 @@ def test_fdm_operator_on_ode_with_analytic_solution():
 
 def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
     diff_eq = DiffusionEquation(1, 5.)
-    mesh = Mesh(((0., 500.),), (.1,))
-    bcs = (
-        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1)), is_static=True),
-         NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1)), is_static=True)),
-    )
+    mesh = Mesh([(0., 500.)], [.1])
+    bcs = [
+        (NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
@@ -72,9 +74,7 @@ def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
 def test_fdm_operator_on_ode():
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(
-        cp,
-        lambda _: (1., 1., 1.))
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = FDMOperator(
         ForwardEulerMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
@@ -126,7 +126,7 @@ def test_fdm_operator_on_2d_pde():
              is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    ic = ContinuousInitialCondition(cp, lambda x: (.0, .0, .0, .0))
+    ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 4)))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
     solution = op.solve(ivp)
@@ -192,8 +192,16 @@ def test_fdm_operator_on_polar_pde():
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([-6., 0.]), np.array([[.25, 0.], [0., .25]])),) * 3,
-        (1., .0, .0))
+        [
+            (
+                np.array([-6., 0.]),
+                np.array([
+                    [.25, 0.],
+                    [0., .25]
+                ])
+            )
+        ] * 3,
+        [1., .0, .0])
     ivp = InitialValueProblem(cp, (0., 5.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
     solution = op.solve(ivp)

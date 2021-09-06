@@ -20,7 +20,7 @@ class NumericalIntegrator(ABC):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
@@ -33,9 +33,9 @@ class NumericalIntegrator(ABC):
         :param d_t: the amount of increase in t
         :param d_y_over_d_t: a function that returns the value of y'(t) given
             t and y
-        :param y_constraints: a function that, given t, returns a sequence of
-            constraints on the values of the solution containing a constraint
-            for each element of y
+        :param y_constraint_function: a function that, given t, returns a
+            sequence of constraints on the values of the solution containing a
+            constraint for each element of y
         :return: the value of y(t + d_t).
         """
 
@@ -51,13 +51,15 @@ class ForwardEulerMethod(NumericalIntegrator):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
     ) -> np.ndarray:
+        y_next_constraints = y_constraint_function(t + d_t)
+
         return apply_constraints_along_last_axis(
-            y_constraints(t + d_t),
+            y_next_constraints,
             y + d_t * d_y_over_d_t(t, y))
 
 
@@ -72,17 +74,20 @@ class ExplicitMidpointMethod(NumericalIntegrator):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
     ) -> np.ndarray:
-        half_d_t = .5 * d_t
+        half_d_t = d_t / 2.
+        y_half_next_constraints = y_constraint_function(t + half_d_t)
+        y_next_constraints = y_constraint_function(t + d_t)
+
         y_hat = apply_constraints_along_last_axis(
-            y_constraints(t + half_d_t),
+            y_half_next_constraints,
             y + half_d_t * d_y_over_d_t(t, y))
         return apply_constraints_along_last_axis(
-            y_constraints(t + d_t),
+            y_next_constraints,
             y + d_t * d_y_over_d_t(t + half_d_t, y_hat))
 
 
@@ -97,22 +102,23 @@ class RK4(NumericalIntegrator):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
     ) -> np.ndarray:
-        y_half_next_constraints = y_constraints(t + d_t / 2.)
-        y_next_constraints = y_constraints(t + d_t)
+        half_d_t = d_t / 2.
+        y_half_next_constraints = y_constraint_function(t + half_d_t)
+        y_next_constraints = y_constraint_function(t + d_t)
 
         k1 = d_t * d_y_over_d_t(t, y)
         k2 = d_t * d_y_over_d_t(
-            t + d_t / 2.,
+            t + half_d_t,
             apply_constraints_along_last_axis(
                 y_half_next_constraints,
                 y + k1 / 2.))
         k3 = d_t * d_y_over_d_t(
-            t + d_t / 2.,
+            t + half_d_t,
             apply_constraints_along_last_axis(
                 y_half_next_constraints,
                 y + k2 / 2.))
@@ -123,7 +129,7 @@ class RK4(NumericalIntegrator):
                 y + k3))
         return apply_constraints_along_last_axis(
             y_next_constraints,
-            y + (k1 + 2 * k2 + 2 * k3 + k4) / 6)
+            y + (k1 + 2. * k2 + 2. * k3 + k4) / 6.)
 
 
 class BackwardEulerMethod(NumericalIntegrator):
@@ -137,13 +143,13 @@ class BackwardEulerMethod(NumericalIntegrator):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
     ) -> np.ndarray:
         t_next = t + d_t
-        y_next_constraints = y_constraints(t_next)
+        y_next_constraints = y_constraint_function(t_next)
         y_next_hat = apply_constraints_along_last_axis(
             y_next_constraints,
             y + d_t * d_y_over_d_t(t, y))
@@ -179,14 +185,14 @@ class CrankNicolsonMethod(NumericalIntegrator):
             t: float,
             d_t: float,
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraints: Callable[
+            y_constraint_function: Callable[
                 [Optional[float]],
                 Optional[Sequence[Constraint]]
             ]
     ) -> np.ndarray:
         t_next = t + d_t
         forward_update = d_t * d_y_over_d_t(t, y)
-        y_next_constraints = y_constraints(t_next)
+        y_next_constraints = y_constraint_function(t_next)
         y_next_hat = apply_constraints_along_last_axis(
             y_next_constraints, y + forward_update)
 

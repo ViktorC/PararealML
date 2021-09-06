@@ -24,7 +24,8 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
     [(np.array([5., 5.]), np.array([[2.5, 0.], [0., 2.5]]))],
-    [100.])
+    [100.]
+)
 ivp = InitialValueProblem(cp, (0., 2.), ic)
 
 fdm_op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

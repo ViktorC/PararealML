@@ -46,8 +46,8 @@ class BoundaryCondition(ABC):
 
         :param x: a 2D array (n, x_dimension) of the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
-        :return: a 2D array (n, y_dimension) holding the constrained value of
-            y(x, t)
+        :return: a 2D array (n, y_dimension) of the constrained value of y at
+            the boundary points
         """
 
     @abstractmethod
@@ -64,8 +64,9 @@ class BoundaryCondition(ABC):
 
         :param x: a 2D array (n, x_dimension) of the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
-        :return: a 2D array (n, y_dimension) holding the constrained value of
-            dy(x, t) / dn
+        :return: a 2D array (n, y_dimension) of the constrained value of the
+            derivative of y with respect to the normal vector to the boundary
+            at the points defined by x
         """
 
 
@@ -211,7 +212,7 @@ def vectorize_bc_function(
     Vectorizes a boundary condition function that operates on a single
     coordinate sequence so that it can operate on an array of coordinate
     sequences.
-    
+
     The implementation of the vectorized function is nothing more than a for
     loop over the rows of coordinate sequences in the x argument.
 

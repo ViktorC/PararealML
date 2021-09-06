@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Optional, Sequence, NamedTuple, Callable, Iterable
+from typing import Optional, NamedTuple, Iterable
 
 import numpy as np
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_condition import \
+    VectorizedInitialConditionFunction
 from pararealml.core.initial_value_problem import TemporalDomainInterval
 from pararealml.core.operators.pidon.collocation_point_sampler import \
     CollocationPointSampler
@@ -22,9 +24,7 @@ class DataSet:
             self,
             cp: ConstrainedProblem,
             t_interval: TemporalDomainInterval,
-            y_0_functions: Iterable[
-                Callable[[Optional[Sequence[float]]], Sequence[float]]
-            ],
+            y_0_functions: Iterable[VectorizedInitialConditionFunction],
             point_sampler: CollocationPointSampler,
             n_domain_points: int,
             n_boundary_points: int = 0):
@@ -117,8 +117,9 @@ class DataSet:
         functions (over the mesh in case the constrained problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
-            return self._cp.mesh.evaluate(
-                self._y_0_functions, vertex_oriented=False, flatten=True)
+            x = self._cp.mesh.all_index_coordinates(False, flatten=True)
+            return np.vstack(
+                [y_0_func(x).flatten() for y_0_func in self._y_0_functions])
 
         ic_data = np.array([
             y_0_function(None) for y_0_function in self._y_0_functions

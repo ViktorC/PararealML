@@ -1,10 +1,12 @@
-from typing import Callable, Sequence, Optional, Dict, Iterable, Tuple, \
-    NamedTuple, List, Union, Any
+from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
+    List, Union, Any
 
 import numpy as np
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_condition import \
+    VectorizedInitialConditionFunction
 from pararealml.core.initial_value_problem import InitialValueProblem, \
     TemporalDomainInterval
 from pararealml.core.operator import Operator, discretize_time_domain
@@ -21,9 +23,7 @@ class DataArgs(NamedTuple):
     A container class for arguments pertaining to the generation and traversal
     of PIDON data sets.
     """
-    y_0_functions: Iterable[
-        Callable[[Optional[Sequence[float]]], Sequence[float]]
-    ]
+    y_0_functions: Iterable[VectorizedInitialConditionFunction]
     n_domain_points: int
     domain_batch_size: int
     n_boundary_points: int = 0
@@ -131,10 +131,9 @@ class PIDONOperator(Operator):
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
             x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
-            u = cp.mesh.evaluate(
-                [ivp.initial_condition.y_0],
-                False,
-                True)
+            u = ivp.initial_condition.y_0(
+                cp.mesh.all_index_coordinates(False, flatten=True)
+            ).reshape((1, -1))
             u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
             u_tensor = tf.tile(u_tensor, (x.shape[0], 1))
         else:

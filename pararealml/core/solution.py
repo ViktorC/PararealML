@@ -138,9 +138,8 @@ class Solution:
                 or self._vertex_oriented == vertex_oriented:
             return np.copy(self._discrete_y)
 
-        coordinates = cp.mesh.all_index_coordinates(vertex_oriented)
-        discrete_y = self.y(coordinates, interpolation_method)
-
+        x = cp.mesh.all_index_coordinates(vertex_oriented)
+        discrete_y = self.y(x, interpolation_method)
         if vertex_oriented:
             apply_constraints_along_last_axis(
                 cp.static_y_vertex_constraints, discrete_y)

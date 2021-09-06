@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple, Sequence, Callable, Iterable, TypeVar
+from typing import Tuple, Sequence, Iterable, TypeVar
 
 import numpy as np
 
@@ -288,37 +288,6 @@ class Mesh:
             raise ValueError
 
         return tuple(unit_vector_grids)
-
-    def evaluate(
-            self,
-            functions: Iterable[Callable[[Sequence[float]], Sequence[float]]],
-            vertex_oriented: bool,
-            flatten: bool = False) -> np.ndarray:
-        """
-        Evaluates the provided vector functions over the mesh.
-
-        :param functions: the vector functions of the spatial coordinates; all
-            these functions should output sequences of the same length
-        :param vertex_oriented: whether the functions are to be evaluated over
-            the vertices or the cell centers of the mesh
-        :param flatten: whether to flatten the evaluated values into a 2D array
-            where the first axis corresponds to the different functions and the
-            second axis corresponds to the values of the function evaluated
-            over the vertices or cell centers of the mesh
-        :return: an array containing the values of the vector functions over
-            the vertices or cell centers of the mesh
-        """
-        all_x = self.all_index_coordinates(vertex_oriented, flatten=True)
-        all_values = []
-        for function in functions:
-            values = [function(all_x[i]) for i in range(all_x.shape[0])]
-            all_values.append(values)
-
-        if flatten:
-            return np.array(all_values).reshape((len(all_values), -1))
-
-        return np.array(all_values).reshape(
-            (len(all_values),) + self.shape(vertex_oriented) + (-1,))
 
     def _create_shape(
             self,

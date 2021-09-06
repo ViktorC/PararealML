@@ -4,7 +4,7 @@ from pararealml import *
 from pararealml.core.operators.fdm import *
 
 diff_eq = BurgerEquation(3, 100)
-mesh = Mesh(((0., 10.), (0., 10.), (0., 10.)), (1., 1., 1.))
+mesh = Mesh([(0., 10.), (0., 10.), (0., 10.)], [1., 1., 1.])
 bcs = (
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 3)), is_static=True),) * 2,
@@ -12,7 +12,7 @@ bcs = (
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
-    (
+    [
         (
             np.array([5., 5., 5.]),
             np.array([
@@ -20,8 +20,8 @@ ic = GaussianInitialCondition(
                 [0., 1., 0.],
                 [0., 0., 1.]
             ])
-        ),
-    ) * 3
+        )
+    ] * 3
 )
 ivp = InitialValueProblem(cp, (0., 100.), ic)
 

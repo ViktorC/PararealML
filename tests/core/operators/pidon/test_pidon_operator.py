@@ -26,7 +26,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
     diff_eq = PopulationGrowthEquation(r)
     cp = ConstrainedProblem(diff_eq)
     t_interval = (0., .25)
-    ic = ContinuousInitialCondition(cp, lambda _: [y_0])
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
 
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
@@ -90,17 +90,17 @@ def test_pidon_operator_on_ode_system():
     pidon = PIDONOperator(sampler, .01, True)
 
     training_y_0_functions = [
-        lambda _: [47.5, 25.],
-        lambda _: [47.5, 27.5],
-        lambda _: [50., 22.5],
-        lambda _: [50., 27.5],
-        lambda _: [52.5, 22.5],
-        lambda _: [52.5, 25.],
+        lambda _: np.array([47.5, 25.]),
+        lambda _: np.array([47.5, 27.5]),
+        lambda _: np.array([50., 22.5]),
+        lambda _: np.array([50., 27.5]),
+        lambda _: np.array([52.5, 22.5]),
+        lambda _: np.array([52.5, 25.]),
     ]
     test_y_0_functions = [
-        lambda _: [47.5, 22.5],
-        lambda _: [50., 25.],
-        lambda _: [52.5, 27.5]
+        lambda _: np.array([47.5, 22.5]),
+        lambda _: np.array([50., 25.]),
+        lambda _: np.array([52.5, 27.5])
     ]
 
     training_loss_history, test_loss_history = pidon.train(
@@ -142,7 +142,7 @@ def test_pidon_operator_on_ode_system():
         assert np.sum(test_loss_history[i + 1].weighted_total_loss.numpy()) < \
             np.sum(test_loss_history[i].weighted_total_loss.numpy())
 
-    ic = ContinuousInitialCondition(cp, lambda _: [50., 25.])
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([50., 25.]))
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     solution = pidon.solve(ivp)

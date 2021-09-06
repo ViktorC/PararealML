@@ -19,7 +19,7 @@ def test_ode_operator_on_ode_with_analytic_solution():
 
     diff_eq = PopulationGrowthEquation(r)
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (y_0,))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(
         cp,
         (0., 10.),
@@ -41,7 +41,7 @@ def test_ode_operator_on_ode_with_analytic_solution():
 def test_ode_operator_on_ode():
     diff_eq = LotkaVolterraEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([100., 15.]))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = ODEOperator('DOP853', 1e-3)
     solution = op.solve(ivp)

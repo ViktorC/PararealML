@@ -21,7 +21,15 @@ bcs = (
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
-    [(np.array([-5., 0]), np.array([[.1, 0.], [0., .1]]))] * 2,
+    [
+        (
+            np.array([-5., 0]),
+            np.array([
+                [.1, 0.],
+                [0., .1]
+            ])
+        )
+    ] * 2,
     [1., .0])
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 

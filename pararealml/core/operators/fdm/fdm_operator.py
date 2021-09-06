@@ -113,39 +113,47 @@ class FDMOperator(Operator):
         y_laplacian_eq_indices = \
             eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN)
 
-        y_c_func, d_y_c_func = self._create_constraint_functions(
-            cp, y_constraints_cache, boundary_constraints_cache)
+        y_constraint_func, d_y_constraint_func = \
+            self._create_constraint_functions(
+                cp, y_constraints_cache, boundary_constraints_cache)
 
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
             d_y_over_d_t_rhs = symbol_mapper.map_concatenated(
-                FDMSymbolMapArg(t, y, d_y_c_func), Lhs.D_Y_OVER_D_T)
+                FDMSymbolMapArg(t, y, d_y_constraint_func), Lhs.D_Y_OVER_D_T)
             d_y_over_d_t[..., d_y_over_d_t_eq_indices] = d_y_over_d_t_rhs
             return d_y_over_d_t
 
         def y_next_function(t: float, y: np.ndarray) -> np.ndarray:
             y_next = self._integrator.integral(
-                y, t, self._d_t, d_y_over_d_t_function, y_c_func)
+                y, t, self._d_t, d_y_over_d_t_function, y_constraint_func)
 
             if len(y_eq_indices):
-                y_c = y_c_func(t + self._d_t)
-                y_c = None if y_c is None else y_c[y_eq_indices]
+                y_constraint = y_constraint_func(t + self._d_t)
+                y_constraint = None if y_constraint is None \
+                    else y_constraint[y_eq_indices]
                 y_rhs = symbol_mapper.map_concatenated(
-                    FDMSymbolMapArg(t, y, d_y_c_func), Lhs.Y)
+                    FDMSymbolMapArg(t, y, d_y_constraint_func), Lhs.Y)
                 y_next[..., y_eq_indices] = \
-                    apply_constraints_along_last_axis(y_c, y_rhs)
+                    apply_constraints_along_last_axis(y_constraint, y_rhs)
 
             if len(y_laplacian_eq_indices):
-                y_c = y_c_func(t + self._d_t)
-                y_c = None if y_c is None else y_c[y_laplacian_eq_indices]
-                d_y_c = d_y_c_func(t + self._d_t)
-                d_y_c = None if d_y_c is None \
-                    else d_y_c[:, y_laplacian_eq_indices]
+                y_constraint = y_constraint_func(t + self._d_t)
+                y_constraint = None if y_constraint is None \
+                    else y_constraint[y_laplacian_eq_indices]
+                d_y_constraint = d_y_constraint_func(t + self._d_t)
+                d_y_constraint = None if d_y_constraint is None \
+                    else d_y_constraint[:, y_laplacian_eq_indices]
                 y_laplacian_rhs = symbol_mapper.map_concatenated(
-                    FDMSymbolMapArg(t, y, d_y_c_func), Lhs.Y_LAPLACIAN)
+                    FDMSymbolMapArg(t, y, d_y_constraint_func),
+                    Lhs.Y_LAPLACIAN)
                 y_next[..., y_laplacian_eq_indices] = \
                     self._differentiator.anti_laplacian(
-                        y_laplacian_rhs, cp.mesh, self._tol, y_c, d_y_c)
+                        y_laplacian_rhs,
+                        cp.mesh,
+                        self._tol,
+                        y_constraint,
+                        d_y_constraint)
 
             return y_next
 
@@ -181,30 +189,6 @@ class FDMOperator(Operator):
             return lambda _: cp.static_y_vertex_constraints, \
                 lambda _: cp.static_boundary_vertex_constraints[1]
 
-        if cp.are_there_boundary_conditions_on_y:
-            def y_constraints_function(
-                    t: Optional[float]
-            ) -> Optional[np.ndarray]:
-                if t in y_constraints_cache:
-                    return y_constraints_cache[t]
-
-                if t in boundary_constraints_cache:
-                    boundary_constraints = boundary_constraints_cache[t]
-                else:
-                    boundary_constraints = \
-                        cp.create_boundary_constraints(True, t)
-                    boundary_constraints_cache[t] = boundary_constraints
-
-                y_constraints = \
-                    cp.create_y_vertex_constraints(boundary_constraints[0])
-                y_constraints_cache[t] = y_constraints
-                return y_constraints
-        else:
-            def y_constraints_function(
-                    _: Optional[float]
-            ) -> Optional[np.ndarray]:
-                return cp.static_y_vertex_constraints
-
         def d_y_constraints_function(
                 t: Optional[float]
         ) -> Optional[np.ndarray]:
@@ -214,5 +198,27 @@ class FDMOperator(Operator):
             boundary_constraints = cp.create_boundary_constraints(True, t)
             boundary_constraints_cache[t] = boundary_constraints
             return boundary_constraints[1]
+
+        if not cp.are_there_boundary_conditions_on_y:
+            return lambda _: cp.static_y_vertex_constraints, \
+                d_y_constraints_function
+
+        def y_constraints_function(
+                t: Optional[float]
+        ) -> Optional[np.ndarray]:
+            if t in y_constraints_cache:
+                return y_constraints_cache[t]
+
+            if t in boundary_constraints_cache:
+                boundary_constraints = boundary_constraints_cache[t]
+            else:
+                boundary_constraints = \
+                    cp.create_boundary_constraints(True, t)
+                boundary_constraints_cache[t] = boundary_constraints
+
+            y_constraints = \
+                cp.create_y_vertex_constraints(boundary_constraints[0])
+            y_constraints_cache[t] = y_constraints
+            return y_constraints
 
         return y_constraints_function, d_y_constraints_function
