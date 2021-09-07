@@ -77,7 +77,8 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
             x_intervals: Optional[Sequence[SpatialDomainInterval]]
     ) -> CollocationPoints:
         if n_points <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of domain points ({n_points}) must be greater than 0')
 
         t = np.random.uniform(*t_interval, (n_points, 1))
         if x_intervals is not None:
@@ -95,7 +96,9 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
             x_intervals: Sequence[SpatialDomainInterval]
     ) -> Sequence[AxialBoundaryPoints]:
         if n_points <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of boundary points ({n_points}) must be greater '
+                f'than 0')
 
         (lower_t_bound, upper_t_bound) = t_interval
         (lower_x_bounds, upper_x_bounds) = zip(*x_intervals)

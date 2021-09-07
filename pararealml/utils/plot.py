@@ -29,7 +29,7 @@ def plot_y_against_t(
     cp = solution.initial_value_problem.constrained_problem
     diff_eq = cp.differential_equation
     if diff_eq.x_dimension:
-        raise ValueError
+        raise ValueError('solution must be for an ODE')
 
     t = solution.t_coordinates
     y = solution.discrete_y(solution.vertex_oriented)
@@ -58,12 +58,15 @@ def plot_phase_space(solution: Solution, file_name: str):
     :param solution: a solution to an IVP
     :param file_name: the name of the file to save the plot to
     """
-    y = solution.discrete_y(solution.vertex_oriented)
+    cp = solution.initial_value_problem.constrained_problem
+    diff_eq = cp.differential_equation
+    if diff_eq.x_dimension:
+        raise ValueError('solution must be for an ODE')
 
-    if y.ndim != 2:
-        raise ValueError
+    y = solution.discrete_y(solution.vertex_oriented)
     if not 2 <= y.shape[1] <= 3:
-        raise ValueError
+        raise ValueError(
+            f'number of y dimensions ({y.shape[1]}) must be either 2 or 3')
 
     if y.shape[1] == 2:
         plt.xlabel('y 0')
@@ -115,7 +118,7 @@ def plot_n_body_simulation(
     diff_eq = cp.differential_equation
 
     if not isinstance(diff_eq, NBodyGravitationalEquation):
-        raise ValueError
+        raise ValueError('solution must be for n-body gravitational ODE')
 
     n_obj = diff_eq.n_objects
     n_obj_by_dims = n_obj * diff_eq.spatial_dimension
@@ -315,9 +318,10 @@ def plot_evolution_of_scalar_field(
             slice_inds.append(slice_axis_size - 1)
 
         if not 0 <= slice_axis < 3:
-            raise ValueError
+            raise ValueError(
+                f'slice axis ({slice_axis}) must be between 0 and 2')
         if len(slice_inds) == 0:
-            raise ValueError
+            raise ValueError('number of slice indices must be greater than 0')
 
         axes = [axis for axis in range(3) if axis != slice_axis]
         first_x_label = f'x {axes[0]}'
@@ -327,7 +331,9 @@ def plot_evolution_of_scalar_field(
 
         for slice_ind in slice_inds:
             if not 0 <= slice_ind < y.shape[slice_axis + 1]:
-                raise ValueError
+                raise ValueError(
+                    f'slice index ({slice_ind}) must be between 0 and '
+                    f'({y.shape[slice_axis + 1] - 1})')
 
             slicer[slice_axis] = slice_ind
 
@@ -444,7 +450,8 @@ def plot_evolution_of_scalar_field(
                         vmax=v_max,
                         cmap=color_map)
         else:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dim}) must be between 1 and 3')
 
         animation = FuncAnimation(
             fig,
@@ -483,8 +490,10 @@ def plot_evolution_of_vector_field(
     cp = solution.initial_value_problem.constrained_problem
     x_dim = cp.differential_equation.x_dimension
 
-    if y_inds is None or len(y_inds) != x_dim:
-        raise ValueError
+    if len(y_inds) != x_dim:
+        raise ValueError(
+            f'number of y indices ({len(y_inds)}) must match number of x '
+            f'dimensions ({x_dim})')
 
     x_cartesian_coordinate_grids = cp.mesh.cartesian_coordinate_grids(
         solution.vertex_oriented)
@@ -555,7 +564,8 @@ def plot_evolution_of_vector_field(
             ax.set_ylabel(x1_label)
             ax.set_zlabel(x2_label)
     else:
-        raise ValueError
+        raise ValueError(
+            f'number of x dimensions ({x_dim}) must be either 2 or 3')
 
     animation = FuncAnimation(
         fig,
@@ -742,7 +752,9 @@ def plot_model_losses(
             len(mean_train_losses) != len(sd_train_losses) or \
             len(mean_train_losses) != len(sd_test_losses) or \
             len(mean_train_losses) != len(model_names):
-        raise ValueError
+        raise ValueError(
+            'all training and test means and standard deviations must have '
+            'the same length')
 
     bar_width = .35
     train_positions = np.arange(len(mean_train_losses))
@@ -797,9 +809,13 @@ def plot_rms_solution_diffs(
     :param color_map: the color map to use for coloring the lines
     """
     if mean_rms_diffs.shape != sd_rms_diffs.shape:
-        raise ValueError
+        raise ValueError(
+            f'RMS difference means shape {mean_rms_diffs.shape} must match '
+            f'RMS difference standard deviations shape {sd_rms_diffs.shape}')
     if len(mean_rms_diffs) != len(labels):
-        raise ValueError
+        raise ValueError(
+            f'length of RMS difference means ({len(mean_rms_diffs)}) must '
+            f'match length of labels ({len(labels)})')
 
     plt.figure()
 
@@ -849,9 +865,14 @@ def plot_execution_times(
     :param file_name: the name of the file to save the plot to
     """
     if len(mean_execution_times) != len(sd_execution_times):
-        raise ValueError
+        raise ValueError(
+            f'length of execution time means ({len(mean_execution_times)}) '
+            'must match length of execution time standard deviations '
+            f'({len(sd_execution_times)})')
     if len(mean_execution_times) != len(labels):
-        raise ValueError
+        raise ValueError(
+            f'length of execution time means ({len(mean_execution_times)}) '
+            f'must match length of labels ({len(labels)})')
 
     positions = np.arange(len(mean_execution_times))
 

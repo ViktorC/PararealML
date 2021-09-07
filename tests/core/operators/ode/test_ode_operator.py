@@ -24,7 +24,7 @@ def test_ode_operator_on_ode_with_analytic_solution():
         cp,
         (0., 10.),
         ic,
-        lambda _ivp, t, x: (y_0 * np.e ** (r * t),))
+        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)]))
 
     op = ODEOperator('DOP853', 1e-4)
 
@@ -53,16 +53,17 @@ def test_ode_operator_on_ode():
 
 def test_ode_operator_on_pde():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = Mesh(((0., 10.),), (.1,))
-    bcs = (
+    mesh = Mesh([(0., 10.)], [.1])
+    bcs = [
         (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
          DirichletBoundaryCondition(lambda x, t: np.zeros((len(x), 1)))),
-    )
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([5.]), np.array([[2.5]])),),
-        (20.,))
+        [(np.array([5.]), np.array([[2.5]]))],
+        [20.]
+    )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = ODEOperator('RK23', 2.5e-3)
     with pytest.raises(ValueError):

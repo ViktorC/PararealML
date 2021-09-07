@@ -74,7 +74,8 @@ def test_discrete_initial_condition_2d_pde():
     initial_condition = DiscreteInitialCondition(
         cp,
         np.zeros((3, 3, 2)),
-        True)
+        True
+    )
 
     y = initial_condition.y_0(np.array([1.5, .5]).reshape((1, 2)))
     assert np.isclose(y, [1.75, 1.5]).all()
@@ -137,7 +138,8 @@ def test_continuous_initial_condition_1d_pde():
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     initial_condition = ContinuousInitialCondition(
         cp,
-        lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2)))
+        lambda x: np.exp(-np.square(np.array(x) - 10.) / (2 * 5 ** 2))
+    )
 
     assert np.isclose(initial_condition.y_0(
         np.full((1, 1), 10.)),
@@ -217,7 +219,8 @@ def test_gaussian_initial_condition_pde_with_wrong_multipliers_length():
         GaussianInitialCondition(
             cp,
             [(np.array([1.]), np.array([[1.]]))],
-            [1.])
+            [1.]
+        )
 
 
 def test_gaussian_initial_condition_2d_pde():

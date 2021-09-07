@@ -7,7 +7,7 @@ from pararealml.utils.time import time_with_args
 
 diff_eq = DiffusionEquation(2)
 mesh = Mesh([(0., 10.), (0., 10.)], [.5, .5])
-bcs = (
+bcs = [
     (DirichletBoundaryCondition(
         lambda x, t: np.full((len(x), 1), 1.5), is_static=True),
      DirichletBoundaryCondition(
@@ -16,7 +16,7 @@ bcs = (
         lambda x, t: np.zeros((len(x), 1)), is_static=True),
      NeumannBoundaryCondition(
          lambda x, t: np.zeros((len(x), 1)), is_static=True))
-)
+]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,

@@ -36,14 +36,17 @@ class Mesh:
             mesh
         """
         if len(x_intervals) == 0:
-            raise ValueError
+            raise ValueError(
+                'number of spatial domain intervals must be greater than 0')
         if len(x_intervals) != len(d_x):
-            raise ValueError
+            raise ValueError(
+                f'number of spatial domain intervals ({len(x_intervals)}) '
+                f'must match number of spatial step sizes ({len(d_x)})')
         for interval in x_intervals:
-            if len(interval) != 2:
-                raise ValueError
             if interval[1] <= interval[0]:
-                raise ValueError
+                raise ValueError(
+                    f'lower bound of spatial domain interval ({interval[0]}) '
+                    f'cannot be greater than its upper bound ({interval[1]})')
 
         self._x_intervals = tuple(x_intervals)
         self._d_x = tuple(d_x)
@@ -52,18 +55,30 @@ class Mesh:
 
         if coordinate_system_type != CoordinateSystem.CARTESIAN:
             if x_intervals[0][0] < 0:
-                raise ValueError
+                raise ValueError(
+                    f'lower bound of r interval ({x_intervals[0][0]}) '
+                    'must be non-negative')
             if x_intervals[1][1] - x_intervals[1][0] > 2 * np.pi:
-                raise ValueError
+                raise ValueError(
+                    f'difference between upper ({x_intervals[1][1]}) '
+                    f'and lower ({x_intervals[1][0]}) bounds of theta '
+                    'interval cannot be greater than 2 pi')
             if coordinate_system_type == CoordinateSystem.POLAR:
                 if self._dimensions != 2:
-                    raise ValueError
+                    raise ValueError(
+                        f'number of dimensions ({self._dimensions}) of polar '
+                        'mesh must be 2')
             else:
                 if self._dimensions != 3:
-                    raise ValueError
+                    raise ValueError(
+                        f'number of dimensions ({self._dimensions}) of'
+                        f'cylindrical and spherical meshes must be 3')
                 if coordinate_system_type == CoordinateSystem.SPHERICAL \
                         and x_intervals[2][1] - x_intervals[2][0] > np.pi:
-                    raise ValueError
+                    raise ValueError(
+                        f'difference between upper ({x_intervals[2][1]}) and '
+                        f'lower ({x_intervals[2][0]}) bounds of phi interval '
+                        f'cannot be greater than pi')
 
         self._vertices_shape = self._create_shape(d_x, True)
         self._cells_shape = self._create_shape(d_x, False)
@@ -285,7 +300,9 @@ class Mesh:
                 np.stack((-sin_theta, cos_theta, zero), axis=-1))
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({self._coordinate_system_type.name})')
 
         return tuple(unit_vector_grids)
 
@@ -387,7 +404,9 @@ def to_cartesian_coordinates(
             x[0] * np.cos(x[2])
         ]
     else:
-        raise ValueError
+        raise ValueError(
+            'unsupported coordinate system type '
+            f'({from_coordinate_system_type.name})')
 
 
 def from_cartesian_coordinates(
@@ -415,4 +434,6 @@ def from_cartesian_coordinates(
             np.arctan2(np.sqrt(x[0] ** 2 + x[1] ** 2), x[2])
         ]
     else:
-        raise ValueError
+        raise ValueError(
+            'unsupported coordinate system type '
+            f'({to_coordinate_system_type.name})')

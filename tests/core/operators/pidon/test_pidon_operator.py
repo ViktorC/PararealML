@@ -1,8 +1,7 @@
 import numpy as np
 from tensorflow import optimizers
 
-from pararealml.core.boundary_condition import NeumannBoundaryCondition, \
-    vectorize_bc_function
+from pararealml.core.boundary_condition import NeumannBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LotkaVolterraEquation, DiffusionEquation
@@ -52,9 +51,11 @@ def test_pidon_operator_on_ode_with_analytic_solution():
                 }
             },
             epochs=100,
+            verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=100
+            max_iterations=100,
+            verbose=False
         )
     )
 
@@ -66,7 +67,8 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         cp,
         t_interval,
         ic,
-        lambda _ivp, t, x: [y_0 * np.e ** (r * t)])
+        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)])
+    )
 
     solution = pidon.solve(ivp)
 
@@ -129,7 +131,8 @@ def test_pidon_operator_on_ode_system():
                 }
             },
             epochs=3,
-            ic_loss_weight=2.
+            ic_loss_weight=2.,
+            verbose=False
         )
     )
 
@@ -155,12 +158,12 @@ def test_pidon_operator_on_pde():
 
     diff_eq = DiffusionEquation(1, .25)
     mesh = Mesh([(0., .5)], (.05,))
-    bcs = (
+    bcs = [
         (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: [0.]), is_static=True),
+            lambda x, t: np.zeros((len(x), 1)), is_static=True),
          NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: [0.]), is_static=True)),
-    )
+             lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0., .5)
 
@@ -217,7 +220,8 @@ def test_pidon_operator_on_pde():
                 }
             },
             epochs=3,
-            ic_loss_weight=10.
+            ic_loss_weight=10.,
+            verbose=False
         )
     )
 

@@ -42,7 +42,7 @@ class FDMOperator(Operator):
         calculating anti-derivatives and anti-Laplacians
         """
         if d_t <= 0.:
-            raise ValueError
+            raise ValueError(f'time step size ({d_t}) must be greater than 0')
 
         self._integrator = integrator
         self._differentiator = differentiator
@@ -62,13 +62,13 @@ class FDMOperator(Operator):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True) -> Solution:
         cp = ivp.constrained_problem
-        time_points = discretize_time_domain(ivp.t_interval, self._d_t)
-        y = np.empty((len(time_points) - 1,) + cp.y_vertices_shape)
+        t = discretize_time_domain(ivp.t_interval, self._d_t)
+        y = np.empty((len(t) - 1,) + cp.y_vertices_shape)
         y_i = ivp.initial_condition.discrete_y_0(True)
 
         if not cp.are_all_boundary_conditions_static:
             init_boundary_constraints = cp.create_boundary_constraints(
-                True, time_points[0])
+                True, t[0])
             init_y_constraints = cp.create_y_vertex_constraints(
                 init_boundary_constraints[0])
             apply_constraints_along_last_axis(init_y_constraints, y_i)
@@ -78,14 +78,13 @@ class FDMOperator(Operator):
         y_next = self._create_y_next_function(
             ivp, y_constraints_cache, boundary_constraints_cache)
 
-        for i, t_i in enumerate(time_points[:-1]):
+        for i, t_i in enumerate(t[:-1]):
             y[i] = y_i = y_next(t_i, y_i)
             if not cp.are_all_boundary_conditions_static:
                 y_constraints_cache.clear()
                 boundary_constraints_cache.clear()
 
-        return Solution(
-            ivp, time_points[1:], y, vertex_oriented=True, d_t=self._d_t)
+        return Solution(ivp, t[1:], y, vertex_oriented=True, d_t=self._d_t)
 
     def _create_y_next_function(
             self,

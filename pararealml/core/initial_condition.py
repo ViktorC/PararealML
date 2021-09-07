@@ -69,9 +69,12 @@ class DiscreteInitialCondition(InitialCondition):
             grid; if the constrained problem is based on an ODE, it can be None
         """
         if cp.differential_equation.x_dimension and vertex_oriented is None:
-            raise ValueError
+            raise ValueError('vertex orientation must be defined for PDEs')
         if y_0.shape != cp.y_shape(vertex_oriented):
-            raise ValueError
+            raise ValueError(
+                f'discrete initial value shape {y_0.shape} must match '
+                'constrained problem solution shape '
+                f'{cp.y_shape(vertex_oriented)}')
 
         self._cp = cp
         self._y_0 = np.copy(y_0)
@@ -155,13 +158,18 @@ class ContinuousInitialCondition(InitialCondition):
         if not diff_eq.x_dimension:
             y_0 = np.array(self._y_0_func(None))
             if y_0.shape != self._cp.y_shape():
-                raise ValueError
+                raise ValueError(
+                    'expected initial condition function output shape to be '
+                    f'{self._cp.y_shape()} but got {y_0.shape}')
+
             return y_0
 
         x = self._cp.mesh.all_index_coordinates(vertex_oriented, flatten=True)
         y_0 = self._y_0_func(x)
         if y_0.shape != (len(x), diff_eq.y_dimension):
-            raise ValueError
+            raise ValueError(
+                'expected initial condition function output shape to be '
+                f'{(len(x), diff_eq.y_dimension)} but got {y_0.shape}')
 
         y_0 = y_0.reshape(self._cp.y_shape(vertex_oriented))
         if vertex_oriented:
@@ -191,20 +199,29 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         """
         diff_eq = cp.differential_equation
         if not diff_eq.x_dimension:
-            raise ValueError
+            raise ValueError('constrained problem must be a PDE')
         if len(means_and_covs) != diff_eq.y_dimension:
-            raise ValueError
+            raise ValueError(
+                f'number of means and covariances ({len(means_and_covs)}) '
+                f'must match number of y dimensions ({diff_eq.y_dimension})')
         for mean, cov in means_and_covs:
             if mean.shape != (diff_eq.x_dimension,):
-                raise ValueError
+                raise ValueError(
+                    f'expected mean shape to be {(diff_eq.x_dimension,)} but '
+                    f'got {mean.shape}')
             if cov.shape != (diff_eq.x_dimension, diff_eq.x_dimension):
-                raise ValueError
+                raise ValueError(
+                    'expected covariance shape to be '
+                    f'{(diff_eq.x_dimension, diff_eq.x_dimension)} but got '
+                    f'{cov.shape}')
 
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
             if len(multipliers) != diff_eq.y_dimension:
-                raise ValueError
+                raise ValueError(
+                    f'length of multipliers ({len(multipliers)}) must match '
+                    f'number of y dimensions ({diff_eq.y_dimension})')
             self._multipliers = copy(multipliers)
         else:
             self._multipliers = [1.] * diff_eq.y_dimension

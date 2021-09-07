@@ -22,7 +22,9 @@ def limit_visible_gpus():
     if gpus:
         comm = MPI.COMM_WORLD
         if len(gpus) != comm.size:
-            raise ValueError
+            raise ValueError(
+                f'number of GPUs ({len(gpus)}) must match default '
+                f'communicator size ({comm.size})')
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
 
 

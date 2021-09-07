@@ -33,13 +33,21 @@ class Solution:
             point issues)
         """
         if t_coordinates.ndim != 1:
-            raise ValueError
+            raise ValueError(
+                f'number of t coordinate dimensions ({t_coordinates.ndim}) '
+                'must be 1')
         if len(t_coordinates) == 0:
-            raise ValueError
-        if discrete_y.shape != (
-                (len(t_coordinates),) +
-                ivp.constrained_problem.y_shape(vertex_oriented)):
-            raise ValueError
+            raise ValueError('length of t coordinates must be greater than 0')
+        if ivp.constrained_problem.differential_equation.x_dimension \
+                and vertex_oriented is None:
+            raise ValueError(
+                'vertex orientation must be defined for solutions to PDEs')
+        y_shape = ivp.constrained_problem.y_shape(vertex_oriented)
+        if discrete_y.shape != ((len(t_coordinates),) + y_shape):
+            raise ValueError(
+                'expected solution shape to be '
+                f'{((len(t_coordinates),) + y_shape)} but got '
+                f'{discrete_y.shape}')
 
         self._ivp = ivp
         self._t_coordinates = np.copy(t_coordinates)
@@ -162,7 +170,7 @@ class Solution:
             provided solutions at the matching time points
         """
         if len(solutions) == 0:
-            raise ValueError
+            raise ValueError('length of solutions must be greater than 0')
 
         matching_time_points = []
         all_diffs: List[List[np.ndarray]] = []

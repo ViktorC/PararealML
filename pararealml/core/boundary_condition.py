@@ -110,7 +110,8 @@ class DirichletBoundaryCondition(BoundaryCondition):
             self,
             x: np.ndarray,
             t: Optional[float]) -> np.ndarray:
-        raise RuntimeError
+        raise RuntimeError(
+            'Dirichlet conditions do not constrain the derivative of y')
 
 
 class NeumannBoundaryCondition(BoundaryCondition):
@@ -148,7 +149,7 @@ class NeumannBoundaryCondition(BoundaryCondition):
             self,
             x: np.ndarray,
             t: Optional[float]) -> np.ndarray:
-        raise RuntimeError
+        raise RuntimeError('Neumann conditions do not constrain y')
 
     def d_y_condition(
             self,

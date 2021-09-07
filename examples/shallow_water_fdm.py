@@ -11,14 +11,8 @@ bcs = [
         is_static=True),
      NeumannBoundaryCondition(
          vectorize_bc_function(lambda x, t: (.0, None, None)),
-         is_static=True)),
-    (NeumannBoundaryCondition(
-        vectorize_bc_function(lambda x, t: (.0, None, None)),
-        is_static=True),
-     NeumannBoundaryCondition(
-         vectorize_bc_function(lambda x, t: (.0, None, None)),
          is_static=True))
-]
+] * 2
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,

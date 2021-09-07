@@ -37,13 +37,19 @@ class ConstrainedProblem:
 
         if diff_eq.x_dimension:
             if mesh is None:
-                raise ValueError
-            if len(mesh.x_intervals) != diff_eq.x_dimension:
-                raise ValueError
+                raise ValueError('mesh cannot be None for PDEs')
+            if mesh.dimensions != diff_eq.x_dimension:
+                raise ValueError(
+                    f'mesh dimensions ({mesh.dimensions}) must match '
+                    'differential equation spatial dimensions '
+                    f'({diff_eq.x_dimension})')
             if boundary_conditions is None:
-                raise ValueError
+                raise ValueError('boundary conditions cannot be None for PDEs')
             if len(boundary_conditions) != diff_eq.x_dimension:
-                raise ValueError
+                raise ValueError(
+                    'number of boundary condition pairs '
+                    f'({len(boundary_conditions)}) must match differential '
+                    f'equation spatial dimensions ({diff_eq.x_dimension})')
 
             self._mesh = mesh
             self._boundary_conditions = tuple(boundary_conditions)
@@ -408,11 +414,13 @@ class ConstrainedProblem:
             return [None] * y_dimension
 
         x = boundary_index_coordinates.reshape((-1, x_dimension))
-        constrained_values = condition_function(x, t)
-        if constrained_values.shape != (len(x), y_dimension):
-            raise ValueError
+        boundary_values = condition_function(x, t)
+        if boundary_values.shape != (len(x), y_dimension):
+            raise ValueError(
+                'expected boundary condition function output shape to be '
+                f'{(len(x), y_dimension)} but got {boundary_values.shape}')
 
-        boundary = constrained_values.reshape(
+        boundary = boundary_values.reshape(
             boundary_index_coordinates.shape[:-1] + (y_dimension,))
 
         boundary_constraints = []

@@ -136,13 +136,15 @@ class SymbolicEquationSystem:
         equation system
         """
         if len(rhs) < 1:
-            raise ValueError
+            raise ValueError('number of equations must be greater than 0')
 
         if lhs_types is None:
             lhs_types = [Lhs.D_Y_OVER_D_T] * len(rhs)
 
         if len(rhs) != len(lhs_types):
-            raise ValueError
+            raise ValueError(
+                f'length of right hand side ({len(rhs)}) must match length of '
+                f'left hand side ({len(lhs_types)})')
 
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
@@ -188,9 +190,11 @@ class DifferentialEquation(ABC):
         :param y_dimension: the number of unknown variables
         """
         if x_dimension < 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be non-negative')
         if y_dimension < 1:
-            raise ValueError
+            raise ValueError(
+                f'number of y dimensions ({y_dimension}) must be at least 1')
 
         self._x_dimension = x_dimension
         self._y_dimension = y_dimension
@@ -241,7 +245,9 @@ class DifferentialEquation(ABC):
         """
         equation_system = self.symbolic_equation_system
         if len(equation_system.rhs) != self._y_dimension:
-            raise ValueError
+            raise ValueError(
+                f'number of equations ({len(equation_system.rhs)}) must match '
+                f'number of y dimensions ({self._y_dimension})')
 
         all_symbols = set()
         all_symbols.add(self._symbols.t)
@@ -255,16 +261,22 @@ class DifferentialEquation(ABC):
                 all_symbols.update(self._symbols.y_curl.flatten())
             all_symbols.update(self._symbols.y_laplacian)
 
-        for rhs_element in self.symbolic_equation_system.rhs:
+        for i, rhs_element in enumerate(self.symbolic_equation_system.rhs):
             rhs_symbols = rhs_element.free_symbols
             if not rhs_symbols.issubset(all_symbols):
-                raise ValueError
+                raise ValueError(
+                    'invalid symbol in right hand side symbols '
+                    f'({rhs_symbols}) of equation {i}')
 
         if Lhs.D_Y_OVER_D_T not in equation_system.lhs_types:
-            raise ValueError
+            raise ValueError(
+                'at least one equation\'s left hand side must be of type '
+                'D_Y_OVER_D_T')
         if not self.x_dimension \
                 and Lhs.Y_LAPLACIAN in equation_system.lhs_types:
-            raise ValueError
+            raise ValueError(
+                'ordinary differential equations cannot contain equations '
+                'with Y_LAPLACIAN type left hand sides')
 
 
 class PopulationGrowthEquation(DifferentialEquation):
@@ -304,7 +316,7 @@ class LotkaVolterraEquation(DifferentialEquation):
         :param delta: a coefficient of the increase of the predator population
         """
         if alpha < 0. or beta < 0. or gamma < 0. or delta < 0.:
-            raise ValueError
+            raise ValueError('all coefficients must be non-negative')
 
         self._alpha = alpha
         self._beta = beta
@@ -340,7 +352,7 @@ class LorenzEquation(DifferentialEquation):
         :param beta: the third system coefficient
         """
         if sigma < .0 or rho < .0 or beta < .0:
-            raise ValueError
+            raise ValueError('all coefficients must be non-negative')
 
         self._sigma = sigma
         self._rho = rho
@@ -378,9 +390,13 @@ class NBodyGravitationalEquation(DifferentialEquation):
         :param g: the gravitational constant (m^3 * kg^-1 * s^-2)
         """
         if n_dims < 2 or n_dims > 3:
-            raise ValueError
-        if masses is None or len(masses) < 2 or np.any(np.array(masses) <= 0.):
-            raise ValueError
+            raise ValueError(
+                f'number of dimensions ({n_dims}) must be either 2 or 3')
+        if len(masses) < 2:
+            raise ValueError(
+                f'number of masses ({len(masses)}) must be at least 2')
+        if np.any(np.array(masses) <= 0.):
+            raise ValueError(f'all masses ({masses}) must be greater than 0')
 
         self._dims = n_dims
         self._masses = tuple(masses)
@@ -460,7 +476,8 @@ class DiffusionEquation(DifferentialEquation):
         :param d: the diffusion coefficient
         """
         if x_dimension <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be at least 1')
 
         self._d = d
 
@@ -489,9 +506,12 @@ class ConvectionDiffusionEquation(DifferentialEquation):
         :param d: the diffusion coefficient
         """
         if x_dimension <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be at least 1')
         if len(velocity) != x_dimension:
-            raise ValueError
+            raise ValueError(
+                f'length of the velocity vector ({len(velocity)}) must match '
+                f'number of x dimensions ({x_dimension})')
 
         self._velocity = copy(velocity)
         self._d = d
@@ -518,7 +538,8 @@ class WaveEquation(DifferentialEquation):
         :param c: the propagation speed coefficient
         """
         if x_dimension <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be at least 1')
 
         self._c = c
 
@@ -545,7 +566,8 @@ class CahnHilliardEquation(DifferentialEquation):
         :param gamma: the concentration diffusion coefficient
         """
         if x_dimension <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be at least 1')
 
         self._d = d
         self._gamma = gamma
@@ -580,7 +602,8 @@ class BurgerEquation(DifferentialEquation):
         :param re: the Reynolds number
         """
         if x_dimension <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be at least 1')
 
         self._re = re
 

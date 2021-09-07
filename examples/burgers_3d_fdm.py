@@ -5,10 +5,12 @@ from pararealml.core.operators.fdm import *
 
 diff_eq = BurgerEquation(3, 100)
 mesh = Mesh([(0., 10.), (0., 10.), (0., 10.)], [1., 1., 1.])
-bcs = (
+bcs = [
     (NeumannBoundaryCondition(
-        lambda x, t: np.zeros((len(x), 3)), is_static=True),) * 2,
-) * 3
+        lambda x, t: np.zeros((len(x), 3)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 3)), is_static=True))
+] * 3
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,

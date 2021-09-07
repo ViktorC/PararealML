@@ -7,12 +7,12 @@ from pararealml.core.operators.pidon import *
 
 diff_eq = DiffusionEquation(1, .2)
 mesh = Mesh([(0., .5)], (.025,))
-bcs = (
+bcs = [
     (DirichletBoundaryCondition(
         lambda x, t: np.zeros((len(x), 1)), is_static=True),
      DirichletBoundaryCondition(
          lambda x, t: np.zeros((len(x), 1)), is_static=True)),
-)
+]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 t_interval = (0., .5)
 

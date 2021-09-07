@@ -39,7 +39,7 @@ class AutoRegressionOperator(Operator):
             meshes
         """
         if d_t <= 0.:
-            raise ValueError
+            raise ValueError(f'time step size ({d_t}) must be greater than 0')
 
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
@@ -69,27 +69,26 @@ class AutoRegressionOperator(Operator):
             ivp: InitialValueProblem,
             parallel_enabled: bool = True) -> Solution:
         if self._model is None:
-            raise ValueError
+            raise ValueError('operator has no model')
 
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        time_points = discretize_time_domain(ivp.t_interval, self._d_t)
-
         y_shape = cp.y_shape(self._vertex_oriented)
 
+        t = discretize_time_domain(ivp.t_interval, self._d_t)
         x = self._create_input_placeholder(cp)
         x = np.concatenate(
             (x, np.empty((x.shape[0], diff_eq.y_dimension))),
             axis=-1)
-        y = np.empty((len(time_points) - 1,) + y_shape)
+        y = np.empty((len(t) - 1,) + y_shape)
 
         y_i = ivp \
             .initial_condition \
             .discrete_y_0(self._vertex_oriented) \
             .reshape(-1, diff_eq.y_dimension)
 
-        for i, t_i in enumerate(time_points[:-1]):
+        for i, t_i in enumerate(t[:-1]):
             x[:, 0] = t_i
             x[:, 1 + diff_eq.x_dimension:] = y_i
             y_i = self._model.predict(x).reshape(
@@ -98,7 +97,7 @@ class AutoRegressionOperator(Operator):
 
         return Solution(
             ivp,
-            time_points[1:],
+            t[1:],
             y,
             vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)
@@ -144,18 +143,18 @@ class AutoRegressionOperator(Operator):
         :return: the training and test losses
         """
         if iterations <= 0:
-            raise ValueError
+            raise ValueError('number of iterations must be greater than 0')
 
-        if isinstance(noise_sd, (tuple, list)):
-            if len(noise_sd) != 2:
-                raise ValueError
+        if isinstance(noise_sd, tuple):
             if noise_sd[0] < 0. or noise_sd[1] < 0.:
-                raise ValueError
+                raise ValueError(
+                    f'noise standard deviation bounds {noise_sd} must be '
+                    f'non-negative')
         else:
-            if not isinstance(noise_sd, float):
-                raise ValueError
             if noise_sd < 0.:
-                raise ValueError
+                raise ValueError(
+                    f'noise standard deviation ({noise_sd}) must be '
+                    f'non-negative')
 
             noise_sd = (noise_sd, noise_sd)
 
@@ -284,7 +283,7 @@ def train_model(
     :return: the training and test losses
     """
     if not 0. <= test_size < 1.:
-        raise ValueError
+        raise ValueError(f'test size ({test_size}) must be between 0 and 1')
     train_size = 1. - test_size
 
     x_train, x_test, y_train, y_test = train_test_split(

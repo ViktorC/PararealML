@@ -8,16 +8,12 @@ mesh = Mesh(
     [(2.5, 7.5), (0., 2 * np.pi)],
     [.1, np.pi / 100.],
     CoordinateSystem.POLAR)
-bcs = (
-    (NeumannBoundaryCondition(
-        lambda x, t: np.zeros((len(x), 2)), is_static=True),
-     NeumannBoundaryCondition(
-         lambda x, t: np.zeros((len(x), 2)), is_static=True)),
+bcs = [
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 2)), is_static=True),
      NeumannBoundaryCondition(
          lambda x, t: np.zeros((len(x), 2)), is_static=True))
-)
+] * 2
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,

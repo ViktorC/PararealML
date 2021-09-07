@@ -6,7 +6,7 @@ from pararealml.core.operators.parareal import *
 from pararealml.utils.time import time_with_args
 
 n_planets = 10
-masses = np.random.randint(5e6, 5e8, n_planets)
+masses = np.random.randint(5e4, 5e8, n_planets)
 initial_positions = 40 * np.random.rand(n_planets * 3) - 20.
 initial_velocities = 5 * np.random.rand(n_planets * 3)
 

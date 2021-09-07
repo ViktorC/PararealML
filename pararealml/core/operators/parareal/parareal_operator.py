@@ -58,10 +58,14 @@ class PararealOperator(Operator):
 
         t_interval = ivp.t_interval
         delta_t = (t_interval[1] - t_interval[0]) / comm.size
-        if not np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t)):
-            raise ValueError
         if not np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t)):
-            raise ValueError
+            raise ValueError(
+                f'fine operator time step size ({self._f.d_t}) must be a '
+                f'divisor of sub-IVP time slice length ({delta_t})')
+        if not np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t)):
+            raise ValueError(
+                f'coarse operator time step size ({self._g.d_t}) must be a '
+                f'divisor of sub-IVP time slice length ({delta_t})')
 
         vertex_oriented = self._f.vertex_oriented
         cp = ivp.constrained_problem
@@ -72,8 +76,7 @@ class PararealOperator(Operator):
             t_interval[1],
             comm.size + 1)
 
-        y_at_end_points = np.empty(
-            (len(time_slice_end_points), *y_shape))
+        y_at_end_points = np.empty((len(time_slice_end_points), *y_shape))
         corrections = np.empty((comm.size, *y_shape))
         new_y_coarse_at_end_points = np.empty((comm.size, *y_shape))
 
@@ -134,16 +137,14 @@ class PararealOperator(Operator):
             if max_update < self._tol:
                 break
 
-        time_points = discretize_time_domain(ivp.t_interval, self._f.d_t)[1:]
-        all_y_fine = np.empty((len(time_points), *y_shape))
+        t = discretize_time_domain(ivp.t_interval, self._f.d_t)[1:]
+        all_y_fine = np.empty((len(t), *y_shape))
         y_fine += new_y_coarse_at_end_points[comm.rank] - y_coarse_at_end_point
-        comm.Allgather(
-            [y_fine, MPI.DOUBLE],
-            [all_y_fine, MPI.DOUBLE])
+        comm.Allgather([y_fine, MPI.DOUBLE], [all_y_fine, MPI.DOUBLE])
 
         return Solution(
             ivp,
-            time_points,
+            t,
             all_y_fine,
             vertex_oriented=vertex_oriented,
             d_t=self._f.d_t)

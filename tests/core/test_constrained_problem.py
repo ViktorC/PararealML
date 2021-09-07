@@ -52,7 +52,7 @@ def test_cp_1d_pde():
     y_vertex_constraints = cp.static_y_vertex_constraints
     assert y_vertex_constraints.shape == (1,)
     assert np.all(y_vertex_constraints[0].mask == [False])
-    assert np.all(y_vertex_constraints[0].value == [])
+    assert np.all(y_vertex_constraints[0].values == [])
 
     vertex_boundary_constraints = cp.static_boundary_constraints(True)
     y_vertex_boundary_constraints = vertex_boundary_constraints[0]
@@ -62,9 +62,9 @@ def test_cp_1d_pde():
     d_y_vertex_boundary_constraints = vertex_boundary_constraints[1]
     assert d_y_vertex_boundary_constraints.shape == (1, 1)
     assert np.all(d_y_vertex_boundary_constraints[0, 0][0].mask == [True])
-    assert np.all(d_y_vertex_boundary_constraints[0, 0][0].value == [0.])
+    assert np.all(d_y_vertex_boundary_constraints[0, 0][0].values == [0.])
     assert np.all(d_y_vertex_boundary_constraints[0, 0][1].mask == [True])
-    assert np.all(d_y_vertex_boundary_constraints[0, 0][1].value == [0.])
+    assert np.all(d_y_vertex_boundary_constraints[0, 0][1].values == [0.])
 
     cell_boundary_constraints = cp.static_boundary_constraints(False)
     y_cell_boundary_constraints = cell_boundary_constraints[0]
@@ -74,9 +74,9 @@ def test_cp_1d_pde():
     d_y_cell_boundary_constraints = cell_boundary_constraints[1]
     assert d_y_cell_boundary_constraints.shape == (1, 1)
     assert np.all(d_y_cell_boundary_constraints[0, 0][0].mask == [True])
-    assert np.all(d_y_cell_boundary_constraints[0, 0][0].value == [0.])
+    assert np.all(d_y_cell_boundary_constraints[0, 0][0].values == [0.])
     assert np.all(d_y_cell_boundary_constraints[0, 0][1].mask == [True])
-    assert np.all(d_y_cell_boundary_constraints[0, 0][1].value == [0.])
+    assert np.all(d_y_cell_boundary_constraints[0, 0][1].values == [0.])
 
 
 def test_cp_2d_pde():
@@ -151,22 +151,22 @@ def test_cp_2d_pde():
     assert np.all(
         y_boundary_cell_constraints[0, 0][0].mask ==
         [True] * cp.y_cells_shape[1])
-    assert np.all(y_boundary_cell_constraints[0, 0][0].value == 999.)
+    assert np.all(y_boundary_cell_constraints[0, 0][0].values == 999.)
     assert np.all(
         y_boundary_cell_constraints[0, 1][0].mask ==
         [False] * cp.y_cells_shape[1])
-    assert y_boundary_cell_constraints[0, 1][0].value.size == 0
+    assert y_boundary_cell_constraints[0, 1][0].values.size == 0
 
     assert np.all(
         y_boundary_cell_constraints[1, 0][1].mask ==
         [True] * cp.y_cells_shape[0])
     assert np.isclose(
-        y_boundary_cell_constraints[1, 0][1].value,
+        y_boundary_cell_constraints[1, 0][1].values,
         np.linspace(2.05, 5.95, cp.y_cells_shape[0])).all()
     assert np.all(
         y_boundary_cell_constraints[1, 1][1].mask ==
         [True] * cp.y_cells_shape[0])
-    assert np.all(y_boundary_cell_constraints[1, 1][1].value == 3.)
+    assert np.all(y_boundary_cell_constraints[1, 1][1].values == 3.)
     assert y_boundary_cell_constraints[1, 0][0] is None
 
 

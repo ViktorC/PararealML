@@ -91,7 +91,7 @@ class PIDONOperator(Operator):
             meshes
         """
         if d_t <= 0.:
-            raise ValueError
+            raise ValueError(f'time step size ({d_t}) must be greater than 0')
 
         self._sampler = sampler
         self._d_t = d_t
@@ -125,8 +125,6 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        time_points = discretize_time_domain(ivp.t_interval, self._d_t)
-
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
@@ -142,9 +140,10 @@ class PIDONOperator(Operator):
             u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
 
         y_shape = cp.y_shape(self._vertex_oriented)
-        y = np.empty((len(time_points) - 1,) + y_shape)
+        t = discretize_time_domain(ivp.t_interval, self._d_t)
+        y = np.empty((len(t) - 1,) + y_shape)
 
-        for i, t_i in enumerate(time_points[1:]):
+        for i, t_i in enumerate(t[1:]):
             t_tensor = tf.tile(
                 tf.convert_to_tensor([[t_i]], dtype=tf.float32),
                 (u_tensor.shape[0], 1))
@@ -153,7 +152,7 @@ class PIDONOperator(Operator):
 
         return Solution(
             ivp,
-            time_points[1:],
+            t[1:],
             y,
             vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)

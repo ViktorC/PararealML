@@ -8,27 +8,29 @@ class Constraint:
     A representation of constraints on the values of an array.
     """
 
-    def __init__(self, value: np.ndarray, mask: np.ndarray):
+    def __init__(self, values: np.ndarray, mask: np.ndarray):
         """
-        :param value: the constraint values
+        :param values: the constraint values
         :param mask: the mask denoting which elements of the array are to be
             constrained to the provided values
         """
-        if value.size != mask.sum():
-            raise ValueError
+        if values.size != mask.sum():
+            raise ValueError(
+                f'number of values ({values.size}) must match number '
+                f'of True elements in mask ({mask.sum()})')
 
-        self._value = np.copy(value)
+        self._values = np.copy(values)
         self._mask = np.copy(mask)
 
-        self._value.setflags(write=False)
+        self._values.setflags(write=False)
         self._mask.setflags(write=False)
 
     @property
-    def value(self) -> np.ndarray:
+    def values(self) -> np.ndarray:
         """
         The constraint values.
         """
-        return self._value
+        return self._values
 
     @property
     def mask(self) -> np.ndarray:
@@ -46,9 +48,11 @@ class Constraint:
         :return: the constrained array
         """
         if array.shape[-self._mask.ndim:] != self._mask.shape:
-            raise ValueError
+            raise ValueError(
+                f'input shape {array.shape} incompatible with mask shape '
+                f'{self._mask.shape}')
 
-        array[..., self._mask] = self._value
+        array[..., self._mask] = self._values
         return array
 
     def multiply_and_add(
@@ -71,15 +75,21 @@ class Constraint:
         :return: the constrained result array
         """
         if addend.shape != result.shape:
-            raise ValueError
-        if addend.shape[-self._mask.ndim:] != self._mask.shape:
-            raise ValueError
+            raise ValueError(
+                f'addend shape {addend.shape} must match result shape '
+                f'{result.shape}')
+        if result.shape[-self._mask.ndim:] != self._mask.shape:
+            raise ValueError(
+                f'result shape {result.shape} incompatible with mask shape '
+                f'{self._mask.shape}')
         if not isinstance(multiplier, float) \
-                and multiplier.shape != self._value.shape:
-            raise ValueError
+                and multiplier.shape != self._values.shape:
+            raise ValueError(
+                f'multiplier shape {multiplier.shape} must match values shape '
+                f'{self._values.shape}')
 
         result[..., self._mask] = addend[..., self._mask] + \
-            multiplier * self._value
+            multiplier * self._values
         return result
 
 
@@ -96,9 +106,12 @@ def apply_constraints_along_last_axis(
     """
     if constraints is not None:
         if array.ndim <= 1:
-            raise ValueError
+            raise ValueError(
+                f'input dimensions ({array.ndim}) must be at least 2')
         if len(constraints) != array.shape[-1]:
-            raise ValueError
+            raise ValueError(
+                f'number of constraints ({len(constraints)}) must match the '
+                f'size of the input array\'s last axis ({array.shape[-1]})')
 
         for i, constraint in enumerate(constraints):
             if constraint is not None:

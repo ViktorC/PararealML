@@ -1,8 +1,7 @@
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
-    vectorize_bc_function
+from pararealml.core.boundary_condition import DirichletBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LorenzEquation, WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
@@ -53,22 +52,19 @@ def test_auto_regression_operator_on_pde():
     set_random_seed(0)
 
     diff_eq = WaveEquation(2)
-    mesh = Mesh(((-5., 5.), (-5., 5.)), (1., 1.))
-    bcs = (
+    mesh = Mesh([(-5., 5.), (-5., 5.)], [1., 1.])
+    bcs = [
         (DirichletBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True),
+            lambda x, t: np.zeros((len(x), 2)), is_static=True),
          DirichletBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True)),
-        (DirichletBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True),
-         DirichletBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (.0, .0)), is_static=True))
-    )
+             lambda x, t: np.zeros((len(x), 2)), is_static=True))
+    ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
         [(np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]]))] * 2,
-        [3., .0])
+        [3., .0]
+    )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
     oracle = FDMOperator(

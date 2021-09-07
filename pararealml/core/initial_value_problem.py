@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple, Sequence
+from typing import Callable, Optional, Tuple
+
+import numpy as np
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_condition import InitialCondition
@@ -21,8 +23,8 @@ class InitialValueProblem:
             initial_condition: InitialCondition,
             exact_y: Optional[
                 Callable[
-                    [InitialValueProblem, float, Sequence[float]],
-                    Sequence[float]
+                    [InitialValueProblem, float, Optional[np.ndarray]],
+                    np.ndarray
                 ]
             ] = None):
         """
@@ -31,11 +33,13 @@ class InitialValueProblem:
             problem
         :param initial_condition: the initial condition of the problem
         :param exact_y: the function returning the exact solution to the
-            initial value problem at time step t and point x. If it is None,
+            initial value problem at time step t and points x. If it is None,
             the problem is assumed to have no analytical solution.
         """
         if t_interval[0] > t_interval[1]:
-            raise ValueError
+            raise ValueError(
+                f'lower bound of time interval ({t_interval[0]}) cannot be '
+                f'greater than its upper bound ({t_interval[1]})')
 
         self._cp = cp
         self._t_interval = t_interval
@@ -73,14 +77,18 @@ class InitialValueProblem:
     def exact_y(
             self,
             t: float,
-            x: Optional[Sequence[float]] = None
-    ) -> Optional[Sequence[float]]:
+            x: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         Returns the exact value of y(t, x).
 
         :param t: the point in the temporal domain
-        :param x: the point in the non-temporal domain. If the differential
+        :param x: the points in the non-temporal domain. If the differential
             equation is an ODE, it is None.
         :return: the value of y(t, x) or y(t) if it is an ODE.
         """
+        if not self.has_exact_solution:
+            raise RuntimeError(
+                'exact solution of initial value problem undefined')
+
         return self._exact_y(self, t, x)

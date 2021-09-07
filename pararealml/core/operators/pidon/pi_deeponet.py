@@ -54,7 +54,9 @@ class PIDeepONet:
             of the trunk net
         """
         if latent_output_size < 1:
-            raise ValueError
+            raise ValueError(
+                f'latent output size ({latent_output_size}) must be greater '
+                f'than 0')
 
         diff_eq = cp.differential_equation
         x_dimension = diff_eq.x_dimension
@@ -153,7 +155,8 @@ class PIDeepONet:
         :return: the training and test loss histories
         """
         if epochs < 1:
-            raise ValueError
+            raise ValueError(
+                f'number of epochs ({epochs}) must be greater than 0')
 
         optimizer_instance = tf.keras.optimizers.get(optimizer)
 
@@ -547,7 +550,8 @@ class PIDeepONet:
                         arg.y_hat[:, _y_ind:_y_ind + 1],
                         self._cp.mesh.coordinate_system_type))
             else:
-                raise ValueError
+                raise ValueError(
+                    f'unsupported left hand side type ({lhs_type.name})')
 
         return lhs_functions
 
@@ -568,7 +572,8 @@ def create_regression_fnn(
     :return: the fully-connected neural network model
     """
     if len(layer_sizes) < 2:
-        raise ValueError
+        raise ValueError(
+            f'number of layers ({len(layer_sizes)}) must be greater than 1')
 
     if initialization is None:
         initialization = 'glorot_uniform'

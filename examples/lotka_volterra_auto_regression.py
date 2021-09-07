@@ -10,10 +10,7 @@ set_random_seed(SEEDS[0])
 
 diff_eq = LotkaVolterraEquation()
 cp = ConstrainedProblem(diff_eq)
-ic = ContinuousInitialCondition(
-    cp,
-    lambda _: np.array([100., 15.])
-)
+ic = ContinuousInitialCondition(cp, lambda _: np.array([100., 15.]))
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
 ode_op = ODEOperator('DOP853', 1e-3)

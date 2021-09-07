@@ -28,7 +28,8 @@ def test_fdm_operator_on_ode_with_analytic_solution():
         cp,
         (0., 10.),
         ic,
-        lambda _ivp, t, x: (y_0 * np.e ** (r * t),))
+        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)])
+    )
 
     op = FDMOperator(
         RK4(), ThreePointCentralFiniteDifferenceMethod(), 1e-4)
@@ -55,8 +56,9 @@ def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([250]), np.array([[250.]])),),
-        (1000.,))
+        [(np.array([250]), np.array([[250.]]))],
+        [1000.]
+    )
     ivp = InitialValueProblem(cp, (0., 20.), ic)
 
     y_0 = ic.discrete_y_0(True)
@@ -87,17 +89,18 @@ def test_fdm_operator_on_ode():
 
 def test_fdm_operator_on_1d_pde():
     diff_eq = BurgerEquation(1, 1000.)
-    mesh = Mesh(((0., 10.),), (.1,))
-    bcs = (
+    mesh = Mesh([(0., 10.)], [.1])
+    bcs = [
         (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+            lambda x, t: np.zeros((len(x), 1)), is_static=True),
          NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0.,)), is_static=True)),
-    )
+             lambda x, t: np.zeros((len(x), 1)), is_static=True))
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([2.5]), np.array([[1.]])),))
+        [(np.array([2.5]), np.array([[1.]]))]
+    )
     ivp = InitialValueProblem(cp, (0., 50.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
     solution = op.solve(ivp)
@@ -110,21 +113,21 @@ def test_fdm_operator_on_1d_pde():
 
 def test_fdm_operator_on_2d_pde():
     diff_eq = NavierStokesEquation(5000.)
-    mesh = Mesh(((0., 10.), (0., 10.)), (1., 1.))
-    bcs = (
+    mesh = Mesh([(0., 10.), (0., 10.)], [1., 1.])
+    bcs = [
         (DirichletBoundaryCondition(
             vectorize_bc_function(lambda x, t: (1., .1, None, None)),
             is_static=True),
          DirichletBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+             vectorize_bc_function(lambda x, t: (0., 0., None, None)),
              is_static=True)),
         (DirichletBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+            vectorize_bc_function(lambda x, t: (0., 0., None, None)),
             is_static=True),
          DirichletBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (1., .1, None, None)),
+             vectorize_bc_function(lambda x, t: (0., 0., None, None)),
              is_static=True))
-    )
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 4)))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
@@ -139,26 +142,19 @@ def test_fdm_operator_on_2d_pde():
 
 def test_fdm_operator_on_3d_pde():
     diff_eq = CahnHilliardEquation(3)
-    mesh = Mesh(((0., 5.), (0., 5.), (0., 10.)), (.5, 1., 2.))
-    bcs = (
+    mesh = Mesh([(0., 5.), (0., 5.), (0., 10.)], [.5, 1., 2.])
+    bcs = [
         (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
+            lambda x, t: np.zeros((len(x), 2)), is_static=True),
          NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True)),
-        (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
-         NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True)),
-        (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True),
-         NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0., 0.)), is_static=True))
-    )
+             lambda x, t: np.zeros((len(x), 2)), is_static=True))
+    ] * 3
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = DiscreteInitialCondition(
         cp,
         .05 * np.random.uniform(-1., 1., cp.y_shape(True)),
-        True)
+        True
+    )
     ivp = InitialValueProblem(cp, (0., 5.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
     solution = op.solve(ivp)
@@ -175,20 +171,14 @@ def test_fdm_operator_on_polar_pde():
         [(1., 11.), (0., 2 * np.pi)],
         [2., np.pi / 5.],
         CoordinateSystem.POLAR)
-    bcs = (
-        (NeumannBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (.0, None, None)),
-            is_static=True),
-         NeumannBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (.0, None, None)),
-             is_static=True)),
+    bcs = [
         (NeumannBoundaryCondition(
             vectorize_bc_function(lambda x, t: (.0, None, None)),
             is_static=True),
          NeumannBoundaryCondition(
              vectorize_bc_function(lambda x, t: (.0, None, None)),
              is_static=True))
-    )
+    ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
@@ -201,7 +191,8 @@ def test_fdm_operator_on_polar_pde():
                 ])
             )
         ] * 3,
-        [1., .0, .0])
+        [1., .0, .0]
+    )
     ivp = InitialValueProblem(cp, (0., 5.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
     solution = op.solve(ivp)
@@ -214,17 +205,18 @@ def test_fdm_operator_on_polar_pde():
 
 def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = Mesh(((0., 10.),), (1.,))
-    bcs = (
+    mesh = Mesh([(0., 10.)], [1.])
+    bcs = [
         (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
          DirichletBoundaryCondition(
              lambda x, t: np.full((len(x), 1), t / 5.))),
-    )
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([5.]), np.array([[2.5]])),),
-        (20.,))
+        [(np.array([5.]), np.array([[2.5]]))],
+        [20.]
+    )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .5)
     solution = op.solve(ivp)

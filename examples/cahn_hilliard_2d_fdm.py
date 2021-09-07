@@ -5,16 +5,12 @@ from pararealml.core.operators.fdm import *
 
 diff_eq = CahnHilliardEquation(2)
 mesh = Mesh([(0., 10.), (0., 10.)], [.1, .1])
-bcs = (
-    (NeumannBoundaryCondition(
-        lambda x, t: np.zeros((len(x), 2)), is_static=True),
-     NeumannBoundaryCondition(
-         lambda x, t: np.zeros((len(x), 2)), is_static=True)),
+bcs = [
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 2)), is_static=True),
      NeumannBoundaryCondition(
          lambda x, t: np.zeros((len(x), 2)), is_static=True))
-)
+] * 2
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = DiscreteInitialCondition(
     cp,
