@@ -22,13 +22,15 @@ def limit_visible_gpus():
     if gpus:
         comm = MPI.COMM_WORLD
         if len(gpus) != comm.size:
-            raise ValueError
+            raise ValueError(
+                f'number of GPUs ({len(gpus)}) must match default '
+                f'communicator size ({comm.size})')
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
 
 
 def create_keras_regressor(
         model: Sequential,
-        optimiser: str = 'adam',
+        optimizer: str = 'adam',
         loss: str = 'mse',
         epochs: int = 1000,
         batch_size: int = 64,
@@ -39,7 +41,7 @@ def create_keras_regressor(
     Creates a Keras regression model.
 
     :param model: the neural network
-    :param optimiser: the optimiser to use
+    :param optimizer: the optimizer to use
     :param loss: the loss function to use
     :param epochs: the number of training epochs
     :param batch_size: the training batch size
@@ -49,7 +51,7 @@ def create_keras_regressor(
     :return: the regression model
     """
     def build_model():
-        model.compile(optimizer=optimiser, loss=loss)
+        model.compile(optimizer=optimizer, loss=loss)
         return model
 
     return KerasRegressor(

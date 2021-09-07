@@ -19,12 +19,12 @@ def test_ode_operator_on_ode_with_analytic_solution():
 
     diff_eq = PopulationGrowthEquation(r)
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (y_0,))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(
         cp,
         (0., 10.),
         ic,
-        lambda _ivp, t, x: (y_0 * np.e ** (r * t),))
+        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)]))
 
     op = ODEOperator('DOP853', 1e-4)
 
@@ -41,7 +41,7 @@ def test_ode_operator_on_ode_with_analytic_solution():
 def test_ode_operator_on_ode():
     diff_eq = LotkaVolterraEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (100., 15.))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([100., 15.]))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = ODEOperator('DOP853', 1e-3)
     solution = op.solve(ivp)
@@ -53,16 +53,17 @@ def test_ode_operator_on_ode():
 
 def test_ode_operator_on_pde():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = Mesh(((0., 10.),), (.1,))
-    bcs = (
-        (NeumannBoundaryCondition(lambda x, t: (0.,)),
-         DirichletBoundaryCondition(lambda x, t: (t / 5.,))),
-    )
+    mesh = Mesh([(0., 10.)], [.1])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+         DirichletBoundaryCondition(lambda x, t: np.zeros((len(x), 1)))),
+    ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([5.]), np.array([[2.5]])),),
-        (20.,))
+        [(np.array([5.]), np.array([[2.5]]))],
+        [20.]
+    )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = ODEOperator('RK23', 2.5e-3)
     with pytest.raises(ValueError):

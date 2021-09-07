@@ -1,3 +1,4 @@
+import numpy as np
 from tensorflow import optimizers
 
 from pararealml import *
@@ -12,20 +13,20 @@ sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, .01, True)
 
 training_y_0_functions = [
-    lambda _: [47.5, 22.5],
-    lambda _: [47.5, 25.],
-    lambda _: [47.5, 27.5],
-    lambda _: [50., 22.5],
-    lambda _: [50., 25.],
-    lambda _: [50., 27.5],
-    lambda _: [52.5, 22.5],
-    lambda _: [52.5, 25.],
-    lambda _: [52.5, 27.5]
+    lambda _: np.array([47.5, 22.5]),
+    lambda _: np.array([47.5, 25.]),
+    lambda _: np.array([47.5, 27.5]),
+    lambda _: np.array([50., 22.5]),
+    lambda _: np.array([50., 25.]),
+    lambda _: np.array([50., 27.5]),
+    lambda _: np.array([52.5, 22.5]),
+    lambda _: np.array([52.5, 25.]),
+    lambda _: np.array([52.5, 27.5])
 ]
 test_y_0_functions = [
-    lambda _: [47.5, 22.5],
-    lambda _: [50., 25.],
-    lambda _: [52.5, 27.5]
+    lambda _: np.array([47.5, 22.5]),
+    lambda _: np.array([50., 25.]),
+    lambda _: np.array([52.5, 27.5])
 ]
 
 pidon.train(
@@ -64,7 +65,7 @@ pidon.train(
 fdm = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
 
 for y_0 in [(47.5, 27.5), (50., 25.), (52.5, 22.5)]:
-    ic = ContinuousInitialCondition(cp, lambda _: y_0)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     pidon_solution = pidon.solve(ivp)

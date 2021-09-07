@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, Sequence
 
-BoundaryConditionFunction = Callable[
-    [Sequence[float], Optional[float]],
-    Sequence[Optional[float]]
-]
+import numpy as np
+
+VectorizedBoundaryConditionFunction = \
+    Callable[[np.ndarray, Optional[float]], np.ndarray]
 
 
 class BoundaryCondition(ABC):
@@ -37,35 +37,36 @@ class BoundaryCondition(ABC):
     @abstractmethod
     def y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         """
         Returns the value of y at the coordinates along the boundary specified
         by x. To avoid imposing a condition on elements of y, the corresponding
-        elements of the returned tuple may be NaNs.
+        elements of the returned array may be NaNs.
 
-        :param x: the coordinates in the hyperplane of the boundary
+        :param x: a 2D array (n, x_dimension) of the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
-        :return: the value of y(x, t)
+        :return: a 2D array (n, y_dimension) of the constrained value of y at
+            the boundary points
         """
 
     @abstractmethod
     def d_y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         """
         Returns the value of the derivative of y at the coordinates along the
         boundary specified by x with respect to the normal vector to the
         boundary passing through the same point. To avoid imposing a condition
         on elements of the spatial derivative of elements of y, the
-        corresponding elements of the returned tuple may be NaNs.
+        corresponding elements of the returned array may be NaNs.
 
-        :param x: the coordinates in the hyperplane of the boundary
+        :param x: a 2D array (n, x_dimension) of the boundary coordinates
         :param t: the time value; if the condition is static, it may be None
-        :return: the constrained value of dy(x, t) / dn
+        :return: a 2D array (n, y_dimension) of the constrained value of the
+            derivative of y with respect to the normal vector to the boundary
+            at the points defined by x
         """
 
 
@@ -77,7 +78,7 @@ class DirichletBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: BoundaryConditionFunction,
+            y_condition: VectorizedBoundaryConditionFunction,
             is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
@@ -101,17 +102,16 @@ class DirichletBoundaryCondition(BoundaryCondition):
 
     def y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         return self._y_condition(x, t)
 
     def d_y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
-        pass
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
+        raise RuntimeError(
+            'Dirichlet conditions do not constrain the derivative of y')
 
 
 class NeumannBoundaryCondition(BoundaryCondition):
@@ -122,13 +122,12 @@ class NeumannBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            d_y_condition: BoundaryConditionFunction,
+            d_y_condition: VectorizedBoundaryConditionFunction,
             is_static: bool = False):
         """
         :param d_y_condition: the function that determines the value of the
             derivative of y at the coordinates along the boundary specified by
-            x with respect to the normal vector to the boundary passing through
-            the same point
+            x with respect to the normal vector to the boundary
         :param is_static: whether the boundary condition is time independent
         """
         self._d_y_condition = d_y_condition
@@ -148,16 +147,14 @@ class NeumannBoundaryCondition(BoundaryCondition):
 
     def y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
-        pass
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
+        raise RuntimeError('Neumann conditions do not constrain y')
 
     def d_y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         return self._d_y_condition(x, t)
 
 
@@ -168,16 +165,15 @@ class CauchyBoundaryCondition(BoundaryCondition):
 
     def __init__(
             self,
-            y_condition: BoundaryConditionFunction,
-            d_y_condition: BoundaryConditionFunction,
+            y_condition: VectorizedBoundaryConditionFunction,
+            d_y_condition: VectorizedBoundaryConditionFunction,
             is_static: bool = False):
         """
         :param y_condition: the function that determines the value of y at the
             coordinates along the boundary specified by x
         :param d_y_condition: the function that determines the value of the
             derivative of y at the coordinates along the boundary specified by
-            x with respect to the normal vector to the boundary passing through
-            the same point
+            x with respect to the normal vector to the boundary
         :param is_static: whether the boundary condition is time independent
         """
         self._y_condition = y_condition
@@ -198,14 +194,38 @@ class CauchyBoundaryCondition(BoundaryCondition):
 
     def y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         return self._y_condition(x, t)
 
     def d_y_condition(
             self,
-            x: Sequence[float],
-            t: Optional[float]
-    ) -> Optional[Sequence[Optional[float]]]:
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
         return self._d_y_condition(x, t)
+
+
+def vectorize_bc_function(
+        bc_function:
+        Callable[[Sequence[float], Optional[float]], Sequence[Optional[float]]]
+) -> VectorizedBoundaryConditionFunction:
+    """
+    Vectorizes a boundary condition function that operates on a single
+    coordinate sequence so that it can operate on an array of coordinate
+    sequences.
+
+    The implementation of the vectorized function is nothing more than a for
+    loop over the rows of coordinate sequences in the x argument.
+
+    :param bc_function: the non-vectorized boundary condition function
+    :return: the vectorized boundary condition function
+    """
+    def vectorized_bc_function(
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
+        values = []
+        for i in range(len(x)):
+            values.append(bc_function(x[i], t))
+        return np.array(values, dtype=np.float)
+
+    return vectorized_bc_function

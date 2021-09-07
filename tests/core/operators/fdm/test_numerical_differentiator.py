@@ -148,10 +148,10 @@ def test_3pcfdm_2d_constrained_gradient():
     boundary_constraints = np.empty((2, 2), dtype=object)
     boundary_constraints[0, 0] = (
         None,
-        Constraint(np.full(2, -9999.), np.array([True, False, True]))
+        Constraint(np.full(2, -9999.), np.array([[True], [False], [True]]))
     )
     boundary_constraints[0, 1] = (
-        Constraint(np.full(1, 9999.), np.array([False, True, False])),
+        Constraint(np.full(1, 9999.), np.array([[False], [True], [False]])),
         None
     )
 
@@ -244,8 +244,8 @@ def test_3pcfdm_2d_constrained_hessian():
 
     boundary_constraints = np.empty((2, 2), dtype=object)
     boundary_constraints[0, 1] = (
-        Constraint(np.full(2, -2.), np.array([True, True, False])),
-        Constraint(np.full(1, 0.), np.array([False, False, True]))
+        Constraint(np.full(2, -2.), np.array([[True], [True], [False]])),
+        Constraint(np.full(1, 0.), np.array([[False], [False], [True]]))
     )
 
     expected_hessian = np.array([
@@ -553,17 +553,17 @@ def test_3pcfdm_anti_laplacian():
     mesh = Mesh([(0., .95), (0., .475)], [.05, .025])
     tol = 1e-12
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = 1.
-    value[y.shape[0] - 1, :] = 2.
-    value[:, 0] = 3.
-    value[:, y.shape[1] - 1] = 42.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = 1.
+    value[-1, :, :] = 2.
+    value[:, 0, :] = 3.
+    value[:, -1, :] = 42.
     mask = ~np.isnan(value)
     value = value[mask]
     y_constraint = Constraint(value, mask)
 
-    y[..., 0][mask] = value
-    y[..., 1][mask] = value
+    y_constraint.apply(y[..., :1])
+    y_constraint.apply(y[..., 1:])
 
     y_constraints = [y_constraint] * 2
 
@@ -582,22 +582,22 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
     mesh = Mesh([(0., .95)], [.05])
     tol = 1e-12
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0] = 1.
+    value = np.full((20, 1), np.nan)
+    value[0, :] = 1.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_0_constraint = Constraint(value, mask)
 
-    y[..., 0][mask] = value
+    y_0_constraint.apply(y[..., :1])
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0] = -2.
-    value[y.shape[0] - 1] = 2.
+    value = np.full((20, 1), np.nan)
+    value[0, :] = -2.
+    value[-1, :] = 2.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_1_constraint = Constraint(value, mask)
 
-    y[..., 1][mask] = value
+    y_1_constraint.apply(y[..., 1:])
 
     y_constraints = [y_0_constraint, y_1_constraint]
 
@@ -627,35 +627,35 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     mesh = Mesh([(0., .95), (0., .475)], [.05, .025])
     tol = 1e-12
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = 1.
-    value[:, 0] = 3.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = 1.
+    value[:, 0, :] = 3.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_0_constraint = Constraint(value, mask)
 
-    y[..., 0][mask] = value
+    y_0_constraint.apply(y[..., :1])
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = -2.
-    value[y.shape[0] - 1, :] = 2.
-    value[:, 0] = 5.
-    value[:, y.shape[1] - 1] = 4.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = -2.
+    value[-1, :, :] = 2.
+    value[:, 0, :] = 5.
+    value[:, -1, :] = 4.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_1_constraint = Constraint(value, mask)
 
-    y[..., 1][mask] = value
+    y_1_constraint.apply(y[..., 1:])
 
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, -3.), np.ones(20, dtype=bool))
+        np.full(20, -3.), np.ones((20, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, 0.), np.ones(20, dtype=bool))
+        np.full(20, 0.), np.ones((20, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 
@@ -731,10 +731,10 @@ def test_3pcfdm_constrained_polar_gradient():
     boundary_constraints = np.empty((2, 2), dtype=object)
     boundary_constraints[1, 0] = (
         None,
-        Constraint(np.full(2, -9999.), np.array([True, False, True]))
+        Constraint(np.full(2, -9999.), np.array([[True], [False], [True]]))
     )
     boundary_constraints[1, 1] = (
-        Constraint(np.full(1, 9999.), np.array([False, True, False])),
+        Constraint(np.full(1, 9999.), np.array([[False], [True], [False]])),
         None
     )
 
@@ -804,8 +804,8 @@ def test_3pcfdm_constrained_polar_hessian():
 
     boundary_constraints = np.empty((2, 2), dtype=object)
     boundary_constraints[0, 1] = (
-        Constraint(np.full(2, -2.), np.array([True, True, False])),
-        Constraint(np.full(1, 0.), np.array([False, False, True]))
+        Constraint(np.full(2, -2.), np.array([[True], [True], [False]])),
+        Constraint(np.full(1, 0.), np.array([[False], [False], [True]]))
     )
 
     expected_hessian = np.array([
@@ -1012,17 +1012,17 @@ def test_3pcfdm_polar_anti_laplacian():
     mesh = Mesh([(1., 2.9), (0., .95)], [.1, .05], CoordinateSystem.POLAR)
     tol = 1e-12
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = 1.
-    value[y.shape[0] - 1, :] = 2.
-    value[:, 0] = 3.
-    value[:, y.shape[1] - 1] = 42.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = 1.
+    value[-1, :, :] = 2.
+    value[:, 0, :] = 3.
+    value[:, -1, :] = 42.
     mask = ~np.isnan(value)
     value = value[mask]
     y_constraint = Constraint(value, mask)
 
-    y[..., 0][mask] = value
-    y[..., 1][mask] = value
+    y_constraint.apply(y[..., :1])
+    y_constraint.apply(y[..., 1:])
 
     y_constraints = [y_constraint] * 2
 
@@ -1041,35 +1041,35 @@ def test_3pcfdm_polar_anti_laplacian_with_derivative_constraints():
     mesh = Mesh([(1., 2.9), (0., .95)], [.1, .05], CoordinateSystem.POLAR)
     tol = 1e-12
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = 1.
-    value[:, 0] = 3.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = 1.
+    value[:, 0, :] = 3.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_0_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_0_constraint = Constraint(value, mask)
 
-    y[..., 0][mask] = value
+    y_0_constraint.apply(y[..., :1])
 
-    value = np.full(y.shape[:-1], np.nan)
-    value[0, :] = -2.
-    value[y.shape[0] - 1, :] = 2.
-    value[:, 0] = 5.
-    value[:, y.shape[1] - 1] = 4.
+    value = np.full((20, 20, 1), np.nan)
+    value[0, :, :] = -2.
+    value[-1, :, :] = 2.
+    value[:, 0, :] = 5.
+    value[:, -1, :] = 4.
     mask = ~np.isnan(value)
     value = value[mask]
-    y_1_constraint = Constraint(np.copy(value), np.copy(mask))
+    y_1_constraint = Constraint(value, mask)
 
-    y[..., 1][mask] = value
+    y_1_constraint.apply(y[..., 1:])
 
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, -3.), np.ones(20, dtype=bool))
+        np.full(20, -3.), np.ones((20, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, 0.), np.ones(20, dtype=bool))
+        np.full(20, 0.), np.ones((20, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 

@@ -23,7 +23,7 @@ def test_auto_regression_operator_on_ode():
 
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: (1.,) * 3)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
     oracle = ODEOperator('DOP853', .001)
@@ -52,18 +52,19 @@ def test_auto_regression_operator_on_pde():
     set_random_seed(0)
 
     diff_eq = WaveEquation(2)
-    mesh = Mesh(((-5., 5.), (-5., 5.)), (1., 1.))
-    bcs = (
-        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True)),
-        (DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (.0, .0), is_static=True))
-    )
+    mesh = Mesh([(-5., 5.), (-5., 5.)], [1., 1.])
+    bcs = [
+        (DirichletBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 2)), is_static=True),
+         DirichletBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 2)), is_static=True))
+    ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
-        ((np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]])),) * 2,
-        (3., .0))
+        [(np.array([0., 2.5]), np.array([[.1, 0.], [0., .1]]))] * 2,
+        [3., .0]
+    )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
     oracle = FDMOperator(

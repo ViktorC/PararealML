@@ -1,3 +1,5 @@
+import numpy as np
+
 from pararealml import *
 from pararealml.core.operators.ode import *
 
@@ -48,8 +50,10 @@ diff_eq = NBodyGravitationalEquation(3, masses)
 cp = ConstrainedProblem(diff_eq)
 ic = ContinuousInitialCondition(
     cp,
-    lambda _: [pos * astronomical_unit for pos in positions_au] +
-              [vel * astronomical_unit / day for vel in velocities_au_d])
+    lambda _: np.array(
+        [pos * astronomical_unit for pos in positions_au] +
+        [vel * astronomical_unit / day for vel in velocities_au_d])
+)
 ivp = InitialValueProblem(cp, (0., 300. * 365. * day), ic)
 
 solver = ODEOperator('DOP853', day / 2.)

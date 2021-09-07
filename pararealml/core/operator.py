@@ -40,22 +40,22 @@ class Operator(ABC):
         Returns the IVP's solution.
 
         :param ivp: the initial value problem to solve
-        :param parallel_enabled: whether in-time parallelisation is enabled
+        :param parallel_enabled: whether in-time parallelization is enabled
         :return: the solution of the IVP
         """
 
 
-def discretise_time_domain(
+def discretize_time_domain(
         t: TemporalDomainInterval,
         d_t: float
 ) -> np.ndarray:
     """
-    Returns a discretisation of the temporal interval using the provided
+    Returns a discretization of the temporal interval using the provided
     temporal step size.
 
-    :param t: the time interval to discretise
+    :param t: the time interval to discretize
     :param d_t: the temporal step size
-    :return: the array containing the discretised temporal domain
+    :return: the array containing the discretized temporal domain
     """
     t_0 = t[0]
     steps = int(round((t[1] - t_0) / d_t))

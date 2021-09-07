@@ -1,11 +1,11 @@
+import numpy as np
+
 from pararealml import *
 from pararealml.core.operators.ode import *
 
 diff_eq = LorenzEquation()
 cp = ConstrainedProblem(diff_eq)
-ic = ContinuousInitialCondition(
-    cp,
-    lambda _: (1., 1., 1.))
+ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
 ivp = InitialValueProblem(cp,  (0., 40.), ic)
 
 solver = ODEOperator('DOP853', 1e-4)

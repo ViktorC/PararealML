@@ -26,9 +26,10 @@ def plot_y_against_t(
     :param legend_location: the location of the legend in case y is
         vector-valued
     """
-    diff_eq = solution.constrained_problem.differential_equation
+    cp = solution.initial_value_problem.constrained_problem
+    diff_eq = cp.differential_equation
     if diff_eq.x_dimension:
-        raise ValueError
+        raise ValueError('solution must be for an ODE')
 
     t = solution.t_coordinates
     y = solution.discrete_y(solution.vertex_oriented)
@@ -57,12 +58,15 @@ def plot_phase_space(solution: Solution, file_name: str):
     :param solution: a solution to an IVP
     :param file_name: the name of the file to save the plot to
     """
-    y = solution.discrete_y(solution.vertex_oriented)
+    cp = solution.initial_value_problem.constrained_problem
+    diff_eq = cp.differential_equation
+    if diff_eq.x_dimension:
+        raise ValueError('solution must be for an ODE')
 
-    if y.ndim != 2:
-        raise ValueError
+    y = solution.discrete_y(solution.vertex_oriented)
     if not 2 <= y.shape[1] <= 3:
-        raise ValueError
+        raise ValueError(
+            f'number of y dimensions ({y.shape[1]}) must be either 2 or 3')
 
     if y.shape[1] == 2:
         plt.xlabel('y 0')
@@ -110,11 +114,11 @@ def plot_n_body_simulation(
     :param trajectory_line_style: the style of the trajectory line
     :param trajectory_line_width: the width of the trajectory line
     """
-    diff_eq: NBodyGravitationalEquation = \
-        solution.constrained_problem.differential_equation
+    cp = solution.initial_value_problem.constrained_problem
+    diff_eq = cp.differential_equation
 
     if not isinstance(diff_eq, NBodyGravitationalEquation):
-        raise ValueError
+        raise ValueError('solution must be for n-body gravitational ODE')
 
     n_obj = diff_eq.n_objects
     n_obj_by_dims = n_obj * diff_eq.spatial_dimension
@@ -294,11 +298,11 @@ def plot_evolution_of_scalar_field(
         sliced
     :param slice_inds: the indices along the slice axis representing the slices
     """
-    mesh = solution.constrained_problem.mesh
-    x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+    cp = solution.initial_value_problem.constrained_problem
+    x_cartesian_coordinate_grids = cp.mesh.cartesian_coordinate_grids(
         solution.vertex_oriented)
     y = solution.discrete_y(solution.vertex_oriented)[..., y_ind]
-    x_dim = solution.constrained_problem.differential_equation.x_dimension
+    x_dim = cp.differential_equation.x_dimension
 
     v_min = np.min(y) if v_min is None else v_min
     v_max = np.max(y) if v_max is None else v_max
@@ -314,19 +318,22 @@ def plot_evolution_of_scalar_field(
             slice_inds.append(slice_axis_size - 1)
 
         if not 0 <= slice_axis < 3:
-            raise ValueError
+            raise ValueError(
+                f'slice axis ({slice_axis}) must be between 0 and 2')
         if len(slice_inds) == 0:
-            raise ValueError
+            raise ValueError('number of slice indices must be greater than 0')
 
         axes = [axis for axis in range(3) if axis != slice_axis]
         first_x_label = f'x {axes[0]}'
         second_x_label = f'x {axes[1]}'
 
-        slicer: List[Union[slice, int]] = [slice(None)] * mesh.dimensions
+        slicer: List[Union[slice, int]] = [slice(None)] * cp.mesh.dimensions
 
         for slice_ind in slice_inds:
             if not 0 <= slice_ind < y.shape[slice_axis + 1]:
-                raise ValueError
+                raise ValueError(
+                    f'slice index ({slice_ind}) must be between 0 and '
+                    f'({y.shape[slice_axis + 1] - 1})')
 
             slicer[slice_axis] = slice_ind
 
@@ -443,7 +450,8 @@ def plot_evolution_of_scalar_field(
                         vmax=v_max,
                         cmap=color_map)
         else:
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({x_dim}) must be between 1 and 3')
 
         animation = FuncAnimation(
             fig,
@@ -460,7 +468,7 @@ def plot_evolution_of_vector_field(
         frames_between_updates: int,
         interval: int,
         file_name: str,
-        normalise: bool = True,
+        normalize: bool = True,
         pivot: str = 'middle',
         quiver_scale: float = 1.):
     """
@@ -475,20 +483,21 @@ def plot_evolution_of_vector_field(
         plotted frames
     :param interval: the number of milliseconds between each frame of the GIF
     :param file_name: the name of the file to save the plot to
-    :param normalise: whether the lengths of the arrows should be normalised
+    :param normalize: whether the lengths of the arrows should be normalized
     :param pivot: the pivot point of the arrows
     :param quiver_scale: scales the size of the quivers
     """
-    cp = solution.constrained_problem
+    cp = solution.initial_value_problem.constrained_problem
     x_dim = cp.differential_equation.x_dimension
 
-    if y_inds is None or len(y_inds) != x_dim:
-        raise ValueError
+    if len(y_inds) != x_dim:
+        raise ValueError(
+            f'number of y indices ({len(y_inds)}) must match number of x '
+            f'dimensions ({x_dim})')
 
-    mesh = solution.constrained_problem.mesh
-    x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+    x_cartesian_coordinate_grids = cp.mesh.cartesian_coordinate_grids(
         solution.vertex_oriented)
-    unit_vector_grids = mesh.unit_vector_grids(solution.vertex_oriented)
+    unit_vector_grids = cp.mesh.unit_vector_grids(solution.vertex_oriented)
     y = solution.discrete_y()
     y_cartesian: np.ndarray = sum([
         y[..., y_inds[i], np.newaxis] * unit_vector_grids[i][np.newaxis, ...]
@@ -499,7 +508,7 @@ def plot_evolution_of_vector_field(
         y_0 = y_cartesian[..., 0]
         y_1 = y_cartesian[..., 1]
 
-        if normalise:
+        if normalize:
             y_magnitude = np.sqrt(np.square(y_0) + np.square(y_1))
             y_magnitude_gt_zero = y_magnitude > 0.
             y_0[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
@@ -537,7 +546,7 @@ def plot_evolution_of_vector_field(
             y_1[0, ...],
             y_2[0, ...],
             pivot=pivot,
-            normalize=normalise)
+            normalize=normalize)
         ax.set_xlabel(x0_label)
         ax.set_ylabel(x1_label)
         ax.set_zlabel(x2_label)
@@ -550,12 +559,13 @@ def plot_evolution_of_vector_field(
                 y_1[time_step, ...],
                 y_2[time_step, ...],
                 pivot=pivot,
-                normalize=normalise)
+                normalize=normalize)
             ax.set_xlabel(x0_label)
             ax.set_ylabel(x1_label)
             ax.set_zlabel(x2_label)
     else:
-        raise ValueError
+        raise ValueError(
+            f'number of x dimensions ({x_dim}) must be either 2 or 3')
 
     animation = FuncAnimation(
         fig,
@@ -576,7 +586,7 @@ def plot_ivp_solution(
         draw_trajectory: bool = True,
         trajectory_line_style: str = ':',
         trajectory_line_width: float = .5,
-        normalise: bool = True,
+        normalize: bool = True,
         pivot: str = 'middle',
         quiver_scale: float = 1.,
         three_d: Optional[bool] = None,
@@ -607,7 +617,7 @@ def plot_ivp_solution(
         based on n-body problems
     :param trajectory_line_width: the width of the trajectory line for IVPs
         based on n-body problems
-    :param normalise: whether the lengths of the arrows should be normalised
+    :param normalize: whether the lengths of the arrows should be normalized
         for vector field plots
     :param pivot: the pivot point of the arrows for vector field plots
     :param quiver_scale: scales the size of the quivers
@@ -629,7 +639,8 @@ def plot_ivp_solution(
     :param legend_location: the location of the legend for IVPs based on
         systems of ODEs
     """
-    diff_eq = solution.constrained_problem.differential_equation
+    cp = solution.initial_value_problem.constrained_problem
+    diff_eq = cp.differential_equation
 
     if diff_eq.x_dimension:
         if y_vector_field_inds is None:
@@ -693,7 +704,7 @@ def plot_ivp_solution(
                 frames_between_updates,
                 interval,
                 file_name,
-                normalise=normalise,
+                normalize=normalize,
                 pivot=pivot,
                 quiver_scale=quiver_scale)
     else:
@@ -741,7 +752,9 @@ def plot_model_losses(
             len(mean_train_losses) != len(sd_train_losses) or \
             len(mean_train_losses) != len(sd_test_losses) or \
             len(mean_train_losses) != len(model_names):
-        raise ValueError
+        raise ValueError(
+            'all training and test means and standard deviations must have '
+            'the same length')
 
     bar_width = .35
     train_positions = np.arange(len(mean_train_losses))
@@ -796,9 +809,13 @@ def plot_rms_solution_diffs(
     :param color_map: the color map to use for coloring the lines
     """
     if mean_rms_diffs.shape != sd_rms_diffs.shape:
-        raise ValueError
+        raise ValueError(
+            f'RMS difference means shape {mean_rms_diffs.shape} must match '
+            f'RMS difference standard deviations shape {sd_rms_diffs.shape}')
     if len(mean_rms_diffs) != len(labels):
-        raise ValueError
+        raise ValueError(
+            f'length of RMS difference means ({len(mean_rms_diffs)}) must '
+            f'match length of labels ({len(labels)})')
 
     plt.figure()
 
@@ -848,9 +865,14 @@ def plot_execution_times(
     :param file_name: the name of the file to save the plot to
     """
     if len(mean_execution_times) != len(sd_execution_times):
-        raise ValueError
+        raise ValueError(
+            f'length of execution time means ({len(mean_execution_times)}) '
+            'must match length of execution time standard deviations '
+            f'({len(sd_execution_times)})')
     if len(mean_execution_times) != len(labels):
-        raise ValueError
+        raise ValueError(
+            f'length of execution time means ({len(mean_execution_times)}) '
+            f'must match length of labels ({len(labels)})')
 
     positions = np.arange(len(mean_execution_times))
 

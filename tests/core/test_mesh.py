@@ -48,25 +48,6 @@ def test_mesh():
         all_cell_x[2, 3],
         all_cell_x_flattened[2 * 250 + 3]).all()
 
-    functions = [
-        lambda x: (3 * x[0] - 5 * x[1], x[0]),
-        lambda x: (x[0] * x[1], -x[1])
-    ]
-
-    assert np.isclose(
-        mesh.evaluate(functions, True)[0, 2, 3, :],
-        [3 * -9.8 - 5 * .6, -9.8]).all()
-    assert np.isclose(
-        mesh.evaluate(functions, False)[1, 2, 3, :],
-        [-9.75 * .7, -.7]).all()
-
-    assert np.isclose(
-        mesh.evaluate(functions, True)[0, 2, 3, 1],
-        mesh.evaluate(functions, True, flatten=True)[0, (2 * 251 + 3) * 2 + 1])
-    assert np.isclose(
-        mesh.evaluate(functions, False)[0, 2, 3, 0],
-        mesh.evaluate(functions, False, flatten=True)[0, (2 * 250 + 3) * 2])
-
 
 def test_polar_mesh_with_negative_r():
     with pytest.raises(ValueError):

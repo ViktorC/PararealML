@@ -30,7 +30,7 @@ def test_forward_euler_method_with_constraints():
 
     def d_y_over_d_t(t, y): return 5. * y + t ** 2
 
-    y_constraint_0 = Constraint(np.zeros(10), np.ones(10, dtype=bool))
+    y_constraint_0 = Constraint(np.zeros(10), np.ones((10, 1), dtype=bool))
     y_constraints = [y_constraint_0, None]
 
     expected_y_next = np.concatenate(
@@ -67,7 +67,7 @@ def test_explicit_midpoint_method_with_constraints():
 
     def d_y_over_d_t(t, y): return 2. * y - 4. * t
 
-    value = np.full(y_shape[:-1], np.nan)
+    value = np.full(y_shape[:-1] + (1,), np.nan)
     value[0, :] = value[-1, :] = 1.
     value[:, 0] = value[:, -1] = 2.
     mask = ~np.isnan(value)
@@ -75,7 +75,7 @@ def test_explicit_midpoint_method_with_constraints():
     y_constraint = Constraint(value, mask)
 
     expected_y_next = np.full(y_shape, 4.5)
-    y_constraint.apply(expected_y_next[..., 0])
+    y_constraint.apply(expected_y_next[..., :1])
 
     actual_y_next = midpoint.integral(
         y_0,
@@ -112,14 +112,14 @@ def test_rk4_with_constraints():
 
     def d_y_over_d_t(_, y): return 2 * y + 1
 
-    value = np.full(y_shape[:-1], np.nan)
+    value = np.full(y_shape[:-1] + (1,), np.nan)
     value[0] = value[-1] = 0.
     mask = ~np.isnan(value)
     value = value[mask]
     y_constraint = Constraint(value, mask)
 
     expected_y_next = np.full(y_shape, 3.)
-    y_constraint.apply(expected_y_next[..., 0])
+    y_constraint.apply(expected_y_next[..., :1])
 
     actual_y_next = rk4.integral(
         y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
@@ -151,14 +151,14 @@ def test_backward_euler_method_with_constraints():
 
     def d_y_over_d_t(t, y): return 5. * y + t ** 2
 
-    value = np.full(y_0.shape[:-1], np.nan)
+    value = np.full(y_0.shape[:-1] + (1,), np.nan)
     value[0] = value[-1] = 999.
     mask = ~np.isnan(value)
     value = value[mask]
     y_constraint = Constraint(value, mask)
 
     expected_y_next = (y_0 + d_t * (t_0 + d_t) ** 2) / (1. - 5 * d_t)
-    y_constraint.apply(expected_y_next[..., 0])
+    y_constraint.apply(expected_y_next[..., :1])
     actual_y_next = euler.integral(
         y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
 
@@ -190,14 +190,14 @@ def test_crank_nicolson_method_with_constraints():
 
     def d_y_over_d_t(t, y): return 5. * y
 
-    value = np.full(y_0.shape[:-1], np.nan)
+    value = np.full(y_0.shape[:-1] + (1,), np.nan)
     value[0] = value[-1] = 13.
     mask = ~np.isnan(value)
     value = value[mask]
     y_constraint = Constraint(value, mask)
 
     expected_y_next = (y_0 + .5 * 5. * d_t * y_0) / (1. - .5 * 5. * d_t)
-    y_constraint.apply(expected_y_next[..., 0])
+    y_constraint.apply(expected_y_next[..., :1])
     actual_y_next = crank_nicolson.integral(
         y_0, t_0, d_t, d_y_over_d_t, lambda _: [y_constraint])
 

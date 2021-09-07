@@ -94,7 +94,7 @@ class NumericalDifferentiator(ABC):
         :param y_hat: the current estimated values of the solution at every
             point of the mesh
         :param laplacian: the Laplacian for which y is to be determined
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: an optional 2D array
             (x dimension, y dimension) of boundary constraint pairs that
             specify constraints on the first derivatives of the solution
@@ -113,7 +113,7 @@ class NumericalDifferentiator(ABC):
         spatial dimension specified by x_axis at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param x_axis: the spatial dimension that y is to be differentiated
             with respect to
         :param derivative_boundary_constraints: a 2D array (x dimension,
@@ -122,12 +122,14 @@ class NumericalDifferentiator(ABC):
         :return: the element(s) of the gradient of y corresponding to the
             specified axis
         """
-        if y.ndim != mesh.dimensions + 1:
-            raise ValueError
         if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
+            raise ValueError(
+                f'y shape up to second to last axis {y.shape[:-1]} must match '
+                f'mesh vertices shape {mesh.vertices_shape}')
         if not (0 <= x_axis < mesh.dimensions):
-            raise ValueError
+            raise ValueError(
+                f'x axis ({x_axis}) must be non-negative and less than number '
+                f'of x dimensions ({mesh.dimensions})')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -152,7 +154,9 @@ class NumericalDifferentiator(ABC):
             return derivative
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     def hessian(
             self,
@@ -168,7 +172,7 @@ class NumericalDifferentiator(ABC):
         the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param x_axis1: the first spatial dimension that y is to be
             differentiated with respect to
         :param x_axis2: the second spatial dimension that y is to be
@@ -180,14 +184,16 @@ class NumericalDifferentiator(ABC):
         :return: the element(s) of the Hessian of y corresponding to the
             specified axes
         """
-        if y.ndim != mesh.dimensions + 1:
-            raise ValueError
         if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
-        if not (0 <= x_axis1 < mesh.dimensions):
-            raise ValueError
-        if not (0 <= x_axis2 < mesh.dimensions):
-            raise ValueError
+            raise ValueError(
+                f'y shape up to second to last axis {y.shape[:-1]} must match '
+                f'mesh vertices shape {mesh.vertices_shape}')
+        if not (0 <= x_axis1 < mesh.dimensions) \
+                or not (0 <= x_axis2 < mesh.dimensions):
+            raise ValueError(
+                f'both first x axis ({x_axis1}) and second x axis ({x_axis2}) '
+                'must be non-negative and less than number of x dimensions '
+                f'({mesh.dimensions})')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -270,7 +276,9 @@ class NumericalDifferentiator(ABC):
                 )
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     def divergence(
             self,
@@ -283,19 +291,21 @@ class NumericalDifferentiator(ABC):
         mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the divergence
         :return: the divergence of y
         """
-        if y.ndim != mesh.dimensions + 1:
-            raise ValueError
         if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
+            raise ValueError(
+                f'y shape up to second to last axis {y.shape[:-1]} must match '
+                f'mesh vertices shape {mesh.vertices_shape}')
         if y.shape[-1] != mesh.dimensions:
-            raise ValueError
+            raise ValueError(
+                f'y value vector length ({y.shape[-1]}) must match number of '
+                f'x dimensions ({mesh.dimensions})')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -334,7 +344,9 @@ class NumericalDifferentiator(ABC):
             return d_y_r_over_d_r + r_rec * (y_r + d_y_theta_over_d_theta)
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     def curl(
             self,
@@ -348,7 +360,7 @@ class NumericalDifferentiator(ABC):
         the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param curl_ind: the index of the component of the curl of y to
             compute; if y is a two dimensional vector field, it must be 0
         :param derivative_boundary_constraints: a 2D array (x dimension,
@@ -357,16 +369,23 @@ class NumericalDifferentiator(ABC):
             to compute the curl
         :return: the curl of y
         """
-        if y.ndim != mesh.dimensions + 1:
-            raise ValueError
         if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
+            raise ValueError(
+                f'y shape up to second to last axis {y.shape[:-1]} must match '
+                f'mesh vertices shape {mesh.vertices_shape}')
         if y.shape[-1] != mesh.dimensions:
-            raise ValueError
+            raise ValueError(
+                f'y value vector length ({y.shape[-1]}) must match number of '
+                f'x dimensions ({mesh.dimensions})')
         if not (2 <= mesh.dimensions <= 3):
-            raise ValueError
+            raise ValueError(
+                f'number of x dimensions ({mesh.dimensions}) must be 2 or 3')
+        if mesh.dimensions == 2 and curl_ind != 0:
+            raise ValueError(f'curl index ({curl_ind}) must be 0 for 2D curl')
         if not (0 <= curl_ind < mesh.dimensions):
-            raise ValueError
+            raise ValueError(
+                f'curl index ({curl_ind}) must be non-negative and less than '
+                f'number of x dimensions ({mesh.dimensions})')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -376,9 +395,6 @@ class NumericalDifferentiator(ABC):
 
         if mesh.coordinate_system_type == CoordinateSystem.CARTESIAN:
             if mesh.dimensions == 2:
-                if curl_ind != 0:
-                    raise ValueError
-
                 return self._derivative(
                     y[..., 1:],
                     mesh.d_x[0],
@@ -425,9 +441,6 @@ class NumericalDifferentiator(ABC):
                         derivative_boundary_constraints[1, :1])
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR:
-            if curl_ind != 0:
-                raise ValueError
-
             r_rec = np.reciprocal(
                 mesh.vertex_axis_coordinates[0].reshape((-1, 1, 1)))
             y_r = y[:, :, :1]
@@ -447,7 +460,9 @@ class NumericalDifferentiator(ABC):
             return d_y_theta_over_d_r + r_rec * (y_theta - d_y_r_over_d_theta)
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     def laplacian(
             self,
@@ -460,17 +475,17 @@ class NumericalDifferentiator(ABC):
         Computes the Laplacian of y at every point of the mesh.
 
         :param y: the values of y at every point of the mesh
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param derivative_boundary_constraints: a 2D array (x dimension,
             y dimension) of boundary constraint pairs that allow for applying
             constraints to the calculated first derivatives before using them
             to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
-        if y.ndim != mesh.dimensions + 1:
-            raise ValueError
         if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
+            raise ValueError(
+                f'y shape up to second to last axis {y.shape[:-1]} must match '
+                f'mesh vertices shape {mesh.vertices_shape}')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -517,7 +532,9 @@ class NumericalDifferentiator(ABC):
             )
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     def anti_laplacian(
             self,
@@ -532,7 +549,7 @@ class NumericalDifferentiator(ABC):
         Computes the anti-Laplacian using the Jacobi method.
 
         :param laplacian: the right-hand side of the equation
-        :param mesh: the mesh representing the discretised spatial domain
+        :param mesh: the mesh representing the discretized spatial domain
         :param tol: the stopping criterion for the Jacobi algorithm; once the
             second norm of the difference of the estimate and the updated
             estimate drops below this threshold, the equation is considered to
@@ -549,12 +566,11 @@ class NumericalDifferentiator(ABC):
         :return: the array representing the solution to Poisson's equation at
             every point of the mesh
         """
-        if laplacian.ndim != mesh.dimensions + 1:
-            raise ValueError
         if laplacian.shape[:-1] != mesh.vertices_shape:
-            raise ValueError
-        if y_constraints is None:
-            raise ValueError
+            raise ValueError(
+                'Laplacian shape up to second to last axis '
+                f'{laplacian.shape[:-1]} must match mesh vertices shape '
+                f'{mesh.vertices_shape}')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -608,7 +624,10 @@ class NumericalDifferentiator(ABC):
             return np.empty((x_axes, y_elements), dtype=object)
 
         if derivative_boundary_constraints.shape != (x_axes, y_elements):
-            raise ValueError
+            raise ValueError(
+                'expected derivative boundary constraints shape to be '
+                f'{(x_axes, y_elements)} but got '
+                f'{derivative_boundary_constraints.shape}')
 
         return derivative_boundary_constraints
 
@@ -628,9 +647,13 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             Sequence[Optional[BoundaryConstraintPair]]
     ) -> np.ndarray:
         if y.shape[x_axis] <= 2:
-            raise ValueError
+            raise ValueError(
+                f'y must contain at least 3 points along x axis ({x_axis})')
         if len(derivative_boundary_constraints) != y.shape[-1]:
-            raise ValueError
+            raise ValueError(
+                'length of derivative boundary constraints '
+                f'({len(derivative_boundary_constraints)}) must match y value '
+                f'vector length ({y.shape[-1]})')
 
         derivative = np.empty_like(y)
 
@@ -674,27 +697,19 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             if constraint_pair is None:
                 continue
 
-            derivative_slicer[-1] = y_ind
+            derivative_slicer[-1] = slice(y_ind, y_ind + 1)
 
             lower_boundary_constraint = constraint_pair[0]
             if lower_boundary_constraint is not None:
                 derivative_slicer[x_axis] = 0
-                if y.ndim > 2:
-                    lower_boundary_constraint.apply(
-                        derivative[tuple(derivative_slicer)])
-                elif lower_boundary_constraint.mask:
-                    derivative[tuple(derivative_slicer)] = \
-                        lower_boundary_constraint.value
+                lower_boundary_constraint.apply(
+                    derivative[tuple(derivative_slicer)])
 
             upper_boundary_constraint = constraint_pair[1]
             if upper_boundary_constraint is not None:
                 derivative_slicer[x_axis] = -1
-                if y.ndim > 2:
-                    upper_boundary_constraint.apply(
-                        derivative[tuple(derivative_slicer)])
-                elif upper_boundary_constraint.mask:
-                    derivative[tuple(derivative_slicer)] = \
-                        upper_boundary_constraint.value
+                upper_boundary_constraint.apply(
+                    derivative[tuple(derivative_slicer)])
 
         return derivative
 
@@ -721,7 +736,8 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
                 [None] * y.shape[-1])
 
         if y.shape[x_axis1] <= 2:
-            raise ValueError
+            raise ValueError(
+                f'y must contain at least 3 points along x axis ({x_axis1})')
 
         second_derivative = np.empty_like(y)
 
@@ -735,7 +751,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
         y_slicer[x_axis1] = -2
         y_upper_boundary_adjacent = y[tuple(y_slicer)]
         y_lower_halo, y_upper_halo = \
-            self._halos_from_derivative_constraints(
+            self._halos_from_derivative_boundary_constraints(
                 y_lower_boundary_adjacent,
                 y_upper_boundary_adjacent,
                 d_x1,
@@ -786,7 +802,8 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
         if not np.all(np.array(y_hat.shape[:-1]) > 2):
-            raise ValueError
+            raise ValueError(
+                'y must contain at least 3 points along all x axes')
 
         anti_laplacian = np.zeros_like(y_hat)
 
@@ -809,7 +826,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
                 slicer[axis] = -2
                 y_upper_boundary_adjacent = y_hat[tuple(slicer)]
                 y_lower_halo, y_upper_halo = \
-                    self._halos_from_derivative_constraints(
+                    self._halos_from_derivative_boundary_constraints(
                         y_lower_boundary_adjacent,
                         y_upper_boundary_adjacent,
                         d_x,
@@ -861,7 +878,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             slicer[0] = -2
             y_upper_boundary_adjacent_r = y_hat[tuple(slicer)]
             y_lower_halo_r, y_upper_halo_r = \
-                self._halos_from_derivative_constraints(
+                self._halos_from_derivative_boundary_constraints(
                     y_lower_boundary_adjacent_r,
                     y_upper_boundary_adjacent_r,
                     d_r,
@@ -905,7 +922,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             slicer[1] = -2
             y_upper_boundary_adjacent_theta = y_hat[tuple(slicer)]
             y_lower_halo_theta, y_upper_halo_theta = \
-                self._halos_from_derivative_constraints(
+                self._halos_from_derivative_boundary_constraints(
                     y_lower_boundary_adjacent_theta,
                     y_upper_boundary_adjacent_theta,
                     d_theta,
@@ -936,10 +953,12 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             return anti_laplacian
 
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({mesh.coordinate_system_type})')
 
     @staticmethod
-    def _halos_from_derivative_constraints(
+    def _halos_from_derivative_boundary_constraints(
             y_lower_boundary_adjacent: np.ndarray,
             y_upper_boundary_adjacent: np.ndarray,
             d_x: float,
@@ -970,26 +989,16 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
 
             lower_boundary_constraint = boundary_constraint_pair[0]
             if lower_boundary_constraint is not None:
-                if y_lower_boundary_adjacent.ndim > 1:
-                    lower_boundary_constraint.multiply_and_add(
-                        y_lower_boundary_adjacent[..., y_ind],
-                        -2. * d_x,
-                        y_lower_halo[..., y_ind])
-                elif lower_boundary_constraint.mask:
-                    y_lower_halo[..., y_ind] = \
-                        y_lower_boundary_adjacent[..., y_ind] - \
-                        2. * d_x * lower_boundary_constraint.value
+                lower_boundary_constraint.multiply_and_add(
+                    y_lower_boundary_adjacent[..., y_ind:y_ind + 1],
+                    -2. * d_x,
+                    y_lower_halo[..., y_ind:y_ind + 1])
 
             upper_boundary_constraint = boundary_constraint_pair[1]
             if upper_boundary_constraint is not None:
-                if y_upper_boundary_adjacent.ndim > 1:
-                    upper_boundary_constraint.multiply_and_add(
-                        y_upper_boundary_adjacent[..., y_ind],
-                        2. * d_x,
-                        y_upper_halo[..., y_ind])
-                elif upper_boundary_constraint.mask:
-                    y_upper_halo[..., y_ind] = \
-                        y_upper_boundary_adjacent[..., y_ind] + \
-                        2. * d_x * upper_boundary_constraint.value
+                upper_boundary_constraint.multiply_and_add(
+                    y_upper_boundary_adjacent[..., y_ind:y_ind + 1],
+                    2. * d_x,
+                    y_upper_halo[..., y_ind:y_ind + 1])
 
         return y_lower_halo, y_upper_halo

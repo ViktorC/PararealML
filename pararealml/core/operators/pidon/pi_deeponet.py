@@ -30,8 +30,8 @@ class PIDeepONet:
             latent_output_size: int,
             branch_hidden_layer_sizes: Optional[List[int]] = None,
             trunk_hidden_layer_sizes: Optional[List[int]] = None,
-            branch_initialisation: Optional[str] = None,
-            trunk_initialisation: Optional[str] = None,
+            branch_initialization: Optional[str] = None,
+            trunk_initialization: Optional[str] = None,
             branch_activation: Optional[str] = 'tanh',
             trunk_activation: Optional[str] = 'tanh'
     ):
@@ -44,9 +44,9 @@ class PIDeepONet:
             layers of the branch net
         :param trunk_hidden_layer_sizes: a list of the sizes of the hidden
             layers of the trunk net
-        :param branch_initialisation: the initialisation method to use for the
+        :param branch_initialization: the initialization method to use for the
             weights of the branch net
-        :param trunk_initialisation: the initialisation method to use for the
+        :param trunk_initialization: the initialization method to use for the
             weights of the trunk net
         :param branch_activation: the activation function to use for the layers
             of the branch net
@@ -54,7 +54,9 @@ class PIDeepONet:
             of the trunk net
         """
         if latent_output_size < 1:
-            raise ValueError
+            raise ValueError(
+                f'latent output size ({latent_output_size}) must be greater '
+                f'than 0')
 
         diff_eq = cp.differential_equation
         x_dimension = diff_eq.x_dimension
@@ -81,13 +83,13 @@ class PIDeepONet:
             [sensor_input_size] +
             branch_hidden_layer_sizes +
             [latent_output_size * y_dimension],
-            branch_initialisation,
+            branch_initialization,
             branch_activation)
         self._trunk_net = create_regression_fnn(
             [x_dimension + 1] +
             trunk_hidden_layer_sizes +
             [latent_output_size * y_dimension],
-            trunk_initialisation,
+            trunk_initialization,
             trunk_activation)
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
@@ -116,7 +118,7 @@ class PIDeepONet:
 
     def init(self):
         """
-        Initialises the branch and trunk networks.
+        Initializes the branch and trunk networks.
         """
         self._branch_net.build()
         self._trunk_net.build()
@@ -153,7 +155,8 @@ class PIDeepONet:
         :return: the training and test loss histories
         """
         if epochs < 1:
-            raise ValueError
+            raise ValueError(
+                f'number of epochs ({epochs}) must be greater than 0')
 
         optimizer_instance = tf.keras.optimizers.get(optimizer)
 
@@ -547,14 +550,15 @@ class PIDeepONet:
                         arg.y_hat[:, _y_ind:_y_ind + 1],
                         self._cp.mesh.coordinate_system_type))
             else:
-                raise ValueError
+                raise ValueError(
+                    f'unsupported left hand side type ({lhs_type.name})')
 
         return lhs_functions
 
 
 def create_regression_fnn(
         layer_sizes: Sequence[int],
-        initialisation: Optional[str] = None,
+        initialization: Optional[str] = None,
         activation: Optional[str] = None
 ) -> Sequential:
     """
@@ -562,24 +566,25 @@ def create_regression_fnn(
 
     :param layer_sizes: a list of the sizes of the layers including the input
         layer
-    :param initialisation: the initialisation method to use for the weights of
+    :param initialization: the initialization method to use for the weights of
         the layers
     :param activation: the activation function to use for the hidden layers
     :return: the fully-connected neural network model
     """
     if len(layer_sizes) < 2:
-        raise ValueError
+        raise ValueError(
+            f'number of layers ({len(layer_sizes)}) must be greater than 1')
 
-    if initialisation is None:
-        initialisation = 'glorot_uniform'
+    if initialization is None:
+        initialization = 'glorot_uniform'
 
     model = Sequential()
     model.add(InputLayer(input_shape=layer_sizes[0]))
     for layer_size in layer_sizes[1:-1]:
         model.add(Dense(
             layer_size,
-            kernel_initializer=initialisation,
+            kernel_initializer=initialization,
             activation=activation))
-    model.add(Dense(layer_sizes[-1], kernel_initializer=initialisation))
+    model.add(Dense(layer_sizes[-1], kernel_initializer=initialization))
 
     return model

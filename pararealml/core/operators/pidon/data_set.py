@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Optional, Sequence, NamedTuple, Callable, Iterable
+from typing import Optional, NamedTuple, Iterable
 
 import numpy as np
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_condition import \
+    VectorizedInitialConditionFunction
 from pararealml.core.initial_value_problem import TemporalDomainInterval
 from pararealml.core.operators.pidon.collocation_point_sampler import \
     CollocationPointSampler
@@ -22,9 +24,7 @@ class DataSet:
             self,
             cp: ConstrainedProblem,
             t_interval: TemporalDomainInterval,
-            y_0_functions: Iterable[
-                Callable[[Optional[Sequence[float]]], Sequence[float]]
-            ],
+            y_0_functions: Iterable[VectorizedInitialConditionFunction],
             point_sampler: CollocationPointSampler,
             n_domain_points: int,
             n_boundary_points: int = 0):
@@ -41,10 +41,16 @@ class DataSet:
         """
         x_dimension = cp.differential_equation.x_dimension
 
-        if n_domain_points <= 0 or n_boundary_points < 0:
-            raise ValueError
+        if n_domain_points <= 0:
+            raise ValueError(
+                f'number of domain points ({n_domain_points}) must be greater '
+                f'than 0')
+        if n_boundary_points < 0:
+            raise ValueError(
+                f'number of boundary points ({n_boundary_points}) must be '
+                f'non-negative')
         if not x_dimension and n_boundary_points:
-            raise ValueError
+            raise ValueError('number of boundary points must be 0 for ODEs')
 
         self._cp = cp
         self._t_interval = t_interval
@@ -117,8 +123,9 @@ class DataSet:
         functions (over the mesh in case the constrained problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
-            return self._cp.mesh.evaluate(
-                self._y_0_functions, vertex_oriented=False, flatten=True)
+            x = self._cp.mesh.all_index_coordinates(False, flatten=True)
+            return np.vstack(
+                [y_0_func(x).flatten() for y_0_func in self._y_0_functions])
 
         ic_data = np.array([
             y_0_function(None) for y_0_function in self._y_0_functions
@@ -181,20 +188,18 @@ class DataSet:
 
                 for i in range(boundary_points.t.shape[0]):
                     t_i = boundary_points.t[i]
-                    x_i = boundary_points.x[i]
+                    x_i = boundary_points.x[i:i + 1]
 
                     t.append(t_i)
-                    x.append(x_i)
+                    x.append(x_i[0])
                     axes.append([axis])
 
-                    boundary_x_i = np.concatenate([x_i[:axis], x_i[axis + 1:]])
-
-                    y_i = bc.y_condition(boundary_x_i, t_i) \
-                        if bc.has_y_condition else [np.nan] * y_dimension
+                    y_i = bc.y_condition(x_i, t_i)[0] \
+                        if bc.has_y_condition else [None] * y_dimension
                     y.append(y_i)
 
-                    d_y_over_d_n_i = bc.d_y_condition(boundary_x_i, t_i) \
-                        if bc.has_d_y_condition else [np.nan] * y_dimension
+                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i)[0] \
+                        if bc.has_d_y_condition else [None] * y_dimension
                     d_y_over_d_n.append(d_y_over_d_n_i)
 
         boundary_collocation_data = np.concatenate(
@@ -258,11 +263,17 @@ class DataSetIterator(Iterator):
         :param shuffle: whether to shuffle the Cartesian product of the initial
             condition data and collocation data.
         """
-        if domain_batch_size <= 0 or boundary_batch_size < 0:
-            raise ValueError
+        if domain_batch_size <= 0:
+            raise ValueError(
+                f'domain batch size ({domain_batch_size}) must be greater '
+                f'than 0')
+        if boundary_batch_size < 0:
+            raise ValueError(
+                f'boundary batch size ({boundary_batch_size}) must be '
+                f'non-negative')
         if not data_set.constrained_problem.differential_equation.x_dimension \
                 and boundary_batch_size > 0:
-            raise ValueError
+            raise ValueError('boundary batch size must be 0 for ODEs')
 
         self._data_set = data_set
         self._domain_batch_size = domain_batch_size
@@ -280,13 +291,22 @@ class DataSetIterator(Iterator):
             self._ic_data_size * self._boundary_data_size
 
         if self._total_domain_data_size % domain_batch_size != 0:
-            raise ValueError
+            raise ValueError(
+                f'domain batch size ({domain_batch_size}) must be a divisor '
+                f'of total domain data size ({self._total_domain_data_size})')
         if boundary_batch_size:
             if self._total_boundary_data_size % boundary_batch_size != 0:
-                raise ValueError
-            if self._total_domain_data_size / domain_batch_size != \
-                    self._total_boundary_data_size / boundary_batch_size:
-                raise ValueError
+                raise ValueError(
+                    f'boundary batch size ({boundary_batch_size}) must be a '
+                    'divisor of total boundary data size '
+                    f'({self._total_boundary_data_size})')
+            n_domain_batches = self._total_domain_data_size / domain_batch_size
+            n_boundary_batches = \
+                self._total_boundary_data_size / boundary_batch_size
+            if n_domain_batches != n_boundary_batches:
+                raise ValueError(
+                    f'number of domain batches ({n_domain_batches}) must '
+                    f'match number of boundary batches ({n_boundary_batches})')
 
         ic_data_indices = np.arange(0, self._ic_data_size)
 

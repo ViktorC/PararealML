@@ -45,22 +45,30 @@ class AutoDifferentiator(tf.GradientTape):
             x_axis
         """
         if x.shape[0] != y.shape[0]:
-            raise ValueError
+            raise ValueError(
+                f'number of x instances ({x.shape[0]}) must match number of '
+                f'y instances ({y.shape[0]})')
         if isinstance(x_axis, int):
             if not (0 <= x_axis < x.shape[-1]):
-                raise ValueError
+                raise ValueError(
+                    f'x axis ({x_axis}) must be non-negative and less than '
+                    f'number of x dimensions ({x.shape[-1]})')
         elif isinstance(x_axis, tf.Tensor):
-            if len(x_axis.shape) != 1 and x_axis.shape[0] != x.shape[0]:
-                raise ValueError
-        else:
-            raise ValueError
+            if len(x_axis.shape) != 1:
+                raise ValueError('x axis must be a 1 dimensional array')
+            if x_axis.shape[0] != x.shape[0]:
+                raise ValueError(
+                    f'length of x axis ({x_axis.shape[0]}) must match number '
+                    f'of x instances ({x.shape[0]})')
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             gradient = self.batch_jacobian(y, x)
             return tf.gather(gradient, x_axis, axis=2, batch_dims=1) \
                 if isinstance(x_axis, tf.Tensor) else gradient[:, :, x_axis]
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({coordinate_system_type})')
 
     def batch_hessian(
             self,
@@ -87,13 +95,17 @@ class AutoDifferentiator(tf.GradientTape):
             x_axis1 and x_axis2
         """
         if x.shape[0] != y.shape[0]:
-            raise ValueError
+            raise ValueError(
+                f'number of x instances ({x.shape[0]}) must match number of '
+                f'y instances ({y.shape[0]})')
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return self.batch_gradient(
                 x, self.batch_gradient(x, y, x_axis1), x_axis2)
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({coordinate_system_type})')
 
     def batch_divergence(
             self,
@@ -112,7 +124,7 @@ class AutoDifferentiator(tf.GradientTape):
         :return: the divergence of y
         """
         if x.shape != y.shape:
-            raise ValueError
+            raise ValueError(f'x shape {x.shape} must match y shape {y.shape}')
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
@@ -122,7 +134,9 @@ class AutoDifferentiator(tf.GradientTape):
                 ]),
                 axis=0)
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({coordinate_system_type})')
 
     def batch_curl(
             self,
@@ -144,20 +158,23 @@ class AutoDifferentiator(tf.GradientTape):
         :return: the curl_ind-th component of the curl of y
         """
         if x.shape != y.shape:
-            raise ValueError
-
+            raise ValueError(f'x shape {x.shape} must match y shape {y.shape}')
         x_dimension = x.shape[-1]
-        if x_dimension == 2:
-            if curl_ind != 0:
-                raise ValueError
+        if not (2 <= x_dimension <= 3):
+            raise ValueError(
+                f'number of x dimensions ({x_dimension}) must be 2 or 3')
+        if x_dimension == 2 and curl_ind != 0:
+            raise ValueError(f'curl index ({curl_ind}) must be 0 for 2D curl')
+        if not (0 <= curl_ind < x_dimension):
+            raise ValueError(
+                f'curl index ({curl_ind}) must be non-negative and less than '
+                f'number of x dimensions ({x_dimension})')
 
-            if coordinate_system_type == CoordinateSystem.CARTESIAN:
+        if coordinate_system_type == CoordinateSystem.CARTESIAN:
+            if x_dimension == 2:
                 return self.batch_gradient(x, y[..., 1:], 0) - \
                     self.batch_gradient(x, y[..., :1], 1)
             else:
-                raise ValueError
-        elif x_dimension == 3:
-            if coordinate_system_type == CoordinateSystem.CARTESIAN:
                 return [
                     self.batch_gradient(x, y[..., 2:], 1) -
                     self.batch_gradient(x, y[..., 1:2], 2),
@@ -166,10 +183,10 @@ class AutoDifferentiator(tf.GradientTape):
                     self.batch_gradient(x, y[..., 1:2], 0) -
                     self.batch_gradient(x, y[..., :1], 1)
                 ][curl_ind]
-            else:
-                raise ValueError
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({coordinate_system_type})')
 
     def batch_laplacian(
             self,
@@ -188,7 +205,9 @@ class AutoDifferentiator(tf.GradientTape):
         :return: the Laplacian of y
         """
         if x.shape[0] != y.shape[0]:
-            raise ValueError
+            raise ValueError(
+                f'number of x instances ({x.shape[0]}) must match number of '
+                f'y instances ({y.shape[0]})')
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
@@ -197,4 +216,6 @@ class AutoDifferentiator(tf.GradientTape):
                 ]),
                 axis=0)
         else:
-            raise ValueError
+            raise ValueError(
+                'unsupported coordinate system type '
+                f'({coordinate_system_type})')

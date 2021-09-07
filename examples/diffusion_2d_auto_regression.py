@@ -10,17 +10,22 @@ set_random_seed(SEEDS[0])
 
 diff_eq = DiffusionEquation(2)
 mesh = Mesh([(0., 10.), (0., 10.)], [.2, .2])
-bcs = (
-    (DirichletBoundaryCondition(lambda x, t: [1.5], is_static=True),
-     DirichletBoundaryCondition(lambda x, t: [1.5], is_static=True)),
-    (NeumannBoundaryCondition(lambda x, t: [0.], is_static=True),
-     NeumannBoundaryCondition(lambda x, t: [0.], is_static=True))
-)
+bcs = [
+    (DirichletBoundaryCondition(
+        lambda x, t: np.full((len(x), 1), 1.5), is_static=True),
+     DirichletBoundaryCondition(
+         lambda x, t: np.full((len(x), 1), 1.5), is_static=True)),
+    (NeumannBoundaryCondition(
+        lambda x, t: np.zeros((len(x), 1)), is_static=True),
+     NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 1)), is_static=True))
+]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
     cp,
     [(np.array([5., 5.]), np.array([[2.5, 0.], [0., 2.5]]))],
-    [100.])
+    [100.]
+)
 ivp = InitialValueProblem(cp, (0., 2.), ic)
 
 fdm_op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)

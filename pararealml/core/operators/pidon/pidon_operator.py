@@ -1,13 +1,15 @@
-from typing import Callable, Sequence, Optional, Dict, Iterable, Tuple, \
-    NamedTuple, List, Union, Any
+from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
+    List, Union, Any
 
 import numpy as np
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
+from pararealml.core.initial_condition import \
+    VectorizedInitialConditionFunction
 from pararealml.core.initial_value_problem import InitialValueProblem, \
     TemporalDomainInterval
-from pararealml.core.operator import Operator, discretise_time_domain
+from pararealml.core.operator import Operator, discretize_time_domain
 from pararealml.core.operators.pidon.collocation_point_sampler import \
     CollocationPointSampler
 from pararealml.core.operators.pidon.data_set import DataSet
@@ -21,9 +23,7 @@ class DataArgs(NamedTuple):
     A container class for arguments pertaining to the generation and traversal
     of PIDON data sets.
     """
-    y_0_functions: Iterable[
-        Callable[[Optional[Sequence[float]]], Sequence[float]]
-    ]
+    y_0_functions: Iterable[VectorizedInitialConditionFunction]
     n_domain_points: int
     domain_batch_size: int
     n_boundary_points: int = 0
@@ -38,8 +38,8 @@ class ModelArgs(NamedTuple):
     latent_output_size: int
     branch_hidden_layer_sizes: Optional[List[int]] = None
     trunk_hidden_layer_sizes: Optional[List[int]] = None
-    branch_initialisation: Optional[str] = None
-    trunk_initialisation: Optional[str] = None
+    branch_initialization: Optional[str] = None
+    trunk_initialization: Optional[str] = None
     branch_activation: Optional[str] = 'tanh'
     trunk_activation: Optional[str] = 'tanh'
 
@@ -91,7 +91,7 @@ class PIDONOperator(Operator):
             meshes
         """
         if d_t <= 0.:
-            raise ValueError
+            raise ValueError(f'time step size ({d_t}) must be greater than 0')
 
         self._sampler = sampler
         self._d_t = d_t
@@ -125,16 +125,13 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        time_points = discretise_time_domain(ivp.t_interval, self._d_t)
-
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
             x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
-            u = cp.mesh.evaluate(
-                [ivp.initial_condition.y_0],
-                False,
-                True)
+            u = ivp.initial_condition.y_0(
+                cp.mesh.all_index_coordinates(False, flatten=True)
+            ).reshape((1, -1))
             u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
             u_tensor = tf.tile(u_tensor, (x.shape[0], 1))
         else:
@@ -143,9 +140,10 @@ class PIDONOperator(Operator):
             u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
 
         y_shape = cp.y_shape(self._vertex_oriented)
-        y = np.empty((len(time_points) - 1,) + y_shape)
+        t = discretize_time_domain(ivp.t_interval, self._d_t)
+        y = np.empty((len(t) - 1,) + y_shape)
 
-        for i, t_i in enumerate(time_points[1:]):
+        for i, t_i in enumerate(t[1:]):
             t_tensor = tf.tile(
                 tf.convert_to_tensor([[t_i]], dtype=tf.float32),
                 (u_tensor.shape[0], 1))
@@ -153,8 +151,8 @@ class PIDONOperator(Operator):
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
         return Solution(
-            cp,
-            time_points[1:],
+            ivp,
+            t[1:],
             y,
             vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)

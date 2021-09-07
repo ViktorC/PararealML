@@ -55,13 +55,13 @@ class CollocationPointSampler(ABC):
             x_intervals: Sequence[SpatialDomainInterval]
     ) -> Sequence[AxialBoundaryPoints]:
         """
-        Samples a set of points organised into a sequence of pairs from the
+        Samples a set of points organized into a sequence of pairs from the
         boundaries of a spatio-temporal domain.
 
         :param n_points: the number of points to sample
         :param t_interval: the bounds of the temporal domain
         :param x_intervals: a sequence of the bounds of the spatial domain
-        :return: a set of boundary points organised into a sequence of pairs
+        :return: a set of boundary points organized into a sequence of pairs
         """
 
 
@@ -77,7 +77,8 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
             x_intervals: Optional[Sequence[SpatialDomainInterval]]
     ) -> CollocationPoints:
         if n_points <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of domain points ({n_points}) must be greater than 0')
 
         t = np.random.uniform(*t_interval, (n_points, 1))
         if x_intervals is not None:
@@ -95,7 +96,9 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
             x_intervals: Sequence[SpatialDomainInterval]
     ) -> Sequence[AxialBoundaryPoints]:
         if n_points <= 0:
-            raise ValueError
+            raise ValueError(
+                f'number of boundary points ({n_points}) must be greater '
+                f'than 0')
 
         (lower_t_bound, upper_t_bound) = t_interval
         (lower_x_bounds, upper_x_bounds) = zip(*x_intervals)

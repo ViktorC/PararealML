@@ -12,8 +12,10 @@ t_interval = (0., 1.)
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, .001, True)
 
-training_y_0_functions = [lambda _: [y_0] for y_0 in np.arange(.3, 1.8, .1)]
-test_y_0_functions = [lambda _: [.7], lambda _: [1.3]]
+training_y_0_functions = [
+    lambda _: np.array([y_0]) for y_0 in np.arange(.3, 1.8, .1)
+]
+test_y_0_functions = [lambda _: np.array([.7]), lambda _: np.array([1.3])]
 
 pidon.train(
     cp,
@@ -51,7 +53,7 @@ pidon.train(
 fdm = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
 
 for y_0 in [.7, 1., 1.3]:
-    ic = ContinuousInitialCondition(cp, lambda _: [y_0])
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     pidon_solution = pidon.solve(ivp)

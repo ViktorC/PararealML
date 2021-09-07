@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pararealml.core.boundary_condition import CauchyBoundaryCondition, \
-    DirichletBoundaryCondition
+    DirichletBoundaryCondition, vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
     CahnHilliardEquation, PopulationGrowthEquation, DiffusionEquation
@@ -16,9 +16,9 @@ def test_data_set_ode():
     cp = ConstrainedProblem(LotkaVolterraEquation())
     t_interval = (0., 100.)
     y_0_functions = [
-        lambda _: [10., 20.],
-        lambda _: [15., 15.],
-        lambda _: [20., 10.]
+        lambda _: np.array([10., 20.]),
+        lambda _: np.array([15., 15.]),
+        lambda _: np.array([20., 10.])
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_points = 200
@@ -36,18 +36,32 @@ def test_data_set_pde():
     mesh = Mesh([(0., 5.), (0., 2.)], [.5, .25])
     bcs = (
         (CauchyBoundaryCondition(
-            lambda x, t: (0., 0.), lambda x, t: (1., 1.), is_static=True),
+            vectorize_bc_function(lambda x, t: (0., 0.)),
+            vectorize_bc_function(lambda x, t: (1., 1.)),
+            is_static=True),
          CauchyBoundaryCondition(
-             lambda x, t: (0., 0.), lambda x, t: (1., 1.), is_static=True)),
+             vectorize_bc_function(lambda x, t: (0., 0.)),
+             vectorize_bc_function(lambda x, t: (1., 1.)),
+             is_static=True)),
         (CauchyBoundaryCondition(
-            lambda x, t: (0., 0.), lambda x, t: (1., 1.), is_static=True),
+            vectorize_bc_function(lambda x, t: (0., 0.)),
+            vectorize_bc_function(lambda x, t: (1., 1.)),
+            is_static=True),
          CauchyBoundaryCondition(
-             lambda x, t: (0., 0.), lambda x, t: (1., 1.), is_static=True)))
+             vectorize_bc_function(lambda x, t: (0., 0.)),
+             vectorize_bc_function(lambda x, t: (1., 1.)),
+             is_static=True)))
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0., 10.)
     y_0_functions = [
-        lambda x: [x[0] ** 2 - 2 * x[0] * x[1] + x[1] ** 2, x[1] ** .5],
-        lambda x: [x[0] ** 3 - x[1] ** 3, x[0] ** .5],
+        lambda x: np.stack([
+            x[:, 0] ** 2 - 2 * x[:, 0] * x[:, 1] + x[:, 1] ** 2,
+            x[:, 1] ** .5
+        ], axis=-1),
+        lambda x: np.stack([
+            x[:, 0] ** 3 - x[:, 1] ** 3,
+            x[:, 0] ** .5
+        ], axis=-1),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_domain_points = 200
@@ -72,7 +86,7 @@ def test_data_set_pde():
 def test_iterator_raises_error_if_batch_size_not_divisor():
     cp = ConstrainedProblem(PopulationGrowthEquation())
     sampler = UniformRandomCollocationPointSampler()
-    data_set = DataSet(cp, (0., 5.), [lambda _: [5.]], sampler, 100)
+    data_set = DataSet(cp, (0., 5.), [lambda _: np.array([5.])], sampler, 100)
 
     with pytest.raises(ValueError):
         data_set.get_iterator(30)
@@ -82,14 +96,19 @@ def test_iterator_raises_error_if_n_domain_batches_not_eq_n_boundary_batches():
     diff_eq = DiffusionEquation(2)
     mesh = Mesh([(0., 5.), (0., 5.)], [.1, .1])
     bcs = (
-        (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True)),
-        (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True))
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0.,)), is_static=True)),
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0.,)), is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     sampler = UniformRandomCollocationPointSampler()
-    data_set = DataSet(cp, (0., 5.), [lambda _: [5.]], sampler, 200, 50)
+    data_set = DataSet(
+        cp, (0., 5.), [lambda _: np.array([5.])], sampler, 200, 50)
 
     with pytest.raises(ValueError):
         data_set.get_iterator(40, 25)
@@ -99,8 +118,8 @@ def test_iterator_ode():
     cp = ConstrainedProblem(LotkaVolterraEquation())
     t_interval = (0., 40.)
     y_0_functions = [
-        lambda _: [10., 20.],
-        lambda _: [15., 15.],
+        lambda _: np.array([10., 20.]),
+        lambda _: np.array([15., 15.]),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_points = 5
@@ -147,16 +166,20 @@ def test_iterator_pde():
     diff_eq = DiffusionEquation(2)
     mesh = Mesh([(0., 5.), (0., 5.)], [.1, .1])
     bcs = (
-        (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True)),
-        (DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True),
-         DirichletBoundaryCondition(lambda x, t: (0.,), is_static=True))
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0.,)), is_static=True)),
+        (DirichletBoundaryCondition(
+            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
+         DirichletBoundaryCondition(
+             vectorize_bc_function(lambda x, t: (0.,)), is_static=True))
     )
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0., 5.)
     y_0_functions = [
-        lambda x: [x[0] ** 2 - x[1] ** 2],
-        lambda x: [x[0] * x[1] / (x[0] ** 2 + x[1] ** 2)]
+        lambda x: x[:, :1] ** 2 - x[:, 1:] ** 2,
+        lambda x: x[:, :1] * x[:, 1:] / (x[:, :1] ** 2 + x[:, 1:] ** 2)
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_domain_points = 200
