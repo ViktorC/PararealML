@@ -9,8 +9,8 @@ def test_discretize_time_domain_without_remainder():
     expected_discretized_time_domain = \
         [0., .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.]
     actual_discretized_time_domain = discretize_time_domain(t_interval, d_t)
-    assert np.isclose(
-        actual_discretized_time_domain, expected_discretized_time_domain).all()
+    assert np.allclose(
+        actual_discretized_time_domain, expected_discretized_time_domain)
 
 
 def test_discretize_time_domain_with_positive_remainder():
@@ -19,8 +19,8 @@ def test_discretize_time_domain_with_positive_remainder():
     expected_discretized_time_domain = \
         [0., .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.]
     actual_discretized_time_domain = discretize_time_domain(t_interval, d_t)
-    assert np.isclose(
-        actual_discretized_time_domain, expected_discretized_time_domain).all()
+    assert np.allclose(
+        actual_discretized_time_domain, expected_discretized_time_domain)
 
 
 def test_discretize_time_domain_with_negative_remainder():
@@ -29,5 +29,5 @@ def test_discretize_time_domain_with_negative_remainder():
     expected_discretized_time_domain = \
         [0., .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.]
     actual_discretized_time_domain = discretize_time_domain(t_interval, d_t)
-    assert np.isclose(
-        actual_discretized_time_domain, expected_discretized_time_domain).all()
+    assert np.allclose(
+        actual_discretized_time_domain, expected_discretized_time_domain)

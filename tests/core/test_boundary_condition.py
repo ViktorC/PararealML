@@ -11,9 +11,9 @@ def test_dirichlet_boundary_condition():
     assert bc.has_y_condition
     assert not bc.has_d_y_condition
 
-    assert np.isclose(
+    assert np.allclose(
         bc._y_condition(np.ones((2, 1)), 5.),
-        np.full((2, 1), 5.)).all()
+        np.full((2, 1), 5.))
 
     with pytest.raises(RuntimeError):
         bc.d_y_condition(np.ones((2, 1)), 5.)
@@ -26,9 +26,9 @@ def test_neumann_boundary_condition():
     assert not bc.has_y_condition
     assert bc.has_d_y_condition
 
-    assert np.isclose(
+    assert np.allclose(
         bc.d_y_condition(np.ones((7, 3)), 5.),
-        np.zeros((7, 2))).all()
+        np.zeros((7, 2)))
 
     with pytest.raises(RuntimeError):
         bc.y_condition(np.ones((7, 1)), 5.)
@@ -42,13 +42,13 @@ def test_cauchy_boundary_condition():
     assert bc.has_y_condition
     assert bc.has_d_y_condition
 
-    assert np.isclose(
+    assert np.allclose(
         bc.y_condition(np.full((4, 5), 2.), 7.),
-        np.full((4, 5), 14.)).all()
+        np.full((4, 5), 14.))
 
-    assert np.isclose(
+    assert np.allclose(
         bc.d_y_condition(np.full((5, 2), 2.), 5.),
-        np.full((5, 2), -1.)).all()
+        np.full((5, 2), -1.))
 
 
 def test_vectorize_bc_function():

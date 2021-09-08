@@ -78,7 +78,7 @@ def test_discrete_initial_condition_2d_pde():
     )
 
     y = initial_condition.y_0(np.array([1.5, .5]).reshape((1, 2)))
-    assert np.isclose(y, [1.75, 1.5]).all()
+    assert np.allclose(y, [1.75, 1.5])
 
     y_0_vertices = initial_condition.discrete_y_0(True)
     assert y_0_vertices.shape == (3, 3, 2)
@@ -147,9 +147,9 @@ def test_continuous_initial_condition_1d_pde():
     assert np.isclose(
         initial_condition.y_0(np.full((1, 1), np.sqrt(50) + 10.)),
         np.e ** -1)
-    assert np.isclose(initial_condition.y_0(
-        np.full((5, 1), 10.)),
-        np.ones((5, 1))).all()
+    assert np.allclose(
+        initial_condition.y_0(np.full((5, 1), 10.)),
+        np.ones((5, 1)))
 
     y_0_vertices = initial_condition.discrete_y_0(True)
     assert y_0_vertices.shape == (201, 1)
@@ -263,7 +263,7 @@ def test_gaussian_initial_condition_2d_pde():
         [.12394999, .27303472]
     ]
     actual_y_0 = initial_condition.y_0(x_coordinates)
-    assert np.isclose(actual_y_0, expected_y_0).all()
+    assert np.allclose(actual_y_0, expected_y_0)
 
     expected_vertex_discrete_y_0 = [
         [
@@ -277,9 +277,9 @@ def test_gaussian_initial_condition_2d_pde():
         ]
     ]
     actual_vertex_discrete_y_0 = initial_condition.discrete_y_0(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_vertex_discrete_y_0,
-        expected_vertex_discrete_y_0).all()
+        expected_vertex_discrete_y_0)
 
     expected_cell_discrete_y_0 = [
         [
@@ -290,9 +290,9 @@ def test_gaussian_initial_condition_2d_pde():
         ]
     ]
     actual_cell_discrete_y_0 = initial_condition.discrete_y_0(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cell_discrete_y_0,
-        expected_cell_discrete_y_0).all()
+        expected_cell_discrete_y_0)
 
 
 def test_vectorize_ic_function_ode():

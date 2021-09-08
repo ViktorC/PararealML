@@ -25,8 +25,8 @@ def test_data_set_ode():
 
     data_set = DataSet(cp, t_interval, y_0_functions, sampler, n_points)
 
-    assert np.equal(
-        data_set.ic_data, np.array([[10., 20.], [15., 15.], [20., 10.]])).all()
+    assert np.array_equal(
+        data_set.ic_data, np.array([[10., 20.], [15., 15.], [20., 10.]]))
     assert data_set.domain_collocation_data.shape == (200, 1)
     assert data_set.boundary_collocation_data is None
 
@@ -150,16 +150,16 @@ def test_iterator_ode():
         assert batch.domain.t.shape == (2, 1)
         assert batch.domain.x is None
         assert batch.boundary is None
-    assert np.isclose(
-        batches[0].domain.u.numpy(), [[10., 20.], [10., 20.]]).all()
-    assert np.isclose(
-        batches[1].domain.u.numpy(), [[10., 20.], [10., 20.]]).all()
-    assert np.isclose(
-        batches[2].domain.u.numpy(), [[10., 20.], [15., 15.]]).all()
-    assert np.isclose(
-        batches[3].domain.u.numpy(), [[15., 15.], [15., 15.]]).all()
-    assert np.isclose(
-        batches[4].domain.u.numpy(), [[15., 15.], [15., 15.]]).all()
+    assert np.allclose(
+        batches[0].domain.u.numpy(), [[10., 20.], [10., 20.]])
+    assert np.allclose(
+        batches[1].domain.u.numpy(), [[10., 20.], [10., 20.]])
+    assert np.allclose(
+        batches[2].domain.u.numpy(), [[10., 20.], [15., 15.]])
+    assert np.allclose(
+        batches[3].domain.u.numpy(), [[15., 15.], [15., 15.]])
+    assert np.allclose(
+        batches[4].domain.u.numpy(), [[15., 15.], [15., 15.]])
 
 
 def test_iterator_pde():

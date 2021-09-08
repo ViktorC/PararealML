@@ -100,7 +100,7 @@ def test_3pcfdm_gradient():
     ])
     actual_gradient = diff.gradient(y, mesh, x_axis)
 
-    assert np.isclose(actual_gradient, expected_gradient).all()
+    assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_3pcfdm_1d_constrained_gradient():
@@ -126,7 +126,7 @@ def test_3pcfdm_1d_constrained_gradient():
     ])
     actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_gradient, expected_gradient).all()
+    assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_3pcfdm_2d_constrained_gradient():
@@ -168,7 +168,7 @@ def test_3pcfdm_2d_constrained_gradient():
     ])
     actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_gradient, expected_gradient).all()
+    assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_3pcfdm_hessian():
@@ -199,8 +199,7 @@ def test_3pcfdm_hessian():
     ])
     actual_hessian = diff.hessian(y, mesh, x_axis, x_axis)
 
-    assert np.isclose(
-        actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_1d_constrained_hessian():
@@ -223,7 +222,7 @@ def test_3pcfdm_1d_constrained_hessian():
     actual_hessian = diff.hessian(
         y, mesh, x_axis, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_2d_constrained_hessian():
@@ -262,7 +261,7 @@ def test_3pcfdm_2d_constrained_hessian():
     actual_hessian = diff.hessian(
         y, mesh, x_axis, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_mixed_hessian():
@@ -294,7 +293,7 @@ def test_3pcfdm_mixed_hessian():
     ])
     actual_hessian = diff.hessian(y, mesh, x_axis1, x_axis2)
 
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_2d_divergence():
@@ -324,7 +323,7 @@ def test_3pcfdm_2d_divergence():
     ])
     actual_div = diff.divergence(y, mesh)
 
-    assert np.isclose(actual_div, expected_div).all()
+    assert np.allclose(actual_div, expected_div)
 
 
 def test_3pcfdm_3d_divergence():
@@ -402,7 +401,7 @@ def test_3pcfdm_3d_divergence():
     ])
     actual_div = diff.divergence(y, mesh)
 
-    assert np.isclose(actual_div, expected_div).all()
+    assert np.allclose(actual_div, expected_div)
 
 
 def test_3pcfdm_2d_curl():
@@ -432,7 +431,7 @@ def test_3pcfdm_2d_curl():
     ])
     actual_curl = diff.curl(y, mesh)
 
-    assert np.isclose(actual_curl, expected_curl).all()
+    assert np.allclose(actual_curl, expected_curl)
 
 
 def test_3pcfdm_3d_curl():
@@ -512,9 +511,9 @@ def test_3pcfdm_3d_curl():
     actual_curl_1 = diff.curl(y, mesh, 1)
     actual_curl_2 = diff.curl(y, mesh, 2)
 
-    assert np.isclose(actual_curl_0, expected_curl[..., :1]).all()
-    assert np.isclose(actual_curl_1, expected_curl[..., 1:2]).all()
-    assert np.isclose(actual_curl_2, expected_curl[..., 2:]).all()
+    assert np.allclose(actual_curl_0, expected_curl[..., :1])
+    assert np.allclose(actual_curl_1, expected_curl[..., 1:2])
+    assert np.allclose(actual_curl_2, expected_curl[..., 2:])
 
 
 def test_3pcfdm_laplacian():
@@ -544,7 +543,7 @@ def test_3pcfdm_laplacian():
     ])
     actual_laplacian = diff.laplacian(y, mesh)
 
-    assert np.isclose(actual_laplacian, expected_laplacian).all()
+    assert np.allclose(actual_laplacian, expected_laplacian)
 
 
 def test_3pcfdm_anti_laplacian():
@@ -571,9 +570,8 @@ def test_3pcfdm_anti_laplacian():
 
     anti_laplacian = diff.anti_laplacian(laplacian, mesh, tol, y_constraints)
 
-    assert np.isclose(
-        diff.laplacian(anti_laplacian, mesh), laplacian).all()
-    assert np.isclose(anti_laplacian, y).all()
+    assert np.allclose(diff.laplacian(anti_laplacian, mesh), laplacian)
+    assert np.allclose(anti_laplacian, y)
 
 
 def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
@@ -615,10 +613,10 @@ def test_3pcfdm_1d_anti_laplacian_with_derivative_constraints():
     anti_laplacian = diff.anti_laplacian(
         laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
 
-    assert np.isclose(
+    assert np.allclose(
         diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
-        laplacian).all()
-    assert np.isclose(anti_laplacian, y).all()
+        laplacian)
+    assert np.allclose(anti_laplacian, y)
 
 
 def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
@@ -669,10 +667,10 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     anti_laplacian = diff.anti_laplacian(
         laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
 
-    assert np.isclose(
+    assert np.allclose(
         diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
-        laplacian).all()
-    assert np.isclose(anti_laplacian, y).all()
+        laplacian)
+    assert np.allclose(anti_laplacian, y)
 
 
 def test_3pcfdm_polar_gradient():
@@ -706,7 +704,7 @@ def test_3pcfdm_polar_gradient():
     ])
     actual_gradient = diff.gradient(y, mesh, x_axis)
 
-    assert np.isclose(actual_gradient, expected_gradient).all()
+    assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_3pcfdm_constrained_polar_gradient():
@@ -751,7 +749,7 @@ def test_3pcfdm_constrained_polar_gradient():
     ])
     actual_gradient = diff.gradient(y, mesh, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_gradient, expected_gradient).all()
+    assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_3pcfdm_polar_hessian():
@@ -782,8 +780,7 @@ def test_3pcfdm_polar_hessian():
     ])
     actual_hessian = diff.hessian(y, mesh, x_axis, x_axis)
 
-    assert np.isclose(
-        actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_constrained_polar_hessian():
@@ -828,7 +825,7 @@ def test_3pcfdm_constrained_polar_hessian():
     actual_hessian = diff.hessian(
         y, mesh, x_axis, x_axis, boundary_constraints)
 
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_mixed_polar_hessian():
@@ -860,7 +857,7 @@ def test_3pcfdm_mixed_polar_hessian():
     ])
     actual_hessian = diff.hessian(y, mesh, x_axis1, x_axis2)
 
-    assert np.isclose(actual_hessian, expected_hessian).all()
+    assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_3pcfdm_polar_hessian_is_symmetric():
@@ -880,9 +877,9 @@ def test_3pcfdm_polar_hessian_is_symmetric():
         ]
     ])
 
-    assert np.isclose(
+    assert np.allclose(
         diff.hessian(y, mesh, x_axis1, x_axis2),
-        diff.hessian(y, mesh, x_axis2, x_axis1)).all()
+        diff.hessian(y, mesh, x_axis2, x_axis1))
 
 
 def test_3pcfdm_polar_divergence():
@@ -912,7 +909,7 @@ def test_3pcfdm_polar_divergence():
     ])
     actual_div = diff.divergence(y, mesh)
 
-    assert np.isclose(actual_div, expected_div).all()
+    assert np.allclose(actual_div, expected_div)
 
 
 def test_3pcfdm_polar_curl():
@@ -941,7 +938,7 @@ def test_3pcfdm_polar_curl():
     ])
     actual_curl = diff.curl(y, mesh)
 
-    assert np.isclose(actual_curl, expected_curl).all()
+    assert np.allclose(actual_curl, expected_curl)
 
 
 def test_3pcfdm_polar_laplacian():
@@ -977,7 +974,7 @@ def test_3pcfdm_polar_laplacian():
     ])
     actual_laplacian = diff.laplacian(y, mesh)
 
-    assert np.isclose(actual_laplacian, expected_laplacian).all()
+    assert np.allclose(actual_laplacian, expected_laplacian)
 
 
 def test_3pcfdm_polar_laplacian_is_hessian_trace():
@@ -1001,9 +998,7 @@ def test_3pcfdm_polar_laplacian_is_hessian_trace():
     trace = diff.hessian(y, mesh, x_axis1, x_axis1) + \
         diff.hessian(y, mesh, x_axis2, x_axis2)
 
-    assert np.isclose(
-        laplacian,
-        trace).all()
+    assert np.allclose(laplacian, trace)
 
 
 def test_3pcfdm_polar_anti_laplacian():
@@ -1030,9 +1025,8 @@ def test_3pcfdm_polar_anti_laplacian():
 
     anti_laplacian = diff.anti_laplacian(laplacian, mesh, tol, y_constraints)
 
-    assert np.isclose(
-        diff.laplacian(anti_laplacian, mesh), laplacian).all()
-    assert np.isclose(anti_laplacian, y).all()
+    assert np.allclose(diff.laplacian(anti_laplacian, mesh), laplacian)
+    assert np.allclose(anti_laplacian, y)
 
 
 def test_3pcfdm_polar_anti_laplacian_with_derivative_constraints():
@@ -1083,7 +1077,7 @@ def test_3pcfdm_polar_anti_laplacian_with_derivative_constraints():
     anti_laplacian = diff.anti_laplacian(
         laplacian, mesh, tol, y_constraints, derivative_boundary_constraints)
 
-    assert np.isclose(
+    assert np.allclose(
         diff.laplacian(anti_laplacian, mesh, derivative_boundary_constraints),
-        laplacian).all()
-    assert np.isclose(anti_laplacian, y).all()
+        laplacian)
+    assert np.allclose(anti_laplacian, y)

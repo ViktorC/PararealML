@@ -57,8 +57,8 @@ def test_solution_ode():
     assert np.array_equal(solution.t_coordinates, t_coordinates)
     assert np.isclose(solution.d_t, 5.)
     assert solution.vertex_oriented is None
-    assert np.isclose(solution.y(), [[0., 1.], [2., 3.]]).all()
-    assert np.isclose(solution.discrete_y(), [[0., 1.], [2., 3.]]).all()
+    assert np.allclose(solution.y(), [[0., 1.], [2., 3.]])
+    assert np.allclose(solution.discrete_y(), [[0., 1.], [2., 3.]])
 
     other_solutions = [
         Solution(
@@ -79,8 +79,8 @@ def test_solution_ode():
         ],
     ]
     diff = solution.diff(other_solutions)
-    assert np.isclose(diff.matching_time_points, [5., 10.]).all()
-    assert np.isclose(diff.differences, expected_differences).all()
+    assert np.allclose(diff.matching_time_points, [5., 10.])
+    assert np.allclose(diff.differences, expected_differences)
 
 
 def test_solution_pde_with_no_vertex_orientation_defined():
@@ -127,14 +127,14 @@ def test_solution_pde():
         [[1., 2.], [2., 3.]],
         [[7., 8.], [8., 9.]]
     ]
-    assert np.isclose(solution.y(x_coordinates), expected_y).all()
+    assert np.allclose(solution.y(x_coordinates), expected_y)
 
     expected_cell_y = [
         [[1., 2.], [3., 4.]],
         [[7., 8.], [9., 10.]]
     ]
-    assert np.isclose(solution.discrete_y(False), expected_cell_y).all()
-    assert np.isclose(solution.discrete_y(), discrete_y).all()
+    assert np.allclose(solution.discrete_y(False), expected_cell_y)
+    assert np.allclose(solution.discrete_y(), discrete_y)
 
     other_solutions = [
         Solution(
@@ -152,5 +152,5 @@ def test_solution_pde():
         ],
     ]
     diff = solution.diff(other_solutions)
-    assert np.isclose(diff.matching_time_points, [1., 2.]).all()
-    assert np.isclose(diff.differences, expected_differences).all()
+    assert np.allclose(diff.matching_time_points, [1., 2.])
+    assert np.allclose(diff.differences, expected_differences)

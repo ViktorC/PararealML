@@ -45,4 +45,4 @@ def test_initial_value_problem():
     assert ivp.constrained_problem == cp
     assert ivp.t_interval == (0., 2.)
     assert ivp.initial_condition == ic
-    assert np.isclose(ivp.exact_y(0.), [y_0]).all()
+    assert np.allclose(ivp.exact_y(0.), [y_0])

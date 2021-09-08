@@ -47,7 +47,7 @@ def test_cp_1d_pde():
 
     assert cp.differential_equation == diff_eq
     assert cp.mesh == mesh
-    assert np.equal(cp.boundary_conditions, bcs).all()
+    assert np.array_equal(cp.boundary_conditions, bcs)
 
     y_vertex_constraints = cp.static_y_vertex_constraints
     assert y_vertex_constraints.shape == (1,)
@@ -112,9 +112,9 @@ def test_cp_2d_pde():
     assert np.all(y_vertices[0, :-1, 1] == 13.)
     assert np.all(y_vertices[-1, :-1, :] == 13.)
     assert np.all(y_vertices[1:, 0, :] == 13.)
-    assert np.isclose(
+    assert np.allclose(
         y_vertices[:, -1, 0],
-        np.linspace(2., 6., y_vertices.shape[0])).all()
+        np.linspace(2., 6., y_vertices.shape[0]))
     assert np.all(y_vertices[:, -1, 1] == 3.)
 
     y_vertices = np.zeros(cp.y_shape(True))
@@ -130,9 +130,9 @@ def test_cp_2d_pde():
     d_y_0_over_d_x_1 = diff.gradient(
         y_vertices[..., :1], mesh, 1, d_y_boundary_constraints[:, :1])
 
-    assert np.isclose(
+    assert np.allclose(
         d_y_0_over_d_x_1[:, 0, 0],
-        np.linspace(-2., -6., y_vertices.shape[0])).all()
+        np.linspace(-2., -6., y_vertices.shape[0]))
     assert np.all(d_y_0_over_d_x_1[:, 1:, :] == 0.)
 
     d_y_1_over_d_x_0 = diff.gradient(
@@ -160,9 +160,9 @@ def test_cp_2d_pde():
     assert np.all(
         y_boundary_cell_constraints[1, 0][1].mask ==
         [True] * cp.y_cells_shape[0])
-    assert np.isclose(
+    assert np.allclose(
         y_boundary_cell_constraints[1, 0][1].values,
-        np.linspace(2.05, 5.95, cp.y_cells_shape[0])).all()
+        np.linspace(2.05, 5.95, cp.y_cells_shape[0]))
     assert np.all(
         y_boundary_cell_constraints[1, 1][1].mask ==
         [True] * cp.y_cells_shape[0])

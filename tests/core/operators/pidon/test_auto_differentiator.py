@@ -16,7 +16,7 @@ def test_gradient_int_x_axis():
         x_axis = 1
         expected_gradient = [[0., 2.], [0., -5.]]
         actual_gradient = diff.batch_gradient(x, y, x_axis).numpy()
-        assert np.isclose(actual_gradient, expected_gradient).all()
+        assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_gradient_tensor_x_axis():
@@ -30,7 +30,7 @@ def test_gradient_tensor_x_axis():
         x_axis = tf.constant([1, 0, 0], dtype=tf.int32)
         expected_gradient = [[0., -7.], [2., 0.], [4., 0.]]
         actual_gradient = diff.batch_gradient(x, y, x_axis).numpy()
-        assert np.isclose(actual_gradient, expected_gradient).all()
+        assert np.allclose(actual_gradient, expected_gradient)
 
 
 def test_hessian():
@@ -44,7 +44,7 @@ def test_hessian():
         x_axis1 = x_axis2 = 0
         expected_hessian = [[2., 0.], [-8., 0.]]
         actual_hessian = diff.batch_hessian(x, y, x_axis1, x_axis2).numpy()
-        assert np.isclose(actual_hessian, expected_hessian).all()
+        assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_mixed_hessian():
@@ -58,7 +58,7 @@ def test_mixed_hessian():
         x_axis2 = 0
         expected_hessian = [[2.], [2.], [2.]]
         actual_hessian = diff.batch_hessian(x, y, x_axis1, x_axis2).numpy()
-        assert np.isclose(actual_hessian, expected_hessian).all()
+        assert np.allclose(actual_hessian, expected_hessian)
 
 
 def test_divergence():
@@ -71,7 +71,7 @@ def test_divergence():
 
         expected_divergence = [[3.], [-9.]]
         actual_divergence = diff.batch_divergence(x, y).numpy()
-        assert np.isclose(expected_divergence, actual_divergence).all()
+        assert np.allclose(expected_divergence, actual_divergence)
 
 
 def test_curl():
@@ -92,7 +92,7 @@ def test_curl():
         curl_ind = 2
         expected_curl = [[0.], [-3.], [2.]]
         actual_curl = diff.batch_curl(x, y, curl_ind).numpy()
-        assert np.isclose(expected_curl, actual_curl).all()
+        assert np.allclose(expected_curl, actual_curl)
 
 
 def test_laplacian():
@@ -105,4 +105,4 @@ def test_laplacian():
 
         expected_laplacian = [[-4.], [8.]]
         actual_laplacian = diff.batch_laplacian(x, y).numpy()
-        assert np.isclose(expected_laplacian, actual_laplacian).all()
+        assert np.allclose(expected_laplacian, actual_laplacian)

@@ -16,37 +16,37 @@ def test_mesh():
     assert mesh.shape(False) == mesh.cells_shape
 
     for axis in range(2):
-        assert np.equal(
+        assert np.array_equal(
             mesh.vertex_axis_coordinates[axis],
-            np.linspace(*x_intervals[axis], mesh.vertices_shape[axis])).all()
-        assert np.equal(
+            np.linspace(*x_intervals[axis], mesh.vertices_shape[axis]))
+        assert np.array_equal(
             mesh.cell_center_axis_coordinates[axis],
             np.linspace(
                 x_intervals[axis][0] + d_x[axis] / 2.,
                 x_intervals[axis][1] - d_x[axis] / 2.,
-                mesh.cells_shape[axis])).all()
-        assert np.equal(
+                mesh.cells_shape[axis]))
+        assert np.array_equal(
             mesh.axis_coordinates(True)[axis],
-            mesh.vertex_axis_coordinates[axis]).all()
-        assert np.equal(
+            mesh.vertex_axis_coordinates[axis])
+        assert np.array_equal(
             mesh.axis_coordinates(False)[axis],
-            mesh.cell_center_axis_coordinates[axis]).all()
+            mesh.cell_center_axis_coordinates[axis])
 
     all_vertex_x = mesh.all_index_coordinates(True)
-    assert np.isclose(all_vertex_x[2, 3], (-9.8, .6)).all()
+    assert np.allclose(all_vertex_x[2, 3], (-9.8, .6))
 
     all_vertex_x_flattened = mesh.all_index_coordinates(True, True)
-    assert np.equal(
+    assert np.array_equal(
         all_vertex_x[2, 3],
-        all_vertex_x_flattened[2 * 251 + 3]).all()
+        all_vertex_x_flattened[2 * 251 + 3])
 
     all_cell_x = mesh.all_index_coordinates(False)
-    assert np.isclose(all_cell_x[2, 3], (-9.75, .7)).all()
+    assert np.allclose(all_cell_x[2, 3], (-9.75, .7))
 
     all_cell_x_flattened = mesh.all_index_coordinates(False, True)
-    assert np.equal(
+    assert np.array_equal(
         all_cell_x[2, 3],
-        all_cell_x_flattened[2 * 250 + 3]).all()
+        all_cell_x_flattened[2 * 250 + 3])
 
 
 def test_polar_mesh_with_negative_r():
@@ -84,9 +84,9 @@ def test_polar_mesh():
         ])
     ]
     actual_polar_vertex_coordinate_grids = mesh.coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_polar_vertex_coordinate_grids,
-        expected_polar_vertex_coordinate_grids).all()
+        expected_polar_vertex_coordinate_grids)
 
     expected_polar_cell_center_coordinate_grids = [
         np.array([
@@ -99,9 +99,9 @@ def test_polar_mesh():
         ])
     ]
     actual_polar_cell_center_coordinate_grids = mesh.coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_polar_cell_center_coordinate_grids,
-        expected_polar_cell_center_coordinate_grids).all()
+        expected_polar_cell_center_coordinate_grids)
 
     expected_cartesian_vertex_coordinate_grids = [
         np.array([
@@ -117,9 +117,9 @@ def test_polar_mesh():
     ]
     actual_cartesian_vertex_coordinate_grids = \
         mesh.cartesian_coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_vertex_coordinate_grids,
-        expected_cartesian_vertex_coordinate_grids).all()
+        expected_cartesian_vertex_coordinate_grids)
 
     expected_cartesian_cell_center_coordinate_grids = [
         np.array([
@@ -133,9 +133,9 @@ def test_polar_mesh():
     ]
     actual_cartesian_cell_center_coordinate_grids = \
         mesh.cartesian_coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_cell_center_coordinate_grids,
-        expected_cartesian_cell_center_coordinate_grids).all()
+        expected_cartesian_cell_center_coordinate_grids)
 
     expected_vertex_unit_vector_grids = [
         np.array([
@@ -162,9 +162,9 @@ def test_polar_mesh():
         ])
     ]
     actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_vertex_unit_vector_grids,
-        expected_vertex_unit_vector_grids).all()
+        expected_vertex_unit_vector_grids)
 
     expected_cell_center_unit_vector_grids = [
         np.array([
@@ -185,9 +185,9 @@ def test_polar_mesh():
         ])
     ]
     actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cell_center_unit_vector_grids,
-        expected_cell_center_unit_vector_grids).all()
+        expected_cell_center_unit_vector_grids)
 
 
 def test_cylindrical_mesh_with_negative_r():
@@ -254,9 +254,9 @@ def test_cylindrical_mesh():
         ])
     ]
     actual_cylindrical_vertex_coordinate_grids = mesh.coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_cylindrical_vertex_coordinate_grids,
-        expected_cylindrical_vertex_coordinate_grids).all()
+        expected_cylindrical_vertex_coordinate_grids)
 
     expected_cylindrical_cell_center_coordinate_grids = [
         np.array([
@@ -286,9 +286,9 @@ def test_cylindrical_mesh():
     ]
     actual_cylindrical_cell_center_coordinate_grids = \
         mesh.coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cylindrical_cell_center_coordinate_grids,
-        expected_cylindrical_cell_center_coordinate_grids).all()
+        expected_cylindrical_cell_center_coordinate_grids)
 
     expected_cartesian_vertex_coordinate_grids = [
         np.array([
@@ -327,9 +327,9 @@ def test_cylindrical_mesh():
     ]
     actual_cartesian_vertex_coordinate_grids = \
         mesh.cartesian_coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_vertex_coordinate_grids,
-        expected_cartesian_vertex_coordinate_grids).all()
+        expected_cartesian_vertex_coordinate_grids)
 
     expected_cartesian_cell_center_coordinate_grids = [
         np.array([
@@ -359,9 +359,9 @@ def test_cylindrical_mesh():
     ]
     actual_cartesian_cell_center_coordinate_grids = \
         mesh.cartesian_coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_cell_center_coordinate_grids,
-        expected_cartesian_cell_center_coordinate_grids).all()
+        expected_cartesian_cell_center_coordinate_grids)
 
     expected_vertex_unit_vector_grids = [
         np.array([
@@ -471,9 +471,9 @@ def test_cylindrical_mesh():
         ])
     ]
     actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_vertex_unit_vector_grids,
-        expected_vertex_unit_vector_grids).all()
+        expected_vertex_unit_vector_grids)
 
     expected_cell_center_unit_vector_grids = [
         np.array([
@@ -532,9 +532,9 @@ def test_cylindrical_mesh():
         ])
     ]
     actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cell_center_unit_vector_grids,
-        expected_cell_center_unit_vector_grids).all()
+        expected_cell_center_unit_vector_grids)
 
 
 def test_spherical_mesh_with_negative_r():
@@ -615,9 +615,9 @@ def test_spherical_mesh():
         ])
     ]
     actual_spherical_vertex_coordinate_grids = mesh.coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_spherical_vertex_coordinate_grids,
-        expected_spherical_vertex_coordinate_grids).all()
+        expected_spherical_vertex_coordinate_grids)
 
     expected_spherical_cell_center_coordinate_grids = [
         np.array([
@@ -647,9 +647,9 @@ def test_spherical_mesh():
     ]
     actual_spherical_cell_center_coordinate_grids = \
         mesh.coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_spherical_cell_center_coordinate_grids,
-        expected_spherical_cell_center_coordinate_grids).all()
+        expected_spherical_cell_center_coordinate_grids)
 
     expected_cartesian_vertex_coordinate_grids = [
         np.array([
@@ -688,9 +688,9 @@ def test_spherical_mesh():
     ]
     actual_cartesian_vertex_coordinate_grids = \
         mesh.cartesian_coordinate_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_vertex_coordinate_grids,
-        expected_cartesian_vertex_coordinate_grids).all()
+        expected_cartesian_vertex_coordinate_grids)
 
     expected_cartesian_cell_center_coordinate_grids = [
         np.array([
@@ -720,9 +720,9 @@ def test_spherical_mesh():
     ]
     actual_cartesian_cell_center_coordinate_grids = \
         mesh.cartesian_coordinate_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cartesian_cell_center_coordinate_grids,
-        expected_cartesian_cell_center_coordinate_grids).all()
+        expected_cartesian_cell_center_coordinate_grids)
 
     expected_vertex_unit_vector_grids = [
         np.array([
@@ -832,9 +832,9 @@ def test_spherical_mesh():
         ])
     ]
     actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
-    assert np.isclose(
+    assert np.allclose(
         actual_vertex_unit_vector_grids,
-        expected_vertex_unit_vector_grids).all()
+        expected_vertex_unit_vector_grids)
 
     expected_cell_center_unit_vector_grids = [
         np.array([
@@ -901,44 +901,44 @@ def test_spherical_mesh():
         ])
     ]
     actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
-    assert np.isclose(
+    assert np.allclose(
         actual_cell_center_unit_vector_grids,
-        expected_cell_center_unit_vector_grids).all()
+        expected_cell_center_unit_vector_grids)
 
 
 def test_to_cartesian_coordinates():
     polar_coordinates = [1., np.pi / 2.]
-    assert np.isclose(
+    assert np.allclose(
         to_cartesian_coordinates(polar_coordinates, CoordinateSystem.POLAR),
-        [0., 1.]).all()
+        [0., 1.])
 
     cylindrical_coordinates = [1., -np.pi / 2., 1.]
-    assert np.isclose(
+    assert np.allclose(
         to_cartesian_coordinates(
             cylindrical_coordinates, CoordinateSystem.CYLINDRICAL),
-        [0., -1., 1.]).all()
+        [0., -1., 1.])
 
     spherical_coordinates = [2., np.pi, np.pi / 2.]
-    assert np.isclose(
+    assert np.allclose(
         to_cartesian_coordinates(
             spherical_coordinates, CoordinateSystem.SPHERICAL),
-        [-2., 0., 0.]).all()
+        [-2., 0., 0.])
 
 
 def test_from_cartesian_coordinates():
     expected_polar_coordinates = [1., np.pi / 2.]
-    assert np.isclose(
+    assert np.allclose(
         from_cartesian_coordinates([0., 1.], CoordinateSystem.POLAR),
-        expected_polar_coordinates).all()
+        expected_polar_coordinates)
 
     expected_cylindrical_coordinates = [1., -np.pi / 2., 1.]
-    assert np.isclose(
+    assert np.allclose(
         from_cartesian_coordinates(
             [0., -1., 1.], CoordinateSystem.CYLINDRICAL),
-        expected_cylindrical_coordinates).all()
+        expected_cylindrical_coordinates)
 
     expected_spherical_coordinates = [2., np.pi, np.pi / 2.]
-    assert np.isclose(
+    assert np.allclose(
         from_cartesian_coordinates(
             [-2., 0., 0.], CoordinateSystem.SPHERICAL),
-        expected_spherical_coordinates).all()
+        expected_spherical_coordinates)
