@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
@@ -16,6 +18,25 @@ from pararealml.core.operators.ode.ode_operator import ODEOperator
 from pararealml.core.operators.auto_regression.auto_regression_operator \
     import AutoRegressionOperator
 from pararealml.utils.rand import set_random_seed
+
+
+def test_auto_regression_operator_with_wrong_perturbed_initial_value_shape():
+    set_random_seed(0)
+
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+    oracle = ODEOperator('DOP853', .001)
+    ml_op = AutoRegressionOperator(2.5, True)
+
+    with pytest.raises(ValueError):
+        ml_op.train(
+            ivp,
+            oracle,
+            LinearRegression(),
+            25,
+            lambda t, y: np.array([1.]))
 
 
 def test_auto_regression_operator_on_ode():
@@ -35,8 +56,7 @@ def test_auto_regression_operator_on_ode():
         oracle,
         RandomForestRegressor(),
         25,
-        noise_sd=.01,
-        relative_noise=True)
+        lambda t, y: y + np.random.normal(0., .01, size=y.shape))
     ml_solution = ml_op.solve(ivp)
 
     assert ml_solution.vertex_oriented
@@ -72,7 +92,12 @@ def test_auto_regression_operator_on_pde():
     ref_solution = oracle.solve(ivp)
 
     ml_op = AutoRegressionOperator(2.5, True)
-    ml_op.train(ivp, oracle, RandomForestRegressor(), 20, noise_sd=(0., .1))
+    ml_op.train(
+        ivp,
+        oracle,
+        RandomForestRegressor(),
+        20,
+        lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))
     ml_solution = ml_op.solve(ivp)
 
     assert ml_solution.vertex_oriented

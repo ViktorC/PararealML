@@ -9,7 +9,7 @@ from pararealml.utils.rand import SEEDS, set_random_seed
 set_random_seed(SEEDS[0])
 
 diff_eq = CahnHilliardEquation(2, 1., .01)
-mesh = Mesh([(0., 50.), (0., 50.)], [.5, .5])
+mesh = Mesh([(0., 50.), (0., 50.)], [1., 1.])
 bcs = [
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 2)), is_static=True),
@@ -36,8 +36,13 @@ fdm_sol.plot('cahn_hilliard_fdm', n_images=10, v_min=v_min, v_max=v_max)
 ar_op.train(
     ivp,
     fdm_op,
-    RandomForestRegressor(max_depth=24, n_estimators=240, n_jobs=6, verbose=1),
+    RandomForestRegressor(
+        max_depth=24,
+        n_estimators=240,
+        n_jobs=4,
+        verbose=True),
     10,
-    (0., .01))
+    lambda t, y: y + np.random.normal(0., t / 375., size=y.shape)
+)
 ar_op.solve(ivp).plot(
     'cahn_hilliard_ar', n_images=10, v_min=v_min, v_max=v_max)
