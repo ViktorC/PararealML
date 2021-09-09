@@ -165,7 +165,6 @@ class DataSet:
         diff_eq = self._cp.differential_equation
         x_dimension = diff_eq.x_dimension
         y_dimension = diff_eq.y_dimension
-
         if not x_dimension:
             return None
 
@@ -179,7 +178,6 @@ class DataSet:
         y = []
         d_y_over_d_n = []
         axes = []
-
         for axis, (bc_pair, boundary_points_pair) in enumerate(
                 zip(self._cp.boundary_conditions, all_boundary_points)):
             for bc, boundary_points in zip(bc_pair, boundary_points_pair):
@@ -189,58 +187,26 @@ class DataSet:
                 for i in range(boundary_points.t.shape[0]):
                     t_i = boundary_points.t[i]
                     x_i = boundary_points.x[i:i + 1]
+                    y_i = bc.y_condition(x_i, t_i)[0] \
+                        if bc.has_y_condition else [None] * y_dimension
+                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i)[0] \
+                        if bc.has_d_y_condition else [None] * y_dimension
 
                     t.append(t_i)
                     x.append(x_i[0])
                     axes.append([axis])
-
-                    y_i = bc.y_condition(x_i, t_i)[0] \
-                        if bc.has_y_condition else [None] * y_dimension
                     y.append(y_i)
-
-                    d_y_over_d_n_i = bc.d_y_condition(x_i, t_i)[0] \
-                        if bc.has_d_y_condition else [None] * y_dimension
                     d_y_over_d_n.append(d_y_over_d_n_i)
 
-        boundary_collocation_data = np.concatenate(
-            (np.array(t),
-             np.array(x),
-             np.array(y),
-             np.array(d_y_over_d_n),
-             np.array(axes)),
-            axis=1)
+        boundary_collocation_data = np.concatenate([
+                np.array(t),
+                np.array(x),
+                np.array(y),
+                np.array(d_y_over_d_n),
+                np.array(axes)
+            ], axis=1)
         boundary_collocation_data.setflags(write=False)
         return boundary_collocation_data
-
-
-class DomainDataBatch(NamedTuple):
-    """
-    A container for domain batch data.
-    """
-    u: tf.Tensor
-    t: tf.Tensor
-    x: Optional[tf.Tensor]
-
-
-class BoundaryDataBatch(NamedTuple):
-    """
-    A container for boundary batch data.
-    """
-    u: tf.Tensor
-    t: tf.Tensor
-    x: tf.Tensor
-    y: tf.Tensor
-    d_y_over_d_n: tf.Tensor
-    axes: tf.Tensor
-
-
-class DataBatch(NamedTuple):
-    """
-    A container for a data batch including domain data and optionally boundary
-    data.
-    """
-    domain: DomainDataBatch
-    boundary: Optional[BoundaryDataBatch]
 
 
 class DataSetIterator(Iterator):
@@ -263,18 +229,6 @@ class DataSetIterator(Iterator):
         :param shuffle: whether to shuffle the Cartesian product of the initial
             condition data and collocation data.
         """
-        if domain_batch_size <= 0:
-            raise ValueError(
-                f'domain batch size ({domain_batch_size}) must be greater '
-                f'than 0')
-        if boundary_batch_size < 0:
-            raise ValueError(
-                f'boundary batch size ({boundary_batch_size}) must be '
-                f'non-negative')
-        if not data_set.constrained_problem.differential_equation.x_dimension \
-                and boundary_batch_size > 0:
-            raise ValueError('boundary batch size must be 0 for ODEs')
-
         self._data_set = data_set
         self._domain_batch_size = domain_batch_size
         self._boundary_batch_size = boundary_batch_size
@@ -284,53 +238,17 @@ class DataSetIterator(Iterator):
         self._boundary_data_size = \
             0 if data_set.boundary_collocation_data is None \
             else data_set.boundary_collocation_data.shape[0]
-
         self._total_domain_data_size = \
             self._ic_data_size * self._domain_data_size
         self._total_boundary_data_size = \
             self._ic_data_size * self._boundary_data_size
+        self._validate_batch_sizes()
 
-        if self._total_domain_data_size % domain_batch_size != 0:
-            raise ValueError(
-                f'domain batch size ({domain_batch_size}) must be a divisor '
-                f'of total domain data size ({self._total_domain_data_size})')
-        if boundary_batch_size:
-            if self._total_boundary_data_size % boundary_batch_size != 0:
-                raise ValueError(
-                    f'boundary batch size ({boundary_batch_size}) must be a '
-                    'divisor of total boundary data size '
-                    f'({self._total_boundary_data_size})')
-            n_domain_batches = self._total_domain_data_size / domain_batch_size
-            n_boundary_batches = \
-                self._total_boundary_data_size / boundary_batch_size
-            if n_domain_batches != n_boundary_batches:
-                raise ValueError(
-                    f'number of domain batches ({n_domain_batches}) must '
-                    f'match number of boundary batches ({n_boundary_batches})')
-
-        ic_data_indices = np.arange(0, self._ic_data_size)
-
-        domain_ic_data_indices = np.repeat(
-            ic_data_indices, self._domain_data_size, axis=0)
-        domain_collocation_data_indices = np.tile(
-            np.arange(0, self._domain_data_size), (self._ic_data_size,))
-        self._domain_indices = np.stack(
-            (domain_ic_data_indices, domain_collocation_data_indices), axis=1)
-        if shuffle:
-            np.random.shuffle(self._domain_indices)
-
-        if self._boundary_data_size:
-            boundary_ic_data_indices = np.repeat(
-                ic_data_indices, self._boundary_data_size, axis=0)
-            boundary_collocation_data_indices = np.tile(np.arange(
-                0, self._boundary_data_size), (self._ic_data_size,))
-            self._boundary_indices = np.stack(
-                (boundary_ic_data_indices, boundary_collocation_data_indices),
-                axis=1)
-            if shuffle:
-                np.random.shuffle(self._boundary_indices)
-        else:
-            self._boundary_indices = None
+        self._domain_indices = self._create_cartesian_product_indices(
+            self._ic_data_size, self._domain_data_size, shuffle)
+        self._boundary_indices = self._create_cartesian_product_indices(
+            self._ic_data_size, self._boundary_data_size, shuffle) \
+            if self._boundary_data_size else None
 
         self._domain_counter = 0
         self._boundary_counter = 0
@@ -344,8 +262,9 @@ class DataSetIterator(Iterator):
                 self._boundary_counter >= self._total_boundary_data_size:
             raise StopIteration
 
-        batch = self._get_batch(
-            self._domain_batch_size, self._boundary_batch_size)
+        batch = DataBatch(
+            self._get_domain_batch(self._domain_batch_size),
+            self._get_boundary_batch(self._boundary_batch_size))
 
         self._domain_counter += self._domain_batch_size
         self._boundary_counter += self._boundary_batch_size
@@ -373,8 +292,9 @@ class DataSetIterator(Iterator):
         iterator is built on top of.
         """
         self.reset()
-        return self._get_batch(
-            self._total_domain_data_size, self._total_boundary_data_size)
+        return DataBatch(
+            self._get_domain_batch(self._total_domain_data_size),
+            self._get_boundary_batch(self._total_boundary_data_size))
 
     def reset(self):
         """
@@ -383,77 +303,177 @@ class DataSetIterator(Iterator):
         self._domain_counter = 0
         self._boundary_counter = 0
 
-    def _get_batch(
-            self,
-            domain_batch_size: int,
-            boundary_batch_size: int) -> DataBatch:
+    def _validate_batch_sizes(self):
         """
-        Returns a batch of the specified domain data size and boundary data
-        size.
+        Validates the domain and boundary batch sizes by raising errors if they
+        are invalid.
+        """
+        if self._domain_batch_size <= 0:
+            raise ValueError(
+                f'domain batch size ({self._domain_batch_size}) must be '
+                'greater than 0')
+        if self._boundary_batch_size < 0:
+            raise ValueError(
+                f'boundary batch size ({self._boundary_batch_size}) must be '
+                f'non-negative')
+
+        diff_eq = self._data_set.constrained_problem.differential_equation
+        if not diff_eq.x_dimension and self._boundary_batch_size:
+            raise ValueError('boundary batch size must be 0 for ODEs')
+
+        if self._total_domain_data_size % self._domain_batch_size != 0:
+            raise ValueError(
+                f'domain batch size ({self._domain_batch_size}) must be a '
+                'divisor of total domain data size '
+                f'({self._total_domain_data_size})')
+
+        if self._boundary_batch_size:
+            if self._total_boundary_data_size % self._boundary_batch_size != 0:
+                raise ValueError(
+                    f'boundary batch size ({self._boundary_batch_size}) must '
+                    f'be a divisor of total boundary data size '
+                    f'({self._total_boundary_data_size})')
+
+            n_domain_batches = \
+                self._total_domain_data_size / self._domain_batch_size
+            n_boundary_batches = \
+                self._total_boundary_data_size / self._boundary_batch_size
+            if n_domain_batches != n_boundary_batches:
+                raise ValueError(
+                    f'number of domain batches ({n_domain_batches}) must '
+                    f'match number of boundary batches ({n_boundary_batches})')
+
+    def _get_domain_batch(self, domain_batch_size: int) -> DomainDataBatch:
+        """
+        Returns a domain data batch of the specified size.
 
         :param domain_batch_size: the domain data batch size
-        :param boundary_batch_size: the boundary data batch size
-        :return: the data batch
+        :return: the domain data batch
         """
         diff_eq = self._data_set.constrained_problem.differential_equation
-        x_dimension = diff_eq.x_dimension
-        y_dimension = diff_eq.y_dimension
-
         domain_indices = self._domain_indices[
-                self._domain_counter:
-                self._domain_counter + domain_batch_size,
-                :]
+            self._domain_counter:self._domain_counter + domain_batch_size,
+            :
+        ]
         domain_ic_data_indices = domain_indices[:, 0]
         domain_collocation_data_indices = domain_indices[:, 1]
-        domain_ic_data = \
-            self._data_set.ic_data[domain_ic_data_indices]
+        domain_ic_data = self._data_set.ic_data[domain_ic_data_indices]
         domain_collocation_data = self._data_set.domain_collocation_data[
-            domain_collocation_data_indices]
+            domain_collocation_data_indices
+        ]
 
-        domain_data = DomainDataBatch(
-            tf.convert_to_tensor(domain_ic_data, dtype=tf.float32),
-            tf.convert_to_tensor(
-                domain_collocation_data[:, :1], dtype=tf.float32),
-            tf.convert_to_tensor(
-                domain_collocation_data[:, 1:], dtype=tf.float32)
-            if x_dimension else None)
+        return DomainDataBatch(
+            tf.convert_to_tensor(domain_ic_data, tf.float32),
+            tf.convert_to_tensor(domain_collocation_data[:, :1], tf.float32),
+            tf.convert_to_tensor(domain_collocation_data[:, 1:], tf.float32)
+            if diff_eq.x_dimension else None)
 
+    def _get_boundary_batch(
+            self,
+            boundary_batch_size: int) -> Optional[BoundaryDataBatch]:
+        """
+        Returns a boundary data batch of the specified size.
+
+        :param boundary_batch_size: the boundary data batch size
+        :return: the boundary data batch
+        """
         if boundary_batch_size == 0:
-            boundary_data = None
-        else:
-            boundary_indices = self._boundary_indices[
-                    self._boundary_counter:
-                    self._boundary_counter + boundary_batch_size,
-                    :]
-            boundary_ic_data_indices = boundary_indices[:, 0]
-            boundary_collocation_data_indices = boundary_indices[:, 1]
-            boundary_ic_data = self._data_set.ic_data[boundary_ic_data_indices]
-            boundary_collocation_data = \
-                self._data_set.boundary_collocation_data[
-                    boundary_collocation_data_indices]
+            return None
 
-            x_offset = 1
-            y_offset = x_offset + x_dimension
-            d_y_over_d_n_offset = y_offset + y_dimension
-            axes_offset = d_y_over_d_n_offset + y_dimension
+        boundary_indices = self._boundary_indices[
+            self._boundary_counter:
+            self._boundary_counter + boundary_batch_size,
+            :
+        ]
+        boundary_ic_data_indices = boundary_indices[:, 0]
+        boundary_collocation_data_indices = boundary_indices[:, 1]
+        boundary_ic_data = self._data_set.ic_data[boundary_ic_data_indices]
+        boundary_collocation_data = self._data_set.boundary_collocation_data[
+            boundary_collocation_data_indices
+        ]
 
-            boundary_data = BoundaryDataBatch(
-                tf.convert_to_tensor(boundary_ic_data, dtype=tf.float32),
-                tf.convert_to_tensor(
-                    boundary_collocation_data[:, :x_offset], dtype=tf.float32),
-                tf.convert_to_tensor(
-                    boundary_collocation_data[:, x_offset:y_offset],
-                    dtype=tf.float32),
-                tf.convert_to_tensor(
-                    boundary_collocation_data[:, y_offset:d_y_over_d_n_offset],
-                    dtype=tf.float32),
-                tf.convert_to_tensor(
-                    boundary_collocation_data[
-                        :,
-                        d_y_over_d_n_offset:axes_offset],
-                    dtype=tf.float32),
-                tf.convert_to_tensor(
-                    boundary_collocation_data[:, axes_offset],
-                    dtype=tf.int32))
+        diff_eq = self._data_set.constrained_problem.differential_equation
+        x_offset = 1
+        y_offset = x_offset + diff_eq.x_dimension
+        d_y_over_d_n_offset = y_offset + diff_eq.y_dimension
+        axes_offset = d_y_over_d_n_offset + diff_eq.y_dimension
 
-        return DataBatch(domain_data, boundary_data)
+        return BoundaryDataBatch(
+            tf.convert_to_tensor(boundary_ic_data, tf.float32),
+            tf.convert_to_tensor(
+                boundary_collocation_data[:, :x_offset], tf.float32),
+            tf.convert_to_tensor(
+                boundary_collocation_data[:, x_offset:y_offset], tf.float32),
+            tf.convert_to_tensor(
+                boundary_collocation_data[:, y_offset:d_y_over_d_n_offset],
+                tf.float32),
+            tf.convert_to_tensor(
+                boundary_collocation_data[:, d_y_over_d_n_offset:axes_offset],
+                tf.float32),
+            tf.convert_to_tensor(
+                boundary_collocation_data[:, axes_offset], tf.int32))
+
+    @staticmethod
+    def _create_cartesian_product_indices(
+            first_set_size: int,
+            second_set_size: int,
+            shuffle: bool) -> np.ndarray:
+        """
+        Creates a 2D array of indices for the Cartesian product of two sets of
+        data rows.
+
+        The first column of the returned array is the first set's row indices
+        while the second column is the second set's row indices.
+
+        :param first_set_size: the number of rows in the first set
+        :param second_set_size: the number of rows in the second set
+        :param shuffle: whether to shuffle the indices
+        :return: a 2D array with two columns of data row indices
+        """
+        first_set_indices = np.arange(0, first_set_size)
+        second_set_indices = np.arange(0, second_set_size)
+        cartesian_product_first_set_indices = np.repeat(
+            first_set_indices,
+            second_set_size,
+            axis=0)
+        cartesian_product_second_set_indices = np.tile(
+            second_set_indices,
+            (first_set_size,))
+        cartesian_product_indices = np.stack(
+            (cartesian_product_first_set_indices,
+             cartesian_product_second_set_indices),
+            axis=1)
+
+        if shuffle:
+            np.random.shuffle(cartesian_product_indices)
+        return cartesian_product_indices
+
+
+class DataBatch(NamedTuple):
+    """
+    A container for a data batch including domain data and optionally boundary
+    data.
+    """
+    domain: DomainDataBatch
+    boundary: Optional[BoundaryDataBatch]
+
+
+class DomainDataBatch(NamedTuple):
+    """
+    A container for domain batch data.
+    """
+    u: tf.Tensor
+    t: tf.Tensor
+    x: Optional[tf.Tensor]
+
+
+class BoundaryDataBatch(NamedTuple):
+    """
+    A container for boundary batch data.
+    """
+    u: tf.Tensor
+    t: tf.Tensor
+    x: tf.Tensor
+    y: tf.Tensor
+    d_y_over_d_n: tf.Tensor
+    axes: tf.Tensor
