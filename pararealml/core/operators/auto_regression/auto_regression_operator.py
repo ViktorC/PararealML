@@ -244,7 +244,8 @@ class AutoRegressionOperator(Operator):
         :return: the training and test losses
         """
         if not 0. <= test_size < 1.:
-            raise ValueError(f'test size ({test_size}) must be between 0 and 1')
+            raise ValueError(
+                f'test size ({test_size}) must be between 0 and 1')
         train_size = 1. - test_size
 
         x_train, x_test, y_train, y_test = train_test_split(
