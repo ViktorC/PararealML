@@ -70,8 +70,8 @@ The `solve` method of every operator returns an instance of the `Solution` class
 ## Visualisation
 The visualisation of solutions is facilitated by the `plot` method of the `Solution` class that generates plots depending on the type of differential equation solved.
 
-#### Ordinary differential equations
-The solutions of ordinary differential equations are plotted as y-against-t plots. In the case of ordinary differential equations, the phase space plot is generated as well.
+### Ordinary differential equations
+The solutions of ordinary differential equations are plotted as y-against-t plots. In the case of ordinary differential equation system with two or three equations, the phase space plot is generated as well.
 
 <p float="left">
   <img src="https://user-images.githubusercontent.com/12938964/91643889-07983700-ea2f-11ea-8553-573a16d96d5f.jpg" alt="lorenz" width="400"/>
@@ -83,12 +83,11 @@ The solutions of n-body simulations are plotted using a special 2D or 3D scatter
 
 <img src="https://user-images.githubusercontent.com/12938964/91643717-8f7d4180-ea2d-11ea-834b-7f64e8347557.gif" alt="n_body" width="400"/>
 
-#### Partial differential equations in one spatial dimension
+### Partial differential equations
 The solutions of 1D partial differential equations are visualised as animated line plots.
 
 <img src="https://user-images.githubusercontent.com/12938964/91645244-6ebbe880-ea3b-11ea-925d-54b7a3e0bfee.gif" alt="diffusion_1d" width="400"/>
 
-#### Partial differential equations in two spatial dimensions
 On the other hand, the solutions of 2D partial differential equations can be visualised in multiple different ways. The first one of these is a 3D surface plot.
 
 <img src="https://user-images.githubusercontent.com/12938964/91648397-fc5cff80-ea5e-11ea-887d-187523ae701b.gif" alt="wave_2d" width="400"/>
@@ -101,8 +100,7 @@ Finally, 2D vector fields can be visualised as 2D quiver plots.
 
 <img src="https://user-images.githubusercontent.com/12938964/96521862-231f0180-126a-11eb-948f-718117b63895.gif" alt="shallow_water_2d" width="400"/>
 
-#### Partial differential equations in three spatial dimensions
-The solutions of partial differential equation in three spatial dimensions can be visualised in two different ways. The first one of these is 2D contour plots of slices of the solution along an arbitrary axis at arbitrary points.
+Finally, the solutions of partial differential equation in three spatial dimensions can be visualised in two different ways. The first one of these is 2D contour plots of slices of the solution along an arbitrary axis at arbitrary points.
 
 <p float="left">
   <img src="https://user-images.githubusercontent.com/12938964/97097322-369ce480-163d-11eb-9ccc-7505bca2b2b2.gif" alt="cahn_hilliard_slice_0" width="266"/>
