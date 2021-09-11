@@ -3,7 +3,7 @@ from typing import Callable, Sequence, NamedTuple, Optional
 import tensorflow as tf
 
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.operators.pidon.auto_differentiator import \
+from pararealml.core.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
 from pararealml.core.operators.symbol_mapper import SymbolMapper
 

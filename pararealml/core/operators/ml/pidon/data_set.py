@@ -10,7 +10,7 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_condition import \
     VectorizedInitialConditionFunction
 from pararealml.core.initial_value_problem import TemporalDomainInterval
-from pararealml.core.operators.pidon.collocation_point_sampler import \
+from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     CollocationPointSampler
 
 

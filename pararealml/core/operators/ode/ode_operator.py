@@ -23,7 +23,7 @@ class ODEOperator(Operator):
         :param d_t: the temporal step size to use
         """
         if d_t <= 0.:
-            raise ValueError(f'time step size ({d_t}) must be greater than 0')
+            raise ValueError('time step size must be greater than 0')
 
         self._method = method
         self._d_t = d_t

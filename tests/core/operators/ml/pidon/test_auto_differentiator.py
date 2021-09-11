@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from pararealml.core.operators.pidon.auto_differentiator import \
+from pararealml.core.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
 
 

@@ -3,7 +3,7 @@ from tensorflow import optimizers
 
 from pararealml import *
 from pararealml.core.operators.fdm import *
-from pararealml.core.operators.pidon import *
+from pararealml.core.operators.ml.pidon import *
 
 diff_eq = DiffusionEquation(1, .2)
 mesh = Mesh([(0., .5)], (.025,))

@@ -1,6 +1,6 @@
 import numpy as np
 
-from pararealml.core.operators.pidon.collocation_point_sampler import \
+from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
 
 

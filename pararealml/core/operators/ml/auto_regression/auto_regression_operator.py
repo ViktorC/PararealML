@@ -1,15 +1,15 @@
 from typing import Union, Tuple, Callable, Optional, Protocol
 
 import numpy as np
-
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.operator import Operator, discretize_time_domain
+from pararealml.core.operators.ml.auto_regression.sklearn_keras_regressor \
+    import SKLearnKerasRegressor
 from pararealml.core.solution import Solution
 
 
@@ -19,7 +19,7 @@ class SKLearnRegressor(Protocol):
     def score(self, x, y, sample_weight=None): ...
 
 
-RegressionModel = Union[SKLearnRegressor, KerasRegressor]
+RegressionModel = Union[SKLearnRegressor, SKLearnKerasRegressor]
 
 
 class AutoRegressionOperator(Operator):
@@ -39,7 +39,7 @@ class AutoRegressionOperator(Operator):
             meshes
         """
         if d_t <= 0.:
-            raise ValueError(f'time step size ({d_t}) must be greater than 0')
+            raise ValueError('time step size must be greater than 0')
 
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
@@ -86,8 +86,8 @@ class AutoRegressionOperator(Operator):
             .reshape((-1, diff_eq.y_dimension))
 
         for i, t_i in enumerate(t[:-1]):
-            features[:, diff_eq.x_dimension] = t_i
-            features[:, 1 + diff_eq.x_dimension:] = y_i.reshape((1, -1))
+            features[:, -diff_eq.x_dimension - 1] = t_i
+            features[:, :-diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
             y_i = self._model.predict(features)
             y[i, ...] = y_i.reshape(y_shape)
 
@@ -141,19 +141,22 @@ class AutoRegressionOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
-        n_spatial_points = np.prod(cp.mesh.shape(self._vertex_oriented)) \
-            if diff_eq.x_dimension else 1
-
-        t = discretize_time_domain(ivp.t_interval, self._d_t)
+        t = discretize_time_domain(ivp.t_interval, self._d_t)[:-1]
         y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
 
-        x = np.tile(self._create_input_batch(cp, t[:-1]), (iterations, 1))
-        y = np.empty((x.shape[0], diff_eq.y_dimension))
+        single_time_point_inputs = self._create_input_placeholder(cp)
+        n_spatial_points = single_time_point_inputs.shape[0]
+        single_epoch_inputs = np.tile(single_time_point_inputs, (len(t), 1))
+        single_epoch_inputs[:, -diff_eq.x_dimension - 1] = \
+            np.repeat(t, n_spatial_points)
+
+        inputs = np.tile(single_epoch_inputs, (iterations, 1))
+        targets = np.empty((inputs.shape[0], diff_eq.y_dimension))
         for epoch in range(iterations):
-            offset = epoch * n_spatial_points * (len(t) - 1)
+            offset = epoch * n_spatial_points * len(t)
             y_i = y_0
 
-            for i, t_i in enumerate(t[:-1]):
+            for i, t_i in enumerate(t):
                 perturbed_y_i = perturbation_function(t_i, y_i)
                 if perturbed_y_i.shape != y_i.shape:
                     raise ValueError(
@@ -162,9 +165,9 @@ class AutoRegressionOperator(Operator):
 
                 y_i = perturbed_y_i
                 t_offset = offset + i * n_spatial_points
-                x[
+                inputs[
                     t_offset:t_offset + n_spatial_points,
-                    diff_eq.x_dimension + 1:
+                    :-diff_eq.x_dimension - 1
                 ] = y_i.reshape((1, -1))
 
                 sub_ivp = InitialValueProblem(
@@ -173,11 +176,11 @@ class AutoRegressionOperator(Operator):
                     DiscreteInitialCondition(cp, y_i, self._vertex_oriented))
                 solution = oracle.solve(sub_ivp)
                 y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
-                y[t_offset:t_offset + n_spatial_points, :] = \
+                targets[t_offset:t_offset + n_spatial_points, :] = \
                     y_i.reshape((-1, diff_eq.y_dimension))
 
         train_score, test_score = \
-            self._train_model(model, x, y, test_size, score_func)
+            self._train_model(model, inputs, targets, test_size, score_func)
         self._model = model
 
         return train_score, test_score
@@ -200,27 +203,7 @@ class AutoRegressionOperator(Operator):
         x = cp.mesh.all_index_coordinates(self._vertex_oriented, flatten=True)
         t = np.empty((len(x), 1))
         y = np.empty((len(x), diff_eq.y_dimension * len(x)))
-        return np.hstack([x, t, y])
-
-    def _create_input_batch(
-            self,
-            cp: ConstrainedProblem,
-            t: np.ndarray) -> np.ndarray:
-        """
-        Creates a 2D array of inputs with a shape of
-        (n_mesh_points * n_time_points, x_dimension + 1).
-
-        :param cp: the constrained problem to base the inputs on
-        :param t: the discretized time domain of the IVP to create inputs for
-        :return: a batch of all inputs
-        """
-        input_placeholder = self._create_input_placeholder(cp)
-        n_mesh_points = input_placeholder.shape[0]
-
-        batch = np.tile(input_placeholder, (len(t), 1))
-        batch[:, cp.differential_equation.x_dimension] = \
-            np.repeat(t, n_mesh_points)
-        return batch
+        return np.hstack([y, t, x])
 
     @staticmethod
     def _train_model(

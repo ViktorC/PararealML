@@ -3,6 +3,7 @@ from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.optimizers import Optimizer
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.initial_condition import \
@@ -10,11 +11,11 @@ from pararealml.core.initial_condition import \
 from pararealml.core.initial_value_problem import InitialValueProblem, \
     TemporalDomainInterval
 from pararealml.core.operator import Operator, discretize_time_domain
-from pararealml.core.operators.pidon.collocation_point_sampler import \
+from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     CollocationPointSampler
-from pararealml.core.operators.pidon.data_set import DataSet
-from pararealml.core.operators.pidon.loss import Loss
-from pararealml.core.operators.pidon.pi_deeponet import PIDeepONet
+from pararealml.core.operators.ml.pidon.data_set import DataSet
+from pararealml.core.operators.ml.pidon.loss import Loss
+from pararealml.core.operators.ml.pidon.pi_deeponet import PIDeepONet
 from pararealml.core.solution import Solution
 
 
@@ -38,8 +39,8 @@ class ModelArgs(NamedTuple):
     latent_output_size: int
     branch_hidden_layer_sizes: Optional[List[int]] = None
     trunk_hidden_layer_sizes: Optional[List[int]] = None
-    branch_initialization: Optional[str] = None
-    trunk_initialization: Optional[str] = None
+    branch_initialization: str = 'glorot_uniform'
+    trunk_initialization: str = 'glorot_uniform'
     branch_activation: Optional[str] = 'tanh'
     trunk_activation: Optional[str] = 'tanh'
 
@@ -49,7 +50,7 @@ class OptimizationArgs(NamedTuple):
     A container class for arguments pertaining to the training of a PIDON
     model.
     """
-    optimizer: Union[str, Dict[str, Any]]
+    optimizer: Union[str, Dict[str, Any], Optimizer]
     epochs: int
     diff_eq_loss_weight: float = 1.
     ic_loss_weight: float = 1.
@@ -91,7 +92,7 @@ class PIDONOperator(Operator):
             meshes
         """
         if d_t <= 0.:
-            raise ValueError(f'time step size ({d_t}) must be greater than 0')
+            raise ValueError('time step size must be greater than 0')
 
         self._sampler = sampler
         self._d_t = d_t
@@ -147,7 +148,7 @@ class PIDONOperator(Operator):
             t_tensor = tf.tile(
                 tf.convert_to_tensor([[t_i]], dtype=tf.float32),
                 (u_tensor.shape[0], 1))
-            y_tensor = self._model.predict(u_tensor, t_tensor, x_tensor)
+            y_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
         return Solution(
@@ -216,19 +217,15 @@ class PIDONOperator(Operator):
             test_data = None
 
         model = PIDeepONet(cp, **model_args._asdict())
-        model.init()
-
         loss_histories = model.fit(
             training_data=training_data,
             test_data=test_data,
             **optimization_args._asdict())
-
         if secondary_optimization_args:
             secondary_losses = model.fit_with_lbfgs(
                 training_data=training_data,
                 test_data=test_data,
                 **secondary_optimization_args._asdict())
-
             loss_histories[0].append(secondary_losses[0])
             if secondary_losses[1] is not None:
                 loss_histories[1].append(secondary_losses[1])

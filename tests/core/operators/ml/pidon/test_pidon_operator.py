@@ -9,9 +9,9 @@ from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
-from pararealml.core.operators.pidon.collocation_point_sampler import \
+from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
-from pararealml.core.operators.pidon.pidon_operator import PIDONOperator, \
+from pararealml.core.operators.ml.pidon.pidon_operator import PIDONOperator, \
     DataArgs, ModelArgs, OptimizationArgs, SecondaryOptimizationArgs
 from pararealml.utils.rand import set_random_seed
 

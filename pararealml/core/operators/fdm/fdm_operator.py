@@ -42,7 +42,7 @@ class FDMOperator(Operator):
         calculating anti-derivatives and anti-Laplacians
         """
         if d_t <= 0.:
-            raise ValueError(f'time step size ({d_t}) must be greater than 0')
+            raise ValueError('time step sizemust be greater than 0')
 
         self._integrator = integrator
         self._differentiator = differentiator

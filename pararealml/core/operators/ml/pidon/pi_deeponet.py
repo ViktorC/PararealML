@@ -1,23 +1,22 @@
 from typing import Optional, Sequence, Dict, Any, Union, Tuple, List
 
 import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Dense, InputLayer
 from tensorflow.keras.optimizers import Optimizer
-
-import tensorflow_probability as tfp
+from tensorflow_probability.python.optimizer import lbfgs_minimize
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import Lhs
-from pararealml.core.operators.pidon.auto_differentiator import \
+from pararealml.core.operators.ml.deeponet import DeepONet
+from pararealml.core.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
-from pararealml.core.operators.pidon.data_set import DataSetIterator, DataBatch
-from pararealml.core.operators.pidon.loss import Loss
-from pararealml.core.operators.pidon.pidon_symbol_mapper import \
+from pararealml.core.operators.ml.pidon.data_set import DataSetIterator, \
+    DataBatch
+from pararealml.core.operators.ml.pidon.loss import Loss
+from pararealml.core.operators.ml.pidon.pidon_symbol_mapper import \
     PIDONSymbolMapper, PIDONSymbolMapArg, PIDONSymbolMapFunction
 
 
-class PIDeepONet:
+class PIDeepONet(DeepONet):
     """
     A Physics-Informed DeepONet model.
 
@@ -30,11 +29,10 @@ class PIDeepONet:
             latent_output_size: int,
             branch_hidden_layer_sizes: Optional[List[int]] = None,
             trunk_hidden_layer_sizes: Optional[List[int]] = None,
-            branch_initialization: Optional[str] = None,
-            trunk_initialization: Optional[str] = None,
+            branch_initialization: str = 'glorot_uniform',
+            trunk_initialization: str = 'glorot_uniform',
             branch_activation: Optional[str] = 'tanh',
-            trunk_activation: Optional[str] = 'tanh'
-    ):
+            trunk_activation: Optional[str] = 'tanh'):
         """
         :param cp: the constrained problem to build a physics-informed neural
             network around
@@ -54,9 +52,7 @@ class PIDeepONet:
             of the trunk net
         """
         if latent_output_size < 1:
-            raise ValueError(
-                f'latent output size ({latent_output_size}) must be greater '
-                f'than 0')
+            raise ValueError('latent output size must be greater than 0')
 
         diff_eq = cp.differential_equation
         x_dimension = diff_eq.x_dimension
@@ -67,8 +63,8 @@ class PIDeepONet:
 
         if x_dimension:
             mesh = cp.mesh
-            self._sensor_points = mesh.all_index_coordinates(
-                False, flatten=True)
+            self._sensor_points = \
+                mesh.all_index_coordinates(False, flatten=True)
             sensor_input_size = self._sensor_points.shape[0] * y_dimension
         else:
             self._sensor_points = None
@@ -79,18 +75,18 @@ class PIDeepONet:
         if trunk_hidden_layer_sizes is None:
             trunk_hidden_layer_sizes = []
 
-        self._branch_net = create_regression_fnn(
+        super(PIDeepONet, self).__init__(
             [sensor_input_size] +
             branch_hidden_layer_sizes +
             [latent_output_size * y_dimension],
-            branch_initialization,
-            branch_activation)
-        self._trunk_net = create_regression_fnn(
             [x_dimension + 1] +
             trunk_hidden_layer_sizes +
             [latent_output_size * y_dimension],
-            trunk_initialization,
-            trunk_activation)
+            y_dimension,
+            branch_initialization=branch_initialization,
+            branch_activation=branch_activation,
+            trunk_initialization=trunk_initialization,
+            trunk_activation=trunk_activation)
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
@@ -102,38 +98,16 @@ class PIDeepONet:
         """
         return self._cp
 
-    @property
-    def branch_net(self) -> Sequential:
-        """
-        The branch neural network of the model.
-        """
-        return self._branch_net
-
-    @property
-    def trunk_net(self) -> Sequential:
-        """
-        The trunk neural network of the model.
-        """
-        return self._trunk_net
-
-    def init(self):
-        """
-        Initializes the branch and trunk networks.
-        """
-        self._branch_net.build()
-        self._trunk_net.build()
-
     def fit(
             self,
             epochs: int,
-            optimizer: Union[str, Dict[str, Any]],
+            optimizer: Union[str, Dict[str, Any], Optimizer],
             training_data: DataSetIterator,
             test_data: Optional[DataSetIterator] = None,
             diff_eq_loss_weight: float = 1.,
             ic_loss_weight: float = 1.,
             bc_loss_weight: float = 1.,
-            verbose: bool = True
-    ) -> Tuple[List[Loss], List[Loss]]:
+            verbose: bool = True) -> Tuple[List[Loss], List[Loss]]:
         """
         Fits the branch and trunk net parameters by minimising the
         physics-informed loss function over the provided training data set. It
@@ -155,8 +129,7 @@ class PIDeepONet:
         :return: the training and test loss histories
         """
         if epochs < 1:
-            raise ValueError(
-                f'number of epochs ({epochs}) must be greater than 0')
+            raise ValueError('number of epochs must be greater than 0')
 
         optimizer_instance = tf.keras.optimizers.get(optimizer)
 
@@ -245,8 +218,7 @@ class PIDeepONet:
         @tf.function
         def set_model_parameters(parameters: tf.Tensor):
             offset = 0
-            for var in self._branch_net.trainable_variables + \
-                    self._trunk_net.trainable_variables:
+            for var in self.trainable_variables:
                 var_size = tf.reduce_prod(var.shape)
                 var.assign(tf.reshape(
                     parameters[0, offset:offset + var_size], var.shape))
@@ -264,25 +236,19 @@ class PIDeepONet:
                     bc_loss_weight)
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
 
-            gradients = auto_diff.gradient(
-                value,
-                self._branch_net.trainable_variables +
-                self._trunk_net.trainable_variables)
+            gradients = auto_diff.gradient(value, self.trainable_variables)
             flattened_gradients = tf.concat([
                 tf.reshape(gradient, (1, -1)) for gradient in gradients
             ], axis=1)
-
             return value, flattened_gradients
 
         if verbose:
             print('L-BFGS Optimization')
 
-        flattened_parameters = tf.concat([
-            tf.reshape(var, (1, -1)) for var in
-            self._branch_net.trainable_variables +
-            self._trunk_net.trainable_variables
-        ], axis=1)
-        results = tfp.optimizer.lbfgs_minimize(
+        flattened_parameters = tf.concat(
+            [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
+            axis=1)
+        results = lbfgs_minimize(
             value_and_gradients_function=value_and_gradients_function,
             initial_position=flattened_parameters,
             max_iterations=max_iterations,
@@ -297,6 +263,7 @@ class PIDeepONet:
         if verbose:
             print('Training MSE -', training_loss)
 
+        test_loss = None
         if test_data:
             test_loss = self._physics_informed_loss(
                 test_data.get_full_batch(),
@@ -304,37 +271,8 @@ class PIDeepONet:
                 ic_loss_weight,
                 bc_loss_weight)
             print('Test MSE -', test_loss)
-        else:
-            test_loss = None
 
         return training_loss, test_loss
-
-    @tf.function
-    def predict(
-            self,
-            u: tf.Tensor,
-            t: tf.Tensor,
-            x: Optional[tf.Tensor]) -> tf.Tensor:
-        """
-        Predicts (y ∘ u)(t, x).
-
-        :param u: sensor readings of the value of the function u at a set of
-            points
-        :param t: the temporal input variable of the composed function
-        :param x: the spatial input variables of the composed function
-        :return: the predicted value of (y ∘ u)(t, x)
-        """
-        diff_eq = self._cp.differential_equation
-        x_dimension = diff_eq.x_dimension
-        y_dimension = diff_eq.y_dimension
-
-        branch_output = tf.reshape(
-            self._branch_net(u),
-            (-1, self._latent_output_size, y_dimension))
-        trunk_output = tf.reshape(
-            self._trunk_net(tf.concat([t, x], axis=1) if x_dimension else t),
-            (-1, self._latent_output_size, y_dimension))
-        return tf.math.reduce_sum(branch_output * trunk_output, axis=1)
 
     @tf.function
     def _step(
@@ -343,8 +281,7 @@ class PIDeepONet:
             optimizer: Optimizer,
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
-            bc_loss_weight: float
-    ) -> Loss:
+            bc_loss_weight: float) -> Loss:
         """
         Performs a forward pass on the batch, computes the batch loss, and
         updates the model parameters.
@@ -366,8 +303,7 @@ class PIDeepONet:
 
         optimizer.minimize(
             loss.weighted_total_loss,
-            self._branch_net.trainable_variables +
-            self._trunk_net.trainable_variables,
+            self.trainable_variables,
             tape=auto_diff)
 
         return loss
@@ -435,7 +371,7 @@ class PIDeepONet:
             if x is not None:
                 auto_diff.watch(x)
 
-            y_hat = self.predict(u, t, x)
+            y_hat = self.call((u, t, x))
 
             symbol_map_arg = PIDONSymbolMapArg(auto_diff, t, x, y_hat)
             rhs = self._symbol_mapper.map(symbol_map_arg)
@@ -466,8 +402,10 @@ class PIDeepONet:
             x = None
 
         y_hat = tf.map_fn(
-            fn=lambda u_i: self.predict(
-                tf.tile(tf.reshape(u_i, (1, -1)), (t.shape[0], 1)), t, x),
+            fn=lambda u_i: self.call((
+                tf.tile(tf.reshape(u_i, (1, -1)), (t.shape[0], 1)),
+                t,
+                x)),
             elems=u)
 
         squared_ic_error = tf.reduce_mean(
@@ -500,7 +438,7 @@ class PIDeepONet:
         """
         with AutoDifferentiator() as auto_diff:
             auto_diff.watch(x)
-            y_hat = self.predict(u, t, x)
+            y_hat = self.call((u, t, x))
 
         d_y_over_d_n_hat = auto_diff.batch_gradient(x, y_hat, axes)
 
@@ -525,8 +463,7 @@ class PIDeepONet:
         return mean_squared_dirichlet_bc_error, mean_squared_neumann_bc_error
 
     def _create_diff_eq_lhs_functions(
-            self
-    ) -> Sequence[PIDONSymbolMapFunction]:
+            self) -> Sequence[PIDONSymbolMapFunction]:
         """
         Creates a sequence of symbol map functions representing the left hand
         side of the differential equation system.
@@ -554,37 +491,3 @@ class PIDeepONet:
                     f'unsupported left hand side type ({lhs_type.name})')
 
         return lhs_functions
-
-
-def create_regression_fnn(
-        layer_sizes: Sequence[int],
-        initialization: Optional[str] = None,
-        activation: Optional[str] = None
-) -> Sequential:
-    """
-    Creates a fully-connected feedforward neural network regression model.
-
-    :param layer_sizes: a list of the sizes of the layers including the input
-        layer
-    :param initialization: the initialization method to use for the weights of
-        the layers
-    :param activation: the activation function to use for the hidden layers
-    :return: the fully-connected neural network model
-    """
-    if len(layer_sizes) < 2:
-        raise ValueError(
-            f'number of layers ({len(layer_sizes)}) must be greater than 1')
-
-    if initialization is None:
-        initialization = 'glorot_uniform'
-
-    model = Sequential()
-    model.add(InputLayer(input_shape=layer_sizes[0]))
-    for layer_size in layer_sizes[1:-1]:
-        model.add(Dense(
-            layer_size,
-            kernel_initializer=initialization,
-            activation=activation))
-    model.add(Dense(layer_sizes[-1], kernel_initializer=initialization))
-
-    return model

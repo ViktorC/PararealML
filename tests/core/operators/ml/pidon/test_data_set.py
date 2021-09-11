@@ -7,9 +7,9 @@ from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
     CahnHilliardEquation, PopulationGrowthEquation, DiffusionEquation
 from pararealml.core.mesh import Mesh
-from pararealml.core.operators.pidon.collocation_point_sampler import \
+from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
-from pararealml.core.operators.pidon.data_set import DataSet
+from pararealml.core.operators.ml.pidon.data_set import DataSet
 
 
 def test_data_set_ode():

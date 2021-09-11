@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from tensorflow import optimizers
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
@@ -10,13 +11,14 @@ from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
+from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_differentiator import \
     ThreePointCentralFiniteDifferenceMethod
-from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_integrator import RK4
+from pararealml.core.operators.ml.auto_regression \
+    import AutoRegressionOperator, SKLearnKerasRegressor
+from pararealml.core.operators.ml.deeponet import DeepONet
 from pararealml.core.operators.ode.ode_operator import ODEOperator
-from pararealml.core.operators.auto_regression.auto_regression_operator \
-    import AutoRegressionOperator
 from pararealml.utils.rand import set_random_seed
 
 
@@ -87,15 +89,32 @@ def test_auto_regression_operator_on_pde():
     )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    oracle = FDMOperator(
-        RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
     ml_op = AutoRegressionOperator(2.5, True)
     ml_op.train(
         ivp,
         oracle,
-        RandomForestRegressor(),
+        SKLearnKerasRegressor(
+            DeepONet(
+                [
+                    np.prod(cp.y_shape(True)).item(),
+                    100,
+                    50,
+                    diff_eq.y_dimension * 10
+                ],
+                [1 + diff_eq.x_dimension, 50, 50, diff_eq.y_dimension * 10],
+                diff_eq.y_dimension
+            ),
+            optimizer=optimizers.Adam(
+                learning_rate=optimizers.schedules.ExponentialDecay(
+                        1e-2, decay_steps=500, decay_rate=.95
+                )
+            ),
+            batch_size=968,
+            epochs=500,
+        ),
         20,
         lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))
     ml_solution = ml_op.solve(ivp)

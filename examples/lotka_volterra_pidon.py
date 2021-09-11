@@ -3,7 +3,7 @@ from tensorflow import optimizers
 
 from pararealml import *
 from pararealml.core.operators.fdm import *
-from pararealml.core.operators.pidon import *
+from pararealml.core.operators.ml.pidon import *
 
 diff_eq = LotkaVolterraEquation()
 cp = ConstrainedProblem(diff_eq)

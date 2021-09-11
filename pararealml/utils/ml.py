@@ -1,9 +1,5 @@
-from typing import Any
-
 import tensorflow as tf
 from mpi4py import MPI
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 
 def use_cpu():
@@ -26,37 +22,3 @@ def limit_visible_gpus():
                 f'number of GPUs ({len(gpus)}) must match default '
                 f'communicator size ({comm.size})')
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
-
-
-def create_keras_regressor(
-        model: Sequential,
-        optimizer: str = 'adam',
-        loss: str = 'mse',
-        epochs: int = 1000,
-        batch_size: int = 64,
-        verbose: int = 0,
-        **kwargs: Any,
-) -> KerasRegressor:
-    """
-    Creates a Keras regression model.
-
-    :param model: the neural network
-    :param optimizer: the optimizer to use
-    :param loss: the loss function to use
-    :param epochs: the number of training epochs
-    :param batch_size: the training batch size
-    :param verbose: whether training information should be printed to the
-        stdout stream
-    :param kwargs: additional parameters to the Keras regression model
-    :return: the regression model
-    """
-    def build_model():
-        model.compile(optimizer=optimizer, loss=loss)
-        return model
-
-    return KerasRegressor(
-        build_fn=build_model,
-        epochs=epochs,
-        batch_size=batch_size,
-        verbose=verbose,
-        **kwargs)
