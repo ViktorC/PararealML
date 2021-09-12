@@ -54,7 +54,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=100,
+            max_iterations=150,
             verbose=False
         )
     )
