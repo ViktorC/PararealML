@@ -50,7 +50,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
                         1e-2, decay_steps=25, decay_rate=.95)
                 }
             },
-            epochs=100,
+            epochs=150,
             verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
@@ -59,7 +59,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         )
     )
 
-    assert len(training_loss_history) == 101
+    assert len(training_loss_history) == 151
     assert len(test_loss_history) == 0
     assert training_loss_history[-1].weighted_total_loss.numpy() < 5e-6
 
