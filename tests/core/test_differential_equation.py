@@ -93,7 +93,7 @@ def test_differential_equation_with_invalid_symbol():
         TestDiffEq()
 
 
-def test_differential_equation_with_missing_d_y_over_d_t_equation():
+def test_differential_equation_with_missing_d_y_over_d_t_lhs_in_pde_system():
     class TestDiffEq(DifferentialEquation):
 
         def __init__(self):
@@ -111,7 +111,7 @@ def test_differential_equation_with_missing_d_y_over_d_t_equation():
         TestDiffEq()
 
 
-def test_differential_equation_with_y_laplacian_equation_in_ode_system():
+def test_differential_equation_with_non_d_y_over_d_t_lhs_in_ode_system():
     class TestDiffEq(DifferentialEquation):
 
         def __init__(self):

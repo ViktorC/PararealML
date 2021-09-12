@@ -268,15 +268,17 @@ class DifferentialEquation(ABC):
                     'invalid symbol in right hand side symbols '
                     f'({rhs_symbols}) of equation {i}')
 
-        if Lhs.D_Y_OVER_D_T not in equation_system.lhs_types:
+        d_y_over_d_t_indices = \
+            equation_system.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
+        if self._x_dimension:
+            if len(d_y_over_d_t_indices) == 0:
+                raise ValueError(
+                    'at least one equation\'s left hand side must be of type '
+                    'D_Y_OVER_D_T')
+        elif len(d_y_over_d_t_indices) != self._y_dimension:
             raise ValueError(
-                'at least one equation\'s left hand side must be of type '
-                'D_Y_OVER_D_T')
-        if not self.x_dimension \
-                and Lhs.Y_LAPLACIAN in equation_system.lhs_types:
-            raise ValueError(
-                'ordinary differential equations cannot contain equations '
-                'with Y_LAPLACIAN type left hand sides')
+                'ordinary differential equation systems can only contain '
+                'equations with D_Y_OVER_D_T type left hand sides')
 
 
 class PopulationGrowthEquation(DifferentialEquation):
