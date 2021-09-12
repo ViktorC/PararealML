@@ -50,19 +50,18 @@ def test_pidon_operator_on_ode_with_analytic_solution():
                         1e-2, decay_steps=25, decay_rate=.95)
                 }
             },
-            epochs=200,
+            epochs=100,
             verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=100,
-            gradient_tol=1e-12,
             verbose=False
         )
     )
 
-    assert len(training_loss_history) == 201
+    assert len(training_loss_history) == 101
     assert len(test_loss_history) == 0
-    assert training_loss_history[-1].weighted_total_loss.numpy() < 5e-6
+    assert training_loss_history[-1].weighted_total_loss.numpy() < 1e-5
 
     ivp = InitialValueProblem(
         cp,
@@ -78,8 +77,8 @@ def test_pidon_operator_on_ode_with_analytic_solution():
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
 
-    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 5e-4
-    assert np.max(np.abs(analytic_y - solution.discrete_y())) < 1e-3
+    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 1e-3
+    assert np.max(np.abs(analytic_y - solution.discrete_y())) < 2.5e-3
 
 
 def test_pidon_operator_on_ode_system():
