@@ -35,12 +35,13 @@ pidon.train(
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
         n_domain_points=200,
-        domain_batch_size=600
+        n_batches=2,
+        n_ic_repeats=2
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
         n_domain_points=50,
-        domain_batch_size=150
+        n_batches=1
     ),
     model_args=ModelArgs(
         latent_output_size=100,
@@ -65,7 +66,7 @@ pidon.train(
 fdm = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
 
 for y_0 in [(47.5, 27.5), (50., 25.), (52.5, 22.5)]:
-    ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array(y_0))
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     pidon_solution = pidon.solve(ivp)

@@ -1,5 +1,6 @@
 from typing import Optional, Sequence, Dict, Any, Union, Tuple, List
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.optimizers import Optimizer
 from tensorflow_probability.python.optimizer import lbfgs_minimize
@@ -10,7 +11,7 @@ from pararealml.core.operators.ml.deeponet import DeepONet
 from pararealml.core.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
 from pararealml.core.operators.ml.pidon.data_set import DataSetIterator, \
-    DataBatch
+    DataBatch, InitialDataBatch, BoundaryDataBatch, DomainDataBatch
 from pararealml.core.operators.ml.pidon.loss import Loss
 from pararealml.core.operators.ml.pidon.pidon_symbol_mapper import \
     PIDONSymbolMapper, PIDONSymbolMapArg, PIDONSymbolMapFunction
@@ -55,20 +56,11 @@ class PIDeepONet(DeepONet):
             raise ValueError('latent output size must be greater than 0')
 
         diff_eq = cp.differential_equation
-        x_dimension = diff_eq.x_dimension
-        y_dimension = diff_eq.y_dimension
+        x_dim = diff_eq.x_dimension
+        y_dim = diff_eq.y_dimension
 
         self._cp = cp
         self._latent_output_size = latent_output_size
-
-        if x_dimension:
-            mesh = cp.mesh
-            self._sensor_points = \
-                mesh.all_index_coordinates(False, flatten=True)
-            sensor_input_size = self._sensor_points.shape[0] * y_dimension
-        else:
-            self._sensor_points = None
-            sensor_input_size = y_dimension
 
         if branch_hidden_layer_sizes is None:
             branch_hidden_layer_sizes = []
@@ -76,13 +68,13 @@ class PIDeepONet(DeepONet):
             trunk_hidden_layer_sizes = []
 
         super(PIDeepONet, self).__init__(
-            [sensor_input_size] +
+            [np.prod(cp.mesh.cells_shape).item() * y_dim if x_dim else y_dim] +
             branch_hidden_layer_sizes +
-            [latent_output_size * y_dimension],
-            [x_dimension + 1] +
+            [latent_output_size * y_dim],
+            [x_dim + 1] +
             trunk_hidden_layer_sizes +
-            [latent_output_size * y_dimension],
-            y_dimension,
+            [latent_output_size * y_dim],
+            y_dim,
             branch_initialization=branch_initialization,
             branch_activation=branch_activation,
             trunk_initialization=trunk_initialization,
@@ -330,19 +322,13 @@ class PIDeepONet(DeepONet):
             total physics-informed loss
         :return: the total physics-informed loss over the batch
         """
-        domain_batch, boundary_batch = batch
-
-        diff_eq_loss = self._mean_squared_differential_equation_error(
-            domain_batch.u, domain_batch.t, domain_batch.x)
-        ic_loss = self._mean_squared_initial_condition_error(
-            domain_batch.u)
-        bc_losses = self._mean_squared_boundary_condition_errors(
-            boundary_batch.u,
-            boundary_batch.t,
-            boundary_batch.x,
-            boundary_batch.y,
-            boundary_batch.d_y_over_d_n,
-            boundary_batch.axes) if boundary_batch else None
+        domain_batch, initial_batch, boundary_batch = batch
+        diff_eq_loss = \
+            self._mean_squared_differential_equation_error(domain_batch)
+        ic_loss = self._mean_squared_initial_condition_error(initial_batch)
+        bc_losses = \
+            self._mean_squared_boundary_condition_errors(boundary_batch) \
+            if boundary_batch else None
 
         return Loss.construct(
             diff_eq_loss,
@@ -355,25 +341,22 @@ class PIDeepONet(DeepONet):
     @tf.function
     def _mean_squared_differential_equation_error(
             self,
-            u: tf.Tensor,
-            t: tf.Tensor,
-            x: Optional[tf.Tensor]) -> tf.Tensor:
+            batch: DomainDataBatch) -> tf.Tensor:
         """
         Computes and returns the mean squared differential equation error.
 
-        :param u: the initial condition sensor readings
-        :param t: the time points
-        :param x: the space points; if the IVP is based on an ODE, None
+        :param batch: the domain data batch
         :return: the mean squared differential equation error
         """
         with AutoDifferentiator(persistent=True) as auto_diff:
-            auto_diff.watch(t)
-            if x is not None:
-                auto_diff.watch(x)
+            auto_diff.watch(batch.t)
+            if batch.x is not None:
+                auto_diff.watch(batch.x)
 
-            y_hat = self.call((u, t, x))
+            y_hat = self.call((batch.u, batch.t, batch.x))
 
-            symbol_map_arg = PIDONSymbolMapArg(auto_diff, t, x, y_hat)
+            symbol_map_arg = PIDONSymbolMapArg(
+                auto_diff, batch.t, batch.x, y_hat)
             rhs = self._symbol_mapper.map(symbol_map_arg)
 
             diff_eq_residual = tf.concat([
@@ -387,74 +370,48 @@ class PIDeepONet(DeepONet):
     @tf.function
     def _mean_squared_initial_condition_error(
             self,
-            u: tf.Tensor) -> tf.Tensor:
+            batch: InitialDataBatch) -> tf.Tensor:
         """
         Computes and returns the mean squared initial condition error.
 
-        :param u: the initial condition sensor readings
+        :param batch: the initial condition data batch
         :return: the mean squared initial condition error
         """
-        if self._cp.differential_equation.x_dimension:
-            t = tf.zeros((self._sensor_points.shape[0], 1), dtype=tf.float32)
-            x = tf.convert_to_tensor(self._sensor_points, dtype=tf.float32)
-        else:
-            t = tf.zeros((1, 1), dtype=tf.float32)
-            x = None
-
-        y_hat = tf.map_fn(
-            fn=lambda u_i: self.call((
-                tf.tile(tf.reshape(u_i, (1, -1)), (t.shape[0], 1)),
-                t,
-                x)),
-            elems=u)
-
-        squared_ic_error = tf.reduce_mean(
-            tf.square(y_hat - tf.reshape(u, y_hat.shape)), axis=1)
+        y_hat = self.call((batch.u, batch.t, batch.x))
+        squared_ic_error = tf.square(y_hat - batch.y)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
     @tf.function
     def _mean_squared_boundary_condition_errors(
             self,
-            u: tf.Tensor,
-            t: tf.Tensor,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            d_y_over_d_n: tf.Tensor,
-            axes: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+            batch: BoundaryDataBatch) -> Tuple[tf.Tensor, tf.Tensor]:
         """
         Computes and returns the mean squared Dirichlet boundary condition
         error and the mean squared Neumann boundary condition error.
 
-        :param u: the initial condition sensor readings
-        :param t: the time points
-        :param x: the space points
-        :param y: the expected boundary values
-        :param d_y_over_d_n: the expected directional derivatives of the
-            unknown function in the direction of the normal vector of the
-            boundary
-        :param axes: the indices of the axes orthogonal to the boundary
+        :param batch: the boundary data batch
         :return: the mean squared Dirichlet and Neumann boundary condition
             errors
         """
         with AutoDifferentiator() as auto_diff:
-            auto_diff.watch(x)
-            y_hat = self.call((u, t, x))
+            auto_diff.watch(batch.x)
+            y_hat = self.call((batch.u, batch.t, batch.x))
 
-        d_y_over_d_n_hat = auto_diff.batch_gradient(x, y_hat, axes)
+        d_y_over_d_n_hat = auto_diff.batch_gradient(batch.x, y_hat, batch.axes)
 
-        dirichlet_bc_error = y_hat - y
+        dirichlet_bc_error = y_hat - batch.y
         dirichlet_bc_error = tf.where(
-            tf.math.is_nan(y),
-            tf.zeros_like(y),
+            tf.math.is_nan(batch.y),
+            tf.zeros_like(batch.y),
             dirichlet_bc_error)
         squared_dirichlet_bc_error = tf.square(dirichlet_bc_error)
         mean_squared_dirichlet_bc_error = \
             tf.reduce_mean(squared_dirichlet_bc_error, axis=0)
 
-        neumann_bc_error = d_y_over_d_n_hat - d_y_over_d_n
+        neumann_bc_error = d_y_over_d_n_hat - batch.d_y_over_d_n
         neumann_bc_error = tf.where(
-            tf.math.is_nan(d_y_over_d_n),
-            tf.zeros_like(d_y_over_d_n),
+            tf.math.is_nan(batch.d_y_over_d_n),
+            tf.zeros_like(batch.d_y_over_d_n),
             neumann_bc_error)
         squared_neumann_bc_error = tf.square(neumann_bc_error)
         mean_squared_neumann_bc_error = \

@@ -13,7 +13,7 @@ sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, .001, True)
 
 training_y_0_functions = [
-    lambda _: np.array([y_0]) for y_0 in np.arange(.3, 1.8, .1)
+    lambda _, _y_0=y_0: np.array([_y_0]) for y_0 in np.arange(.3, 1.8, .1)
 ]
 test_y_0_functions = [lambda _: np.array([.7]), lambda _: np.array([1.3])]
 
@@ -23,12 +23,13 @@ pidon.train(
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
         n_domain_points=100,
-        domain_batch_size=500
+        n_batches=3,
+        n_ic_repeats=3
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
         n_domain_points=50,
-        domain_batch_size=100
+        n_batches=1
     ),
     model_args=ModelArgs(
         latent_output_size=100,

@@ -36,7 +36,8 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         training_data_args=DataArgs(
             y_0_functions=[ic.y_0],
             n_domain_points=25,
-            domain_batch_size=5
+            n_batches=5,
+            n_ic_repeats=5
         ),
         model_args=ModelArgs(
             latent_output_size=1,
@@ -111,12 +112,12 @@ def test_pidon_operator_on_ode_system():
         training_data_args=DataArgs(
             y_0_functions=training_y_0_functions,
             n_domain_points=50,
-            domain_batch_size=100
+            n_batches=3
         ),
         test_data_args=DataArgs(
             y_0_functions=test_y_0_functions,
             n_domain_points=20,
-            domain_batch_size=60
+            n_batches=1
         ),
         model_args=ModelArgs(
             latent_output_size=20,
@@ -197,15 +198,13 @@ def test_pidon_operator_on_pde():
             y_0_functions=training_y_0_functions,
             n_domain_points=50,
             n_boundary_points=20,
-            domain_batch_size=100,
-            boundary_batch_size=40,
+            n_batches=2
         ),
         test_data_args=DataArgs(
             y_0_functions=test_y_0_functions,
             n_domain_points=25,
             n_boundary_points=10,
-            domain_batch_size=75,
-            boundary_batch_size=30,
+            n_batches=1
         ),
         model_args=ModelArgs(
             latent_output_size=50,

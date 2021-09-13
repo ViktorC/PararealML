@@ -8,9 +8,9 @@ from pararealml.core.operators.ml.pidon import *
 diff_eq = DiffusionEquation(1, .2)
 mesh = Mesh([(0., .5)], (.025,))
 bcs = [
-    (DirichletBoundaryCondition(
+    (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 1)), is_static=True),
-     DirichletBoundaryCondition(
+     NeumannBoundaryCondition(
          lambda x, t: np.zeros((len(x), 1)), is_static=True)),
 ]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
@@ -21,7 +21,7 @@ training_y_0_functions = [
     GaussianInitialCondition(
         cp,
         [(np.array([ic_mean]), np.array([[sd]]))]
-    ).y_0 for sd in [.0025]
+    ).y_0 for sd in np.arange(.05, .25, .05)
 ]
 
 sampler = UniformRandomCollocationPointSampler()
@@ -34,8 +34,7 @@ pidon.train(
         y_0_functions=training_y_0_functions,
         n_domain_points=500,
         n_boundary_points=50,
-        domain_batch_size=500,
-        boundary_batch_size=50,
+        n_batches=2,
     ),
     model_args=ModelArgs(
         latent_output_size=100,
@@ -47,14 +46,14 @@ pidon.train(
             'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    2e-4, decay_steps=50, decay_rate=.9)
+                    1e-3, decay_steps=50, decay_rate=.95)
             }
         },
-        epochs=1000,
+        epochs=2000,
         ic_loss_weight=10.,
     ),
     secondary_optimization_args=SecondaryOptimizationArgs(
-        max_iterations=10000,
+        max_iterations=1000,
         ic_loss_weight=10.,
     )
 )
@@ -64,7 +63,7 @@ fdm = FDMOperator(
     ThreePointCentralFiniteDifferenceMethod(),
     .0001)
 
-for sd in [.00125, .0025, .00375]:
+for sd in [.075, .125, .175]:
     ic = GaussianInitialCondition(
         cp,
         [(np.array([ic_mean]), np.array([[sd]]))]

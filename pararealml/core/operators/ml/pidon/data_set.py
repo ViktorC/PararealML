@@ -16,8 +16,8 @@ from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
 
 class DataSet:
     """
-    A generator and container of all the data necessary to train a physics
-    informed DeepONet with variable initial conditions.
+    A generator and container of all the data necessary to train a
+    physics-informed DeepONet with variable initial conditions.
     """
 
     def __init__(
@@ -59,8 +59,10 @@ class DataSet:
         self._n_domain_points = n_domain_points
         self._n_boundary_points = n_boundary_points
 
-        self._ic_data = self._create_ic_data()
+        self._initial_value_data = self._create_initial_value_data()
         self._domain_collocation_data = self._create_domain_collocation_data()
+        self._initial_collocation_data = \
+            self._create_initial_collocation_data()
         self._boundary_collocation_data = \
             self._create_boundary_collocation_data()
 
@@ -72,14 +74,14 @@ class DataSet:
         return self._cp
 
     @property
-    def ic_data(self) -> np.ndarray:
+    def initial_value_data(self) -> np.ndarray:
         """
-        The initial condition data where each row is different initial
-        condition function and each column represents a component of the
-        initial condition function evaluated over a point of the constrained
-        problem's mesh.
+        The initial value data where each row is a different initial condition
+        function and each column represents a component of the initial
+        condition function evaluated over a point of the constrained problem's
+        mesh.
         """
-        return self._ic_data
+        return self._initial_value_data
 
     @property
     def domain_collocation_data(self) -> np.ndarray:
@@ -88,6 +90,14 @@ class DataSet:
         other columns are x.
         """
         return self._domain_collocation_data
+
+    @property
+    def initial_collocation_data(self) -> np.ndarray:
+        """
+        The initial collocation data points where the first column is t and all
+        other columns are x.
+        """
+        return self._initial_collocation_data
 
     @property
     def boundary_collocation_data(self) -> Optional[np.ndarray]:
@@ -101,37 +111,40 @@ class DataSet:
 
     def get_iterator(
             self,
-            domain_batch_size: int,
-            boundary_batch_size: int = 0,
+            n_batches: int,
+            n_ic_repeats: int = 1,
             shuffle: bool = True) -> DataSetIterator:
         """
         Returns an iterator over the data set to enable iterating over the
-        Cartesian product of the initial condition data and the collocation
-        data batch by batch.
+        Cartesian product of the initial value data and the collocation data
+        batch by batch.
 
-        :param domain_batch_size: the size of the domain data in one batch
-        :param boundary_batch_size: the size of the boundary data in one batch
+        :param n_batches: the number of batches to map the underlying data to
+        :param n_ic_repeats: the number of times to repeat the initial
+            collocation data samples in an epoch
         :param shuffle: whether to shuffle the data behind the iterator
         :return: the iterator over the data set
         """
-        return DataSetIterator(
-            self, domain_batch_size, boundary_batch_size, shuffle=shuffle)
+        return DataSetIterator(self, n_batches, n_ic_repeats, shuffle)
 
-    def _create_ic_data(self) -> np.ndarray:
+    def _create_initial_value_data(self) -> np.ndarray:
         """
-        Creates the initial condition data by evaluating the initial condition
-        functions (over the mesh in case the constrained problem is a PDE).
+        Creates the initial value data by evaluating the initial condition
+        functions (over the centers of the mesh's cells in case the constrained
+        problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
             x = self._cp.mesh.all_index_coordinates(False, flatten=True)
-            return np.vstack(
-                [y_0_func(x).flatten() for y_0_func in self._y_0_functions])
+            initial_value_data = np.vstack([
+                y_0_func(x).flatten() for y_0_func in self._y_0_functions
+            ])
+        else:
+            initial_value_data = np.array([
+                y_0_func(None) for y_0_func in self._y_0_functions
+            ])
 
-        ic_data = np.array([
-            y_0_function(None) for y_0_function in self._y_0_functions
-        ])
-        ic_data.setflags(write=False)
-        return ic_data
+        initial_value_data.setflags(write=False)
+        return initial_value_data
 
     def _create_domain_collocation_data(self) -> np.ndarray:
         """
@@ -153,6 +166,22 @@ class DataSet:
 
         domain_collocation_data.setflags(write=False)
         return domain_collocation_data
+
+    def _create_initial_collocation_data(self) -> np.ndarray:
+        """
+        Creates the initial collocation data by combining the coordinates of
+        the cell centers of the constrained problem's mesh (if the constrained
+        problem is a PDE) with an array of zeros representing the time points.
+        """
+        if self._cp.differential_equation.x_dimension:
+            x = self._cp.mesh.all_index_coordinates(False, flatten=True)
+            t = np.zeros((len(x), 1))
+            initial_collocation_data = np.hstack((t, x))
+        else:
+            initial_collocation_data = np.zeros((1, 1))
+
+        initial_collocation_data.setflags(write=False)
+        return initial_collocation_data
 
     def _create_boundary_collocation_data(self) -> Optional[np.ndarray]:
         """
@@ -211,137 +240,124 @@ class DataSet:
 
 class DataSetIterator(Iterator):
     """
-    An iterator over a data set that computes the cartesian product of the
-    initial condition data with both the domain collocation data and the
-    boundary collocation data.
+    An iterator over a data set that computes the Cartesian products of the
+    initial value data with the domain, initial, and boundary collocation
+    data.
     """
 
     def __init__(
             self,
             data_set: DataSet,
-            domain_batch_size: int,
-            boundary_batch_size: int,
+            n_batches: int,
+            n_ic_repeats: int = 1,
             shuffle: bool = True):
         """
         :param data_set: the data set to iterate over
-        :param domain_batch_size: the domain batch size to use
-        :param boundary_batch_size: the boundary batch size to use
+        :param n_batches: the number of batches per epoch
+        :param n_ic_repeats: the number of times to repeat the initial
+            collocation data samples in an epoch
         :param shuffle: whether to shuffle the Cartesian product of the initial
             condition data and collocation data.
         """
         self._data_set = data_set
-        self._domain_batch_size = domain_batch_size
-        self._boundary_batch_size = boundary_batch_size
+        self._n_batches = n_batches
+        self._n_ic_repeats = n_ic_repeats
 
-        self._ic_data_size = data_set.ic_data.shape[0]
+        self._iv_data_size = data_set.initial_value_data.shape[0]
         self._domain_data_size = data_set.domain_collocation_data.shape[0]
+        self._initial_data_size = data_set.initial_collocation_data.shape[0]
         self._boundary_data_size = \
             0 if data_set.boundary_collocation_data is None \
             else data_set.boundary_collocation_data.shape[0]
+
         self._total_domain_data_size = \
-            self._ic_data_size * self._domain_data_size
+            self._iv_data_size * self._domain_data_size
+        self._total_initial_data_size = \
+            n_ic_repeats * self._iv_data_size * self._initial_data_size
         self._total_boundary_data_size = \
-            self._ic_data_size * self._boundary_data_size
-        self._validate_batch_sizes()
+            self._iv_data_size * self._boundary_data_size
+
+        if self._total_domain_data_size % n_batches != 0 \
+                or self._total_initial_data_size % n_batches != 0 \
+                or self._total_boundary_data_size % n_batches != 0:
+            raise ValueError(
+                'number of batches must be a common divisor of total domain '
+                f'data size ({self._total_domain_data_size}), total initial '
+                f'data size ({self._total_initial_data_size}), and total '
+                f'boundary data size ({self._total_boundary_data_size})')
+
+        self._domain_batch_size = self._total_domain_data_size // n_batches
+        self._initial_batch_size = self._total_initial_data_size // n_batches
+        self._boundary_batch_size = self._total_boundary_data_size // n_batches
 
         self._domain_indices = self._create_cartesian_product_indices(
-            self._ic_data_size, self._domain_data_size, shuffle)
+            self._iv_data_size, self._domain_data_size, shuffle)
+        self._initial_indices = np.tile(
+            self._create_cartesian_product_indices(
+                self._iv_data_size, self._initial_data_size, shuffle),
+            (n_ic_repeats, 1))
         self._boundary_indices = self._create_cartesian_product_indices(
-            self._ic_data_size, self._boundary_data_size, shuffle) \
+            self._iv_data_size, self._boundary_data_size, shuffle) \
             if self._boundary_data_size else None
 
-        self._domain_counter = 0
-        self._boundary_counter = 0
+        self._batch_counter = 0
 
     def __iter__(self) -> DataSetIterator:
         self.reset()
         return self
 
     def __next__(self) -> DataBatch:
-        if self._domain_counter >= self._total_domain_data_size and \
-                self._boundary_counter >= self._total_boundary_data_size:
+        if self._batch_counter >= self._n_batches:
             raise StopIteration
 
         batch = DataBatch(
             self._get_domain_batch(self._domain_batch_size),
+            self._get_initial_batch(self._initial_batch_size),
             self._get_boundary_batch(self._boundary_batch_size))
 
-        self._domain_counter += self._domain_batch_size
-        self._boundary_counter += self._boundary_batch_size
+        self._batch_counter += 1
 
         return batch
 
     @property
     def domain_batch_size(self) -> int:
         """
-        The domain batch size used by the iterator.
+        The domain data batch size used by the iterator.
         """
         return self._domain_batch_size
 
     @property
+    def initial_batch_size(self) -> int:
+        """
+        The initial data batch size used by the iterator.
+        """
+        return self._initial_batch_size
+
+    @property
     def boundary_batch_size(self) -> int:
         """
-        The boundary batch size used by the iterator.
+        The boundary data batch size used by the iterator.
         """
         return self._boundary_batch_size
 
     def get_full_batch(self) -> DataBatch:
         """
-        Returns the full cartesian product of all the initial condition data
-        and all the domain and boundary data contained within the data set the
-        iterator is built on top of.
+        Returns the full Cartesian product of all the initial value data and
+        all the domain, initial, and boundary collocation data contained within
+        the underlying data set.
         """
         self.reset()
         return DataBatch(
             self._get_domain_batch(self._total_domain_data_size),
+            self._get_initial_batch(
+                self._total_initial_data_size // self._n_ic_repeats),
             self._get_boundary_batch(self._total_boundary_data_size))
 
     def reset(self):
         """
         Resets the iterator so that the data set can be iterated over again.
         """
-        self._domain_counter = 0
-        self._boundary_counter = 0
-
-    def _validate_batch_sizes(self):
-        """
-        Validates the domain and boundary batch sizes by raising errors if they
-        are invalid.
-        """
-        if self._domain_batch_size <= 0:
-            raise ValueError(
-                f'domain batch size ({self._domain_batch_size}) must be '
-                'greater than 0')
-        if self._boundary_batch_size < 0:
-            raise ValueError(
-                f'boundary batch size ({self._boundary_batch_size}) must be '
-                f'non-negative')
-
-        diff_eq = self._data_set.constrained_problem.differential_equation
-        if not diff_eq.x_dimension and self._boundary_batch_size:
-            raise ValueError('boundary batch size must be 0 for ODEs')
-
-        if self._total_domain_data_size % self._domain_batch_size != 0:
-            raise ValueError(
-                f'domain batch size ({self._domain_batch_size}) must be a '
-                'divisor of total domain data size '
-                f'({self._total_domain_data_size})')
-
-        if self._boundary_batch_size:
-            if self._total_boundary_data_size % self._boundary_batch_size != 0:
-                raise ValueError(
-                    f'boundary batch size ({self._boundary_batch_size}) must '
-                    f'be a divisor of total boundary data size '
-                    f'({self._total_boundary_data_size})')
-
-            n_domain_batches = \
-                self._total_domain_data_size / self._domain_batch_size
-            n_boundary_batches = \
-                self._total_boundary_data_size / self._boundary_batch_size
-            if n_domain_batches != n_boundary_batches:
-                raise ValueError(
-                    f'number of domain batches ({n_domain_batches}) must '
-                    f'match number of boundary batches ({n_boundary_batches})')
+        self._batch_counter = 0
 
     def _get_domain_batch(self, domain_batch_size: int) -> DomainDataBatch:
         """
@@ -350,23 +366,70 @@ class DataSetIterator(Iterator):
         :param domain_batch_size: the domain data batch size
         :return: the domain data batch
         """
-        diff_eq = self._data_set.constrained_problem.differential_equation
-        domain_indices = self._domain_indices[
-            self._domain_counter:self._domain_counter + domain_batch_size,
-            :
-        ]
-        domain_ic_data_indices = domain_indices[:, 0]
+        start_ind = self._batch_counter * self._domain_batch_size
+        domain_indices = \
+            self._domain_indices[start_ind:start_ind + domain_batch_size, :]
+        domain_iv_data_indices = domain_indices[:, 0]
         domain_collocation_data_indices = domain_indices[:, 1]
-        domain_ic_data = self._data_set.ic_data[domain_ic_data_indices]
+        domain_iv_data = \
+            self._data_set.initial_value_data[domain_iv_data_indices]
         domain_collocation_data = self._data_set.domain_collocation_data[
             domain_collocation_data_indices
         ]
 
+        diff_eq = self._data_set.constrained_problem.differential_equation
         return DomainDataBatch(
-            tf.convert_to_tensor(domain_ic_data, tf.float32),
+            tf.convert_to_tensor(domain_iv_data, tf.float32),
             tf.convert_to_tensor(domain_collocation_data[:, :1], tf.float32),
             tf.convert_to_tensor(domain_collocation_data[:, 1:], tf.float32)
             if diff_eq.x_dimension else None)
+
+    def _get_initial_batch(
+            self,
+            initial_batch_size: int) -> InitialDataBatch:
+        """
+        Returns an initial condition data batch of the specified size.
+
+        :param initial_batch_size: the initial condition data batch size
+        :return: the initial condition data batch
+        """
+        start_ind = self._batch_counter * self._initial_batch_size
+        initial_indices = \
+            self._initial_indices[start_ind:start_ind + initial_batch_size, :]
+        initial_iv_data_indices = initial_indices[:, 0]
+        initial_collocation_data_indices = initial_indices[:, 1]
+        initial_iv_data = \
+            self._data_set.initial_value_data[initial_iv_data_indices]
+        initial_collocation_data = self._data_set.initial_collocation_data[
+            initial_collocation_data_indices
+        ]
+
+        initial_u_tensor = tf.convert_to_tensor(initial_iv_data, tf.float32)
+        initial_t_tensor = tf.convert_to_tensor(
+            initial_collocation_data[:, :1], tf.float32)
+
+        diff_eq = self._data_set.constrained_problem.differential_equation
+        if diff_eq.x_dimension:
+            initial_x_tensor = tf.convert_to_tensor(
+                initial_collocation_data[:, 1:], tf.float32)
+            initial_y_tensor = tf.convert_to_tensor(
+                initial_iv_data.reshape(
+                    (initial_batch_size, -1, diff_eq.y_dimension)
+                )[
+                    np.arange(initial_batch_size),
+                    initial_collocation_data_indices,
+                    :
+                ],
+                tf.float32)
+        else:
+            initial_x_tensor = None
+            initial_y_tensor = initial_u_tensor
+
+        return InitialDataBatch(
+            initial_u_tensor,
+            initial_t_tensor,
+            initial_x_tensor,
+            initial_y_tensor)
 
     def _get_boundary_batch(
             self,
@@ -380,14 +443,15 @@ class DataSetIterator(Iterator):
         if boundary_batch_size == 0:
             return None
 
+        start_ind = self._batch_counter * self._boundary_batch_size
         boundary_indices = self._boundary_indices[
-            self._boundary_counter:
-            self._boundary_counter + boundary_batch_size,
+            start_ind:start_ind + boundary_batch_size,
             :
         ]
-        boundary_ic_data_indices = boundary_indices[:, 0]
+        boundary_iv_data_indices = boundary_indices[:, 0]
         boundary_collocation_data_indices = boundary_indices[:, 1]
-        boundary_ic_data = self._data_set.ic_data[boundary_ic_data_indices]
+        boundary_iv_data = \
+            self._data_set.initial_value_data[boundary_iv_data_indices]
         boundary_collocation_data = self._data_set.boundary_collocation_data[
             boundary_collocation_data_indices
         ]
@@ -399,7 +463,7 @@ class DataSetIterator(Iterator):
         axes_offset = d_y_over_d_n_offset + diff_eq.y_dimension
 
         return BoundaryDataBatch(
-            tf.convert_to_tensor(boundary_ic_data, tf.float32),
+            tf.convert_to_tensor(boundary_iv_data, tf.float32),
             tf.convert_to_tensor(
                 boundary_collocation_data[:, :x_offset], tf.float32),
             tf.convert_to_tensor(
@@ -451,10 +515,11 @@ class DataSetIterator(Iterator):
 
 class DataBatch(NamedTuple):
     """
-    A container for a data batch including domain data and optionally boundary
-    data.
+    A container for a data batch including domain data, initial value data, and
+    optionally boundary data.
     """
     domain: DomainDataBatch
+    initial: InitialDataBatch
     boundary: Optional[BoundaryDataBatch]
 
 
@@ -465,6 +530,16 @@ class DomainDataBatch(NamedTuple):
     u: tf.Tensor
     t: tf.Tensor
     x: Optional[tf.Tensor]
+
+
+class InitialDataBatch(NamedTuple):
+    """
+    A container for initial condition batch data.
+    """
+    u: tf.Tensor
+    t: tf.Tensor
+    x: Optional[tf.Tensor]
+    y: tf.Tensor
 
 
 class BoundaryDataBatch(NamedTuple):

@@ -26,9 +26,9 @@ class DataArgs(NamedTuple):
     """
     y_0_functions: Iterable[VectorizedInitialConditionFunction]
     n_domain_points: int
-    domain_batch_size: int
+    n_batches: int
     n_boundary_points: int = 0
-    boundary_batch_size: int = 0
+    n_ic_repeats: int = 1
 
 
 class ModelArgs(NamedTuple):
@@ -121,33 +121,32 @@ class PIDONOperator(Operator):
     def solve(
             self,
             ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
+            parallel_enabled: bool = True) -> Solution:
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
-            x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
+            x_tensor = tf.convert_to_tensor(x, tf.float32)
             u = ivp.initial_condition.y_0(
                 cp.mesh.all_index_coordinates(False, flatten=True)
-            ).reshape((1, -1))
-            u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
-            u_tensor = tf.tile(u_tensor, (x.shape[0], 1))
+                if self._vertex_oriented else x).reshape((1, -1))
+            u_tensor = tf.tile(
+                tf.convert_to_tensor(u, tf.float32),
+                (x.shape[0], 1))
         else:
             x_tensor = None
             u = np.array([ivp.initial_condition.y_0(None)])
-            u_tensor = tf.convert_to_tensor(u, dtype=tf.float32)
+            u_tensor = tf.convert_to_tensor(u, tf.float32)
 
         y_shape = cp.y_shape(self._vertex_oriented)
         t = discretize_time_domain(ivp.t_interval, self._d_t)
         y = np.empty((len(t) - 1,) + y_shape)
 
         for i, t_i in enumerate(t[1:]):
-            t_tensor = tf.tile(
-                tf.convert_to_tensor([[t_i]], dtype=tf.float32),
-                (u_tensor.shape[0], 1))
+            t_tensor = tf.constant(
+                t_i, shape=(u_tensor.shape[0], 1), dtype=tf.float32)
             y_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
@@ -198,8 +197,7 @@ class PIDONOperator(Operator):
             n_domain_points=training_data_args.n_domain_points,
             n_boundary_points=training_data_args.n_boundary_points)
         training_data = training_data_set.get_iterator(
-            domain_batch_size=training_data_args.domain_batch_size,
-            boundary_batch_size=training_data_args.boundary_batch_size)
+            training_data_args.n_batches, training_data_args.n_ic_repeats)
 
         if test_data_args:
             test_data_set = DataSet(
@@ -210,8 +208,8 @@ class PIDONOperator(Operator):
                 n_domain_points=test_data_args.n_domain_points,
                 n_boundary_points=test_data_args.n_boundary_points)
             test_data = test_data_set.get_iterator(
-                domain_batch_size=test_data_args.domain_batch_size,
-                boundary_batch_size=test_data_args.boundary_batch_size,
+                test_data_args.n_batches,
+                test_data_args.n_ic_repeats,
                 shuffle=False)
         else:
             test_data = None
