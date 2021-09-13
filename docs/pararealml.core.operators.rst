@@ -7,11 +7,10 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   pararealml.core.operators.auto_regression
    pararealml.core.operators.fdm
+   pararealml.core.operators.ml
    pararealml.core.operators.ode
    pararealml.core.operators.parareal
-   pararealml.core.operators.pidon
 
 Submodules
 ----------
