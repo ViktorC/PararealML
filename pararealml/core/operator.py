@@ -34,8 +34,7 @@ class Operator(ABC):
     def solve(
             self,
             ivp: InitialValueProblem,
-            parallel_enabled: bool = True
-    ) -> Solution:
+            parallel_enabled: bool = True) -> Solution:
         """
         Returns the IVP's solution.
 
@@ -47,8 +46,7 @@ class Operator(ABC):
 
 def discretize_time_domain(
         t: TemporalDomainInterval,
-        d_t: float
-) -> np.ndarray:
+        d_t: float) -> np.ndarray:
     """
     Returns a discretization of the temporal interval using the provided
     temporal step size.

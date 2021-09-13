@@ -19,8 +19,7 @@ def time(function: Callable) -> Callable:
 
 def time_with_args(
         return_time: bool = False,
-        function_name: Optional[str] = None
-) -> Callable:
+        function_name: Optional[str] = None) -> Callable:
     """
     Returns a function that returns a wrapped version of a function that times
     the execution of the innermost function, prints the execution time using
@@ -42,8 +41,7 @@ def time_with_args(
 def _get_wrapper(
         function: Callable,
         return_time: bool = False,
-        function_name: Optional[str] = None
-) -> Callable:
+        function_name: Optional[str] = None) -> Callable:
     """
     Returns a wrapped version of a function that times the execution of the
     function and prints it using the provided function name.

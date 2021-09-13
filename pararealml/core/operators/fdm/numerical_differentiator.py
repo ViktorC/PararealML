@@ -27,8 +27,7 @@ class NumericalDifferentiator(ABC):
             d_x: float,
             x_axis: int,
             derivative_boundary_constraints:
-            Sequence[Optional[BoundaryConstraintPair]]
-    ) -> np.ndarray:
+            Sequence[Optional[BoundaryConstraintPair]]) -> np.ndarray:
         """
         Computes the derivative of y with respect to the spatial dimension
         defined by x_axis at every point of the mesh.
@@ -55,8 +54,7 @@ class NumericalDifferentiator(ABC):
             x_axis1: int,
             x_axis2: int,
             derivative_boundary_constraints:
-            Sequence[Optional[BoundaryConstraintPair]]
-    ) -> np.ndarray:
+            Sequence[Optional[BoundaryConstraintPair]]) -> np.ndarray:
         """
         Computes the second derivative of y with respect to the spatial
         dimensions defined by x_axis1 and x_axis2 at every point of the mesh.
@@ -85,7 +83,7 @@ class NumericalDifferentiator(ABC):
             y_hat: np.ndarray,
             laplacian: np.ndarray,
             mesh: Mesh,
-            derivative_boundary_constraints: Optional[np.ndarray],
+            derivative_boundary_constraints: Optional[np.ndarray]
     ) -> np.ndarray:
         """
         Given an estimate of the anti-Laplacian, it computes an improved
@@ -469,8 +467,7 @@ class NumericalDifferentiator(ABC):
             y: np.ndarray,
             mesh: Mesh,
             derivative_boundary_constraints:
-            Optional[np.ndarray] = None
-    ) -> np.ndarray:
+            Optional[np.ndarray] = None) -> np.ndarray:
         """
         Computes the Laplacian of y at every point of the mesh.
 
@@ -543,8 +540,7 @@ class NumericalDifferentiator(ABC):
             tol: float,
             y_constraints: Sequence[Optional[Constraint]],
             derivative_boundary_constraints: Optional[np.ndarray] = None,
-            y_init: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+            y_init: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Computes the anti-Laplacian using the Jacobi method.
 
@@ -605,8 +601,7 @@ class NumericalDifferentiator(ABC):
     def _verify_and_get_derivative_boundary_constraints(
             derivative_boundary_constraints: Optional[np.ndarray],
             x_axes: int,
-            y_elements: int
-    ) -> np.ndarray:
+            y_elements: int) -> np.ndarray:
         """
         If the provided derivative boundary constraints are not None, it just
         asserts that the input array's shape matches expectations and returns
@@ -644,8 +639,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             d_x: float,
             x_axis: int,
             derivative_boundary_constraints:
-            Sequence[Optional[BoundaryConstraintPair]]
-    ) -> np.ndarray:
+            Sequence[Optional[BoundaryConstraintPair]]) -> np.ndarray:
         if y.shape[x_axis] <= 2:
             raise ValueError(
                 f'y must contain at least 3 points along x axis ({x_axis})')
@@ -721,8 +715,7 @@ class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
             x_axis1: int,
             x_axis2: int,
             derivative_boundary_constraints:
-            Sequence[Optional[BoundaryConstraintPair]]
-    ) -> np.ndarray:
+            Sequence[Optional[BoundaryConstraintPair]]) -> np.ndarray:
         if x_axis1 != x_axis2:
             first_derivative = self._derivative(
                 y,

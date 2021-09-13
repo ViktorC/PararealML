@@ -59,8 +59,7 @@ class Constraint:
             self,
             addend: np.ndarray,
             multiplier: Union[float, np.ndarray],
-            result: np.ndarray
-    ) -> np.ndarray:
+            result: np.ndarray) -> np.ndarray:
         """
         It constrains the result array in-place to the sum of the constraint
         values multiplied by the provided multiplier and the corresponding

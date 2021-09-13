@@ -326,8 +326,7 @@ class ConstrainedProblem:
             all_index_coordinates: np.ndarray,
             axis: int,
             vertex_oriented: bool,
-            t: Optional[float]
-    ) -> Tuple[np.ndarray, np.ndarray]:
+            t: Optional[float]) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates a tuple of two 1D arrays (y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary
@@ -394,8 +393,7 @@ class ConstrainedProblem:
             has_condition: bool,
             condition_function: VectorizedBoundaryConditionFunction,
             boundary_index_coordinates: np.ndarray,
-            t: Optional[float]
-    ) -> Sequence[Optional[Constraint]]:
+            t: Optional[float]) -> Sequence[Optional[Constraint]]:
         """
         Creates a sequence of boundary constraints representing the boundary
         condition, defined by the condition function, evaluated on a single
