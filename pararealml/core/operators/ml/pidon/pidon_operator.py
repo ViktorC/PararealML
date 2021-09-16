@@ -129,9 +129,7 @@ class PIDONOperator(Operator):
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
             x_tensor = tf.convert_to_tensor(x, tf.float32)
-            u = ivp.initial_condition.y_0(
-                cp.mesh.all_index_coordinates(False, flatten=True)
-                if self._vertex_oriented else x).reshape((1, -1))
+            u = ivp.initial_condition.y_0(x).reshape((1, -1))
             u_tensor = tf.tile(
                 tf.convert_to_tensor(u, tf.float32),
                 (x.shape[0], 1))
@@ -195,7 +193,8 @@ class PIDONOperator(Operator):
             point_sampler=self._sampler,
             y_0_functions=training_data_args.y_0_functions,
             n_domain_points=training_data_args.n_domain_points,
-            n_boundary_points=training_data_args.n_boundary_points)
+            n_boundary_points=training_data_args.n_boundary_points,
+            vertex_oriented=self._vertex_oriented)
         training_data = training_data_set.get_iterator(
             training_data_args.n_batches, training_data_args.n_ic_repeats)
 
@@ -206,7 +205,8 @@ class PIDONOperator(Operator):
                 point_sampler=self._sampler,
                 y_0_functions=test_data_args.y_0_functions,
                 n_domain_points=test_data_args.n_domain_points,
-                n_boundary_points=test_data_args.n_boundary_points)
+                n_boundary_points=test_data_args.n_boundary_points,
+                vertex_oriented=self._vertex_oriented)
             test_data = test_data_set.get_iterator(
                 test_data_args.n_batches,
                 test_data_args.n_ic_repeats,
@@ -214,7 +214,8 @@ class PIDONOperator(Operator):
         else:
             test_data = None
 
-        model = PIDeepONet(cp, **model_args._asdict())
+        model = PIDeepONet(
+            cp, vertex_oriented=self._vertex_oriented, **model_args._asdict())
         loss_histories = model.fit(
             training_data=training_data,
             test_data=test_data,

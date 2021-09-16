@@ -27,7 +27,8 @@ class DataSet:
             y_0_functions: Iterable[VectorizedInitialConditionFunction],
             point_sampler: CollocationPointSampler,
             n_domain_points: int,
-            n_boundary_points: int = 0):
+            n_boundary_points: int = 0,
+            vertex_oriented: bool = False):
         """
         :param cp: the constrained problem to generate the spatial data about
         :param t_interval: the bounds of the temporal domain to generate data
@@ -38,6 +39,8 @@ class DataSet:
         :param n_domain_points: the number of domain points to sample
         :param n_boundary_points: the number of boundary points to sample; if
             the constrained problem is an ODE, it should be 0
+        :param vertex_oriented: whether the initial condition collocation
+            points should be the vertices or the cell centers of the mesh
         """
         x_dimension = cp.differential_equation.x_dimension
 
@@ -58,6 +61,7 @@ class DataSet:
         self._point_sampler = point_sampler
         self._n_domain_points = n_domain_points
         self._n_boundary_points = n_boundary_points
+        self._vertex_oriented = vertex_oriented
 
         self._initial_value_data = self._create_initial_value_data()
         self._domain_collocation_data = self._create_domain_collocation_data()
@@ -134,7 +138,8 @@ class DataSet:
         problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
-            x = self._cp.mesh.all_index_coordinates(False, flatten=True)
+            x = self._cp.mesh.all_index_coordinates(
+                self._vertex_oriented, flatten=True)
             initial_value_data = np.vstack([
                 y_0_func(x).flatten() for y_0_func in self._y_0_functions
             ])
@@ -174,7 +179,8 @@ class DataSet:
         problem is a PDE) with an array of zeros representing the time points.
         """
         if self._cp.differential_equation.x_dimension:
-            x = self._cp.mesh.all_index_coordinates(False, flatten=True)
+            x = self._cp.mesh.all_index_coordinates(
+                self._vertex_oriented, flatten=True)
             t = np.zeros((len(x), 1))
             initial_collocation_data = np.hstack((t, x))
         else:

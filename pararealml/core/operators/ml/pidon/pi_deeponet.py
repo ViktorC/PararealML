@@ -33,7 +33,8 @@ class PIDeepONet(DeepONet):
             branch_initialization: str = 'glorot_uniform',
             trunk_initialization: str = 'glorot_uniform',
             branch_activation: Optional[str] = 'tanh',
-            trunk_activation: Optional[str] = 'tanh'):
+            trunk_activation: Optional[str] = 'tanh',
+            vertex_oriented: bool = False):
         """
         :param cp: the constrained problem to build a physics-informed neural
             network around
@@ -51,6 +52,8 @@ class PIDeepONet(DeepONet):
             of the branch net
         :param trunk_activation: the activation function to use for the layers
             of the trunk net
+        :param vertex_oriented: whether the initial condition collocation
+            points are the vertices or the cell centers of the mesh
         """
         if latent_output_size < 1:
             raise ValueError('latent output size must be greater than 0')
@@ -68,7 +71,10 @@ class PIDeepONet(DeepONet):
             trunk_hidden_layer_sizes = []
 
         super(PIDeepONet, self).__init__(
-            [np.prod(cp.mesh.cells_shape).item() * y_dim if x_dim else y_dim] +
+            [
+                np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
+                if x_dim else y_dim
+            ] +
             branch_hidden_layer_sizes +
             [latent_output_size * y_dim],
             [x_dim + 1] +
@@ -148,7 +154,6 @@ class PIDeepONet(DeepONet):
                 ic_loss_weight,
                 bc_loss_weight)
             training_loss_history.append(training_epoch_loss)
-
             if verbose:
                 print('Training MSE -', training_epoch_loss)
 
@@ -166,7 +171,6 @@ class PIDeepONet(DeepONet):
                     ic_loss_weight,
                     bc_loss_weight)
                 test_loss_history.append(training_epoch_loss)
-
                 if verbose:
                     print('Test MSE -', test_epoch_loss)
 
@@ -229,9 +233,9 @@ class PIDeepONet(DeepONet):
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
 
             gradients = auto_diff.gradient(value, self.trainable_variables)
-            flattened_gradients = tf.concat([
-                tf.reshape(gradient, (1, -1)) for gradient in gradients
-            ], axis=1)
+            flattened_gradients = tf.concat(
+                [tf.reshape(gradient, (1, -1)) for gradient in gradients],
+                axis=1)
             return value, flattened_gradients
 
         if verbose:
