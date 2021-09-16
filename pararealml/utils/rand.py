@@ -31,13 +31,10 @@ SEEDS = [
 
 def set_random_seed(seed: int):
     """
-    Sets the Python, NumPy, and Tensorflow random seeds to the provided value
-    and attempts to ensure Tensorflow operations remain deterministic.
+    Sets the Python, NumPy, and Tensorflow random seeds to the provided value.
 
     :param seed: the random seed value to use
     """
-    os.environ['TF_DETERMINISTIC_OPS'] = '1'
-    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)

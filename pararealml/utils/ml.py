@@ -1,15 +1,17 @@
+import os
+
 import tensorflow as tf
 from mpi4py import MPI
 
 
-def use_cpu():
+def make_tf_use_cpu():
     """
     Ensures that Tensorflow does not use any GPUs.
     """
     tf.config.experimental.set_visible_devices([], 'GPU')
 
 
-def limit_visible_gpus():
+def limit_tf_visible_gpus():
     """
     If there are GPUs available, it sets the GPU corresponding to the MPI rank
     of the process as the only device visible to Tensorflow.
@@ -22,3 +24,11 @@ def limit_visible_gpus():
                 f'number of GPUs ({len(gpus)}) must match default '
                 f'communicator size ({comm.size})')
         tf.config.experimental.set_visible_devices(gpus[comm.rank], 'GPU')
+
+
+def make_tf_deterministic():
+    """
+    Ensures Tensorflow operations are deterministic.
+    """
+    os.environ['TF_DETERMINISTIC_OPS'] = '1'
+    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
