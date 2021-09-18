@@ -16,8 +16,8 @@ from pararealml.utils.time import time_with_args
 limit_tf_visible_gpus()
 set_random_seed(SEEDS[0])
 
-diff_eq = DiffusionEquation(1, 3e-4)
-mesh = Mesh([(0., .5)], (.025,))
+diff_eq = DiffusionEquation(1, .025)
+mesh = Mesh([(0., 1.)], (.02,))
 bcs = [
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 1)), is_static=True),
@@ -25,24 +25,35 @@ bcs = [
          lambda x, t: np.zeros((len(x), 1)), is_static=True)),
 ]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
-t_interval = (0., 100.)
-ic_mean = .25
+t_interval = (0., 5.)
+ic_mean = .5
 ic = GaussianInitialCondition(
     cp,
-    [(np.array([ic_mean]), np.array([[.1]]))]
+    [(np.array([ic_mean]), np.array([[.05]]))]
 )
 ivp = InitialValueProblem(cp, t_interval, ic)
 
+
+def auc(y: np.ndarray, d_x: float) -> float:
+    area = 0.
+    for i in range(len(y) - 1):
+        area += (y[i] + y[i + 1]) / 2. * d_x
+    return area
+
+
+ic_auc = auc(ic.discrete_y_0(True), mesh.d_x[0])
+
+
 f = FDMOperator(
-    RK4(),
+    CrankNicolsonMethod(),
     ThreePointCentralFiniteDifferenceMethod(),
-    .002)
+    .0001)
 g = FDMOperator(
     ForwardEulerMethod(),
     ThreePointCentralFiniteDifferenceMethod(),
-    .005)
+    .00025)
 
-ar_don = AutoRegressionOperator(25., g.vertex_oriented)
+ar_don = AutoRegressionOperator(1.25, g.vertex_oriented)
 time_with_args(function_name='ar_don_train')(ar_don.train)(
     ivp,
     g,
@@ -58,33 +69,41 @@ time_with_args(function_name='ar_don_train')(ar_don.train)(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                    1e-2, decay_steps=200, decay_rate=.95
+                5e-3, decay_steps=100, decay_rate=.95
             )
         ),
-        batch_size=210,
+        batch_size=1312,
         epochs=5000,
         verbose=True
     ),
-    20,
-    lambda t, y: y + np.random.normal(0., t / 1000., size=y.shape)
+    60,
+    lambda t, y: (y - ic_auc) * np.random.normal(1., t / 100.) + ic_auc
 )
 
 training_y_0_functions = [
-    GaussianInitialCondition(
-        cp,
-        [(np.array([ic_mean]), np.array([[sd]]))]
-    ).y_0 for sd in np.arange(.05, 1.05, .05)
+    lambda x, _scale=scale: (ic.y_0(x) - ic_auc) * _scale + ic_auc
+    for scale in np.linspace(0., 1., 50, endpoint=True)
+]
+test_y_0_functions = [
+    lambda x, _scale=scale: (ic.y_0(x) - ic_auc) * _scale + ic_auc
+    for scale in np.random.random(10)
 ]
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, 25., g.vertex_oriented)
+pidon = PIDONOperator(sampler, 1.25, g.vertex_oriented)
 time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     t_interval,
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=520,
-        n_boundary_points=52,
+        n_domain_points=1200,
+        n_boundary_points=120,
         n_batches=5,
+    ),
+    test_data_args=DataArgs(
+        y_0_functions=test_y_0_functions,
+        n_domain_points=200,
+        n_boundary_points=20,
+        n_batches=1,
     ),
     model_args=ModelArgs(
         latent_output_size=100,
@@ -96,19 +115,19 @@ time_with_args(function_name='pidon_train')(pidon.train)(
             'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    2e-3, decay_steps=50, decay_rate=.95)
+                    5e-3, decay_steps=100, decay_rate=.95)
             }
         },
-        epochs=1000,
+        epochs=3000,
         ic_loss_weight=10.,
     ),
     secondary_optimization_args=SecondaryOptimizationArgs(
-        max_iterations=1500,
+        max_iterations=1000,
         ic_loss_weight=10.,
     )
 )
 
-tol = 3e-5
+tol = 1e-8
 p = PararealOperator(f, g, tol)
 p_ar_don = PararealOperator(f, ar_don, tol)
 p_pidon = PararealOperator(f, pidon, tol)
@@ -142,7 +161,12 @@ p_ar_don_sol.plot(p_ar_don_solution_name, True)
 p_pidon_sol.plot(p_pidon_solution_name, True)
 
 diff = f_sol.diff([
-    g_sol, g_ar_don_sol, g_pidon_sol, p_sol, p_ar_don_sol, p_pidon_sol
+    g_sol,
+    g_ar_don_sol,
+    g_pidon_sol,
+    p_sol,
+    p_ar_don_sol,
+    p_pidon_sol
 ])
 rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).mean(axis=(2, 3)))
 
