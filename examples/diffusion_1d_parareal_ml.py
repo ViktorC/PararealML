@@ -119,15 +119,11 @@ time_with_args(function_name='pidon_train')(pidon.train)(
             'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    5e-3, decay_steps=400, decay_rate=.97)
+                    5e-3, decay_steps=400, decay_rate=.98)
             }
         },
-        epochs=4000,
-        ic_loss_weight=10.,
-    ),
-    secondary_optimization_args=SecondaryOptimizationArgs(
-        max_iterations=1000,
-        ic_loss_weight=10.,
+        epochs=10000,
+        ic_loss_weight=15.,
     )
 )
 
