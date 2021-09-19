@@ -82,7 +82,8 @@ class PIDONOperator(Operator):
             self,
             sampler: CollocationPointSampler,
             d_t: float,
-            vertex_oriented: bool):
+            vertex_oriented: bool,
+            offset_t_0: bool = False):
         """
         :param sampler: the collocation point sampler to use to generate the
             data to train and test models
@@ -90,6 +91,8 @@ class PIDONOperator(Operator):
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
+        :param offset_t_0: whether to offset the time intervals of IVPs solved
+            by the lower bound of the time interval the model is trained on
         """
         if d_t <= 0.:
             raise ValueError('time step size must be greater than 0')
@@ -97,6 +100,9 @@ class PIDONOperator(Operator):
         self._sampler = sampler
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
+        self._offset_t_0 = offset_t_0
+
+        self._t_0 = 0.
         self._model: Optional[PIDeepONet] = None
 
     @property
@@ -138,8 +144,11 @@ class PIDONOperator(Operator):
             u = np.array([ivp.initial_condition.y_0(None)])
             u_tensor = tf.convert_to_tensor(u, tf.float32)
 
-        y_shape = cp.y_shape(self._vertex_oriented)
         t = discretize_time_domain(ivp.t_interval, self._d_t)
+        if self._offset_t_0:
+            t -= self._t_0
+
+        y_shape = cp.y_shape(self._vertex_oriented)
         y = np.empty((len(t) - 1,) + y_shape)
 
         for i, t_i in enumerate(t[1:]):
@@ -229,6 +238,7 @@ class PIDONOperator(Operator):
             if secondary_losses[1] is not None:
                 loss_histories[1].append(secondary_losses[1])
 
+        self._t_0 = t_interval[0]
         self._model = model
 
         return loss_histories
