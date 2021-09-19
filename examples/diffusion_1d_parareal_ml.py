@@ -33,6 +33,15 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, t_interval, ic)
 
+f = FDMOperator(
+    CrankNicolsonMethod(),
+    ThreePointCentralFiniteDifferenceMethod(),
+    .0001)
+g = FDMOperator(
+    ForwardEulerMethod(),
+    ThreePointCentralFiniteDifferenceMethod(),
+    .0005)
+
 
 def auc(y: np.ndarray, d_x: float) -> float:
     area = 0.
@@ -43,18 +52,10 @@ def auc(y: np.ndarray, d_x: float) -> float:
 
 ic_auc = auc(ic.discrete_y_0(True), mesh.d_x[0])
 
-
-f = FDMOperator(
-    CrankNicolsonMethod(),
-    ThreePointCentralFiniteDifferenceMethod(),
-    .0001)
-g = FDMOperator(
-    ForwardEulerMethod(),
-    ThreePointCentralFiniteDifferenceMethod(),
-    .00025)
-
 ar_don = AutoRegressionOperator(1.25, g.vertex_oriented)
-time_with_args(function_name='ar_don_train')(ar_don.train)(
+train_score, test_score = time_with_args(function_name='ar_don_train')(
+    ar_don.train
+)(
     ivp,
     g,
     SKLearnKerasRegressor(
@@ -69,35 +70,38 @@ time_with_args(function_name='ar_don_train')(ar_don.train)(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=100, decay_rate=.95
+                5e-3, decay_steps=200, decay_rate=.97
             )
         ),
-        batch_size=1312,
-        epochs=5000,
+        batch_size=11008,
+        epochs=10000,
         verbose=True
     ),
-    60,
+    400,
     lambda t, y: (y - ic_auc) * np.random.normal(1., t / 100.) + ic_auc
 )
+if MPI.COMM_WORLD.rank == 0:
+    print('AR train score:', train_score)
+    print('AR test score:', test_score)
 
 training_y_0_functions = [
     lambda x, _scale=scale: (ic.y_0(x) - ic_auc) * _scale + ic_auc
-    for scale in np.linspace(0., 1., 50, endpoint=True)
+    for scale in np.linspace(0., 1., 100, endpoint=True)
 ]
 test_y_0_functions = [
     lambda x, _scale=scale: (ic.y_0(x) - ic_auc) * _scale + ic_auc
     for scale in np.random.random(10)
 ]
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, 1.25, g.vertex_oriented)
+pidon = PIDONOperator(sampler, 1.25, g.vertex_oriented, offset_t_0=True)
 time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     t_interval,
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=1200,
-        n_boundary_points=120,
-        n_batches=5,
+        n_domain_points=2000,
+        n_boundary_points=200,
+        n_batches=20,
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
@@ -115,10 +119,10 @@ time_with_args(function_name='pidon_train')(pidon.train)(
             'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    5e-3, decay_steps=100, decay_rate=.95)
+                    5e-3, decay_steps=400, decay_rate=.97)
             }
         },
-        epochs=3000,
+        epochs=4000,
         ic_loss_weight=10.,
     ),
     secondary_optimization_args=SecondaryOptimizationArgs(
@@ -127,7 +131,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     )
 )
 
-tol = 1e-8
+tol = 1e-7
 p = PararealOperator(f, g, tol)
 p_ar_don = PararealOperator(f, ar_don, tol)
 p_pidon = PararealOperator(f, pidon, tol)
@@ -173,15 +177,23 @@ rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).mean(axis=(2, 3)))
 if MPI.COMM_WORLD.rank == 0:
     plot_rms_solution_diffs(
         diff.matching_time_points,
-        rms_diffs,
-        np.zeros_like(rms_diffs),
+        rms_diffs[:3, ...],
+        np.zeros_like(rms_diffs[:3, ...]),
         [
             'fdm_coarse',
             'ar_don_coarse',
             'pidon_coarse',
+        ],
+        'coarse_operator_accuracy'
+    )
+    plot_rms_solution_diffs(
+        diff.matching_time_points,
+        rms_diffs[3:, ...],
+        np.zeros_like(rms_diffs[3:, ...]),
+        [
             'parareal_fdm',
             'parareal_ar_don',
             'parareal_pidon'
         ],
-        'operator_accuracy'
+        'parareal_operator_accuracy'
     )
