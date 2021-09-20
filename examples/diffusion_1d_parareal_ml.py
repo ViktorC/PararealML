@@ -85,55 +85,54 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
 print('AR train score:', train_score)
 print('AR test score:', test_score)
 
-# training_y_0_functions = [
-#     lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-#     for scale in np.linspace(0., 1., 100, endpoint=True)
-# ]
-# test_y_0_functions = [
-#     lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-#     for scale in np.random.random(10)
-# ]
-# sampler = UniformRandomCollocationPointSampler()
-# pidon = PIDONOperator(sampler, .25, g.vertex_oriented, offset_t_0=True)
-# time_with_args(function_name='pidon_train')(pidon.train)(
-#     cp,
-#     (0., .25),
-#     training_data_args=DataArgs(
-#         y_0_functions=training_y_0_functions,
-#         n_domain_points=2000,
-#         n_boundary_points=200,
-#         n_batches=10,
-#     ),
-#     test_data_args=DataArgs(
-#         y_0_functions=test_y_0_functions,
-#         n_domain_points=200,
-#         n_boundary_points=20,
-#         n_batches=1,
-#     ),
-#     model_args=ModelArgs(
-#         latent_output_size=100,
-#         branch_hidden_layer_sizes=[100] * 7,
-#         trunk_hidden_layer_sizes=[100] * 7,
-#         branch_initialization='he_normal',
-#         trunk_initialization='he_normal',
-#         branch_activation='relu',
-#         trunk_activation='relu'
-#     ),
-#     optimization_args=OptimizationArgs(
-#         optimizer=optimizers.Adam(
-#             learning_rate=optimizers.schedules.ExponentialDecay(
-#                 5e-3, decay_steps=200, decay_rate=.98
-#             )
-#         ),
-#         epochs=10000,
-#         ic_loss_weight=20.,
-#     )
-# )
+training_y_0_functions = [
+    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
+    for scale in np.linspace(0., 1., 100, endpoint=True)
+]
+test_y_0_functions = [
+    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
+    for scale in np.random.random(10)
+]
+sampler = UniformRandomCollocationPointSampler()
+pidon = PIDONOperator(sampler, .25, g.vertex_oriented, offset_t_0=True)
+time_with_args(function_name='pidon_train')(pidon.train)(
+    cp,
+    (0., .25),
+    training_data_args=DataArgs(
+        y_0_functions=training_y_0_functions,
+        n_domain_points=2000,
+        n_boundary_points=200,
+        n_batches=10,
+    ),
+    test_data_args=DataArgs(
+        y_0_functions=test_y_0_functions,
+        n_domain_points=200,
+        n_boundary_points=20,
+        n_batches=1,
+    ),
+    model_args=ModelArgs(
+        latent_output_size=100,
+        branch_hidden_layer_sizes=[100] * 7,
+        trunk_hidden_layer_sizes=[100] * 7,
+        branch_initialization='he_normal',
+        trunk_initialization='he_normal',
+        branch_activation='relu',
+        trunk_activation='relu'
+    ),
+    optimization_args=OptimizationArgs(
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                5e-3, decay_steps=200, decay_rate=.98
+            )
+        ),
+        epochs=10000,
+    )
+)
 
 tol = 1e-2
 p = PararealOperator(f, g, tol)
 p_ar_don = PararealOperator(f, ar_don, tol)
-# p_pidon = PararealOperator(f, pidon, tol)
+p_pidon = PararealOperator(f, pidon, tol)
 
 f_solution_name = 'diffusion_fine'
 g_solution_name = 'diffusion_coarse'
@@ -147,53 +146,54 @@ f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
 g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
 g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
     ar_don.solve)(ivp)
-# g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
-#     pidon.solve)(ivp)
+g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
+    pidon.solve)(ivp)
 p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
 p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
     p_ar_don.solve)(ivp)
-# p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
-#     p_pidon.solve)(ivp)
+p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
+    p_pidon.solve)(ivp)
 
 f_sol.plot(f'{MPI.COMM_WORLD.rank}_{f_solution_name}')
 g_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_solution_name}')
 g_ar_don_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_ar_don_solution_name}')
-# g_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_pidon_solution_name}')
+g_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_pidon_solution_name}')
 if MPI.COMM_WORLD.rank == 0:
     p_sol.plot(p_solution_name)
     p_ar_don_sol.plot(p_ar_don_solution_name)
-    # p_pidon_sol.plot(p_pidon_solution_name)
+    p_pidon_sol.plot(p_pidon_solution_name)
 
 diff = f_sol.diff([
     g_sol,
     g_ar_don_sol,
-    # g_pidon_sol,
+    g_pidon_sol,
     p_sol,
     p_ar_don_sol,
-    # p_pidon_sol
+    p_pidon_sol
 ])
 rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).mean(axis=(2, 3)))
+print('RMS differences:', repr(rms_diffs))
 
 plot_rms_solution_diffs(
     diff.matching_time_points,
-    rms_diffs[:2, ...],
-    np.zeros_like(rms_diffs[:2, ...]),
+    rms_diffs[:3, ...],
+    np.zeros_like(rms_diffs[:3, ...]),
     [
         'fdm_coarse',
         'ar_don_coarse',
-        # 'pidon_coarse',
+        'pidon_coarse',
     ],
     f'{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
 )
 if MPI.COMM_WORLD.rank == 0:
     plot_rms_solution_diffs(
         diff.matching_time_points,
-        rms_diffs[2:, ...],
-        np.zeros_like(rms_diffs[2:, ...]),
+        rms_diffs[3:, ...],
+        np.zeros_like(rms_diffs[3:, ...]),
         [
             'parareal_fdm',
             'parareal_ar_don',
-            # 'parareal_pidon'
+            'parareal_pidon'
         ],
         'parareal_operator_accuracy'
     )
