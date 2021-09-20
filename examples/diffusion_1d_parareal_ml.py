@@ -124,7 +124,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     )
 )
 
-tol = 1e-4
+tol = 1e-3
 p = PararealOperator(f, g, tol)
 p_ar_don = PararealOperator(f, ar_don, tol)
 p_pidon = PararealOperator(f, pidon, tol)
@@ -169,8 +169,8 @@ rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).mean(axis=(2, 3)))
 
 plot_rms_solution_diffs(
     diff.matching_time_points,
-    rms_diffs[:1, ...],
-    np.zeros_like(rms_diffs[:1, ...]),
+    rms_diffs[:3, ...],
+    np.zeros_like(rms_diffs[:3, ...]),
     [
         'fdm_coarse',
         'ar_don_coarse',
@@ -180,8 +180,8 @@ plot_rms_solution_diffs(
 )
 plot_rms_solution_diffs(
     diff.matching_time_points,
-    rms_diffs[1:, ...],
-    np.zeros_like(rms_diffs[1:, ...]),
+    rms_diffs[3:, ...],
+    np.zeros_like(rms_diffs[3:, ...]),
     [
         'parareal_fdm',
         'parareal_ar_don',
