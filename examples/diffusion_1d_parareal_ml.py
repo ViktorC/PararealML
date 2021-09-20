@@ -17,12 +17,16 @@ limit_tf_visible_gpus()
 set_random_seed(SEEDS[0])
 
 diff_eq = DiffusionEquation(1, 5e-2)
-mesh = Mesh([(0., .5)], (1e-2,))
+mesh = Mesh([(0., .5)], (5e-3,))
 bcs = [
-    (NeumannBoundaryCondition(
-        lambda x, t: np.zeros((len(x), 1)), is_static=True),
-     NeumannBoundaryCondition(
-         lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+    (
+        NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True
+        ),
+        NeumannBoundaryCondition(
+         lambda x, t: np.zeros((len(x), 1)), is_static=True
+        )
+    ),
 ]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 t_interval = (0., 1.)
@@ -36,11 +40,13 @@ ivp = InitialValueProblem(cp, t_interval, ic)
 f = FDMOperator(
     RK4(),
     ThreePointCentralFiniteDifferenceMethod(),
-    2.5e-5)
+    2.5e-5
+)
 g = FDMOperator(
     RK4(),
     ThreePointCentralFiniteDifferenceMethod(),
-    1.25e-3)
+    2.5e-4
+)
 
 mean_value = 2.
 
@@ -153,9 +159,10 @@ f_sol.plot(f'{MPI.COMM_WORLD.rank}_{f_solution_name}')
 g_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_solution_name}')
 g_ar_don_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_ar_don_solution_name}')
 # g_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_pidon_solution_name}')
-p_sol.plot(f'{MPI.COMM_WORLD.rank}_{p_solution_name}')
-p_ar_don_sol.plot(f'{MPI.COMM_WORLD.rank}_{p_ar_don_solution_name}')
-# p_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{p_pidon_solution_name}')
+if MPI.COMM_WORLD.rank == 0:
+    p_sol.plot(p_solution_name)
+    p_ar_don_sol.plot(p_ar_don_solution_name)
+    # p_pidon_sol.plot(p_pidon_solution_name)
 
 diff = f_sol.diff([
     g_sol,
@@ -178,14 +185,15 @@ plot_rms_solution_diffs(
     ],
     f'{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
 )
-plot_rms_solution_diffs(
-    diff.matching_time_points,
-    rms_diffs[2:, ...],
-    np.zeros_like(rms_diffs[2:, ...]),
-    [
-        'parareal_fdm',
-        'parareal_ar_don',
-        # 'parareal_pidon'
-    ],
-    f'{MPI.COMM_WORLD.rank}_parareal_operator_accuracy'
-)
+if MPI.COMM_WORLD.rank == 0:
+    plot_rms_solution_diffs(
+        diff.matching_time_points,
+        rms_diffs[2:, ...],
+        np.zeros_like(rms_diffs[2:, ...]),
+        [
+            'parareal_fdm',
+            'parareal_ar_don',
+            # 'parareal_pidon'
+        ],
+        'parareal_operator_accuracy'
+    )
