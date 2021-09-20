@@ -91,8 +91,10 @@ class PIDONOperator(Operator):
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
-        :param offset_t_0: whether to offset the time intervals of IVPs solved
-            by the lower bound of the time interval the model is trained on
+        :param offset_t_0: whether to offset the time interval of any IVP
+            to solve by the difference of the lower bound of the time interval
+            the model was trained on and the lower bound of the time interval
+            of the IVP to solve
         """
         if d_t <= 0.:
             raise ValueError('time step size must be greater than 0')
@@ -146,7 +148,7 @@ class PIDONOperator(Operator):
 
         t = discretize_time_domain(ivp.t_interval, self._d_t)
         if self._offset_t_0:
-            t -= self._t_0
+            t += self._t_0 - ivp.t_interval[0]
 
         y_shape = cp.y_shape(self._vertex_oriented)
         y = np.empty((len(t) - 1,) + y_shape)
