@@ -67,7 +67,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
         y_0_functions=training_y_0_functions,
         n_domain_points=4000,
         n_boundary_points=400,
-        n_batches=40,
+        n_batches=20,
         n_ic_repeats=20,
     ),
     test_data_args=DataArgs(
@@ -86,7 +86,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=500, decay_rate=.98
+                5e-3, decay_steps=400, decay_rate=.98
             )
         ),
         epochs=10000,
