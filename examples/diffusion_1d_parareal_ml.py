@@ -50,6 +50,50 @@ g = FDMOperator(
 
 mean_value = 2.
 
+training_y_0_functions = [
+    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
+    for scale in np.linspace(0., 1., 120, endpoint=True)
+]
+test_y_0_functions = [
+    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
+    for scale in np.random.random(10)
+]
+sampler = UniformRandomCollocationPointSampler()
+pidon = PIDONOperator(sampler, .25, g.vertex_oriented, offset_t_0=True)
+time_with_args(function_name='pidon_train')(pidon.train)(
+    cp,
+    (0., .25),
+    training_data_args=DataArgs(
+        y_0_functions=training_y_0_functions,
+        n_domain_points=4000,
+        n_boundary_points=400,
+        n_batches=40,
+        n_ic_repeats=20,
+    ),
+    test_data_args=DataArgs(
+        y_0_functions=test_y_0_functions,
+        n_domain_points=200,
+        n_boundary_points=20,
+        n_batches=1,
+    ),
+    model_args=ModelArgs(
+        latent_output_size=100,
+        branch_hidden_layer_sizes=[100] * 7,
+        trunk_hidden_layer_sizes=[100] * 7,
+        branch_initialization='he_normal',
+        branch_activation='relu'
+    ),
+    optimization_args=OptimizationArgs(
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                5e-3, decay_steps=500, decay_rate=.98
+            )
+        ),
+        epochs=10000,
+        ic_loss_weight=5.
+    )
+)
+
 ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
 train_score, test_score = time_with_args(function_name='ar_don_train')(
     ar_don.train
@@ -84,51 +128,6 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
 )
 print('AR train score:', train_score)
 print('AR test score:', test_score)
-
-training_y_0_functions = [
-    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-    for scale in np.linspace(0., 1., 100, endpoint=True)
-]
-test_y_0_functions = [
-    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-    for scale in np.random.random(10)
-]
-sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, .25, g.vertex_oriented, offset_t_0=True)
-time_with_args(function_name='pidon_train')(pidon.train)(
-    cp,
-    (0., .25),
-    training_data_args=DataArgs(
-        y_0_functions=training_y_0_functions,
-        n_domain_points=2000,
-        n_boundary_points=200,
-        n_batches=10,
-    ),
-    test_data_args=DataArgs(
-        y_0_functions=test_y_0_functions,
-        n_domain_points=200,
-        n_boundary_points=20,
-        n_batches=1,
-    ),
-    model_args=ModelArgs(
-        latent_output_size=100,
-        branch_hidden_layer_sizes=[100] * 7,
-        trunk_hidden_layer_sizes=[100] * 7,
-        branch_initialization='he_normal',
-        trunk_initialization='he_normal',
-        branch_activation='relu',
-        trunk_activation='relu'
-    ),
-    optimization_args=OptimizationArgs(
-        optimizer=optimizers.Adam(
-            learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
-            )
-        ),
-        epochs=10000,
-        ic_loss_weight=20.
-    )
-)
 
 tol = 1e-2
 p = PararealOperator(f, g, tol)
