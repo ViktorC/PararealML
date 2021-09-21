@@ -66,14 +66,14 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
         n_domain_points=4000,
-        n_boundary_points=400,
+        n_boundary_points=1000,
         n_batches=20,
         n_ic_repeats=20,
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
         n_domain_points=200,
-        n_boundary_points=20,
+        n_boundary_points=50,
         n_batches=1,
     ),
     model_args=ModelArgs(
