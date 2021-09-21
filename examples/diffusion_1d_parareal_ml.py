@@ -126,6 +126,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
             )
         ),
         epochs=10000,
+        ic_loss_weight=20.
     )
 )
 
