@@ -48,18 +48,19 @@ g = FDMOperator(
     2.5e-4
 )
 
-mean_value = 2.
-
-training_y_0_functions = [
-    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-    for scale in np.linspace(0., 1., 120, endpoint=True)
+g_sol = g.solve(ivp)
+y_0_functions = [
+    DiscreteInitialCondition(
+        cp,
+        discrete_y,
+        g.vertex_oriented
+    ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
 ]
-test_y_0_functions = [
-    lambda x, _scale=scale: (ic.y_0(x) - mean_value) * _scale + mean_value
-    for scale in np.random.random(10)
-]
+np.random.shuffle(y_0_functions)
+training_y_0_functions = y_0_functions[:3500]
+test_y_0_functions = y_0_functions[3500:]
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, .25, g.vertex_oriented, offset_t_0=True)
+pidon = PIDONOperator(sampler, .25, g.vertex_oriented, auto_regression=True)
 time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     (0., .25),
@@ -67,14 +68,14 @@ time_with_args(function_name='pidon_train')(pidon.train)(
         y_0_functions=training_y_0_functions,
         n_domain_points=4000,
         n_boundary_points=1000,
-        n_batches=20,
+        n_batches=700,
         n_ic_repeats=20,
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
         n_domain_points=200,
         n_boundary_points=50,
-        n_batches=1,
+        n_batches=5,
     ),
     model_args=ModelArgs(
         latent_output_size=100,
@@ -89,11 +90,12 @@ time_with_args(function_name='pidon_train')(pidon.train)(
                 5e-3, decay_steps=400, decay_rate=.98
             )
         ),
-        epochs=10000,
+        epochs=100,
         ic_loss_weight=5.
     )
 )
 
+mean_value = 2.
 ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
 train_score, test_score = time_with_args(function_name='ar_don_train')(
     ar_don.train
