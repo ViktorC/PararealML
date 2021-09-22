@@ -83,7 +83,7 @@ class PIDONOperator(Operator):
             sampler: CollocationPointSampler,
             d_t: float,
             vertex_oriented: bool,
-            offset_t_0: bool = False):
+            auto_regression: bool = False):
         """
         :param sampler: the collocation point sampler to use to generate the
             data to train and test models
@@ -91,10 +91,9 @@ class PIDONOperator(Operator):
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
-        :param offset_t_0: whether to offset the time interval of any IVP
-            to solve by the difference of the lower bound of the time interval
-            the model was trained on and the lower bound of the time interval
-            of the IVP to solve
+        :param auto_regression: whether the operator should function in
+            auto-regression mode using its prediction at the previous time
+            step as the input for its next prediction
         """
         if d_t <= 0.:
             raise ValueError('time step size must be greater than 0')
@@ -102,9 +101,8 @@ class PIDONOperator(Operator):
         self._sampler = sampler
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
-        self._offset_t_0 = offset_t_0
+        self._auto_regression = auto_regression
 
-        self._t_0 = 0.
         self._model: Optional[PIDeepONet] = None
 
     @property
@@ -133,6 +131,8 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
+        t = discretize_time_domain(ivp.t_interval, self._d_t)[1:]
+
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
@@ -146,22 +146,33 @@ class PIDONOperator(Operator):
             u = np.array([ivp.initial_condition.y_0(None)])
             u_tensor = tf.convert_to_tensor(u, tf.float32)
 
-        t = discretize_time_domain(ivp.t_interval, self._d_t)
-        if self._offset_t_0:
-            t += self._t_0 - ivp.t_interval[0]
+        t_tensor = tf.constant(
+            self._d_t if self._auto_regression else t[0],
+            dtype=tf.float32,
+            shape=(u_tensor.shape[0], 1))
 
         y_shape = cp.y_shape(self._vertex_oriented)
-        y = np.empty((len(t) - 1,) + y_shape)
+        y = np.empty((len(t),) + y_shape)
 
-        for i, t_i in enumerate(t[1:]):
-            t_tensor = tf.constant(
-                t_i, shape=(u_tensor.shape[0], 1), dtype=tf.float32)
+        for i, t_i in enumerate(t):
             y_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
+            if i < len(t) - 1:
+                if self._auto_regression:
+                    u_tensor = tf.tile(
+                        tf.reshape(y_tensor, (1, -1)),
+                        (u_tensor.shape[0], 1)) if diff_eq.x_dimension \
+                        else tf.reshape(y_tensor, u_tensor.shape)
+                else:
+                    t_tensor = tf.constant(
+                        t[i + 1],
+                        dtype=tf.float32,
+                        shape=(u_tensor.shape[0], 1))
+
         return Solution(
             ivp,
-            t[1:],
+            t,
             y,
             vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)
@@ -198,6 +209,12 @@ class PIDONOperator(Operator):
             a (quasi) second order optimization method
         :return: the training loss history and the test loss history
         """
+        if self._auto_regression and t_interval != (0., self._d_t):
+            raise ValueError(
+                'in auto-regression mode, the training time interval '
+                f'{t_interval} must range from 0 to the time step size of '
+                f'the operator ({self._d_t})')
+
         training_data_set = DataSet(
             cp,
             t_interval,
@@ -240,7 +257,6 @@ class PIDONOperator(Operator):
             if secondary_losses[1] is not None:
                 loss_histories[1].append(secondary_losses[1])
 
-        self._t_0 = t_interval[0]
         self._model = model
 
         return loss_histories
