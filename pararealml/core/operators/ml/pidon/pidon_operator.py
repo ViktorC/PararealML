@@ -162,7 +162,7 @@ class PIDONOperator(Operator):
                 if self._auto_regression:
                     u_tensor = tf.tile(
                         tf.reshape(y_tensor, (1, -1)),
-                        (u_tensor.shape[0], 1)) if diff_eq.x_dimension \
+                        (x_tensor.shape[0], 1)) if diff_eq.x_dimension \
                         else tf.reshape(y_tensor, u_tensor.shape)
                 else:
                     t_tensor = tf.constant(
