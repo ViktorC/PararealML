@@ -49,16 +49,16 @@ g = FDMOperator(
 )
 
 g_sol = g.solve(ivp)
-y_0_functions = [
+y_0_functions = [ic.y_0] * 50 + [
     DiscreteInitialCondition(
         cp,
         discrete_y,
         g.vertex_oriented
     ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
-]
+][:3450]
 np.random.shuffle(y_0_functions)
-training_y_0_functions = y_0_functions[:3500]
-test_y_0_functions = y_0_functions[3500:]
+training_y_0_functions = y_0_functions[:3000]
+test_y_0_functions = y_0_functions[3000:]
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, .25, g.vertex_oriented, auto_regression=True)
 time_with_args(function_name='pidon_train')(pidon.train)(
@@ -67,31 +67,32 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
         n_domain_points=4000,
-        n_boundary_points=1000,
-        n_batches=700,
-        n_ic_repeats=20,
+        n_boundary_points=1200,
+        n_batches=600,
+        n_ic_repeats=40,
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
         n_domain_points=200,
-        n_boundary_points=50,
+        n_boundary_points=60,
         n_batches=5,
+        n_ic_repeats=2,
     ),
     model_args=ModelArgs(
         latent_output_size=100,
         branch_hidden_layer_sizes=[100] * 7,
         trunk_hidden_layer_sizes=[100] * 7,
-        branch_initialization='he_normal',
+        branch_initialization='he_uniform',
         branch_activation='relu'
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=400, decay_rate=.98
+                2e-3, decay_steps=600, decay_rate=.97
             )
         ),
-        epochs=100,
-        ic_loss_weight=5.
+        epochs=200,
+        ic_loss_weight=10.
     )
 )
 
@@ -111,8 +112,8 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
             [100] * 7 +
             [diff_eq.y_dimension * 100],
             diff_eq.y_dimension,
-            branch_initialization='he_normal',
-            trunk_initialization='he_normal',
+            branch_initialization='he_uniform',
+            trunk_initialization='he_uniform',
             branch_activation='relu',
             trunk_activation='relu'
         ),
@@ -173,7 +174,8 @@ diff = f_sol.diff([
     p_ar_don_sol,
     p_pidon_sol
 ])
-rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).mean(axis=(2, 3)))
+
+rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
 print('RMS differences:', repr(rms_diffs))
 
 plot_rms_solution_diffs(
