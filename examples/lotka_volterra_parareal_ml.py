@@ -30,7 +30,12 @@ y_0_functions = [
     in zip(np.random.uniform(5., 200., 600), np.random.uniform(10., 140., 600))
 ]
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, 2.5, g.vertex_oriented, auto_regression=True)
+pidon = PIDONOperator(
+    sampler,
+    2.5,
+    g.vertex_oriented,
+    auto_regression_mode=True
+)
 time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     (0., 2.5),

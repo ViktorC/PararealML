@@ -253,7 +253,7 @@ def test_pidon_operator_in_auto_regression_mode_with_invalid_t_interval():
     ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
 
     sampler = UniformRandomCollocationPointSampler()
-    pidon = PIDONOperator(sampler, .25, True, auto_regression=True)
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
 
     with pytest.raises(ValueError):
         pidon.train(
@@ -292,7 +292,10 @@ def test_pidon_operator_on_ode_in_auto_regression_mode():
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     sampler = UniformRandomCollocationPointSampler()
-    pidon = PIDONOperator(sampler, .25, True, auto_regression=True)
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    assert pidon.auto_regression_mode
+
     pidon.train(
         cp,
         (0., .25),
@@ -355,7 +358,10 @@ def test_pidon_operator_on_pde_in_auto_regression_mode():
         ).y_0 for sd in [.1, .2, .3, .4]
     ]
     sampler = UniformRandomCollocationPointSampler()
-    pidon = PIDONOperator(sampler, .25, True, auto_regression=True)
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    assert pidon.auto_regression_mode
+
     pidon.train(
         cp,
         (0., .25),

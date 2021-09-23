@@ -60,7 +60,12 @@ np.random.shuffle(y_0_functions)
 training_y_0_functions = y_0_functions[:3000]
 test_y_0_functions = y_0_functions[3000:]
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, .25, g.vertex_oriented, auto_regression=True)
+pidon = PIDONOperator(
+    sampler,
+    .25,
+    g.vertex_oriented,
+    auto_regression_mode=True
+)
 time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     (0., .25),
