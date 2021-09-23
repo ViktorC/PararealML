@@ -27,7 +27,7 @@ g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), 2.5e-3)
 y_0_functions = [
     lambda x, _r_0=r_0, _p_0=p_0: np.array([_r_0, _p_0])
     for (r_0, p_0)
-    in zip(np.random.uniform(5., 200., 200), np.random.uniform(10., 140., 200))
+    in zip(np.random.uniform(5., 200., 600), np.random.uniform(10., 140., 600))
 ]
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, 2.5, g.vertex_oriented, auto_regression=True)
@@ -35,14 +35,14 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     cp,
     (0., 2.5),
     training_data_args=DataArgs(
-        y_0_functions=y_0_functions[:180],
-        n_domain_points=500,
-        n_batches=4,
-        n_ic_repeats=4
+        y_0_functions=y_0_functions[:500],
+        n_domain_points=1000,
+        n_batches=20,
+        n_ic_repeats=20
     ),
     test_data_args=DataArgs(
-        y_0_functions=y_0_functions[180:],
-        n_domain_points=50,
+        y_0_functions=y_0_functions[500:],
+        n_domain_points=100,
         n_batches=1
     ),
     model_args=ModelArgs(
@@ -55,10 +55,10 @@ time_with_args(function_name='pidon_train')(pidon.train)(
             'class_name': 'Adam',
             'config': {
                 'learning_rate': optimizers.schedules.ExponentialDecay(
-                    1e-3, decay_steps=50, decay_rate=.95)
+                    1e-3, decay_steps=400, decay_rate=.95)
             }
         },
-        epochs=1000,
+        epochs=2000,
     ),
     secondary_optimization_args=SecondaryOptimizationArgs(
         max_iterations=1000
@@ -72,7 +72,7 @@ train_score, test_score = time_with_args(function_name='ar_rf_train')(
     ivp,
     g,
     RandomForestRegressor(n_estimators=250, n_jobs=10, verbose=True),
-    300,
+    1000,
     lambda t, y: y + np.random.normal(0., t / 10., size=y.shape)
 )
 print('AR train score:', train_score)
@@ -125,8 +125,8 @@ print('RMS differences:', repr(rms_diffs))
 
 plot_rms_solution_diffs(
     diff.matching_time_points,
-    rms_diffs[:1, ...],
-    np.zeros_like(rms_diffs[:1, ...]),
+    rms_diffs[:3, ...],
+    np.zeros_like(rms_diffs[:3, ...]),
     [
         'ode_coarse',
         'ar_rf_coarse',
@@ -137,8 +137,8 @@ plot_rms_solution_diffs(
 if MPI.COMM_WORLD.rank == 0:
     plot_rms_solution_diffs(
         diff.matching_time_points,
-        rms_diffs[1:, ...],
-        np.zeros_like(rms_diffs[1:, ...]),
+        rms_diffs[3:, ...],
+        np.zeros_like(rms_diffs[3:, ...]),
         [
             'parareal_ode',
             'parareal_ar_rf',
