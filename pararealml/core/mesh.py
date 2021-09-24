@@ -238,18 +238,18 @@ class Mesh:
                 index_coordinates.reshape((-1, self._dimensions))
         return index_coordinates
 
-    def unit_vector_grids(
+    def basis_vector_grids(
             self,
             vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
         """
-        Returns a tuple of unit vector grids such that each element of this
-        tuple is an array containing the Cartesian coordinates of one of the
-        unit vectors of the mesh's coordinate system at each vertex or cell
-        center of the mesh.
+        Returns a tuple of orthonormal basis vector grids such that each
+        element of this tuple is an array containing the Cartesian coordinates
+        of one of the basis vectors of the mesh's coordinate system at each
+        vertex or cell center of the mesh.
 
-        :param vertex_oriented: whether to return the unit vectors at the
+        :param vertex_oriented: whether to return the basis vectors at the
             vertices or the cell centers of the mesh
-        :return: a tuple of arrays containing the unit vector grids
+        :return: a tuple of arrays containing the basis vector grids
         """
         unit_vector_grids = []
 
