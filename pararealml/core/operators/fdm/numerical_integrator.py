@@ -136,8 +136,9 @@ class ImplicitMethod(NumericalIntegrator, ABC):
     def __init__(self, tol: float = 1.48e-8, max_iterations: int = 50):
         """
         :param tol: the tolerance value to use for solving the equation for y
-            at the next time step through Newton's method
-        :param max_iterations: the maximum allowed number of Newton iterations
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
         """
         if tol < 0.:
             raise ValueError('tolerance must be non-negative')
@@ -150,19 +151,20 @@ class ImplicitMethod(NumericalIntegrator, ABC):
 
     def _solve(
             self,
-            y_next_function: Callable[[np.ndarray], np.ndarray],
+            y_next_residual_function: Callable[[np.ndarray], np.ndarray],
             y_next_init: np.ndarray) -> np.ndarray:
         """
         Solves the implicit equation for y at the next time step.
 
-        :param y_next_function: the difference of the left and the right hand
-            sides the equation as a function of y at the next time step
+        :param y_next_residual_function: the difference of the left and the
+            right hand sides of the equation as a function of y at the next
+            time step
         :param y_next_init: the initial guess for the value of y at the next
             time step
         :return: y at the next time step
         """
         return newton(
-            y_next_function,
+            y_next_residual_function,
             y_next_init,
             tol=self._tol,
             maxiter=self._max_iterations)
@@ -176,8 +178,9 @@ class BackwardEulerMethod(ImplicitMethod):
     def __init__(self, tol: float = 1.48e-8, max_iterations: int = 50):
         """
         :param tol: the tolerance value to use for solving the equation for y
-            at the next time step through Newton's method
-        :param max_iterations: the maximum allowed number of Newton iterations
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
         """
         super(BackwardEulerMethod, self).__init__(tol, max_iterations)
 
@@ -197,12 +200,12 @@ class BackwardEulerMethod(ImplicitMethod):
             y_next_constraints,
             y + d_t * d_y_over_d_t(t, y))
 
-        def y_next_function(y_next: np.ndarray) -> np.ndarray:
+        def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_next_constraints,
                 y + d_t * d_y_over_d_t(t_next, y_next))
 
-        return self._solve(y_next_function, y_next_init)
+        return self._solve(y_next_residual_function, y_next_init)
 
 
 class CrankNicolsonMethod(ImplicitMethod):
@@ -220,8 +223,9 @@ class CrankNicolsonMethod(ImplicitMethod):
         :param a: the weight of the backward Euler term of the update; the
             forward Euler term's weight is 1 - a
         :param tol: the tolerance value to use for solving the equation for y
-            at the next time step through Newton's method
-        :param max_iterations: the maximum allowed number of Newton iterations
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
         """
         if not (0. <= a <= 1.):
             raise ValueError('the value of \'a\' must be between 0 and 1')
@@ -247,11 +251,11 @@ class CrankNicolsonMethod(ImplicitMethod):
         y_next_init = apply_constraints_along_last_axis(
             y_next_constraints, y + forward_update)
 
-        def y_next_function(y_next: np.ndarray) -> np.ndarray:
+        def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_next_constraints,
                 y +
                 self._a * d_t * d_y_over_d_t(t_next, y_next) +
                 self._b * forward_update)
 
-        return self._solve(y_next_function, y_next_init)
+        return self._solve(y_next_residual_function, y_next_init)
