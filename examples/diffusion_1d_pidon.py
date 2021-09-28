@@ -60,7 +60,7 @@ pidon.train(
 
 fdm = FDMOperator(
     CrankNicolsonMethod(),
-    ThreePointCentralFiniteDifferenceMethod(),
+    ThreePointCentralDifferenceMethod(),
     .0001)
 
 for sd in [.075, .125, .175]:

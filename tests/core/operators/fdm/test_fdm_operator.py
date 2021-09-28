@@ -11,7 +11,7 @@ from pararealml.core.initial_condition import DiscreteInitialCondition, \
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh, CoordinateSystem
 from pararealml.core.operators.fdm.numerical_differentiator import \
-    ThreePointCentralFiniteDifferenceMethod
+    ThreePointCentralDifferenceMethod
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_integrator import \
     ForwardEulerMethod, RK4, CrankNicolsonMethod
@@ -32,7 +32,7 @@ def test_fdm_operator_on_ode_with_analytic_solution():
     )
 
     op = FDMOperator(
-        RK4(), ThreePointCentralFiniteDifferenceMethod(), 1e-4)
+        RK4(), ThreePointCentralDifferenceMethod(), 1e-4)
 
     solution = op.solve(ivp)
 
@@ -65,7 +65,7 @@ def test_fdm_operator_conserves_density_on_zero_flux_diffusion_equation():
     y_0_sum = np.sum(y_0)
 
     fdm_op = FDMOperator(
-        CrankNicolsonMethod(), ThreePointCentralFiniteDifferenceMethod(), 1e-3)
+        CrankNicolsonMethod(), ThreePointCentralDifferenceMethod(), 1e-3)
     solution = fdm_op.solve(ivp)
     y = solution.discrete_y()
     y_sums = np.sum(y, axis=tuple(range(1, y.ndim)))
@@ -79,7 +79,7 @@ def test_fdm_operator_on_ode():
     ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = FDMOperator(
-        ForwardEulerMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
+        ForwardEulerMethod(), ThreePointCentralDifferenceMethod(), .01)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
@@ -102,7 +102,7 @@ def test_fdm_operator_on_1d_pde():
         [(np.array([2.5]), np.array([[1.]]))]
     )
     ivp = InitialValueProblem(cp, (0., 50.), ic)
-    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .25)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
@@ -131,7 +131,7 @@ def test_fdm_operator_on_2d_pde():
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 4)))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
-    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .25)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .25)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
@@ -156,7 +156,7 @@ def test_fdm_operator_on_3d_pde():
         True
     )
     ivp = InitialValueProblem(cp, (0., 5.), ic)
-    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .05)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
@@ -194,7 +194,7 @@ def test_fdm_operator_on_polar_pde():
         [1., .0, .0]
     )
     ivp = InitialValueProblem(cp, (0., 5.), ic)
-    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented
@@ -218,7 +218,7 @@ def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
         [20.]
     )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
-    op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .5)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .5)
     solution = op.solve(ivp)
     y = solution.discrete_y()
 

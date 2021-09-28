@@ -39,12 +39,12 @@ ivp = InitialValueProblem(cp, t_interval, ic)
 
 f = FDMOperator(
     RK4(),
-    ThreePointCentralFiniteDifferenceMethod(),
+    ThreePointCentralDifferenceMethod(),
     2.5e-5
 )
 g = FDMOperator(
     RK4(),
-    ThreePointCentralFiniteDifferenceMethod(),
+    ThreePointCentralDifferenceMethod(),
     2.5e-4
 )
 

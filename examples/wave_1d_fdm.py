@@ -18,6 +18,6 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 2)))
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .005)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .005)
 solution = solver.solve(ivp)
 solution.plot('1d_wave_equation', n_images=50)

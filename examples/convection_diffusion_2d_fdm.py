@@ -27,5 +27,5 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 30.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
 solver.solve(ivp).plot('2d_convection_diffusion', n_images=20, three_d=True)

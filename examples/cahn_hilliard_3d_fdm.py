@@ -18,6 +18,6 @@ ic = DiscreteInitialCondition(
     True)
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
 solution = solver.solve(ivp)
 solution.plot('cahn_hilliard')

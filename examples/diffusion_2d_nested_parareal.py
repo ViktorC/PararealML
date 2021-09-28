@@ -33,9 +33,9 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 40.), ic)
 
-f = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
-g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
-g_g = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .001)
+g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
+g_g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
 p_g = PararealOperator(g, g_g, 0., max_iterations=2)
 
 p = PararealOperator(f, g, .01)

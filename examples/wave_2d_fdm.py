@@ -27,6 +27,6 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
 solution = solver.solve(ivp)
 solution.plot('2d_wave_equation', n_images=50)

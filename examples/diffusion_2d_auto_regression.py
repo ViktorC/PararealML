@@ -28,7 +28,7 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 2.), ic)
 
-fdm_op = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .01)
+fdm_op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
 ar_op = AutoRegressionOperator(.5, fdm_op.vertex_oriented)
 
 fdm_sol = fdm_op.solve(ivp)

@@ -13,7 +13,7 @@ from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_differentiator import \
-    ThreePointCentralFiniteDifferenceMethod
+    ThreePointCentralDifferenceMethod
 from pararealml.core.operators.fdm.numerical_integrator import RK4
 from pararealml.core.operators.ml.auto_regression \
     import AutoRegressionOperator, SKLearnKerasRegressor
@@ -89,7 +89,7 @@ def test_auto_regression_operator_on_pde():
     )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
     ml_op = AutoRegressionOperator(2.5, True)

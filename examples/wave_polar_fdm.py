@@ -29,6 +29,6 @@ ic = GaussianInitialCondition(
     [1., .0])
 ivp = InitialValueProblem(cp, (0., 50.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .002)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .002)
 solution = solver.solve(ivp)
 solution.plot('polar_wave_equation', n_images=50)
