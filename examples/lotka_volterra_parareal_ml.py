@@ -111,6 +111,48 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
 print('AR train score:', train_score)
 print('AR test score:', test_score)
 
+prefix = f'lotka_volterra_rank_{MPI.COMM_WORLD.rank}'
+f_solution_name = f'{prefix}_fine_fdm'
+g_solution_name = f'{prefix}_coarse_fdm'
+g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
+g_pidon_solution_name = f'{prefix}_coarse_pidon'
+
+f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
+g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
+g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
+    ar_don.solve)(ivp)
+g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
+    pidon.solve)(ivp)
+
+f_sol.plot(f_solution_name)
+g_sol.plot(g_solution_name)
+g_ar_don_sol.plot(g_ar_don_solution_name)
+g_pidon_sol.plot(g_pidon_solution_name)
+
+diff = f_sol.diff([g_sol, g_ar_don_sol, g_pidon_sol])
+rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
+print(f'{prefix} - RMS differences:', repr(rms_diffs))
+print(
+    f'{prefix} - max RMS differences:',
+    rms_diffs.max(axis=-1, keepdims=True)
+)
+print(
+    f'{prefix} - mean RMS differences:',
+    rms_diffs.mean(axis=-1, keepdims=True)
+)
+
+plot_rms_solution_diffs(
+    diff.matching_time_points,
+    rms_diffs,
+    np.zeros_like(rms_diffs),
+    [
+        'fdm',
+        'ar_don',
+        'pidon',
+    ],
+    f'{prefix}_coarse_operator_accuracy'
+)
+
 for p_kwargs in [
     {'tol': 1e-3, 'max_iterations': 99},
     {'tol': 0., 'max_iterations': 1},
@@ -122,36 +164,20 @@ for p_kwargs in [
     p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-    prefix = f'lotka_volterra_max_iterations_{p_kwargs["max_iterations"]}' \
-        f'_rank_{MPI.COMM_WORLD.rank}'
-    f_solution_name = f'{prefix}_fine'
-    g_solution_name = f'{prefix}_coarse'
-    g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
-    g_pidon_solution_name = f'{prefix}_coarse_pidon'
-    p_solution_name = f'{prefix}_parareal'
-    p_ar_don_solution_name = f'{prefix}_parareal_ar_don'
-    p_pidon_solution_name = f'{prefix}_parareal_pidon'
+    prefix += f'_parareal_max_iterations_{p_kwargs["max_iterations"]}'
+    p_solution_name = f'{prefix}_fdm'
+    p_ar_don_solution_name = f'{prefix}_ar_don'
+    p_pidon_solution_name = f'{prefix}_pidon'
 
-    f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
-    g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
-    g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
-        ar_don.solve)(ivp)
-    g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
-        pidon.solve)(ivp)
     p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
     p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
         p_ar_don.solve)(ivp)
     p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
         p_pidon.solve)(ivp)
 
-    f_sol.plot(f_solution_name)
-    g_sol.plot(g_solution_name)
-    g_ar_don_sol.plot(g_ar_don_solution_name)
-    g_pidon_sol.plot(g_pidon_solution_name)
-    if MPI.COMM_WORLD.rank == 0:
-        p_sol.plot(p_solution_name)
-        p_ar_don_sol.plot(p_ar_don_solution_name)
-        p_pidon_sol.plot(p_pidon_solution_name)
+    p_sol.plot(p_solution_name)
+    p_ar_don_sol.plot(p_ar_don_solution_name)
+    p_pidon_sol.plot(p_pidon_solution_name)
 
     diff = f_sol.diff([
         g_sol,
@@ -175,23 +201,12 @@ for p_kwargs in [
 
     plot_rms_solution_diffs(
         diff.matching_time_points,
-        rms_diffs[:3, ...],
-        np.zeros_like(rms_diffs[:3, ...]),
+        rms_diffs,
+        np.zeros_like(rms_diffs),
         [
-            'fdm_coarse',
-            'ar_don_coarse',
-            'pidon_coarse',
+            'fdm',
+            'ar_don',
+            'pidon'
         ],
-        f'{prefix}_coarse_operator_accuracy'
-    )
-    plot_rms_solution_diffs(
-        diff.matching_time_points,
-        rms_diffs[3:, ...],
-        np.zeros_like(rms_diffs[3:, ...]),
-        [
-            'parareal_fdm',
-            'parareal_ar_don',
-            'parareal_pidon'
-        ],
-        f'{prefix}_parareal_operator_accuracy'
+        f'{prefix}_operator_accuracy'
     )
