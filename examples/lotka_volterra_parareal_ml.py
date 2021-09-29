@@ -1,6 +1,5 @@
 import numpy as np
 from mpi4py import MPI
-from sklearn.ensemble import RandomForestRegressor
 from tensorflow import optimizers
 
 from pararealml import *
@@ -14,7 +13,7 @@ from pararealml.utils.plot import plot_rms_solution_diffs
 from pararealml.utils.rand import set_random_seed, SEEDS
 from pararealml.utils.time import time_with_args
 
-# limit_tf_visible_gpus()
+limit_tf_visible_gpus()
 set_random_seed(SEEDS[0])
 
 diff_eq = LotkaVolterraEquation(alpha=2., beta=1., gamma=0.8, delta=1.)
@@ -79,107 +78,123 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     )
 )
 
-# ar_rf = AutoRegressionOperator(2.5, g.vertex_oriented)
-# train_score, test_score = time_with_args(function_name='ar_rf_train')(
-#     ar_rf.train
-# )(
-#     ivp,
-#     g,
-#     SKLearnKerasRegressor(
-#         DeepONet(
-#             [np.prod(cp.y_vertices_shape).item()] +
-#             [50] * 10 +
-#             [diff_eq.y_dimension * 50],
-#             [1] + [50] * 10 + [diff_eq.y_dimension * 50],
-#             diff_eq.y_dimension,
-#             branch_initialization='he_uniform',
-#             trunk_initialization='he_uniform',
-#             branch_activation='relu',
-#             trunk_activation='relu'
-#         ),
-#         optimizer=optimizers.Adam(
-#             learning_rate=optimizers.schedules.ExponentialDecay(
-#                 5e-3, decay_steps=100, decay_rate=.9
-#             )
-#         ),
-#         batch_size=16000,
-#         epochs=1000,
-#         verbose=True
-#     ),
-#     5000,
-#     lambda t, y: y + np.random.normal(0., t / 300000., size=y.shape)
-# )
-# print('AR train score:', train_score)
-# print('AR test score:', test_score)
+ar_don = AutoRegressionOperator(2.5, g.vertex_oriented)
+train_score, test_score = time_with_args(function_name='ar_don_train')(
+    ar_don.train
+)(
+    ivp,
+    g,
+    SKLearnKerasRegressor(
+        DeepONet(
+            [np.prod(cp.y_vertices_shape).item()] +
+            [50] * 10 +
+            [diff_eq.y_dimension * 50],
+            [1] + [50] * 10 + [diff_eq.y_dimension * 50],
+            diff_eq.y_dimension,
+            branch_initialization='he_uniform',
+            trunk_initialization='he_uniform',
+            branch_activation='relu',
+            trunk_activation='relu'
+        ),
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                5e-3, decay_steps=20, decay_rate=.98
+            )
+        ),
+        batch_size=16000,
+        epochs=4000,
+        verbose=True
+    ),
+    5000,
+    lambda t, y: y + np.random.normal(0., t / 30000., size=y.shape)
+)
+print('AR train score:', train_score)
+print('AR test score:', test_score)
 
-# tol = 1e-3
-# p = PararealOperator(f, g, tol)
-# p_ar_rf = PararealOperator(f, ar_rf, tol)
-# p_pidon = PararealOperator(f, pidon, tol)
+for p_kwargs in [
+    {'tol': 1e-3},
+    {'max_iterations': 1},
+    {'max_iterations': 2},
+    {'max_iterations': 3},
+    {'max_iterations': 4}
+]:
+    p = PararealOperator(f, g, **p_kwargs)
+    p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
+    p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-f_solution_name = 'lotka_volterra_fine'
-g_solution_name = 'lotka_volterra_coarse'
-g_ar_rf_solution_name = 'lotka_volterra_coarse_ar_rf'
-g_pidon_solution_name = 'lotka_volterra_coarse_pidon'
-p_solution_name = 'lotka_volterra_parareal'
-p_ar_rf_solution_name = 'lotka_volterra_parareal_ar_rf'
-p_pidon_solution_name = 'lotka_volterra_parareal_pidon'
+    f_solution_name = f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_fine'
+    g_solution_name = f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse'
+    g_ar_don_solution_name = \
+        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse_ar_don'
+    g_pidon_solution_name = \
+        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse_pidon'
+    p_solution_name = f'{p_kwargs}_lotka_volterra_parareal'
+    p_ar_don_solution_name = f'{p_kwargs}_lotka_volterra_parareal_ar_don'
+    p_pidon_solution_name = f'{p_kwargs}_lotka_volterra_parareal_pidon'
 
-f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
-g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
-# g_ar_rf_sol = time_with_args(function_name=g_ar_rf_solution_name)(
-#     ar_rf.solve)(ivp)
-g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
-    pidon.solve)(ivp)
-# p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
-# p_ar_rf_sol = time_with_args(function_name=p_ar_rf_solution_name)(
-#     p_ar_rf.solve)(ivp)
-# p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
-#     p_pidon.solve)(ivp)
+    f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
+    g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
+    g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
+        ar_don.solve)(ivp)
+    g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
+        pidon.solve)(ivp)
+    p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
+    p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
+        p_ar_don.solve)(ivp)
+    p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
+        p_pidon.solve)(ivp)
 
-f_sol.plot(f'{MPI.COMM_WORLD.rank}_{f_solution_name}')
-g_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_solution_name}')
-# g_ar_rf_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_ar_rf_solution_name}')
-g_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_pidon_solution_name}')
-# if MPI.COMM_WORLD.rank == 0:
-#     p_sol.plot(p_solution_name)
-#     # p_ar_rf_sol.plot(p_ar_rf_solution_name)
-#     # p_pidon_sol.plot(p_pidon_solution_name)
+    f_sol.plot(f_solution_name)
+    g_sol.plot(g_solution_name)
+    g_ar_don_sol.plot(g_ar_don_solution_name)
+    g_pidon_sol.plot(g_pidon_solution_name)
+    if MPI.COMM_WORLD.rank == 0:
+        p_sol.plot(p_solution_name)
+        p_ar_don_sol.plot(p_ar_don_solution_name)
+        p_pidon_sol.plot(p_pidon_solution_name)
 
-diff = f_sol.diff([
-    g_sol,
-    # g_ar_rf_sol,
-    g_pidon_sol,
-    # p_sol,
-    # p_ar_rf_sol,
-    # p_pidon_sol
-])
-rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
+    diff = f_sol.diff([
+        g_sol,
+        g_ar_don_sol,
+        g_pidon_sol,
+        p_sol,
+        p_ar_don_sol,
+        p_pidon_sol
+    ])
+    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
+    print(
+        f'{p_kwargs} {MPI.COMM_WORLD.rank} - RMS differences:',
+        repr(rms_diffs)
+    )
+    print(
+        f'{p_kwargs} {MPI.COMM_WORLD.rank} - max RMS differences:',
+        rms_diffs.max(axis=-1, keepdims=True)
+    )
+    print(
+        f'{p_kwargs} {MPI.COMM_WORLD.rank} - mean RMS differences:',
+        rms_diffs.mean(axis=-1, keepdims=True)
+    )
 
-if MPI.COMM_WORLD.rank == 0:
-    print('RMS differences:', repr(rms_diffs))
-    print('max RMS differences:', rms_diffs.max(axis=-1, keepdims=True))
-    print('total RMS differences:', rms_diffs.sum(axis=-1, keepdims=True))
     plot_rms_solution_diffs(
         diff.matching_time_points,
-        rms_diffs[:2, ...],
-        np.zeros_like(rms_diffs[:2, ...]),
+        rms_diffs[:3, ...],
+        np.zeros_like(rms_diffs[:3, ...]),
         [
             'fdm_coarse',
-            # 'ar_rf_coarse',
+            'ar_don_coarse',
             'pidon_coarse',
         ],
-        f'{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
+        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
     )
-# if MPI.COMM_WORLD.rank == 0:
-#     plot_rms_solution_diffs(
-#         diff.matching_time_points,
-#         rms_diffs[1:, ...],
-#         np.zeros_like(rms_diffs[1:, ...]),
-#         [
-#             'parareal_fdm',
-#             # 'parareal_ar_rf',
-#             # 'parareal_pidon'
-#         ],
-#         'parareal_operator_accuracy'
-#     )
+    if MPI.COMM_WORLD.rank == 0:
+        plot_rms_solution_diffs(
+            diff.matching_time_points,
+            rms_diffs[3:, ...],
+            np.zeros_like(rms_diffs[3:, ...]),
+            [
+                'parareal_fdm',
+                'parareal_ar_don',
+                'parareal_pidon'
+            ],
+            f'{p_kwargs}_parareal_operator_accuracy'
+        )
