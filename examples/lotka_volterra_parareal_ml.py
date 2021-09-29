@@ -112,25 +112,25 @@ print('AR train score:', train_score)
 print('AR test score:', test_score)
 
 for p_kwargs in [
-    {'tol': 1e-3},
-    {'max_iterations': 1},
-    {'max_iterations': 2},
-    {'max_iterations': 3},
-    {'max_iterations': 4}
+    {'tol': 1e-3, 'max_iterations': 99},
+    {'tol': 0., 'max_iterations': 1},
+    {'tol': 0., 'max_iterations': 2},
+    {'tol': 0., 'max_iterations': 3},
+    {'tol': 0., 'max_iterations': 4}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
     p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-    f_solution_name = f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_fine'
-    g_solution_name = f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse'
-    g_ar_don_solution_name = \
-        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse_ar_don'
-    g_pidon_solution_name = \
-        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_lotka_volterra_coarse_pidon'
-    p_solution_name = f'{p_kwargs}_lotka_volterra_parareal'
-    p_ar_don_solution_name = f'{p_kwargs}_lotka_volterra_parareal_ar_don'
-    p_pidon_solution_name = f'{p_kwargs}_lotka_volterra_parareal_pidon'
+    prefix = f'lotka_volterra_max_iterations_{p_kwargs["max_iterations"]}' \
+        f'_rank_{MPI.COMM_WORLD.rank}'
+    f_solution_name = f'{prefix}_fine'
+    g_solution_name = f'{prefix}_coarse'
+    g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
+    g_pidon_solution_name = f'{prefix}_coarse_pidon'
+    p_solution_name = f'{prefix}_parareal'
+    p_ar_don_solution_name = f'{prefix}_parareal_ar_don'
+    p_pidon_solution_name = f'{prefix}_parareal_pidon'
 
     f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
     g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
@@ -161,17 +161,15 @@ for p_kwargs in [
         p_ar_don_sol,
         p_pidon_sol
     ])
+
     rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
+    print(f'{prefix} - RMS differences:', repr(rms_diffs))
     print(
-        f'{p_kwargs} {MPI.COMM_WORLD.rank} - RMS differences:',
-        repr(rms_diffs)
-    )
-    print(
-        f'{p_kwargs} {MPI.COMM_WORLD.rank} - max RMS differences:',
+        f'{prefix} - max RMS differences:',
         rms_diffs.max(axis=-1, keepdims=True)
     )
     print(
-        f'{p_kwargs} {MPI.COMM_WORLD.rank} - mean RMS differences:',
+        f'{prefix} - mean RMS differences:',
         rms_diffs.mean(axis=-1, keepdims=True)
     )
 
@@ -184,17 +182,16 @@ for p_kwargs in [
             'ar_don_coarse',
             'pidon_coarse',
         ],
-        f'{p_kwargs}_{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
+        f'{prefix}_coarse_operator_accuracy'
     )
-    if MPI.COMM_WORLD.rank == 0:
-        plot_rms_solution_diffs(
-            diff.matching_time_points,
-            rms_diffs[3:, ...],
-            np.zeros_like(rms_diffs[3:, ...]),
-            [
-                'parareal_fdm',
-                'parareal_ar_don',
-                'parareal_pidon'
-            ],
-            f'{p_kwargs}_parareal_operator_accuracy'
-        )
+    plot_rms_solution_diffs(
+        diff.matching_time_points,
+        rms_diffs[3:, ...],
+        np.zeros_like(rms_diffs[3:, ...]),
+        [
+            'parareal_fdm',
+            'parareal_ar_don',
+            'parareal_pidon'
+        ],
+        f'{prefix}_parareal_operator_accuracy'
+    )
