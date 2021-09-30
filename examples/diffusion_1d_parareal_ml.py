@@ -30,23 +30,11 @@ bcs = [
 ]
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 t_interval = (0., 1.)
-ic_mean = .25
-ic = GaussianInitialCondition(
-    cp,
-    [(np.array([ic_mean]), np.array([[1e-2]]))]
-)
+ic = GaussianInitialCondition(cp, [(np.array([.25]), np.array([[1e-2]]))])
 ivp = InitialValueProblem(cp, t_interval, ic)
 
-f = FDMOperator(
-    RK4(),
-    ThreePointCentralDifferenceMethod(),
-    2.5e-5
-)
-g = FDMOperator(
-    RK4(),
-    ThreePointCentralDifferenceMethod(),
-    2.5e-4
-)
+f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
+g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
 
 g_sol = g.solve(ivp)
 y_0_functions = [ic.y_0] * 50 + [
@@ -137,18 +125,11 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
 print('AR train score:', train_score)
 print('AR test score:', test_score)
 
-tol = 1e-2
-p = PararealOperator(f, g, tol)
-p_ar_don = PararealOperator(f, ar_don, tol)
-p_pidon = PararealOperator(f, pidon, tol)
-
-f_solution_name = 'diffusion_fine'
-g_solution_name = 'diffusion_coarse'
-g_ar_don_solution_name = 'diffusion_coarse_ar_don'
-g_pidon_solution_name = 'diffusion_coarse_pidon'
-p_solution_name = 'diffusion_parareal'
-p_ar_don_solution_name = 'diffusion_parareal_ar_don'
-p_pidon_solution_name = 'diffusion_parareal_pidon'
+prefix = f'diffusion_rank_{MPI.COMM_WORLD.rank}'
+f_solution_name = f'{prefix}_fine_fdm'
+g_solution_name = f'{prefix}_coarse_fdm'
+g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
+g_pidon_solution_name = f'{prefix}_coarse_pidon'
 
 f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
 g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
@@ -156,53 +137,84 @@ g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
     ar_don.solve)(ivp)
 g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
     pidon.solve)(ivp)
-p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
-p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
-    p_ar_don.solve)(ivp)
-p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
-    p_pidon.solve)(ivp)
 
-f_sol.plot(f'{MPI.COMM_WORLD.rank}_{f_solution_name}')
-g_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_solution_name}')
-g_ar_don_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_ar_don_solution_name}')
-g_pidon_sol.plot(f'{MPI.COMM_WORLD.rank}_{g_pidon_solution_name}')
-if MPI.COMM_WORLD.rank == 0:
+f_sol.plot(f_solution_name)
+g_sol.plot(g_solution_name)
+g_ar_don_sol.plot(g_ar_don_solution_name)
+g_pidon_sol.plot(g_pidon_solution_name)
+
+diff = f_sol.diff([g_sol, g_ar_don_sol, g_pidon_sol])
+rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
+print(f'{prefix} - RMS differences:', repr(rms_diffs))
+print(
+    f'{prefix} - max RMS differences:',
+    rms_diffs.max(axis=-1, keepdims=True)
+)
+print(
+    f'{prefix} - mean RMS differences:',
+    rms_diffs.mean(axis=-1, keepdims=True)
+)
+
+plot_rms_solution_diffs(
+    diff.matching_time_points,
+    rms_diffs,
+    np.zeros_like(rms_diffs),
+    [
+        'fdm',
+        'ar_don',
+        'pidon',
+    ],
+    f'{prefix}_coarse_operator_accuracy'
+)
+
+for p_kwargs in [
+    {'tol': 1e-2, 'max_iterations': 99},
+    {'tol': 0., 'max_iterations': 1},
+    {'tol': 0., 'max_iterations': 2},
+    {'tol': 0., 'max_iterations': 3},
+    {'tol': 0., 'max_iterations': 4}
+]:
+    p = PararealOperator(f, g, **p_kwargs)
+    p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
+    p_pidon = PararealOperator(f, pidon, **p_kwargs)
+
+    p_prefix = f'{prefix}_parareal_max_iterations_{p_kwargs["max_iterations"]}'
+    p_solution_name = f'{p_prefix}_fdm'
+    p_ar_don_solution_name = f'{p_prefix}_ar_don'
+    p_pidon_solution_name = f'{p_prefix}_pidon'
+
+    p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
+    p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
+        p_ar_don.solve)(ivp)
+    p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
+        p_pidon.solve)(ivp)
+
     p_sol.plot(p_solution_name)
     p_ar_don_sol.plot(p_ar_don_solution_name)
     p_pidon_sol.plot(p_pidon_solution_name)
 
-diff = f_sol.diff([
-    g_sol,
-    g_ar_don_sol,
-    g_pidon_sol,
-    p_sol,
-    p_ar_don_sol,
-    p_pidon_sol
-])
+    p_diff = f_sol.diff([p_sol, p_ar_don_sol, p_pidon_sol])
+    p_rms_diffs = np.sqrt(
+        np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
+    )
+    print(f'{p_prefix} - RMS differences:', repr(p_rms_diffs))
+    print(
+        f'{p_prefix} - max RMS differences:',
+        p_rms_diffs.max(axis=-1, keepdims=True)
+    )
+    print(
+        f'{p_prefix} - mean RMS differences:',
+        p_rms_diffs.mean(axis=-1, keepdims=True)
+    )
 
-rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
-print('RMS differences:', repr(rms_diffs))
-
-plot_rms_solution_diffs(
-    diff.matching_time_points,
-    rms_diffs[:3, ...],
-    np.zeros_like(rms_diffs[:3, ...]),
-    [
-        'fdm_coarse',
-        'ar_don_coarse',
-        'pidon_coarse',
-    ],
-    f'{MPI.COMM_WORLD.rank}_coarse_operator_accuracy'
-)
-if MPI.COMM_WORLD.rank == 0:
     plot_rms_solution_diffs(
-        diff.matching_time_points,
-        rms_diffs[3:, ...],
-        np.zeros_like(rms_diffs[3:, ...]),
+        p_diff.matching_time_points,
+        p_rms_diffs,
+        np.zeros_like(p_rms_diffs),
         [
-            'parareal_fdm',
-            'parareal_ar_don',
-            'parareal_pidon'
+            'fdm',
+            'ar_don',
+            'pidon'
         ],
-        'parareal_operator_accuracy'
+        f'{p_prefix}_operator_accuracy'
     )
