@@ -37,13 +37,13 @@ f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
 g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
 
 g_sol = g.solve(ivp)
-y_0_functions = [ic.y_0] * 50 + [
+y_0_functions = [ic.y_0] * 30 + [
     DiscreteInitialCondition(
         cp,
         discrete_y,
         g.vertex_oriented
     ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
-][:3450]
+][:3270]
 np.random.shuffle(y_0_functions)
 training_y_0_functions = y_0_functions[:3000]
 test_y_0_functions = y_0_functions[3000:]
@@ -59,32 +59,32 @@ time_with_args(function_name='pidon_train')(pidon.train)(
     (0., .25),
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=4000,
-        n_boundary_points=1200,
-        n_batches=600,
-        n_ic_repeats=40,
+        n_domain_points=6000,
+        n_boundary_points=3000,
+        n_batches=1800,
+        n_ic_repeats=180
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
-        n_domain_points=200,
-        n_boundary_points=60,
-        n_batches=5,
-        n_ic_repeats=2,
+        n_domain_points=600,
+        n_boundary_points=300,
+        n_batches=18,
+        n_ic_repeats=18
     ),
     model_args=ModelArgs(
-        latent_output_size=100,
-        branch_hidden_layer_sizes=[100] * 7,
-        trunk_hidden_layer_sizes=[100] * 7,
+        latent_output_size=50,
+        branch_hidden_layer_sizes=[50] * 10,
+        trunk_hidden_layer_sizes=[50] * 10,
         branch_initialization='he_uniform',
-        branch_activation='relu'
+        branch_activation='relu',
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                2e-3, decay_steps=600, decay_rate=.97
+                5e-3, decay_steps=200, decay_rate=.98
             )
         ),
-        epochs=200,
+        epochs=50,
         ic_loss_weight=10.
     )
 )
@@ -119,7 +119,7 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
         epochs=10000,
         verbose=True
     ),
-    1000,
+    2000,
     lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
 )
 print('AR train score:', train_score)
@@ -178,43 +178,52 @@ for p_kwargs in [
     p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-    p_prefix = f'{prefix}_parareal_max_iterations_{p_kwargs["max_iterations"]}'
+    p_prefix = \
+        f'diffusion_parareal_max_iterations_{p_kwargs["max_iterations"]}'
     p_solution_name = f'{p_prefix}_fdm'
     p_ar_don_solution_name = f'{p_prefix}_ar_don'
     p_pidon_solution_name = f'{p_prefix}_pidon'
 
-    p_sol = time_with_args(function_name=p_solution_name)(p.solve)(ivp)
-    p_ar_don_sol = time_with_args(function_name=p_ar_don_solution_name)(
-        p_ar_don.solve)(ivp)
-    p_pidon_sol = time_with_args(function_name=p_pidon_solution_name)(
-        p_pidon.solve)(ivp)
+    p_sol = time_with_args(
+      function_name=p_solution_name,
+      print_on_first_rank_only=True
+    )(p.solve)(ivp)
+    p_ar_don_sol = time_with_args(
+      function_name=p_ar_don_solution_name,
+      print_on_first_rank_only=True
+    )(p_ar_don.solve)(ivp)
+    p_pidon_sol = time_with_args(
+      function_name=p_pidon_solution_name,
+      print_on_first_rank_only=True
+    )(p_pidon.solve)(ivp)
 
-    p_sol.plot(p_solution_name)
-    p_ar_don_sol.plot(p_ar_don_solution_name)
-    p_pidon_sol.plot(p_pidon_solution_name)
+    if MPI.COMM_WORLD.rank == 0:
+        p_sol.plot(p_solution_name)
+        p_ar_don_sol.plot(p_ar_don_solution_name)
+        p_pidon_sol.plot(p_pidon_solution_name)
 
-    p_diff = f_sol.diff([p_sol, p_ar_don_sol, p_pidon_sol])
-    p_rms_diffs = np.sqrt(
-        np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
-    )
-    print(f'{p_prefix} - RMS differences:', repr(p_rms_diffs))
-    print(
-        f'{p_prefix} - max RMS differences:',
-        p_rms_diffs.max(axis=-1, keepdims=True)
-    )
-    print(
-        f'{p_prefix} - mean RMS differences:',
-        p_rms_diffs.mean(axis=-1, keepdims=True)
-    )
+        p_diff = f_sol.diff([p_sol, p_ar_don_sol, p_pidon_sol])
+        p_rms_diffs = np.sqrt(
+            np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
+        )
+        print(f'{p_prefix} - RMS differences:', repr(p_rms_diffs))
+        print(
+            f'{p_prefix} - max RMS differences:',
+            p_rms_diffs.max(axis=-1, keepdims=True)
+        )
+        print(
+            f'{p_prefix} - mean RMS differences:',
+            p_rms_diffs.mean(axis=-1, keepdims=True)
+        )
 
-    plot_rms_solution_diffs(
-        p_diff.matching_time_points,
-        p_rms_diffs,
-        np.zeros_like(p_rms_diffs),
-        [
-            'fdm',
-            'ar_don',
-            'pidon'
-        ],
-        f'{p_prefix}_operator_accuracy'
-    )
+        plot_rms_solution_diffs(
+            p_diff.matching_time_points,
+            p_rms_diffs,
+            np.zeros_like(p_rms_diffs),
+            [
+                'fdm',
+                'ar_don',
+                'pidon'
+            ],
+            f'{p_prefix}_operator_accuracy'
+        )
