@@ -100,15 +100,15 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                1e-3, decay_steps=40, decay_rate=.98
+                2e-3, decay_steps=40, decay_rate=.98
             )
         ),
         batch_size=6400,
-        epochs=4000,
+        epochs=5000,
         verbose=True
     ),
     2000,
-    lambda t, y: y + np.random.normal(0., t / 3750., size=y.shape)
+    lambda t, y: y + np.random.normal(0., t / 7500., size=y.shape)
 )
 print('AR train score:', train_score)
 print('AR test score:', test_score)
@@ -162,7 +162,7 @@ plot_rms_solution_diffs(
 )
 
 for p_kwargs in [
-    {'tol': 3e-3, 'max_iterations': 99},
+    {'tol': 3e-3, 'max_iterations': 5},
     {'tol': 0., 'max_iterations': 1},
     {'tol': 0., 'max_iterations': 2},
     {'tol': 0., 'max_iterations': 3},
