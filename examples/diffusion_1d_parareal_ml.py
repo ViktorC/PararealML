@@ -168,7 +168,7 @@ plot_rms_solution_diffs(
 )
 
 for p_kwargs in [
-    {'tol': 1e-2, 'max_iterations': 99},
+    {'tol': 1e-2, 'max_iterations': 5},
     {'tol': 0., 'max_iterations': 1},
     {'tol': 0., 'max_iterations': 2},
     {'tol': 0., 'max_iterations': 3},
