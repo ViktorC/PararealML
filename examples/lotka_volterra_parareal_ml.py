@@ -14,7 +14,6 @@ from pararealml.utils.rand import set_random_seed, SEEDS
 from pararealml.utils.time import time_with_args
 
 limit_tf_visible_gpus()
-set_random_seed(SEEDS[0])
 comm = MPI.COMM_WORLD
 
 diff_eq = LotkaVolterraEquation(alpha=2., beta=1., gamma=0.8, delta=1.)
@@ -33,95 +32,92 @@ g = FDMOperator(
     2.5e-4
 )
 
-if comm.rank == 0:
-    g_sol = g.solve(ivp)
-    y_0_functions = [ic.y_0] * 25 + [
-        lambda x, _y_0=y_0: _y_0
-        for y_0 in g_sol.discrete_y(g.vertex_oriented)[
-            np.random.choice(32000, 10975, False)
-        ]
+set_random_seed(SEEDS[0])
+g_sol = g.solve(ivp)
+y_0_functions = [ic.y_0] * 25 + [
+    lambda x, _y_0=y_0: _y_0
+    for y_0 in g_sol.discrete_y(g.vertex_oriented)[
+        np.random.choice(32000, 10975, False)
     ]
-    np.random.shuffle(y_0_functions)
-    training_y_0_functions = y_0_functions[:10000]
-    test_y_0_functions = y_0_functions[10000:]
-    sampler = UniformRandomCollocationPointSampler()
-    pidon = PIDONOperator(
-        sampler,
-        2.5,
-        g.vertex_oriented,
-        auto_regression_mode=True
+]
+np.random.shuffle(y_0_functions)
+training_y_0_functions = y_0_functions[:10000]
+test_y_0_functions = y_0_functions[10000:]
+sampler = UniformRandomCollocationPointSampler()
+pidon = PIDONOperator(
+    sampler,
+    2.5,
+    g.vertex_oriented,
+    auto_regression_mode=True
+)
+time_with_args(function_name='pidon_train')(pidon.train)(
+    cp,
+    (0., 2.5),
+    training_data_args=DataArgs(
+        y_0_functions=training_y_0_functions,
+        n_domain_points=5000,
+        n_batches=5000,
+        n_ic_repeats=1000
+    ),
+    test_data_args=DataArgs(
+        y_0_functions=test_y_0_functions,
+        n_domain_points=500,
+        n_batches=50,
+        n_ic_repeats=50
+    ),
+    model_args=ModelArgs(
+        latent_output_size=50,
+        branch_hidden_layer_sizes=[50] * 10,
+        trunk_hidden_layer_sizes=[50] * 10,
+    ),
+    optimization_args=OptimizationArgs(
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                2e-3, decay_steps=500, decay_rate=.98
+            )
+        ),
+        epochs=30,
+        diff_eq_loss_weight=10.
     )
-    time_with_args(function_name='pidon_train')(pidon.train)(
-        cp,
-        (0., 2.5),
-        training_data_args=DataArgs(
-            y_0_functions=training_y_0_functions,
-            n_domain_points=5000,
-            n_batches=5000,
-            n_ic_repeats=1000
-        ),
-        test_data_args=DataArgs(
-            y_0_functions=test_y_0_functions,
-            n_domain_points=500,
-            n_batches=50,
-            n_ic_repeats=50
-        ),
-        model_args=ModelArgs(
-            latent_output_size=50,
-            branch_hidden_layer_sizes=[50] * 10,
-            trunk_hidden_layer_sizes=[50] * 10,
-        ),
-        optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(
-                learning_rate=optimizers.schedules.ExponentialDecay(
-                    2e-3, decay_steps=500, decay_rate=.98
-                )
-            ),
-            epochs=30,
-            diff_eq_loss_weight=10.
-        )
-    )
-else:
-    pidon = None
+)
+pidon.model.set_weights(comm.bcast(pidon.model.get_weights(), root=0))
 
-if comm.rank == 1:
-    ar_don = AutoRegressionOperator(2.5, g.vertex_oriented)
-    train_score, test_score = time_with_args(function_name='ar_don_train')(
-        ar_don.train
-    )(
-        ivp,
-        g,
-        SKLearnKerasRegressor(
-            DeepONet(
-                [np.prod(cp.y_vertices_shape).item()] +
-                [50] * 10 +
-                [diff_eq.y_dimension * 50],
-                [1] + [50] * 10 + [diff_eq.y_dimension * 50],
-                diff_eq.y_dimension,
-                branch_initialization='he_uniform',
-                trunk_initialization='he_uniform',
-                branch_activation='relu',
-                trunk_activation='relu'
-            ),
-            optimizer=optimizers.Adam(
-                learning_rate=optimizers.schedules.ExponentialDecay(
-                    2e-3, decay_steps=40, decay_rate=.98
-                )
-            ),
-            batch_size=6400,
-            epochs=5000,
-            verbose=True
+set_random_seed(SEEDS[0])
+ar_don = AutoRegressionOperator(2.5, g.vertex_oriented)
+train_score, test_score = time_with_args(function_name='ar_don_train')(
+    ar_don.train
+)(
+    ivp,
+    g,
+    SKLearnKerasRegressor(
+        DeepONet(
+            [np.prod(cp.y_vertices_shape).item()] +
+            [50] * 10 +
+            [diff_eq.y_dimension * 50],
+            [1] + [50] * 10 + [diff_eq.y_dimension * 50],
+            diff_eq.y_dimension,
+            branch_initialization='he_uniform',
+            trunk_initialization='he_uniform',
+            branch_activation='relu',
+            trunk_activation='relu'
         ),
-        2000,
-        lambda t, y: y + np.random.normal(0., t / 7500., size=y.shape)
-    )
-    print('AR train score:', train_score)
-    print('AR test score:', test_score)
-else:
-    ar_don = None
-
-pidon = comm.bcast(pidon, root=0)
-ar_don = comm.bcast(ar_don, root=1)
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                2e-3, decay_steps=40, decay_rate=.98
+            )
+        ),
+        batch_size=6400,
+        epochs=5000,
+        verbose=True
+    ),
+    2000,
+    lambda t, y: y + np.random.normal(0., t / 7500., size=y.shape)
+)
+print('AR train score:', train_score)
+print('AR test score:', test_score)
+ar_don.model.model.set_weights(
+    comm.bcast(ar_don.model.model.get_weights(), root=0)
+)
 
 prefix = f'lotka_volterra_rank_{comm.rank}'
 f_solution_name = f'{prefix}_fine_fdm'
