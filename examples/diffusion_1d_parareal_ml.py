@@ -55,7 +55,9 @@ pidon = PIDONOperator(
     g.vertex_oriented,
     auto_regression_mode=True
 )
-time_with_args(function_name='pidon_train')(pidon.train)(
+pidon_train_loss_history, pidon_test_loss_history = time_with_args(
+    function_name='pidon_train'
+)(pidon.train)(
     cp,
     (0., .25),
     training_data_args=DataArgs(
@@ -89,14 +91,25 @@ time_with_args(function_name='pidon_train')(pidon.train)(
         ic_loss_weight=10.
     )
 )
-pidon.model.set_weights(comm.bcast(pidon.model.get_weights(), root=0))
+pidon_test_loss = \
+    pidon_test_loss_history[-1].weighted_total_loss.numpy().sum().item()
+pidon_test_losses = comm.allgather(pidon_test_loss)
+min_pidon_test_loss_ind = np.argmin(pidon_test_losses).item()
+pidon.model.set_weights(
+    comm.bcast(pidon.model.get_weights(), root=min_pidon_test_loss_ind)
+)
+if comm.rank == min_pidon_test_loss_ind:
+    print(
+        f'lowest pidon test loss ({pidon_test_losses[comm.rank]}) found on '
+        f'rank {comm.rank}'
+    )
 
 set_random_seed(SEEDS[0])
 mean_value = 2.
 ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
-train_score, test_score = time_with_args(function_name='ar_don_train')(
-    ar_don.train
-)(
+ar_don_train_loss, ar_don_test_loss = time_with_args(
+    function_name='ar_don_train'
+)(ar_don.train)(
     ivp,
     g,
     SKLearnKerasRegressor(
@@ -125,11 +138,18 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
     2000,
     lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
 )
-print('AR train score:', train_score)
-print('AR test score:', test_score)
+print('ar_don train loss:', ar_don_train_loss)
+print('ar_don test loss:', ar_don_test_loss)
+ar_don_test_losses = comm.allgather(ar_don_test_loss)
+min_ar_don_test_loss_ind = np.argmin(ar_don_test_losses).item()
 ar_don.model.model.set_weights(
-    comm.bcast(ar_don.model.model.get_weights(), root=0)
+    comm.bcast(ar_don.model.model.get_weights(), root=min_ar_don_test_loss_ind)
 )
+if comm.rank == min_ar_don_test_loss_ind:
+    print(
+        f'lowest ar_don test loss ({ar_don_test_losses[comm.rank]}) found on '
+        f'rank {comm.rank}'
+    )
 
 prefix = f'diffusion_rank_{comm.rank}'
 f_solution_name = f'{prefix}_fine_fdm'
@@ -174,11 +194,11 @@ plot_rms_solution_diffs(
 )
 
 for p_kwargs in [
-    {'tol': 1e-2, 'max_iterations': 5},
     {'tol': 0., 'max_iterations': 1},
     {'tol': 0., 'max_iterations': 2},
     {'tol': 0., 'max_iterations': 3},
-    {'tol': 0., 'max_iterations': 4}
+    {'tol': 0., 'max_iterations': 4},
+    {'tol': 1e-2, 'max_iterations': 5}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
     p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
