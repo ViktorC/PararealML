@@ -14,6 +14,7 @@ from pararealml.utils.rand import set_random_seed, SEEDS
 from pararealml.utils.time import time_with_args
 
 limit_tf_visible_gpus()
+set_random_seed(SEEDS[0])
 comm = MPI.COMM_WORLD
 
 diff_eq = LotkaVolterraEquation(alpha=2., beta=1., gamma=0.8, delta=1.)
@@ -33,7 +34,6 @@ g = FDMOperator(
 )
 
 if comm.rank == 0:
-    set_random_seed(SEEDS[0])
     g_sol = g.solve(ivp)
     y_0_functions = [ic.y_0] * 25 + [
         lambda x, _y_0=y_0: _y_0
@@ -83,10 +83,8 @@ if comm.rank == 0:
     )
 else:
     pidon = None
-pidon = comm.bcast(pidon, root=0)
 
-if comm.rank == 0:
-    set_random_seed(SEEDS[0])
+if comm.rank == 1:
     ar_don = AutoRegressionOperator(2.5, g.vertex_oriented)
     train_score, test_score = time_with_args(function_name='ar_don_train')(
         ar_don.train
@@ -121,7 +119,9 @@ if comm.rank == 0:
     print('AR test score:', test_score)
 else:
     ar_don = None
-ar_don = comm.bcast(ar_don, root=0)
+
+pidon = comm.bcast(pidon, root=0)
+ar_don = comm.bcast(ar_don, root=1)
 
 prefix = f'lotka_volterra_rank_{comm.rank}'
 f_solution_name = f'{prefix}_fine_fdm'

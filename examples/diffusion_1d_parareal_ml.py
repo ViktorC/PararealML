@@ -14,6 +14,7 @@ from pararealml.utils.rand import set_random_seed, SEEDS
 from pararealml.utils.time import time_with_args
 
 limit_tf_visible_gpus()
+set_random_seed(SEEDS[0])
 comm = MPI.COMM_WORLD
 
 diff_eq = DiffusionEquation(1, 5e-2)
@@ -37,7 +38,6 @@ f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
 g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
 
 if comm.rank == 0:
-    set_random_seed(SEEDS[0])
     g_sol = g.solve(ivp)
     y_0_functions = [ic.y_0] * 30 + [
         DiscreteInitialCondition(
@@ -92,10 +92,8 @@ if comm.rank == 0:
     )
 else:
     pidon = None
-pidon = comm.bcast(pidon, root=0)
 
-if comm.rank == 0:
-    set_random_seed(SEEDS[0])
+if comm.rank == 1:
     mean_value = 2.
     ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
     train_score, test_score = time_with_args(function_name='ar_don_train')(
@@ -133,7 +131,9 @@ if comm.rank == 0:
     print('AR test score:', test_score)
 else:
     ar_don = None
-ar_don = comm.bcast(ar_don, root=0)
+
+pidon = comm.bcast(pidon, root=0)
+ar_don = comm.bcast(ar_don, root=1)
 
 prefix = f'diffusion_rank_{comm.rank}'
 f_solution_name = f'{prefix}_fine_fdm'
