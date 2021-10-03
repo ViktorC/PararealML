@@ -14,7 +14,7 @@ from pararealml.utils.rand import set_random_seed, SEEDS
 from pararealml.utils.time import time_with_args
 
 limit_tf_visible_gpus()
-set_random_seed(SEEDS[0])
+comm = MPI.COMM_WORLD
 
 diff_eq = DiffusionEquation(1, 5e-2)
 mesh = Mesh([(0., .5)], (5e-3,))
@@ -36,96 +36,106 @@ ivp = InitialValueProblem(cp, t_interval, ic)
 f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
 g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
 
-g_sol = g.solve(ivp)
-y_0_functions = [ic.y_0] * 30 + [
-    DiscreteInitialCondition(
-        cp,
-        discrete_y,
-        g.vertex_oriented
-    ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
-][:3270]
-np.random.shuffle(y_0_functions)
-training_y_0_functions = y_0_functions[:3000]
-test_y_0_functions = y_0_functions[3000:]
-sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(
-    sampler,
-    .25,
-    g.vertex_oriented,
-    auto_regression_mode=True
-)
-time_with_args(function_name='pidon_train')(pidon.train)(
-    cp,
-    (0., .25),
-    training_data_args=DataArgs(
-        y_0_functions=training_y_0_functions,
-        n_domain_points=6000,
-        n_boundary_points=3000,
-        n_batches=1800,
-        n_ic_repeats=180
-    ),
-    test_data_args=DataArgs(
-        y_0_functions=test_y_0_functions,
-        n_domain_points=600,
-        n_boundary_points=300,
-        n_batches=18,
-        n_ic_repeats=18
-    ),
-    model_args=ModelArgs(
-        latent_output_size=50,
-        branch_hidden_layer_sizes=[50] * 10,
-        trunk_hidden_layer_sizes=[50] * 10,
-        branch_initialization='he_uniform',
-        branch_activation='relu',
-    ),
-    optimization_args=OptimizationArgs(
-        optimizer=optimizers.Adam(
-            learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
-            )
-        ),
-        epochs=50,
-        ic_loss_weight=10.
+if comm.rank == 0:
+    set_random_seed(SEEDS[0])
+    g_sol = g.solve(ivp)
+    y_0_functions = [ic.y_0] * 30 + [
+        DiscreteInitialCondition(
+            cp,
+            discrete_y,
+            g.vertex_oriented
+        ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
+    ][:3270]
+    np.random.shuffle(y_0_functions)
+    training_y_0_functions = y_0_functions[:3000]
+    test_y_0_functions = y_0_functions[3000:]
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(
+        sampler,
+        .25,
+        g.vertex_oriented,
+        auto_regression_mode=True
     )
-)
-
-mean_value = 2.
-ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
-train_score, test_score = time_with_args(function_name='ar_don_train')(
-    ar_don.train
-)(
-    ivp,
-    g,
-    SKLearnKerasRegressor(
-        DeepONet(
-            [np.prod(cp.y_vertices_shape).item()] +
-            [100] * 7 +
-            [diff_eq.y_dimension * 100],
-            [1 + diff_eq.x_dimension] +
-            [100] * 7 +
-            [diff_eq.y_dimension * 100],
-            diff_eq.y_dimension,
+    time_with_args(function_name='pidon_train')(pidon.train)(
+        cp,
+        (0., .25),
+        training_data_args=DataArgs(
+            y_0_functions=training_y_0_functions,
+            n_domain_points=6000,
+            n_boundary_points=3000,
+            n_batches=1800,
+            n_ic_repeats=180
+        ),
+        test_data_args=DataArgs(
+            y_0_functions=test_y_0_functions,
+            n_domain_points=600,
+            n_boundary_points=300,
+            n_batches=18,
+            n_ic_repeats=18
+        ),
+        model_args=ModelArgs(
+            latent_output_size=50,
+            branch_hidden_layer_sizes=[50] * 10,
+            trunk_hidden_layer_sizes=[50] * 10,
             branch_initialization='he_uniform',
-            trunk_initialization='he_uniform',
             branch_activation='relu',
-            trunk_activation='relu'
         ),
-        optimizer=optimizers.Adam(
-            learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
-            )
-        ),
-        batch_size=20000,
-        epochs=10000,
-        verbose=True
-    ),
-    2000,
-    lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
-)
-print('AR train score:', train_score)
-print('AR test score:', test_score)
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(
+                learning_rate=optimizers.schedules.ExponentialDecay(
+                    5e-3, decay_steps=200, decay_rate=.98
+                )
+            ),
+            epochs=50,
+            ic_loss_weight=10.
+        )
+    )
+else:
+    pidon = None
+pidon = comm.bcast(pidon, root=0)
 
-prefix = f'diffusion_rank_{MPI.COMM_WORLD.rank}'
+if comm.rank == 0:
+    set_random_seed(SEEDS[0])
+    mean_value = 2.
+    ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
+    train_score, test_score = time_with_args(function_name='ar_don_train')(
+        ar_don.train
+    )(
+        ivp,
+        g,
+        SKLearnKerasRegressor(
+            DeepONet(
+                [np.prod(cp.y_vertices_shape).item()] +
+                [100] * 7 +
+                [diff_eq.y_dimension * 100],
+                [1 + diff_eq.x_dimension] +
+                [100] * 7 +
+                [diff_eq.y_dimension * 100],
+                diff_eq.y_dimension,
+                branch_initialization='he_uniform',
+                trunk_initialization='he_uniform',
+                branch_activation='relu',
+                trunk_activation='relu'
+            ),
+            optimizer=optimizers.Adam(
+                learning_rate=optimizers.schedules.ExponentialDecay(
+                    5e-3, decay_steps=200, decay_rate=.98
+                )
+            ),
+            batch_size=20000,
+            epochs=10000,
+            verbose=True
+        ),
+        2000,
+        lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
+    )
+    print('AR train score:', train_score)
+    print('AR test score:', test_score)
+else:
+    ar_don = None
+ar_don = comm.bcast(ar_don, root=0)
+
+prefix = f'diffusion_rank_{comm.rank}'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
 g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
@@ -197,7 +207,7 @@ for p_kwargs in [
       print_on_first_rank_only=True
     )(p_pidon.solve)(ivp)
 
-    if MPI.COMM_WORLD.rank == 0:
+    if comm.rank == 0:
         p_sol.plot(p_solution_name)
         p_ar_don_sol.plot(p_ar_don_solution_name)
         p_pidon_sol.plot(p_pidon_solution_name)
