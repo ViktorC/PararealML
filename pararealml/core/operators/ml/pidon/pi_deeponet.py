@@ -170,7 +170,7 @@ class PIDeepONet(DeepONet):
                     diff_eq_loss_weight,
                     ic_loss_weight,
                     bc_loss_weight)
-                test_loss_history.append(training_epoch_loss)
+                test_loss_history.append(test_epoch_loss)
                 if verbose:
                     print('Test MSE -', test_epoch_loss)
 
