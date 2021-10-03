@@ -80,7 +80,6 @@ class PararealOperator(Operator):
         corrections = np.empty((comm.size, *y_shape))
         new_y_coarse_at_end_points = np.empty((comm.size, *y_shape))
 
-        print(f'rank {MPI.COMM_WORLD.rank} - solving coarse serial')
         y_at_end_points[0] = \
             ivp.initial_condition.discrete_y_0(vertex_oriented)
         for i, t in enumerate(time_slice_end_points[:-1]):
@@ -104,15 +103,12 @@ class PararealOperator(Operator):
                 DiscreteInitialCondition(
                     cp, y_at_end_points[comm.rank], vertex_oriented))
 
-            print(f'rank {MPI.COMM_WORLD.rank} - solving fine parallel iteration {i}')
             fine_solution = self._f.solve(sub_ivp, False)
-            print(f'rank {MPI.COMM_WORLD.rank} - solving coarse parallel iteration {i}')
             y_fine = fine_solution.discrete_y(vertex_oriented)
             coarse_solution = self._g.solve(sub_ivp, False)
             y_coarse_at_end_point = \
                 coarse_solution.discrete_y(vertex_oriented)[-1]
             correction = y_fine[-1] - y_coarse_at_end_point
-            print(f'rank {MPI.COMM_WORLD.rank} - gathering corrections parallel iteration {i}')
             comm.Allgather([correction, MPI.DOUBLE], [corrections, MPI.DOUBLE])
 
             max_update = 0.
@@ -124,7 +120,6 @@ class PararealOperator(Operator):
                     DiscreteInitialCondition(
                         cp, y_at_end_points[j], vertex_oriented))
 
-                print(f'rank {MPI.COMM_WORLD.rank} - applying corrections parallel iteration {i} time slice {j}')
                 new_coarse_solution = self._g.solve(sub_ivp)
                 new_y_coarse_at_end_point = \
                     new_coarse_solution.discrete_y(vertex_oriented)[-1]
@@ -145,10 +140,8 @@ class PararealOperator(Operator):
         t = discretize_time_domain(ivp.t_interval, self._f.d_t)[1:]
         all_y_fine = np.empty((len(t), *y_shape))
         y_fine += new_y_coarse_at_end_points[comm.rank] - y_coarse_at_end_point
-        print(f'rank {MPI.COMM_WORLD.rank} - gathering corrected results')
         comm.Allgather([y_fine, MPI.DOUBLE], [all_y_fine, MPI.DOUBLE])
 
-        print(f'rank {MPI.COMM_WORLD.rank} - returning solution')
         return Solution(
             ivp,
             t,
