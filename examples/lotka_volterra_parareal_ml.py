@@ -75,7 +75,7 @@ time_with_args(function_name='pidon_train')(pidon.train)(
                 2e-3, decay_steps=500, decay_rate=.98
             )
         ),
-        epochs=25,
+        epochs=30,
         diff_eq_loss_weight=10.
     )
 )
