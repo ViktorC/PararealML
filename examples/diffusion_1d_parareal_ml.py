@@ -102,11 +102,11 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
     SKLearnKerasRegressor(
         DeepONet(
             [np.prod(cp.y_vertices_shape).item()] +
-            [100] * 7 +
-            [diff_eq.y_dimension * 100],
+            [50] * 10 +
+            [diff_eq.y_dimension * 50],
             [1 + diff_eq.x_dimension] +
-            [100] * 7 +
-            [diff_eq.y_dimension * 100],
+            [50] * 10 +
+            [diff_eq.y_dimension * 50],
             diff_eq.y_dimension,
             branch_initialization='he_uniform',
             trunk_initialization='he_uniform',
@@ -119,7 +119,7 @@ train_score, test_score = time_with_args(function_name='ar_don_train')(
             )
         ),
         batch_size=20000,
-        epochs=10000,
+        epochs=5000,
         verbose=True
     ),
     2000,
