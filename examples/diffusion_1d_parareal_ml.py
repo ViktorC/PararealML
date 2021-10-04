@@ -106,10 +106,10 @@ if comm.rank == min_pidon_test_loss_ind:
 
 set_random_seed(SEEDS[0])
 mean_value = 2.
-ar_don = AutoRegressionOperator(.25, g.vertex_oriented)
-ar_don_train_loss, ar_don_test_loss = time_with_args(
-    function_name='ar_don_train'
-)(ar_don.train)(
+don = AutoRegressionOperator(.25, g.vertex_oriented)
+don_train_loss, don_test_loss = time_with_args(
+    function_name='don_train'
+)(don.train)(
     ivp,
     g,
     SKLearnKerasRegressor(
@@ -138,60 +138,67 @@ ar_don_train_loss, ar_don_test_loss = time_with_args(
     2000,
     lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
 )
-print('ar_don train loss:', ar_don_train_loss)
-print('ar_don test loss:', ar_don_test_loss)
-ar_don_test_losses = comm.allgather(ar_don_test_loss)
-min_ar_don_test_loss_ind = np.argmin(ar_don_test_losses).item()
-ar_don.model.model.set_weights(
-    comm.bcast(ar_don.model.model.get_weights(), root=min_ar_don_test_loss_ind)
+print('don train loss:', don_train_loss)
+print('don test loss:', don_test_loss)
+don_test_losses = comm.allgather(don_test_loss)
+min_don_test_loss_ind = np.argmin(don_test_losses).item()
+don.model.model.set_weights(
+    comm.bcast(don.model.model.get_weights(), root=min_don_test_loss_ind)
 )
-if comm.rank == min_ar_don_test_loss_ind:
+if comm.rank == min_don_test_loss_ind:
     print(
-        f'lowest ar_don test loss ({ar_don_test_losses[comm.rank]}) found on '
+        f'lowest don test loss ({don_test_losses[comm.rank]}) found on '
         f'rank {comm.rank}'
     )
 
-prefix = f'diffusion_rank_{comm.rank}'
+prefix = 'diffusion'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
-g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
+g_don_solution_name = f'{prefix}_coarse_don'
 g_pidon_solution_name = f'{prefix}_coarse_pidon'
 
-f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
-g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
-g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
-    ar_don.solve)(ivp)
-g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
-    pidon.solve)(ivp)
+f_sol = time_with_args(
+    function_name=f'{f_solution_name}_rank_{comm.rank}'
+)(f.solve)(ivp)
+g_sol = time_with_args(
+    function_name=f'{g_solution_name}_rank_{comm.rank}'
+)(g.solve)(ivp)
+g_don_sol = time_with_args(
+    function_name=f'{g_don_solution_name}_rank_{comm.rank}'
+)(don.solve)(ivp)
+g_pidon_sol = time_with_args(
+    function_name=f'{g_pidon_solution_name}_rank_{comm.rank}'
+)(pidon.solve)(ivp)
 
-f_sol.plot(f_solution_name)
-g_sol.plot(g_solution_name)
-g_ar_don_sol.plot(g_ar_don_solution_name)
-g_pidon_sol.plot(g_pidon_solution_name)
+if comm.rank == 0:
+    f_sol.plot(f_solution_name)
+    g_sol.plot(g_solution_name)
+    g_don_sol.plot(g_don_solution_name)
+    g_pidon_sol.plot(g_pidon_solution_name)
 
-diff = f_sol.diff([g_sol, g_ar_don_sol, g_pidon_sol])
-rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
-print(f'{prefix} - RMS differences:', repr(rms_diffs))
-print(
-    f'{prefix} - max RMS differences:',
-    rms_diffs.max(axis=-1, keepdims=True)
-)
-print(
-    f'{prefix} - mean RMS differences:',
-    rms_diffs.mean(axis=-1, keepdims=True)
-)
+    diff = f_sol.diff([g_sol, g_don_sol, g_pidon_sol])
+    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
+    print(f'{prefix} - RMS differences:', repr(rms_diffs))
+    print(
+        f'{prefix} - max RMS differences:',
+        rms_diffs.max(axis=-1, keepdims=True)
+    )
+    print(
+        f'{prefix} - mean RMS differences:',
+        rms_diffs.mean(axis=-1, keepdims=True)
+    )
 
-plot_rms_solution_diffs(
-    diff.matching_time_points,
-    rms_diffs,
-    np.zeros_like(rms_diffs),
-    [
-        'fdm',
-        'ar_don',
-        'pidon',
-    ],
-    f'{prefix}_coarse_operator_accuracy'
-)
+    plot_rms_solution_diffs(
+        diff.matching_time_points,
+        rms_diffs,
+        np.zeros_like(rms_diffs),
+        [
+            'fdm',
+            'don',
+            'pidon',
+        ],
+        f'{prefix}_coarse_operator_accuracy'
+    )
 
 for p_kwargs in [
     {'tol': 0., 'max_iterations': 1},
@@ -201,23 +208,22 @@ for p_kwargs in [
     {'tol': 1e-2, 'max_iterations': 5}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
-    p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
+    p_don = PararealOperator(f, don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-    p_prefix = \
-        f'diffusion_parareal_max_iterations_{p_kwargs["max_iterations"]}'
+    p_prefix = f'{prefix}_parareal_max_iterations_{p_kwargs["max_iterations"]}'
     p_solution_name = f'{p_prefix}_fdm'
-    p_ar_don_solution_name = f'{p_prefix}_ar_don'
+    p_don_solution_name = f'{p_prefix}_don'
     p_pidon_solution_name = f'{p_prefix}_pidon'
 
     p_sol = time_with_args(
       function_name=p_solution_name,
       print_on_first_rank_only=True
     )(p.solve)(ivp)
-    p_ar_don_sol = time_with_args(
-      function_name=p_ar_don_solution_name,
+    p_don_sol = time_with_args(
+      function_name=p_don_solution_name,
       print_on_first_rank_only=True
-    )(p_ar_don.solve)(ivp)
+    )(p_don.solve)(ivp)
     p_pidon_sol = time_with_args(
       function_name=p_pidon_solution_name,
       print_on_first_rank_only=True
@@ -225,10 +231,10 @@ for p_kwargs in [
 
     if comm.rank == 0:
         p_sol.plot(p_solution_name)
-        p_ar_don_sol.plot(p_ar_don_solution_name)
+        p_don_sol.plot(p_don_solution_name)
         p_pidon_sol.plot(p_pidon_solution_name)
 
-        p_diff = f_sol.diff([p_sol, p_ar_don_sol, p_pidon_sol])
+        p_diff = f_sol.diff([p_sol, p_don_sol, p_pidon_sol])
         p_rms_diffs = np.sqrt(
             np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
         )
@@ -248,7 +254,7 @@ for p_kwargs in [
             np.zeros_like(p_rms_diffs),
             [
                 'fdm',
-                'ar_don',
+                'don',
                 'pidon'
             ],
             f'{p_prefix}_operator_accuracy'

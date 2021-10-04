@@ -139,53 +139,58 @@ if comm.rank == min_ar_don_test_loss_ind:
         f'rank {comm.rank}'
     )
 
-prefix = f'population_growth_rank_{comm.rank}'
+prefix = 'population_growth'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
 g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
 g_pidon_solution_name = f'{prefix}_coarse_pidon'
 
-f_sol = time_with_args(function_name=f_solution_name)(f.solve)(ivp)
-g_sol = time_with_args(function_name=g_solution_name)(g.solve)(ivp)
-g_ar_don_sol = time_with_args(function_name=g_ar_don_solution_name)(
-    ar_don.solve
-)(ivp)
-g_pidon_sol = time_with_args(function_name=g_pidon_solution_name)(
-    pidon.solve
-)(ivp)
+f_sol = time_with_args(
+    function_name=f'{f_solution_name}_rank_{comm.rank}'
+)(f.solve)(ivp)
+g_sol = time_with_args(
+    function_name=f'{g_solution_name}_rank_{comm.rank}'
+)(g.solve)(ivp)
+g_ar_don_sol = time_with_args(
+    function_name=f'{g_ar_don_solution_name}_rank_{comm.rank}'
+)(ar_don.solve)(ivp)
+g_pidon_sol = time_with_args(
+    function_name=f'{g_pidon_solution_name}_rank_{comm.rank}'
+)(pidon.solve)(ivp)
 
-f_sol.plot(f_solution_name)
-g_sol.plot(g_solution_name)
-g_ar_don_sol.plot(g_ar_don_solution_name)
-g_pidon_sol.plot(g_pidon_solution_name)
+if comm.rank == 0:
+    f_sol.plot(f_solution_name)
+    g_sol.plot(g_solution_name)
+    g_ar_don_sol.plot(g_ar_don_solution_name)
+    g_pidon_sol.plot(g_pidon_solution_name)
 
-diff = f_sol.diff([
-    g_sol,
-    g_ar_don_sol,
-    g_pidon_sol
-])
-rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
-print(f'{prefix} - RMS differences:', repr(rms_diffs))
-print(
-    f'{prefix} - max RMS differences:',
-    rms_diffs.max(axis=-1, keepdims=True)
-)
-print(
-    f'{prefix} - mean RMS differences:',
-    rms_diffs.mean(axis=-1, keepdims=True)
-)
+    diff = f_sol.diff([
+        g_sol,
+        g_ar_don_sol,
+        g_pidon_sol
+    ])
+    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
+    print(f'{prefix} - RMS differences:', repr(rms_diffs))
+    print(
+        f'{prefix} - max RMS differences:',
+        rms_diffs.max(axis=-1, keepdims=True)
+    )
+    print(
+        f'{prefix} - mean RMS differences:',
+        rms_diffs.mean(axis=-1, keepdims=True)
+    )
 
-plot_rms_solution_diffs(
-    diff.matching_time_points,
-    rms_diffs,
-    np.zeros_like(rms_diffs),
-    [
-        'fdm',
-        'ar_don',
-        'pidon'
-    ],
-    f'{prefix}_coarse_operator_accuracy'
-)
+    plot_rms_solution_diffs(
+        diff.matching_time_points,
+        rms_diffs,
+        np.zeros_like(rms_diffs),
+        [
+            'fdm',
+            'ar_don',
+            'pidon'
+        ],
+        f'{prefix}_coarse_operator_accuracy'
+    )
 
 for p_kwargs in [
     {'tol': 0., 'max_iterations': 1},
@@ -198,8 +203,7 @@ for p_kwargs in [
     p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
-    p_prefix = 'population_growth_parareal_max_iterations_'\
-        f'{p_kwargs["max_iterations"]}'
+    p_prefix = f'{prefix}_parareal_max_iterations_{p_kwargs["max_iterations"]}'
     p_solution_name = f'{p_prefix}_fdm'
     p_ar_don_solution_name = f'{p_prefix}_ar_don'
     p_pidon_solution_name = f'{p_prefix}_pidon'
