@@ -22,4 +22,4 @@ export OMP_NUM_THREADS=1
 
 source activate pararealml
 
-srun python3 -m mpi4py -m examples.diffusion_1d_parareal_ml
+srun python3 -m mpi4py -m examples.population_growth_parareal_ml

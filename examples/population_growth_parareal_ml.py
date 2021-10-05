@@ -34,10 +34,10 @@ g = FDMOperator(
 
 set_random_seed(SEEDS[0])
 g_sol = g.solve(ivp)
-y_0_functions = [ic.y_0] * 50 + [
+y_0_functions = [ic.y_0] * 25 + [
     lambda x, _y_0=y_0: _y_0
     for y_0 in g_sol.discrete_y(g.vertex_oriented)[
-        np.random.choice(40000, 10950, False)
+        np.random.choice(40000, 10975, False)
     ]
 ]
 np.random.shuffle(y_0_functions)
@@ -57,29 +57,29 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
     (0., 1.25),
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=3000,
-        n_batches=1500,
-        n_ic_repeats=750
+        n_domain_points=5000,
+        n_batches=5000,
+        n_ic_repeats=1000
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
-        n_domain_points=300,
-        n_batches=15,
-        n_ic_repeats=15
+        n_domain_points=500,
+        n_batches=50,
+        n_ic_repeats=50
     ),
     model_args=ModelArgs(
         latent_output_size=50,
-        branch_hidden_layer_sizes=[50] * 10,
-        trunk_hidden_layer_sizes=[50] * 10,
+        branch_hidden_layer_sizes=[50] * 5,
+        trunk_hidden_layer_sizes=[50] * 5,
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                1e-3, decay_steps=250, decay_rate=.98
+                2.5e-3, decay_steps=2000, decay_rate=.98
             )
         ),
-        epochs=50,
-        diff_eq_loss_weight=5.
+        epochs=120,
+        diff_eq_loss_weight=10.
     )
 )
 pidon_test_loss = \
@@ -96,18 +96,18 @@ if comm.rank == min_pidon_test_loss_ind:
     )
 
 set_random_seed(SEEDS[0])
-ar_don = AutoRegressionOperator(2.5, g.vertex_oriented)
-ar_don_train_loss, ar_don_test_loss = time_with_args(
-    function_name='ar_don_train'
-)(ar_don.train)(
+don = AutoRegressionOperator(1.25, g.vertex_oriented)
+don_train_loss, don_test_loss = time_with_args(
+    function_name='don_train'
+)(don.train)(
     ivp,
     g,
     SKLearnKerasRegressor(
         DeepONet(
             [np.prod(cp.y_vertices_shape).item()] +
-            [50] * 10 +
+            [50] * 5 +
             [diff_eq.y_dimension * 50],
-            [1] + [50] * 10 + [diff_eq.y_dimension * 50],
+            [1] + [50] * 5 + [diff_eq.y_dimension * 50],
             diff_eq.y_dimension,
             branch_initialization='he_uniform',
             trunk_initialization='he_uniform',
@@ -116,33 +116,33 @@ ar_don_train_loss, ar_don_test_loss = time_with_args(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=20, decay_rate=.98
+                1e-3, decay_steps=20, decay_rate=.98
             )
         ),
-        batch_size=16000,
+        batch_size=4000,
         epochs=4000,
         verbose=True
     ),
-    5000,
-    lambda t, y: y + np.random.normal(0., t / 30000., size=y.shape)
+    1250,
+    lambda t, y: y + np.random.normal(0., t / 24000.)
 )
-print('ar_don train loss:', ar_don_train_loss)
-print('ar_don test loss:', ar_don_test_loss)
-ar_don_test_losses = comm.allgather(ar_don_test_loss)
-min_ar_don_test_loss_ind = np.argmin(ar_don_test_losses).item()
-ar_don.model.model.set_weights(
-    comm.bcast(ar_don.model.model.get_weights(), root=min_ar_don_test_loss_ind)
+print('don train loss:', don_train_loss)
+print('don test loss:', don_test_loss)
+don_test_losses = comm.allgather(don_test_loss)
+min_don_test_loss_ind = np.argmin(don_test_losses).item()
+don.model.model.set_weights(
+    comm.bcast(don.model.model.get_weights(), root=min_don_test_loss_ind)
 )
-if comm.rank == min_ar_don_test_loss_ind:
+if comm.rank == min_don_test_loss_ind:
     print(
-        f'lowest ar_don test loss ({ar_don_test_losses[comm.rank]}) found on '
+        f'lowest don test loss ({don_test_losses[comm.rank]}) found on '
         f'rank {comm.rank}'
     )
 
 prefix = 'population_growth'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
-g_ar_don_solution_name = f'{prefix}_coarse_ar_don'
+g_don_solution_name = f'{prefix}_coarse_don'
 g_pidon_solution_name = f'{prefix}_coarse_pidon'
 
 f_sol = time_with_args(
@@ -151,9 +151,9 @@ f_sol = time_with_args(
 g_sol = time_with_args(
     function_name=f'{g_solution_name}_rank_{comm.rank}'
 )(g.solve)(ivp)
-g_ar_don_sol = time_with_args(
-    function_name=f'{g_ar_don_solution_name}_rank_{comm.rank}'
-)(ar_don.solve)(ivp)
+g_don_sol = time_with_args(
+    function_name=f'{g_don_solution_name}_rank_{comm.rank}'
+)(don.solve)(ivp)
 g_pidon_sol = time_with_args(
     function_name=f'{g_pidon_solution_name}_rank_{comm.rank}'
 )(pidon.solve)(ivp)
@@ -161,12 +161,12 @@ g_pidon_sol = time_with_args(
 if comm.rank == 0:
     f_sol.plot(f_solution_name)
     g_sol.plot(g_solution_name)
-    g_ar_don_sol.plot(g_ar_don_solution_name)
+    g_don_sol.plot(g_don_solution_name)
     g_pidon_sol.plot(g_pidon_solution_name)
 
     diff = f_sol.diff([
         g_sol,
-        g_ar_don_sol,
+        g_don_sol,
         g_pidon_sol
     ])
     rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
@@ -186,7 +186,7 @@ if comm.rank == 0:
         np.zeros_like(rms_diffs),
         [
             'fdm',
-            'ar_don',
+            'don',
             'pidon'
         ],
         f'{prefix}_coarse_operator_accuracy'
@@ -200,22 +200,22 @@ for p_kwargs in [
     {'tol': 1e-3, 'max_iterations': 5}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
-    p_ar_don = PararealOperator(f, ar_don, **p_kwargs)
+    p_don = PararealOperator(f, don, **p_kwargs)
     p_pidon = PararealOperator(f, pidon, **p_kwargs)
 
     p_prefix = f'{prefix}_parareal_max_iterations_{p_kwargs["max_iterations"]}'
     p_solution_name = f'{p_prefix}_fdm'
-    p_ar_don_solution_name = f'{p_prefix}_ar_don'
+    p_don_solution_name = f'{p_prefix}_don'
     p_pidon_solution_name = f'{p_prefix}_pidon'
 
     p_sol = time_with_args(
       function_name=p_solution_name,
       print_on_first_rank_only=True
     )(p.solve)(ivp)
-    p_ar_don_sol = time_with_args(
-      function_name=p_ar_don_solution_name,
+    p_don_sol = time_with_args(
+      function_name=p_don_solution_name,
       print_on_first_rank_only=True
-    )(p_ar_don.solve)(ivp)
+    )(p_don.solve)(ivp)
     p_pidon_sol = time_with_args(
       function_name=p_pidon_solution_name,
       print_on_first_rank_only=True
@@ -223,10 +223,10 @@ for p_kwargs in [
 
     if comm.rank == 0:
         p_sol.plot(p_solution_name)
-        p_ar_don_sol.plot(p_ar_don_solution_name)
+        p_don_sol.plot(p_don_solution_name)
         p_pidon_sol.plot(p_pidon_solution_name)
 
-        p_diff = f_sol.diff([p_sol, p_ar_don_sol, p_pidon_sol])
+        p_diff = f_sol.diff([p_sol, p_don_sol, p_pidon_sol])
         p_rms_diffs = np.sqrt(
             np.square(np.stack(p_diff.differences)).sum(axis=2)
         )
@@ -246,7 +246,7 @@ for p_kwargs in [
             np.zeros_like(p_rms_diffs),
             [
                 'fdm',
-                'ar_don',
+                'don',
                 'pidon'
             ],
             f'{p_prefix}_operator_accuracy'
