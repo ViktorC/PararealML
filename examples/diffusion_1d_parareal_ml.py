@@ -17,7 +17,7 @@ limit_tf_visible_gpus()
 comm = MPI.COMM_WORLD
 
 diff_eq = DiffusionEquation(1, 5e-2)
-mesh = Mesh([(0., .5)], (5e-3,))
+mesh = Mesh([(0., .5)], [5e-3])
 bcs = [
     (
         NeumannBoundaryCondition(
