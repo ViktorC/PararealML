@@ -24,7 +24,7 @@ bcs = [
             lambda x, t: np.zeros((len(x), 1)), is_static=True
         ),
         NeumannBoundaryCondition(
-         lambda x, t: np.zeros((len(x), 1)), is_static=True
+            lambda x, t: np.zeros((len(x), 1)), is_static=True
         )
     ),
 ]
