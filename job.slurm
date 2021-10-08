@@ -6,7 +6,7 @@
 #SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --qos=gpu
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 
 #SBATCH --account=tc028-vcsomor
 
@@ -22,4 +22,4 @@ export OMP_NUM_THREADS=1
 
 source activate pararealml
 
-srun python3 -m mpi4py -m examples.population_growth_parareal_ml
+srun python3 -m examples.population_growth_parareal_ml
