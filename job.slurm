@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=vcsomor-parareal-ml
-#SBATCH --time=08:00:0
+#SBATCH --time=10:00:0
 #SBATCH --partition=gpu-cascade
 #SBATCH --exclusive
 #SBATCH --nodes=1
