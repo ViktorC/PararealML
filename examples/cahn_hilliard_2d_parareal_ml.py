@@ -95,7 +95,8 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
                 2.5e-3, decay_steps=1500, decay_rate=.98
             )
         ),
-        epochs=200
+        epochs=200,
+        ic_loss_weight=10.
     )
 )
 # pidon_test_loss = \
