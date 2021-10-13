@@ -2,10 +2,12 @@ import numpy as np
 import pytest
 from tensorflow import optimizers
 
+from pararealml import SymbolicEquationSystem
 from pararealml.core.boundary_condition import NeumannBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.differential_equation import PopulationGrowthEquation, \
-    LotkaVolterraEquation, DiffusionEquation, WaveEquation
+from pararealml.core.differential_equation import DifferentialEquation, \
+    PopulationGrowthEquation, LotkaVolterraEquation, DiffusionEquation, \
+    WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -244,9 +246,7 @@ def test_pidon_operator_on_pde():
     assert solution.discrete_y().shape == (500, 11, 1)
 
 
-def test_pidon_operator_in_auto_regression_mode_with_invalid_t_interval():
-    set_random_seed(0)
-
+def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():
     diff_eq = PopulationGrowthEquation()
     cp = ConstrainedProblem(diff_eq)
     t_interval = (0., 1.)
@@ -269,20 +269,52 @@ def test_pidon_operator_in_auto_regression_mode_with_invalid_t_interval():
                 trunk_hidden_layer_sizes=[50, 50, 50],
             ),
             optimization_args=OptimizationArgs(
-                optimizer={
-                    'class_name': 'Adam',
-                    'config': {
-                        'learning_rate': optimizers.schedules.ExponentialDecay(
-                            1e-2, decay_steps=25, decay_rate=.95)
-                    }
-                },
+                optimizer={'class_name': 'Adam'},
                 epochs=100,
                 verbose=False
             )
         )
 
 
-def test_pidon_operator_on_ode_in_auto_regression_mode():
+def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
+    class TestDiffEq(DifferentialEquation):
+
+        def __init__(self):
+            super(TestDiffEq, self).__init__(0, 1)
+
+        @property
+        def symbolic_equation_system(self) -> SymbolicEquationSystem:
+            return SymbolicEquationSystem([self.symbols.t])
+
+    diff_eq = TestDiffEq()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    with pytest.raises(ValueError):
+        pidon.train(
+            cp,
+            (0., .25),
+            training_data_args=DataArgs(
+                y_0_functions=[ic.y_0],
+                n_domain_points=50,
+                n_batches=1
+            ),
+            model_args=ModelArgs(
+                latent_output_size=1,
+                trunk_hidden_layer_sizes=[50, 50, 50],
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer={'class_name': 'Adam'},
+                epochs=100,
+                verbose=False
+            )
+        )
+
+
+def test_pidon_operator_in_ar_mode_on_ode():
     set_random_seed(0)
 
     diff_eq = PopulationGrowthEquation()
@@ -329,7 +361,7 @@ def test_pidon_operator_on_ode_in_auto_regression_mode():
     assert sol.discrete_y().shape == (4, 1)
 
 
-def test_pidon_operator_on_pde_in_auto_regression_mode():
+def test_pidon_operator_in_ar_mode_on_pde():
     set_random_seed(0)
 
     diff_eq = WaveEquation(1)

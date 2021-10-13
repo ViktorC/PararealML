@@ -217,11 +217,20 @@ class PIDONOperator(Operator):
             a (quasi) second order optimization method
         :return: the training loss history and the test loss history
         """
-        if self._auto_regression_mode and t_interval != (0., self._d_t):
-            raise ValueError(
-                'in auto-regression mode, the training time interval '
-                f'{t_interval} must range from 0 to the time step size of '
-                f'the operator ({self._d_t})')
+        if self._auto_regression_mode:
+            if t_interval != (0., self._d_t):
+                raise ValueError(
+                    'in auto-regression mode, the training time interval '
+                    f'{t_interval} must range from 0 to the time step size of '
+                    f'the operator ({self._d_t})')
+
+            diff_eq = cp.differential_equation
+            t_symbol = diff_eq.symbols.t
+            eq_sys = diff_eq.symbolic_equation_system
+            if any([t_symbol in rhs.free_symbols for rhs in eq_sys.rhs]):
+                raise ValueError(
+                    'auto-regression mode is not compatible with differential '
+                    'equations whose right-hand sides contain any t terms')
 
         training_data_set = DataSet(
             cp,
@@ -233,7 +242,6 @@ class PIDONOperator(Operator):
             vertex_oriented=self._vertex_oriented)
         training_data = training_data_set.get_iterator(
             training_data_args.n_batches, training_data_args.n_ic_repeats)
-
         if test_data_args:
             test_data_set = DataSet(
                 cp,
