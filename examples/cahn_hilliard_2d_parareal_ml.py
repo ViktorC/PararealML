@@ -72,27 +72,27 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
         y_0_functions=training_y_0_functions,
         n_domain_points=10000,
         n_boundary_points=5000,
-        n_batches=1500,
+        n_batches=1000,
         n_ic_repeats=100
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
-        n_domain_points=1000,
-        n_boundary_points=500,
-        n_batches=25,
-        n_ic_repeats=10
+        n_domain_points=3000,
+        n_boundary_points=1500,
+        n_batches=50,
+        n_ic_repeats=30
     ),
     model_args=ModelArgs(
         latent_output_size=100,
-        branch_hidden_layer_sizes=[100] * 12,
-        trunk_hidden_layer_sizes=[100] * 12,
+        branch_hidden_layer_sizes=[100] * 10,
+        trunk_hidden_layer_sizes=[100] * 10,
         branch_initialization='he_uniform',
         branch_activation='relu',
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                2.5e-3, decay_steps=1500, decay_rate=.98
+                5e-4, decay_steps=1000, decay_rate=.98
             )
         ),
         epochs=200,
