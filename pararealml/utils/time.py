@@ -3,8 +3,6 @@ from typing import Callable, Optional, Any
 
 from mpi4py import MPI
 
-from pararealml.utils.io import print_on_first_rank
-
 
 def time(function: Callable) -> Callable:
     """
@@ -19,7 +17,8 @@ def time(function: Callable) -> Callable:
 
 def time_with_args(
         return_time: bool = False,
-        function_name: Optional[str] = None) -> Callable:
+        function_name: Optional[str] = None,
+        print_on_first_rank_only: bool = False) -> Callable:
     """
     Returns a function that returns a wrapped version of a function that times
     the execution of the innermost function, prints the execution time using
@@ -29,11 +28,14 @@ def time_with_args(
     :param return_time: whether the execution time should be returned along the
         return value of the function
     :param function_name: the name of the function
+    :param print_on_first_rank_only: whether to print the execution time on the
+        first MPI rank only
     :return: a function that returns the wrapped function
     """
 
     def _time(function: Callable) -> Callable:
-        return _get_wrapper(function, return_time, function_name)
+        return _get_wrapper(
+            function, return_time, function_name, print_on_first_rank_only)
 
     return _time
 
@@ -41,7 +43,8 @@ def time_with_args(
 def _get_wrapper(
         function: Callable,
         return_time: bool = False,
-        function_name: Optional[str] = None) -> Callable:
+        function_name: Optional[str] = None,
+        print_on_first_rank_only: bool = False) -> Callable:
     """
     Returns a wrapped version of a function that times the execution of the
     function and prints it using the provided function name.
@@ -50,6 +53,8 @@ def _get_wrapper(
     :param return_time: whether the execution time should be returned along the
         return value of the function
     :param function_name: the name of the function
+    :param print_on_first_rank_only: whether to print the execution time on the
+        first MPI rank only
     :return: the wrapped function
     """
     if function_name is None:
@@ -67,7 +72,9 @@ def _get_wrapper(
         end_time = MPI.Wtime()
 
         run_time = end_time - start_time
-        print_on_first_rank(f'{function_name} completed in {run_time}s')
+
+        if not print_on_first_rank_only or MPI.COMM_WORLD.rank == 0:
+            print(f'{function_name} completed in {run_time}s')
 
         if return_time:
             return value, run_time

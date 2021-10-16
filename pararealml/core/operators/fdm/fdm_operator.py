@@ -32,14 +32,11 @@ class FDMOperator(Operator):
             self,
             integrator: NumericalIntegrator,
             differentiator: NumericalDifferentiator,
-            d_t: float,
-            tol: float = 1e-2):
+            d_t: float):
         """
         :param integrator: the differential equation integrator to use
         :param differentiator: the differentiator to use
         :param d_t: the temporal step size to use
-        :param tol: the stopping criterion for the Jacobi algorithm when
-        calculating anti-derivatives and anti-Laplacians
         """
         if d_t <= 0.:
             raise ValueError('time step sizemust be greater than 0')
@@ -47,7 +44,6 @@ class FDMOperator(Operator):
         self._integrator = integrator
         self._differentiator = differentiator
         self._d_t = d_t
-        self._tol = tol
 
     @property
     def d_t(self) -> float:
@@ -150,7 +146,6 @@ class FDMOperator(Operator):
                     self._differentiator.anti_laplacian(
                         y_laplacian_rhs,
                         cp.mesh,
-                        self._tol,
                         y_constraint,
                         d_y_constraint)
 

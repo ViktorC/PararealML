@@ -128,10 +128,61 @@ class RK4(NumericalIntegrator):
             y + (k1 + 2. * k2 + 2. * k3 + k4) / 6.)
 
 
-class BackwardEulerMethod(NumericalIntegrator):
+class ImplicitMethod(NumericalIntegrator, ABC):
+    """
+    A base class for implicit numerical integrators.
+    """
+
+    def __init__(self, tol: float = 1.48e-8, max_iterations: int = 50):
+        """
+        :param tol: the tolerance value to use for solving the equation for y
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
+        """
+        if tol < 0.:
+            raise ValueError('tolerance must be non-negative')
+        if max_iterations <= 0:
+            raise ValueError(
+                'number of maximum iterations must be greater than 0')
+
+        self._tol = tol
+        self._max_iterations = max_iterations
+
+    def _solve(
+            self,
+            y_next_residual_function: Callable[[np.ndarray], np.ndarray],
+            y_next_init: np.ndarray) -> np.ndarray:
+        """
+        Solves the implicit equation for y at the next time step.
+
+        :param y_next_residual_function: the difference of the left and the
+            right hand sides of the equation as a function of y at the next
+            time step
+        :param y_next_init: the initial guess for the value of y at the next
+            time step
+        :return: y at the next time step
+        """
+        return newton(
+            y_next_residual_function,
+            y_next_init,
+            tol=self._tol,
+            maxiter=self._max_iterations)
+
+
+class BackwardEulerMethod(ImplicitMethod):
     """
     The backward Euler method, an implicit first order Runge-Kutta method.
     """
+
+    def __init__(self, tol: float = 1.48e-8, max_iterations: int = 50):
+        """
+        :param tol: the tolerance value to use for solving the equation for y
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
+        """
+        super(BackwardEulerMethod, self).__init__(tol, max_iterations)
 
     def integral(
             self,
@@ -145,34 +196,44 @@ class BackwardEulerMethod(NumericalIntegrator):
             ]) -> np.ndarray:
         t_next = t + d_t
         y_next_constraints = y_constraint_function(t_next)
-        y_next_hat = apply_constraints_along_last_axis(
+        y_next_init = apply_constraints_along_last_axis(
             y_next_constraints,
             y + d_t * d_y_over_d_t(t, y))
 
-        def f(y_next: np.ndarray) -> np.ndarray:
+        def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_next_constraints,
                 y + d_t * d_y_over_d_t(t_next, y_next))
 
-        return newton(f, y_next_hat)
+        return self._solve(y_next_residual_function, y_next_init)
 
 
-class CrankNicolsonMethod(NumericalIntegrator):
+class CrankNicolsonMethod(ImplicitMethod):
     """
     A first order implicit-explicit method combining the forward and backward
     Euler methods.
     """
 
-    def __init__(self, a: float = .5):
+    def __init__(
+            self,
+            a: float = .5,
+            tol: float = 1.48e-8,
+            max_iterations: int = 50):
         """
         :param a: the weight of the backward Euler term of the update; the
             forward Euler term's weight is 1 - a
+        :param tol: the tolerance value to use for solving the equation for y
+            at the next time step through the secant method
+        :param max_iterations: the maximum allowed number of secant method
+            iterations
         """
         if not (0. <= a <= 1.):
-            raise ValueError
+            raise ValueError('the value of \'a\' must be between 0 and 1')
 
         self._a = a
         self._b = 1. - a
+
+        super(CrankNicolsonMethod, self).__init__(tol, max_iterations)
 
     def integral(
             self,
@@ -187,14 +248,14 @@ class CrankNicolsonMethod(NumericalIntegrator):
         t_next = t + d_t
         forward_update = d_t * d_y_over_d_t(t, y)
         y_next_constraints = y_constraint_function(t_next)
-        y_next_hat = apply_constraints_along_last_axis(
+        y_next_init = apply_constraints_along_last_axis(
             y_next_constraints, y + forward_update)
 
-        def f(y_next: np.ndarray) -> np.ndarray:
+        def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_next_constraints,
                 y +
                 self._a * d_t * d_y_over_d_t(t_next, y_next) +
                 self._b * forward_update)
 
-        return newton(f, y_next_hat)
+        return self._solve(y_next_residual_function, y_next_init)

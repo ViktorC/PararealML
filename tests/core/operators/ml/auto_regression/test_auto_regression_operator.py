@@ -13,7 +13,7 @@ from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_differentiator import \
-    ThreePointCentralFiniteDifferenceMethod
+    ThreePointCentralDifferenceMethod
 from pararealml.core.operators.fdm.numerical_integrator import RK4
 from pararealml.core.operators.ml.auto_regression \
     import AutoRegressionOperator, SKLearnKerasRegressor
@@ -22,9 +22,24 @@ from pararealml.core.operators.ode.ode_operator import ODEOperator
 from pararealml.utils.rand import set_random_seed
 
 
-def test_auto_regression_operator_with_wrong_perturbed_initial_value_shape():
-    set_random_seed(0)
+def test_auto_regression_operator_training_with_zero_iterations():
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+    oracle = ODEOperator('DOP853', .001)
+    ml_op = AutoRegressionOperator(2.5, True)
 
+    with pytest.raises(ValueError):
+        ml_op.train(
+            ivp,
+            oracle,
+            LinearRegression(),
+            0,
+            lambda t, y: y + np.random.normal(0., .01, size=y.shape))
+
+
+def test_auto_regression_operator_with_wrong_perturbed_initial_value_shape():
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
     ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
@@ -89,7 +104,7 @@ def test_auto_regression_operator_on_pde():
     )
     ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-    oracle = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .1)
+    oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
     ml_op = AutoRegressionOperator(2.5, True)

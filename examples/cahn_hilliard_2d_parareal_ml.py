@@ -15,39 +15,47 @@ from pararealml.utils.time import time_with_args
 
 limit_tf_visible_gpus()
 comm = MPI.COMM_WORLD
+set_random_seed(0)
 
-diff_eq = DiffusionEquation(1, 5e-2)
-mesh = Mesh([(0., .5)], [5e-3])
+diff_eq = CahnHilliardEquation(2)
+mesh = Mesh([(0., 1.), (0., 1.)], [1e-1, 1e-1])
 bcs = [
     (
         NeumannBoundaryCondition(
-            lambda x, t: np.zeros((len(x), 1)), is_static=True
+            vectorize_bc_function(lambda x, t: [0., None]), is_static=True
         ),
         NeumannBoundaryCondition(
-            lambda x, t: np.zeros((len(x), 1)), is_static=True
+            vectorize_bc_function(lambda x, t: [0., None]), is_static=True
         )
     ),
-]
+] * 2
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 t_interval = (0., 1.)
-ic = GaussianInitialCondition(cp, [(np.array([.25]), np.array([[1e-2]]))])
+ic = DiscreteInitialCondition(
+    cp,
+    np.stack([
+        np.random.uniform(-1., 1., mesh.vertices_shape),
+        np.zeros(mesh.vertices_shape)
+    ], axis=-1),
+    True
+)
 ivp = InitialValueProblem(cp, t_interval, ic)
 
-f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
-g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
+f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 5e-5)
+g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 5e-4)
 
 set_random_seed(SEEDS[0])
 g_sol = g.solve(ivp)
-y_0_functions = [ic.y_0] * 30 + [
+y_0_functions = [ic.y_0] * 100 + [
     DiscreteInitialCondition(
         cp,
         discrete_y,
         g.vertex_oriented
     ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
-][:3270]
+][:1650]
 np.random.shuffle(y_0_functions)
-training_y_0_functions = y_0_functions[:3000]
-test_y_0_functions = y_0_functions[3000:]
+training_y_0_functions = y_0_functions[:1500]
+test_y_0_functions = y_0_functions[1500:]
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(
     sampler,
@@ -62,17 +70,17 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
     (0., .25),
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=6000,
-        n_boundary_points=3000,
-        n_batches=1800,
-        n_ic_repeats=180
+        n_domain_points=10000,
+        n_boundary_points=5000,
+        n_batches=1000,
+        n_ic_repeats=100
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
-        n_domain_points=600,
-        n_boundary_points=300,
-        n_batches=18,
-        n_ic_repeats=18
+        n_domain_points=3000,
+        n_boundary_points=1500,
+        n_batches=50,
+        n_ic_repeats=30
     ),
     model_args=ModelArgs(
         latent_output_size=50,
@@ -84,11 +92,11 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
+                5e-4, decay_steps=1000, decay_rate=.98
             )
         ),
-        epochs=50,
-        ic_loss_weight=10.
+        epochs=200,
+        ic_loss_weight=2.
     )
 )
 pidon_test_loss = \
@@ -105,7 +113,6 @@ if comm.rank == min_pidon_test_loss_ind:
     )
 
 set_random_seed(SEEDS[0])
-mean_value = 2.
 don = AutoRegressionOperator(.25, g.vertex_oriented)
 don_train_loss, don_test_loss = time_with_args(
     function_name='don_train'
@@ -128,15 +135,15 @@ don_train_loss, don_test_loss = time_with_args(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
+                5e-3, decay_steps=500, decay_rate=.98
             )
         ),
-        batch_size=20000,
-        epochs=5000,
+        batch_size=5000,
+        epochs=1500,
         verbose=True
     ),
-    2000,
-    lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
+    1000,
+    lambda t, y: y + np.random.normal(0., t / 750., size=y.shape)
 )
 print('don train loss:', don_train_loss)
 print('don test loss:', don_test_loss)
@@ -151,7 +158,7 @@ if comm.rank == min_don_test_loss_ind:
         f'rank {comm.rank}'
     )
 
-prefix = 'diffusion'
+prefix = 'cahn_hilliard'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
 g_don_solution_name = f'{prefix}_coarse_don'
@@ -176,8 +183,14 @@ if comm.rank == 0:
     g_don_sol.plot(g_don_solution_name)
     g_pidon_sol.plot(g_pidon_solution_name)
 
-    diff = f_sol.diff([g_sol, g_don_sol, g_pidon_sol])
-    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
+    diff = f_sol.diff([
+        g_sol,
+        g_don_sol,
+        g_pidon_sol
+    ])
+    rms_diffs = np.sqrt(
+        np.square(np.stack(diff.differences)).sum(axis=(2, 3, 4))
+    )
     print(f'{prefix} - RMS differences:', repr(rms_diffs))
     print(
         f'{prefix} - max RMS differences:',
@@ -205,7 +218,7 @@ for p_kwargs in [
     {'tol': 0., 'max_iterations': 2},
     {'tol': 0., 'max_iterations': 3},
     {'tol': 0., 'max_iterations': 4},
-    {'tol': 1e-2, 'max_iterations': 5}
+    {'tol': 3e-2, 'max_iterations': 5}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
     p_don = PararealOperator(f, don, **p_kwargs)
@@ -234,9 +247,13 @@ for p_kwargs in [
         p_don_sol.plot(p_don_solution_name)
         p_pidon_sol.plot(p_pidon_solution_name)
 
-        p_diff = f_sol.diff([p_sol, p_don_sol, p_pidon_sol])
+        p_diff = f_sol.diff([
+            p_sol,
+            p_don_sol,
+            p_pidon_sol
+        ])
         p_rms_diffs = np.sqrt(
-            np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
+            np.square(np.stack(p_diff.differences)).sum(axis=(2, 3, 4))
         )
         print(f'{p_prefix} - RMS differences:', repr(p_rms_diffs))
         print(

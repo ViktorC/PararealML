@@ -16,42 +16,37 @@ from pararealml.utils.time import time_with_args
 limit_tf_visible_gpus()
 comm = MPI.COMM_WORLD
 
-diff_eq = DiffusionEquation(1, 5e-2)
-mesh = Mesh([(0., .5)], [5e-3])
-bcs = [
-    (
-        NeumannBoundaryCondition(
-            lambda x, t: np.zeros((len(x), 1)), is_static=True
-        ),
-        NeumannBoundaryCondition(
-            lambda x, t: np.zeros((len(x), 1)), is_static=True
-        )
-    ),
-]
-cp = ConstrainedProblem(diff_eq, mesh, bcs)
-t_interval = (0., 1.)
-ic = GaussianInitialCondition(cp, [(np.array([.25]), np.array([[1e-2]]))])
-ivp = InitialValueProblem(cp, t_interval, ic)
+diff_eq = PopulationGrowthEquation(r=.5)
+cp = ConstrainedProblem(diff_eq)
+ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+ivp = InitialValueProblem(cp, (0., 5.), ic)
 
-f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-5)
-g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 2.5e-4)
+f = FDMOperator(
+    ForwardEulerMethod(),
+    ThreePointCentralDifferenceMethod(),
+    1.25e-5
+)
+g = FDMOperator(
+    ForwardEulerMethod(),
+    ThreePointCentralDifferenceMethod(),
+    1.25e-4
+)
 
 set_random_seed(SEEDS[0])
 g_sol = g.solve(ivp)
-y_0_functions = [ic.y_0] * 30 + [
-    DiscreteInitialCondition(
-        cp,
-        discrete_y,
-        g.vertex_oriented
-    ).y_0 for discrete_y in g_sol.discrete_y(g.vertex_oriented)
-][:3270]
+y_0_functions = [ic.y_0] * 25 + [
+    lambda x, _y_0=y_0: _y_0
+    for y_0 in g_sol.discrete_y(g.vertex_oriented)[
+        np.random.choice(40000, 10975, False)
+    ]
+]
 np.random.shuffle(y_0_functions)
-training_y_0_functions = y_0_functions[:3000]
-test_y_0_functions = y_0_functions[3000:]
+training_y_0_functions = y_0_functions[:10000]
+test_y_0_functions = y_0_functions[10000:]
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(
     sampler,
-    .25,
+    1.25,
     g.vertex_oriented,
     auto_regression_mode=True
 )
@@ -59,36 +54,32 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
     function_name='pidon_train'
 )(pidon.train)(
     cp,
-    (0., .25),
+    (0., 1.25),
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
-        n_domain_points=6000,
-        n_boundary_points=3000,
-        n_batches=1800,
-        n_ic_repeats=180
+        n_domain_points=5000,
+        n_batches=5000,
+        n_ic_repeats=1000
     ),
     test_data_args=DataArgs(
         y_0_functions=test_y_0_functions,
-        n_domain_points=600,
-        n_boundary_points=300,
-        n_batches=18,
-        n_ic_repeats=18
+        n_domain_points=500,
+        n_batches=50,
+        n_ic_repeats=50
     ),
     model_args=ModelArgs(
         latent_output_size=50,
-        branch_hidden_layer_sizes=[50] * 10,
-        trunk_hidden_layer_sizes=[50] * 10,
-        branch_initialization='he_uniform',
-        branch_activation='relu',
+        branch_hidden_layer_sizes=[50] * 5,
+        trunk_hidden_layer_sizes=[50] * 5,
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
+                2.5e-3, decay_steps=2000, decay_rate=.98
             )
         ),
-        epochs=50,
-        ic_loss_weight=10.
+        epochs=120,
+        diff_eq_loss_weight=10.
     )
 )
 pidon_test_loss = \
@@ -105,8 +96,7 @@ if comm.rank == min_pidon_test_loss_ind:
     )
 
 set_random_seed(SEEDS[0])
-mean_value = 2.
-don = AutoRegressionOperator(.25, g.vertex_oriented)
+don = AutoRegressionOperator(1.25, g.vertex_oriented)
 don_train_loss, don_test_loss = time_with_args(
     function_name='don_train'
 )(don.train)(
@@ -115,11 +105,9 @@ don_train_loss, don_test_loss = time_with_args(
     SKLearnKerasRegressor(
         DeepONet(
             [np.prod(cp.y_vertices_shape).item()] +
-            [50] * 10 +
+            [50] * 5 +
             [diff_eq.y_dimension * 50],
-            [1 + diff_eq.x_dimension] +
-            [50] * 10 +
-            [diff_eq.y_dimension * 50],
+            [1] + [50] * 5 + [diff_eq.y_dimension * 50],
             diff_eq.y_dimension,
             branch_initialization='he_uniform',
             trunk_initialization='he_uniform',
@@ -128,15 +116,15 @@ don_train_loss, don_test_loss = time_with_args(
         ),
         optimizer=optimizers.Adam(
             learning_rate=optimizers.schedules.ExponentialDecay(
-                5e-3, decay_steps=200, decay_rate=.98
+                1e-3, decay_steps=20, decay_rate=.98
             )
         ),
-        batch_size=20000,
-        epochs=5000,
+        batch_size=4000,
+        epochs=4000,
         verbose=True
     ),
-    2000,
-    lambda t, y: (y - mean_value) * np.random.normal(1., t / 10.) + mean_value
+    1250,
+    lambda t, y: y + np.random.normal(0., t / 24000.)
 )
 print('don train loss:', don_train_loss)
 print('don test loss:', don_test_loss)
@@ -151,7 +139,7 @@ if comm.rank == min_don_test_loss_ind:
         f'rank {comm.rank}'
     )
 
-prefix = 'diffusion'
+prefix = 'population_growth'
 f_solution_name = f'{prefix}_fine_fdm'
 g_solution_name = f'{prefix}_coarse_fdm'
 g_don_solution_name = f'{prefix}_coarse_don'
@@ -176,8 +164,12 @@ if comm.rank == 0:
     g_don_sol.plot(g_don_solution_name)
     g_pidon_sol.plot(g_pidon_solution_name)
 
-    diff = f_sol.diff([g_sol, g_don_sol, g_pidon_sol])
-    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=(2, 3)))
+    diff = f_sol.diff([
+        g_sol,
+        g_don_sol,
+        g_pidon_sol
+    ])
+    rms_diffs = np.sqrt(np.square(np.stack(diff.differences)).sum(axis=2))
     print(f'{prefix} - RMS differences:', repr(rms_diffs))
     print(
         f'{prefix} - max RMS differences:',
@@ -195,7 +187,7 @@ if comm.rank == 0:
         [
             'fdm',
             'don',
-            'pidon',
+            'pidon'
         ],
         f'{prefix}_coarse_operator_accuracy'
     )
@@ -205,7 +197,7 @@ for p_kwargs in [
     {'tol': 0., 'max_iterations': 2},
     {'tol': 0., 'max_iterations': 3},
     {'tol': 0., 'max_iterations': 4},
-    {'tol': 1e-2, 'max_iterations': 5}
+    {'tol': 1e-3, 'max_iterations': 5}
 ]:
     p = PararealOperator(f, g, **p_kwargs)
     p_don = PararealOperator(f, don, **p_kwargs)
@@ -236,7 +228,7 @@ for p_kwargs in [
 
         p_diff = f_sol.diff([p_sol, p_don_sol, p_pidon_sol])
         p_rms_diffs = np.sqrt(
-            np.square(np.stack(p_diff.differences)).sum(axis=(2, 3))
+            np.square(np.stack(p_diff.differences)).sum(axis=2)
         )
         print(f'{p_prefix} - RMS differences:', repr(p_rms_diffs))
         print(

@@ -20,6 +20,18 @@ class NumericalDifferentiator(ABC):
     A base class for numerical differentiators.
     """
 
+    def __init__(self, tol: float = 1e-3):
+        """
+        :param tol: the stopping criterion for the Jacobi algorithm when
+            computing the anti-Laplacian; once the second norm of the
+            difference of the estimate and the updated estimate drops below
+            this threshold, the equation is considered to be solved
+        """
+        if tol < 0.:
+            raise ValueError('tolerance must be non-negative')
+
+        self._tol = tol
+
     @abstractmethod
     def _derivative(
             self,
@@ -537,7 +549,6 @@ class NumericalDifferentiator(ABC):
             self,
             laplacian: np.ndarray,
             mesh: Mesh,
-            tol: float,
             y_constraints: Sequence[Optional[Constraint]],
             derivative_boundary_constraints: Optional[np.ndarray] = None,
             y_init: Optional[np.ndarray] = None) -> np.ndarray:
@@ -546,10 +557,6 @@ class NumericalDifferentiator(ABC):
 
         :param laplacian: the right-hand side of the equation
         :param mesh: the mesh representing the discretized spatial domain
-        :param tol: the stopping criterion for the Jacobi algorithm; once the
-            second norm of the difference of the estimate and the updated
-            estimate drops below this threshold, the equation is considered to
-            be solved
         :param y_constraints: a sequence of constraints on the values of the
             solution containing a constraint for each element of y; each
             constraint must constrain the boundary values of corresponding
@@ -583,8 +590,8 @@ class NumericalDifferentiator(ABC):
 
         apply_constraints_along_last_axis(y_constraints, y)
 
-        diff = float('inf')
-        while diff > tol:
+        diff = np.inf
+        while diff > self._tol:
             y_old = y
             y = self._next_anti_laplacian_estimate(
                 y_old,
@@ -627,11 +634,18 @@ class NumericalDifferentiator(ABC):
         return derivative_boundary_constraints
 
 
-class ThreePointCentralFiniteDifferenceMethod(NumericalDifferentiator):
+class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
     """
     A numerical differentiator using a three-point (second order) central
-    difference.
+    difference approximation.
     """
+
+    def __init__(self, tol: float = 1e-3):
+        """
+        :param tol: the stopping criterion for the Jacobi algorithm when
+            computing the anti-Laplacian
+        """
+        super(ThreePointCentralDifferenceMethod, self).__init__(tol)
 
     def _derivative(
             self,

@@ -27,5 +27,5 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 100.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .5)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .5)
 solver.solve(ivp).plot('3d_burgers')

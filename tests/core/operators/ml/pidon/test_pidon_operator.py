@@ -1,10 +1,13 @@
 import numpy as np
+import pytest
 from tensorflow import optimizers
 
+from pararealml import SymbolicEquationSystem
 from pararealml.core.boundary_condition import NeumannBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.differential_equation import PopulationGrowthEquation, \
-    LotkaVolterraEquation, DiffusionEquation
+from pararealml.core.differential_equation import DifferentialEquation, \
+    PopulationGrowthEquation, LotkaVolterraEquation, DiffusionEquation, \
+    WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -241,3 +244,183 @@ def test_pidon_operator_on_pde():
     solution = pidon.solve(ivp)
     assert solution.d_t == .001
     assert solution.discrete_y().shape == (500, 11, 1)
+
+
+def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    t_interval = (0., 1.)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    with pytest.raises(ValueError):
+        pidon.train(
+            cp,
+            t_interval,
+            training_data_args=DataArgs(
+                y_0_functions=[ic.y_0],
+                n_domain_points=50,
+                n_batches=1
+            ),
+            model_args=ModelArgs(
+                latent_output_size=1,
+                trunk_hidden_layer_sizes=[50, 50, 50],
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer={'class_name': 'Adam'},
+                epochs=100,
+                verbose=False
+            )
+        )
+
+
+def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
+    class TestDiffEq(DifferentialEquation):
+
+        def __init__(self):
+            super(TestDiffEq, self).__init__(0, 1)
+
+        @property
+        def symbolic_equation_system(self) -> SymbolicEquationSystem:
+            return SymbolicEquationSystem([self.symbols.t])
+
+    diff_eq = TestDiffEq()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    with pytest.raises(ValueError):
+        pidon.train(
+            cp,
+            (0., .25),
+            training_data_args=DataArgs(
+                y_0_functions=[ic.y_0],
+                n_domain_points=50,
+                n_batches=1
+            ),
+            model_args=ModelArgs(
+                latent_output_size=1,
+                trunk_hidden_layer_sizes=[50, 50, 50],
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer={'class_name': 'Adam'},
+                epochs=100,
+                verbose=False
+            )
+        )
+
+
+def test_pidon_operator_in_ar_mode_on_ode():
+    set_random_seed(0)
+
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    t_interval = (0., 1.)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    assert pidon.auto_regression_mode
+
+    pidon.train(
+        cp,
+        (0., .25),
+        training_data_args=DataArgs(
+            y_0_functions=[
+                lambda _, _y_0=y_0: np.array([_y_0])
+                for y_0 in np.linspace(.5, 2., 10)
+            ],
+            n_domain_points=50,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=1,
+            trunk_hidden_layer_sizes=[50, 50, 50],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer={
+                'class_name': 'Adam',
+                'config': {
+                    'learning_rate': optimizers.schedules.ExponentialDecay(
+                        1e-2, decay_steps=25, decay_rate=.95)
+                }
+            },
+            epochs=5,
+            verbose=False
+        )
+    )
+
+    sol = pidon.solve(ivp)
+    assert np.allclose(sol.t_coordinates, [.25, .5, .75, 1.])
+    assert sol.discrete_y().shape == (4, 1)
+
+
+def test_pidon_operator_in_ar_mode_on_pde():
+    set_random_seed(0)
+
+    diff_eq = WaveEquation(1)
+    mesh = Mesh([(0., .5)], (.1,))
+    bcs = [
+        (NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 2)), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 2)), is_static=True)),
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    t_interval = (0., 1.)
+    ic = GaussianInitialCondition(
+        cp,
+        [(np.array([.5]), np.array([[.25]]))] * 2
+    )
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    training_y_0_functions = [
+        GaussianInitialCondition(
+            cp,
+            [(
+                np.array([.5]),
+                np.array([[sd]])
+            )] * 2
+        ).y_0 for sd in [.1, .2, .3, .4]
+    ]
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .25, True, auto_regression_mode=True)
+
+    assert pidon.auto_regression_mode
+
+    pidon.train(
+        cp,
+        (0., .25),
+        training_data_args=DataArgs(
+            y_0_functions=training_y_0_functions,
+            n_domain_points=50,
+            n_boundary_points=20,
+            n_batches=2
+        ),
+        model_args=ModelArgs(
+            latent_output_size=50,
+            branch_hidden_layer_sizes=[50, 50],
+            trunk_hidden_layer_sizes=[50, 50],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer={
+                'class_name': 'Adam',
+                'config': {
+                    'learning_rate': 1e-4
+                }
+            },
+            epochs=2,
+            ic_loss_weight=10.,
+            verbose=False
+        )
+    )
+
+    sol = pidon.solve(ivp)
+    assert np.allclose(sol.t_coordinates, [.25, .5, .75, 1.])
+    assert sol.discrete_y().shape == (4, 6, 2)

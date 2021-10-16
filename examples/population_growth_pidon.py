@@ -51,7 +51,7 @@ pidon.train(
     )
 )
 
-fdm = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .001)
+fdm = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .001)
 
 for y_0 in [.7, 1., 1.3]:
     ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))

@@ -9,7 +9,7 @@ from pararealml.core.differential_equation import LotkaVolterraEquation, \
     WaveEquation, DiffusionEquation
 from pararealml.core.mesh import Mesh
 from pararealml.core.operators.fdm.numerical_differentiator import \
-    ThreePointCentralFiniteDifferenceMethod
+    ThreePointCentralDifferenceMethod
 
 
 def test_cp_ode():
@@ -118,7 +118,7 @@ def test_cp_2d_pde():
     assert np.all(y_vertices[:, -1, 1] == 3.)
 
     y_vertices = np.zeros(cp.y_shape(True))
-    diff = ThreePointCentralFiniteDifferenceMethod()
+    diff = ThreePointCentralDifferenceMethod()
     d_y_boundary_constraints = cp.static_boundary_vertex_constraints[1]
 
     d_y_0_over_d_x_0 = diff.gradient(

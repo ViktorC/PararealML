@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from pararealml.core.operators.fdm.fdm_operator import FDMOperator
 from pararealml.core.operators.fdm.numerical_differentiator import \
-    NumericalDifferentiator, ThreePointCentralFiniteDifferenceMethod
+    NumericalDifferentiator, ThreePointCentralDifferenceMethod
 from pararealml.core.operators.fdm.numerical_integrator import \
     NumericalIntegrator, ForwardEulerMethod, ExplicitMidpointMethod, RK4, \
     BackwardEulerMethod, CrankNicolsonMethod
@@ -10,7 +10,7 @@ from pararealml.core.operators.fdm.numerical_integrator import \
 __all__ = [
     'FDMOperator',
     'NumericalDifferentiator',
-    'ThreePointCentralFiniteDifferenceMethod',
+    'ThreePointCentralDifferenceMethod',
     'NumericalIntegrator',
     'ForwardEulerMethod',
     'ExplicitMidpointMethod',

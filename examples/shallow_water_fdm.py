@@ -29,6 +29,6 @@ ic = GaussianInitialCondition(
 )
 ivp = InitialValueProblem(cp, (0., 10.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .0025)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .0025)
 solution = solver.solve(ivp)
 solution.plot('2d_shallow_water_equation')

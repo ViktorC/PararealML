@@ -24,7 +24,7 @@ ic = DiscreteInitialCondition(
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
 fdm_op = FDMOperator(
-    CrankNicolsonMethod(), ThreePointCentralFiniteDifferenceMethod(), .01)
+    CrankNicolsonMethod(), ThreePointCentralDifferenceMethod(), .01)
 ar_op = AutoRegressionOperator(1.25, fdm_op.vertex_oriented)
 
 fdm_sol = fdm_op.solve(ivp)

@@ -23,6 +23,6 @@ cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 4)))
 ivp = InitialValueProblem(cp, (0., 100.), ic)
 
-solver = FDMOperator(RK4(), ThreePointCentralFiniteDifferenceMethod(), .05)
+solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .05)
 solution = solver.solve(ivp)
 solution.plot('navier_stokes', n_images=50, quiver_scale=.1)

@@ -82,7 +82,8 @@ class PIDONOperator(Operator):
             self,
             sampler: CollocationPointSampler,
             d_t: float,
-            vertex_oriented: bool):
+            vertex_oriented: bool,
+            auto_regression_mode: bool = False):
         """
         :param sampler: the collocation point sampler to use to generate the
             data to train and test models
@@ -90,6 +91,10 @@ class PIDONOperator(Operator):
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
+        :param auto_regression_mode: whether the operator is to function in
+            auto-regression mode using its prediction at the previous time
+            step as the initial conditions for its prediction at the next time
+            step
         """
         if d_t <= 0.:
             raise ValueError('time step size must be greater than 0')
@@ -97,6 +102,8 @@ class PIDONOperator(Operator):
         self._sampler = sampler
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
+        self._auto_regression_mode = auto_regression_mode
+
         self._model: Optional[PIDeepONet] = None
 
     @property
@@ -106,6 +113,13 @@ class PIDONOperator(Operator):
     @property
     def vertex_oriented(self) -> Optional[bool]:
         return self._vertex_oriented
+
+    @property
+    def auto_regression_mode(self) -> bool:
+        """
+        Whether the operator functions in auto-regression mode.
+        """
+        return self._auto_regression_mode
 
     @property
     def model(self) -> Optional[PIDeepONet]:
@@ -125,6 +139,8 @@ class PIDONOperator(Operator):
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
+        t = discretize_time_domain(ivp.t_interval, self._d_t)[1:]
+
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
                 self._vertex_oriented, flatten=True)
@@ -138,19 +154,33 @@ class PIDONOperator(Operator):
             u = np.array([ivp.initial_condition.y_0(None)])
             u_tensor = tf.convert_to_tensor(u, tf.float32)
 
-        y_shape = cp.y_shape(self._vertex_oriented)
-        t = discretize_time_domain(ivp.t_interval, self._d_t)
-        y = np.empty((len(t) - 1,) + y_shape)
+        t_tensor = tf.constant(
+            self._d_t if self._auto_regression_mode else t[0],
+            dtype=tf.float32,
+            shape=(u_tensor.shape[0], 1))
 
-        for i, t_i in enumerate(t[1:]):
-            t_tensor = tf.constant(
-                t_i, shape=(u_tensor.shape[0], 1), dtype=tf.float32)
+        y_shape = cp.y_shape(self._vertex_oriented)
+        y = np.empty((len(t),) + y_shape)
+
+        for i, t_i in enumerate(t):
             y_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_tensor.numpy().reshape(y_shape)
 
+            if i < len(t) - 1:
+                if self._auto_regression_mode:
+                    u_tensor = tf.tile(
+                        tf.reshape(y_tensor, (1, -1)),
+                        (x_tensor.shape[0], 1)) if diff_eq.x_dimension \
+                        else tf.reshape(y_tensor, u_tensor.shape)
+                else:
+                    t_tensor = tf.constant(
+                        t[i + 1],
+                        dtype=tf.float32,
+                        shape=(u_tensor.shape[0], 1))
+
         return Solution(
             ivp,
-            t[1:],
+            t,
             y,
             vertex_oriented=self._vertex_oriented,
             d_t=self._d_t)
@@ -187,6 +217,21 @@ class PIDONOperator(Operator):
             a (quasi) second order optimization method
         :return: the training loss history and the test loss history
         """
+        if self._auto_regression_mode:
+            if t_interval != (0., self._d_t):
+                raise ValueError(
+                    'in auto-regression mode, the training time interval '
+                    f'{t_interval} must range from 0 to the time step size of '
+                    f'the operator ({self._d_t})')
+
+            diff_eq = cp.differential_equation
+            t_symbol = diff_eq.symbols.t
+            eq_sys = diff_eq.symbolic_equation_system
+            if any([t_symbol in rhs.free_symbols for rhs in eq_sys.rhs]):
+                raise ValueError(
+                    'auto-regression mode is not compatible with differential '
+                    'equations whose right-hand sides contain any t terms')
+
         training_data_set = DataSet(
             cp,
             t_interval,
@@ -197,7 +242,6 @@ class PIDONOperator(Operator):
             vertex_oriented=self._vertex_oriented)
         training_data = training_data_set.get_iterator(
             training_data_args.n_batches, training_data_args.n_ic_repeats)
-
         if test_data_args:
             test_data_set = DataSet(
                 cp,

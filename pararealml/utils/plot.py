@@ -497,10 +497,10 @@ def plot_evolution_of_vector_field(
 
     x_cartesian_coordinate_grids = cp.mesh.cartesian_coordinate_grids(
         solution.vertex_oriented)
-    unit_vector_grids = cp.mesh.unit_vector_grids(solution.vertex_oriented)
+    basis_vector_grids = cp.mesh.basis_vector_grids(solution.vertex_oriented)
     y = solution.discrete_y()
     y_cartesian: np.ndarray = sum([
-        y[..., y_inds[i], np.newaxis] * unit_vector_grids[i][np.newaxis, ...]
+        y[..., y_inds[i], np.newaxis] * basis_vector_grids[i][np.newaxis, ...]
         for i in range(x_dim)
     ])
 

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Type
 
 import numpy as np
 import sympy as sp
@@ -16,17 +16,32 @@ class ODEOperator(Operator):
 
     def __init__(
             self,
-            method: Union[str, OdeSolver],
-            d_t: float):
+            method: Union[str, Type[OdeSolver]],
+            d_t: float,
+            first_step: Optional[float] = None,
+            max_step: float = np.inf,
+            atol: float = 1e-6,
+            rtol: float = 1e-3):
         """
         :param method: the ODE solver to use
         :param d_t: the temporal step size to use
+        :param first_step: the step size to use for the first time integration
+            step
+        :param max_step: the maximum allowed time integration step size
+        :param atol: the absolute tolerance to use to manage local error
+            estimates by controlling the time integration step size
+        :param rtol: the relative tolerance to use to manage local error
+            estimates by controlling the time integration step size
         """
         if d_t <= 0.:
             raise ValueError('time step size must be greater than 0')
 
         self._method = method
         self._d_t = d_t
+        self._first_step = first_step
+        self._max_step = max_step
+        self._atol = atol
+        self._rtol = rtol
 
     @property
     def d_t(self) -> float:
@@ -62,7 +77,11 @@ class ODEOperator(Operator):
             self._method,
             t[1:],
             dense_output=False,
-            vectorized=False)
+            vectorized=False,
+            first_step=self._first_step,
+            max_step=self._max_step,
+            atol=self._atol,
+            rtol=self._rtol)
 
         if not result.success:
             raise ValueError(
