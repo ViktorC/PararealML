@@ -184,8 +184,7 @@ class FDMOperator(Operator):
                 lambda _: cp.static_boundary_vertex_constraints[1]
 
         def d_y_constraints_function(
-                t: Optional[float]
-        ) -> Optional[np.ndarray]:
+                t: Optional[float]) -> Optional[np.ndarray]:
             if t in boundary_constraints_cache:
                 return boundary_constraints_cache[t][1]
 
@@ -198,8 +197,7 @@ class FDMOperator(Operator):
                 d_y_constraints_function
 
         def y_constraints_function(
-                t: Optional[float]
-        ) -> Optional[np.ndarray]:
+                t: Optional[float]) -> Optional[np.ndarray]:
             if t in y_constraints_cache:
                 return y_constraints_cache[t]
 

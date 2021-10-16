@@ -115,8 +115,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     def map_concatenated(
             self,
             arg: FDMSymbolMapArg,
-            lhs_type: Lhs
-    ) -> np.ndarray:
+            lhs_type: Lhs) -> np.ndarray:
         """
         Evaluates the right hand side of the differential equation system
         given the map argument and concatenates the resulting sequence of map
