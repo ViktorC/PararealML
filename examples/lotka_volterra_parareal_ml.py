@@ -11,7 +11,7 @@ from pararealml.core.operators.parareal import *
 from pararealml.utils.ml import limit_tf_visible_gpus
 from pararealml.utils.plot import plot_rms_solution_diffs
 from pararealml.utils.rand import set_random_seed, SEEDS
-from pararealml.utils.time import time_with_args
+from pararealml.utils.time import mpi_time, time
 
 limit_tf_visible_gpus()
 comm = MPI.COMM_WORLD
@@ -50,9 +50,9 @@ pidon = PIDONOperator(
     g.vertex_oriented,
     auto_regression_mode=True
 )
-pidon_train_loss_history, pidon_test_loss_history = time_with_args(
-    function_name='pidon_train'
-)(pidon.train)(
+pidon_train_loss_history, pidon_test_loss_history = time('pidon_train')(
+    pidon.train
+)(
     cp,
     (0., 2.5),
     training_data_args=DataArgs(
@@ -81,7 +81,7 @@ pidon_train_loss_history, pidon_test_loss_history = time_with_args(
         epochs=30,
         diff_eq_loss_weight=10.
     )
-)
+)[0]
 pidon_test_loss = \
     pidon_test_loss_history[-1].weighted_total_loss.numpy().sum().item()
 pidon_test_losses = comm.allgather(pidon_test_loss)
@@ -97,9 +97,7 @@ if comm.rank == min_pidon_test_loss_ind:
 
 set_random_seed(SEEDS[0])
 don = AutoRegressionOperator(2.5, g.vertex_oriented)
-don_train_loss, don_test_loss = time_with_args(
-    function_name='don_train'
-)(don.train)(
+don_train_loss, don_test_loss = time('don_train')(don.train)(
     ivp,
     g,
     SKLearnKerasRegressor(
@@ -125,7 +123,7 @@ don_train_loss, don_test_loss = time_with_args(
     ),
     2000,
     lambda t, y: y + np.random.normal(0., t / 7500., size=y.shape)
-)
+)[0]
 print('don train loss:', don_train_loss)
 print('don test loss:', don_test_loss)
 don_test_losses = comm.allgather(don_test_loss)
@@ -145,18 +143,11 @@ g_solution_name = f'{prefix}_coarse_fdm'
 g_don_solution_name = f'{prefix}_coarse_don'
 g_pidon_solution_name = f'{prefix}_coarse_pidon'
 
-f_sol = time_with_args(
-    function_name=f'{f_solution_name}_rank_{comm.rank}'
-)(f.solve)(ivp)
-g_sol = time_with_args(
-    function_name=f'{g_solution_name}_rank_{comm.rank}'
-)(g.solve)(ivp)
-g_don_sol = time_with_args(
-    function_name=f'{g_don_solution_name}_rank_{comm.rank}'
-)(don.solve)(ivp)
-g_pidon_sol = time_with_args(
-    function_name=f'{g_pidon_solution_name}_rank_{comm.rank}'
-)(pidon.solve)(ivp)
+f_sol = time(f'{f_solution_name}_rank_{comm.rank}')(f.solve)(ivp)[0]
+g_sol = time(f'{g_solution_name}_rank_{comm.rank}')(g.solve)(ivp)[0]
+g_don_sol = time(f'{g_don_solution_name}_rank_{comm.rank}')(don.solve)(ivp)[0]
+g_pidon_sol = \
+    time(f'{g_pidon_solution_name}_rank_{comm.rank}')(pidon.solve)(ivp)[0]
 
 if comm.rank == 0:
     f_sol.plot(f_solution_name)
@@ -208,18 +199,9 @@ for p_kwargs in [
     p_don_solution_name = f'{p_prefix}_don'
     p_pidon_solution_name = f'{p_prefix}_pidon'
 
-    p_sol = time_with_args(
-      function_name=p_solution_name,
-      print_on_first_rank_only=True
-    )(p.solve)(ivp)
-    p_don_sol = time_with_args(
-      function_name=p_don_solution_name,
-      print_on_first_rank_only=True
-    )(p_don.solve)(ivp)
-    p_pidon_sol = time_with_args(
-      function_name=p_pidon_solution_name,
-      print_on_first_rank_only=True
-    )(p_pidon.solve)(ivp)
+    p_sol = mpi_time(p_solution_name)(p.solve)(ivp)[0]
+    p_don_sol = mpi_time(p_don_solution_name)(p_don.solve)(ivp)[0]
+    p_pidon_sol = mpi_time(p_pidon_solution_name)(p_pidon.solve)(ivp)[0]
 
     if comm.rank == 0:
         p_sol.plot(p_solution_name)

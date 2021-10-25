@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 from pararealml.core.operators.ode import *
 from pararealml.core.operators.parareal import *
-from pararealml.utils.time import time_with_args
+from pararealml.utils.time import mpi_time
 
 n_planets = 10
 masses = np.random.randint(5e4, 5e8, n_planets)
@@ -25,9 +25,9 @@ f_solution_name = 'n_body_fine'
 g_solution_name = 'n_body_coarse'
 p_solution_name = 'n_body_parareal'
 
-time_with_args(function_name=f_solution_name)(f.solve)(ivp) \
-    .plot(f_solution_name, only_first_process=True)
-time_with_args(function_name=g_solution_name)(g.solve)(ivp) \
-    .plot(g_solution_name, only_first_process=True)
-time_with_args(function_name=p_solution_name)(p.solve)(ivp) \
-    .plot(p_solution_name, only_first_process=True)
+mpi_time(f_solution_name)(f.solve)(ivp)[0].plot(
+    f_solution_name, only_first_process=True)
+mpi_time(g_solution_name)(g.solve)(ivp)[0].plot(
+    g_solution_name, only_first_process=True)
+mpi_time(p_solution_name)(p.solve)(ivp)[0].plot(
+    p_solution_name, only_first_process=True)
