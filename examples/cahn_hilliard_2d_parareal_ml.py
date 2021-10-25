@@ -8,12 +8,12 @@ from pararealml.core.operators.ml.auto_regression import *
 from pararealml.core.operators.ml.deeponet import DeepONet
 from pararealml.core.operators.ml.pidon import *
 from pararealml.core.operators.parareal import *
-from pararealml.utils.ml import limit_tf_visible_gpus
 from pararealml.utils.plot import plot_rms_solution_diffs
 from pararealml.utils.rand import set_random_seed, SEEDS
+from pararealml.utils.tf import limit_visible_gpus
 from pararealml.utils.time import mpi_time, time
 
-limit_tf_visible_gpus()
+limit_visible_gpus()
 comm = MPI.COMM_WORLD
 set_random_seed(0)
 
