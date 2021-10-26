@@ -195,8 +195,7 @@ class PIDONOperator(Operator):
             optimization_args: OptimizationArgs,
             test_data_args: Optional[DataArgs] = None,
             secondary_optimization_args: Optional[SecondaryOptimizationArgs] =
-            None
-    ) -> Tuple[Sequence[Loss], Sequence[Loss]]:
+            None) -> Tuple[Sequence[Loss], Sequence[Loss]]:
         """
         Trains a physics-informed DeepONet model on the provided constrained
         problem, time interval, and initial condition functions using the model

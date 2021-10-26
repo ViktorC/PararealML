@@ -30,8 +30,7 @@ class AutoDifferentiator(tf.GradientTape):
             y: tf.Tensor,
             x_axis: Union[int, tf.Tensor],
             coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN
-    ) -> tf.Tensor:
+            CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
         Returns the element(s) of the gradient of y with respect to the element
         of x defined by x_axis.
@@ -77,8 +76,7 @@ class AutoDifferentiator(tf.GradientTape):
             x_axis1: int,
             x_axis2: int,
             coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN
-    ) -> tf.Tensor:
+            CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
         Returns the element(s) of the Hessian of y with respect to the elements
         of x defined by x_axis1 and x_axis2.
@@ -112,8 +110,7 @@ class AutoDifferentiator(tf.GradientTape):
             x: tf.Tensor,
             y: tf.Tensor,
             coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN
-    ) -> tf.Tensor:
+            CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
         Returns the divergence of y.
 
@@ -144,8 +141,7 @@ class AutoDifferentiator(tf.GradientTape):
             y: tf.Tensor,
             curl_ind: int = 0,
             coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN
-    ) -> tf.Tensor:
+            CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
         Returns the curl_ind-th component of the curl of y.
 
@@ -193,8 +189,7 @@ class AutoDifferentiator(tf.GradientTape):
             x: tf.Tensor,
             y: tf.Tensor,
             coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN
-    ) -> tf.Tensor:
+            CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
         Returns the Laplacian of y.
 
