@@ -6,7 +6,8 @@ from tensorflow import optimizers
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
-from pararealml.core.differential_equation import LorenzEquation, WaveEquation
+from pararealml.core.differential_equation import LotkaVolterraEquation, \
+    LorenzEquation, WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -83,6 +84,36 @@ def test_auto_regression_operator_on_ode():
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
     assert np.max(np.abs(diff.differences[0])) < .2
+
+
+def test_auto_regression_operator_on_ode_with_isolated_perturbations():
+    set_random_seed(0)
+
+    diff_eq = LotkaVolterraEquation(2., 1., .8, 1.)
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1., 2.]))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = ODEOperator('DOP853', .001)
+    ref_solution = oracle.solve(ivp)
+
+    ml_op = AutoRegressionOperator(2.5, True)
+    ml_op.train(
+        ivp,
+        oracle,
+        RandomForestRegressor(),
+        25,
+        lambda t, y: y + np.random.normal(0., .01, size=y.shape),
+        isolate_perturbations=True)
+    ml_solution = ml_op.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 2.5
+    assert ml_solution.discrete_y().shape == (4, 2)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .01
 
 
 def test_auto_regression_operator_on_pde():

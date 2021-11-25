@@ -27,7 +27,8 @@ ar_op.train(
     ode_op,
     RandomForestRegressor(n_estimators=250, n_jobs=4, verbose=True),
     50,
-    lambda t, y: y + np.random.normal(0., t / 99., size=y.shape)
+    lambda t, y: y + np.random.normal(0., t / 99., size=y.shape),
+    isolate_perturbations=True
 )
 ar_op.solve(ivp).plot(
     'lotka_volterra_ar', n_images=10, v_min=v_min, v_max=v_max)

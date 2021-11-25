@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Callable, Optional, Protocol
+from typing import Union, Tuple, Callable, Optional, Protocol, List
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -103,7 +103,8 @@ class AutoRegressionOperator(Operator):
             ivp: InitialValueProblem,
             oracle: Operator,
             iterations: int,
-            perturbation_function: Callable[[float, np.ndarray], np.ndarray]
+            perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+            isolate_perturbations: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates data to train an operator model by using the oracle to
@@ -117,6 +118,8 @@ class AutoRegressionOperator(Operator):
             representing the start of a sub-IVP's time domain, and the discrete
             initial conditions for the sub-IVP and returns a perturbed version
             of the initial conditions
+        :param isolate_perturbations: whether to stop perturbations from
+            propagating through to the subsequent sub-IVPs
         :return: a tuple of the inputs and the target outputs
         """
         if iterations <= 0:
@@ -124,18 +127,20 @@ class AutoRegressionOperator(Operator):
 
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
+        x_dim = diff_eq.x_dimension
+        y_dim = diff_eq.y_dimension
 
         t = discretize_time_domain(ivp.t_interval, self._d_t)[:-1]
         y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        unperturbed_sub_y0s: List[Optional[np.ndarray]] = [None] * (len(t) - 1)
 
         single_time_point_inputs = self._create_input_placeholder(cp)
         n_spatial_points = single_time_point_inputs.shape[0]
         single_epoch_inputs = np.tile(single_time_point_inputs, (len(t), 1))
-        single_epoch_inputs[:, -diff_eq.x_dimension - 1] = \
-            np.repeat(t, n_spatial_points)
+        single_epoch_inputs[:, -x_dim - 1] = np.repeat(t, n_spatial_points)
 
         inputs = np.tile(single_epoch_inputs, (iterations, 1))
-        targets = np.empty((inputs.shape[0], diff_eq.y_dimension))
+        targets = np.empty((inputs.shape[0], y_dim))
         for epoch in range(iterations):
             offset = epoch * n_spatial_points * len(t)
             y_i = y_0
@@ -147,21 +152,33 @@ class AutoRegressionOperator(Operator):
                         f'perturbed y shape {perturbed_y_i.shape} must match '
                         f'input y shape {y_i.shape}')
 
-                y_i = perturbed_y_i
-                t_offset = offset + i * n_spatial_points
-                inputs[
-                    t_offset:t_offset + n_spatial_points,
-                    :-diff_eq.x_dimension - 1
-                ] = y_i.reshape((1, -1))
-
                 sub_ivp = InitialValueProblem(
                     cp,
                     (t_i, t_i + self._d_t),
-                    DiscreteInitialCondition(cp, y_i, self._vertex_oriented))
-                solution = oracle.solve(sub_ivp)
-                y_i = solution.discrete_y(self._vertex_oriented)[-1, ...]
+                    DiscreteInitialCondition(
+                        cp, perturbed_y_i, self._vertex_oriented))
+                y_next = oracle.solve(sub_ivp) \
+                    .discrete_y(self._vertex_oriented)[-1, ...]
+
+                t_offset = offset + i * n_spatial_points
+                inputs[t_offset:t_offset + n_spatial_points, :-x_dim - 1] = \
+                    perturbed_y_i.reshape((1, -1))
                 targets[t_offset:t_offset + n_spatial_points, :] = \
-                    y_i.reshape((-1, diff_eq.y_dimension))
+                    y_next.reshape((-1, y_dim))
+
+                if isolate_perturbations and i < len(t) - 1:
+                    y_next = unperturbed_sub_y0s[i]
+                    if y_next is None:
+                        sub_ivp = InitialValueProblem(
+                            cp,
+                            (t_i, t_i + self._d_t),
+                            DiscreteInitialCondition(
+                                cp, y_i, self._vertex_oriented))
+                        y_next = oracle.solve(sub_ivp) \
+                            .discrete_y(self._vertex_oriented)[-1, ...]
+                        unperturbed_sub_y0s[i] = y_next
+
+                y_i = y_next
 
         return inputs, targets
 
@@ -208,6 +225,7 @@ class AutoRegressionOperator(Operator):
             model: RegressionModel,
             iterations: int,
             perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+            isolate_perturbations: bool = False,
             test_size: float = .2,
             score_func: Callable[[np.ndarray, np.ndarray], float] =
             mean_squared_error) -> Tuple[float, float]:
@@ -233,13 +251,19 @@ class AutoRegressionOperator(Operator):
             representing the start of a sub-IVP's time domain, and the discrete
             initial values for the sub-IVP's solution and returns a perturbed
             version of the initial values
+        :param isolate_perturbations: whether to stop perturbations from
+            propagating through to the subsequent sub-IVPs
         :param test_size: the fraction of all data points that should be used
             for testing
         :param score_func: the prediction scoring function to use
         :return: the training and test losses
         """
         data = self.generate_data(
-            ivp, oracle, iterations, perturbation_function)
+            ivp,
+            oracle,
+            iterations,
+            perturbation_function,
+            isolate_perturbations=isolate_perturbations)
         return self.fit_model(model, data, test_size, score_func)
 
     def _create_input_placeholder(
