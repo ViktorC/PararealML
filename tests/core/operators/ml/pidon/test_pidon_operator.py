@@ -47,25 +47,19 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             trunk_hidden_layer_sizes=[50, 50, 50],
         ),
         optimization_args=OptimizationArgs(
-            optimizer={
-                'class_name': 'Adam',
-                'config': {
-                    'learning_rate': optimizers.schedules.ExponentialDecay(
-                        1e-2, decay_steps=25, decay_rate=.95)
-                }
-            },
+            optimizer=optimizers.SGD(),
             epochs=100,
-            verbose=False
+            verbose=True
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=100,
-            verbose=False
+            verbose=True
         )
     )
 
     assert len(training_loss_history) == 101
     assert len(test_loss_history) == 0
-    assert training_loss_history[-1].weighted_total_loss.numpy() < 1e-5
+    assert training_loss_history[-1].weighted_total_loss.numpy() < 5e-5
 
     ivp = InitialValueProblem(
         cp,

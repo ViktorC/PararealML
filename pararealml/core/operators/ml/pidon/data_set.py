@@ -268,6 +268,7 @@ class DataSetIterator(Iterator):
         self._data_set = data_set
         self._n_batches = n_batches
         self._n_ic_repeats = n_ic_repeats
+        self._shuffle = shuffle
 
         self._iv_data_size = data_set.initial_value_data.shape[0]
         self._domain_data_size = data_set.domain_collocation_data.shape[0]
@@ -297,13 +298,13 @@ class DataSetIterator(Iterator):
         self._boundary_batch_size = self._total_boundary_data_size // n_batches
 
         self._domain_indices = self._create_cartesian_product_indices(
-            self._iv_data_size, self._domain_data_size, shuffle)
+            self._iv_data_size, self._domain_data_size)
         self._initial_indices = np.tile(
             self._create_cartesian_product_indices(
-                self._iv_data_size, self._initial_data_size, shuffle),
+                self._iv_data_size, self._initial_data_size),
             (n_ic_repeats, 1))
         self._boundary_indices = self._create_cartesian_product_indices(
-            self._iv_data_size, self._boundary_data_size, shuffle) \
+            self._iv_data_size, self._boundary_data_size) \
             if self._boundary_data_size else None
 
         self._batch_counter = 0
@@ -364,6 +365,11 @@ class DataSetIterator(Iterator):
         Resets the iterator so that the data set can be iterated over again.
         """
         self._batch_counter = 0
+        if self._shuffle:
+            np.random.shuffle(self._domain_indices)
+            np.random.shuffle(self._initial_indices)
+            if self._boundary_data_size:
+                np.random.shuffle(self._boundary_indices)
 
     def _get_domain_batch(self, domain_batch_size: int) -> DomainDataBatch:
         """
@@ -486,8 +492,7 @@ class DataSetIterator(Iterator):
     @staticmethod
     def _create_cartesian_product_indices(
             first_set_size: int,
-            second_set_size: int,
-            shuffle: bool) -> np.ndarray:
+            second_set_size: int) -> np.ndarray:
         """
         Creates a 2D array of indices for the Cartesian product of two sets of
         data rows.
@@ -497,7 +502,6 @@ class DataSetIterator(Iterator):
 
         :param first_set_size: the number of rows in the first set
         :param second_set_size: the number of rows in the second set
-        :param shuffle: whether to shuffle the indices
         :return: a 2D array with two columns of data row indices
         """
         first_set_indices = np.arange(0, first_set_size)
@@ -509,14 +513,10 @@ class DataSetIterator(Iterator):
         cartesian_product_second_set_indices = np.tile(
             second_set_indices,
             (first_set_size,))
-        cartesian_product_indices = np.stack(
+        return np.stack(
             (cartesian_product_first_set_indices,
              cartesian_product_second_set_indices),
             axis=1)
-
-        if shuffle:
-            np.random.shuffle(cartesian_product_indices)
-        return cartesian_product_indices
 
 
 class DataBatch(NamedTuple):
