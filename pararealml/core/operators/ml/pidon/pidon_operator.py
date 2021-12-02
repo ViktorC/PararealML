@@ -29,6 +29,7 @@ class DataArgs(NamedTuple):
     n_batches: int
     n_boundary_points: int = 0
     n_ic_repeats: int = 1
+    shuffle: bool = True
 
 
 class ModelArgs(NamedTuple):
@@ -240,7 +241,9 @@ class PIDONOperator(Operator):
             n_boundary_points=training_data_args.n_boundary_points,
             vertex_oriented=self._vertex_oriented)
         training_data = training_data_set.get_iterator(
-            training_data_args.n_batches, training_data_args.n_ic_repeats)
+            training_data_args.n_batches,
+            n_ic_repeats=training_data_args.n_ic_repeats,
+            shuffle=training_data_args.shuffle)
         if test_data_args:
             test_data_set = DataSet(
                 cp,
@@ -252,8 +255,8 @@ class PIDONOperator(Operator):
                 vertex_oriented=self._vertex_oriented)
             test_data = test_data_set.get_iterator(
                 test_data_args.n_batches,
-                test_data_args.n_ic_repeats,
-                shuffle=False)
+                n_ic_repeats=test_data_args.n_ic_repeats,
+                shuffle=test_data_args.shuffle)
         else:
             test_data = None
 
