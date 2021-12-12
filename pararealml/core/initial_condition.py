@@ -4,7 +4,7 @@ from typing import Tuple, Optional, Callable, Sequence
 
 import numpy as np
 from scipy.interpolate import interpn
-from scipy.stats import multivariate_normal
+from scipy.stats import multivariate_normal, beta
 
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.constraint import apply_constraints_along_last_axis
@@ -177,10 +177,23 @@ class ContinuousInitialCondition(InitialCondition):
                 self._cp.static_y_vertex_constraints, y_0)
         return y_0
 
+    def _convert_coordinates_to_cartesian(self, x: np.ndarray) -> np.ndarray:
+        """
+        Converts the provided coordinates to Cartesian coordinates.
+
+        :param x: the coordinates to convert
+        :return: the converted Cartesian coordinates
+        """
+        cartesian_x = to_cartesian_coordinates(
+            [x[:, i] for i in range(x.shape[1])],
+            self._cp.mesh.coordinate_system_type)
+        return np.stack(cartesian_x, axis=-1)
+
 
 class GaussianInitialCondition(ContinuousInitialCondition):
     """
-    An initial condition defined explicitly by Gaussian functions.
+    An initial condition defined explicitly by Gaussian probability density
+    functions.
     """
 
     def __init__(
@@ -236,11 +249,7 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
-        cartesian_x = to_cartesian_coordinates(
-            [x[:, i] for i in range(x.shape[1])],
-            self._cp.mesh.coordinate_system_type)
-        cartesian_x = np.stack(cartesian_x, axis=-1)
-
+        cartesian_x = self._convert_coordinates_to_cartesian(x)
         y_0 = np.empty((len(x), self._cp.differential_equation.y_dimension))
         for i in range(self._cp.differential_equation.y_dimension):
             mean, cov = self._means_and_covs[i]
@@ -249,6 +258,48 @@ class GaussianInitialCondition(ContinuousInitialCondition):
             y_0[:, i] = multiplier * y_0_i
 
         return y_0
+
+
+class BetaInitialCondition(ContinuousInitialCondition):
+    """
+    An initial condition defined explicitly by Beta probability density
+    functions.
+    """
+
+    def __init__(
+            self,
+            cp: ConstrainedProblem,
+            alpha_and_betas: Sequence[Tuple[float, float]]):
+        """
+        :param cp: the constrained problem to turn into an initial value
+            problem by providing the initial conditions for it
+        :param alpha_and_betas: a sequence of tuples containing the two
+            parameters defining the beta distributions corresponding to each
+            element of y_0
+        """
+        diff_eq = cp.differential_equation
+        if diff_eq.x_dimension != 1:
+            raise ValueError('constrained problem must be a 1D PDE')
+        if len(alpha_and_betas) != diff_eq.y_dimension:
+            raise ValueError(
+                f'number of alphas and betas ({len(alpha_and_betas)}) must '
+                f'match number of y dimensions ({diff_eq.y_dimension})')
+
+        self._alpha_and_betas = copy(alpha_and_betas)
+
+        super(BetaInitialCondition, self).__init__(cp, self._y_0)
+
+    def _y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
+        """
+        Calculates and returns the values of the beta PDFs corresponding to
+        each element of y_0 at x.
+
+        :param x: the spatial coordinates
+        :return: the initial value of y at the coordinates
+        """
+        return np.concatenate([
+            beta.pdf(x, a, b) for a, b in self._alpha_and_betas
+        ], axis=-1)
 
 
 def vectorize_ic_function(

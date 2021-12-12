@@ -25,6 +25,7 @@ from pararealml.core.differential_equation import ShallowWaterEquation
 from pararealml.core.differential_equation import SymbolicEquationSystem
 from pararealml.core.differential_equation import Symbols
 from pararealml.core.differential_equation import WaveEquation
+from pararealml.core.initial_condition import BetaInitialCondition
 from pararealml.core.initial_condition import ContinuousInitialCondition
 from pararealml.core.initial_condition import DiscreteInitialCondition
 from pararealml.core.initial_condition import GaussianInitialCondition
@@ -68,6 +69,7 @@ __all__ = [
     'DiscreteInitialCondition',
     'ContinuousInitialCondition',
     'GaussianInitialCondition',
+    'BetaInitialCondition',
     'VectorizedInitialConditionFunction',
     'vectorize_ic_function',
     'InitialValueProblem',

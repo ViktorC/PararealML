@@ -2,12 +2,13 @@ import numpy as np
 import pytest
 
 from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
-    vectorize_bc_function
+    NeumannBoundaryCondition, vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import LotkaVolterraEquation, \
     DiffusionEquation, WaveEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
-    DiscreteInitialCondition, GaussianInitialCondition, vectorize_ic_function
+    DiscreteInitialCondition, GaussianInitialCondition, BetaInitialCondition, \
+    vectorize_ic_function
 from pararealml.core.mesh import Mesh
 
 
@@ -289,6 +290,60 @@ def test_gaussian_initial_condition_2d_pde():
             [.12394999, .27303472], [.12394999, .35058353]
         ]
     ]
+    actual_cell_discrete_y_0 = initial_condition.discrete_y_0(False)
+    assert np.allclose(
+        actual_cell_discrete_y_0,
+        expected_cell_discrete_y_0)
+
+
+def test_beta_initial_condition_with_more_than_1d_pde():
+    diff_eq = DiffusionEquation(2)
+    mesh = Mesh([(0., 1.), (0., 1.)], [.1, .1])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 2))),) * 2
+    ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    with pytest.raises(ValueError):
+        BetaInitialCondition(cp, [(1., 1.), (1., 1)])
+
+
+def test_beta_initial_condition_with_wrong_number_of_alpha_and_betas():
+    diff_eq = DiffusionEquation(1)
+    mesh = Mesh([(0., 1.)], [.1])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 2))),) * 2
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    with pytest.raises(ValueError):
+        BetaInitialCondition(cp, [(1., 1.), (1., 1)])
+
+
+def test_beta_initial_condition():
+    diff_eq = WaveEquation(1)
+    mesh = Mesh([(0., 1.)], [.5])
+    bcs = [
+        (
+            NeumannBoundaryCondition(
+                lambda x, t: np.zeros((len(x), 2)), is_static=True),
+            NeumannBoundaryCondition(
+                lambda x, t: np.zeros((len(x), 2)), is_static=True)
+        )
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    initial_condition = BetaInitialCondition(cp, [(2., 3.), (3., 2.)])
+
+    x_coordinates = np.array([[.125], [.625]])
+    expected_y_0 = [[1.1484375, .1640625], [1.0546875, 1.7578125]]
+    actual_y_0 = initial_condition.y_0(x_coordinates)
+    assert np.allclose(actual_y_0, expected_y_0)
+
+    expected_vertex_discrete_y_0 = [[0., 0.], [1.5, 1.5], [0.,  0.]]
+    actual_vertex_discrete_y_0 = initial_condition.discrete_y_0(True)
+    assert np.allclose(
+        actual_vertex_discrete_y_0,
+        expected_vertex_discrete_y_0)
+
+    expected_cell_discrete_y_0 = [[1.6875, .5625], [.5625, 1.6875]]
     actual_cell_discrete_y_0 = initial_condition.discrete_y_0(False)
     assert np.allclose(
         actual_cell_discrete_y_0,
