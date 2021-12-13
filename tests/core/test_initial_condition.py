@@ -300,7 +300,7 @@ def test_beta_initial_condition_with_more_than_1d_pde():
     diff_eq = DiffusionEquation(2)
     mesh = Mesh([(0., 1.), (0., 1.)], [.1, .1])
     bcs = [
-        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 2))),) * 2
+        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 1))),) * 2
     ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     with pytest.raises(ValueError):
@@ -311,7 +311,7 @@ def test_beta_initial_condition_with_wrong_number_of_alpha_and_betas():
     diff_eq = DiffusionEquation(1)
     mesh = Mesh([(0., 1.)], [.1])
     bcs = [
-        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 2))),) * 2
+        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 1))),) * 2
     ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     with pytest.raises(ValueError):
