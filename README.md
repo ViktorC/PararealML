@@ -47,6 +47,7 @@ The library provides a number initial condition implementations including:
  * `DiscreteInitialCondition`
  * `ContinuousInitialCondition`
     * `GaussianInitialCondition`
+    * `BetaInitialCondition`
 
 ### Initial value problem
 Initial value problems are constrained problems associated with a time domain and initial conditions. They are represented by the `InitialValueProblem` class whose constructor takes a constrained problem, a tuple of two bounds defining the time interval, and an initial condition instance.
@@ -88,7 +89,7 @@ The solutions of 1D partial differential equations are visualised as animated li
 
 On the other hand, the solutions of 2D partial differential equations can be visualised in multiple different ways. The first one of these is a 3D surface plot.
 
-<img src="https://user-images.githubusercontent.com/12938964/91648397-fc5cff80-ea5e-11ea-887d-187523ae701b.gif" alt="wave_2d" width="400"/>
+<img src="https://user-images.githubusercontent.com/12938964/146654321-32c57dfc-4137-438e-ab5a-d06ad8f637ef.gif" alt="wave_2d" width="400"/>
 
 The second way is 2D contour plots.
 
@@ -118,8 +119,9 @@ To use the Parareal operator, an implementation of the MPI standard must be inst
  1. make sure you have a working Anaconda installation (see the [guide](https://docs.anaconda.com/anaconda/install/))
  1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.8`
  1. `conda activate {environment_name}`
- 1. `conda install -c conda-forge mpi4py`
  1. `conda install -c conda-forge imagemagick`
+ 1. `conda install -c conda-forge mpi`
+ 1. `conda install -c conda-forge mpi4py`
  1. `make install`
  
  On Windows, steps 1 to 5 do not apply. Instead, both Microsoft MPI and ImageMagick must be installed and added to the PATH manually.
