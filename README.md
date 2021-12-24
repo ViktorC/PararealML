@@ -77,7 +77,6 @@ The solutions of ordinary differential equations are plotted as y-against-t plot
   <img src="https://user-images.githubusercontent.com/12938964/91643891-0c5ceb00-ea2f-11ea-854d-0813de46d520.jpg" alt="lorenz_phase_space" width="400"/> 
 </p>
 
-#### N-body simulations
 The solutions of n-body simulations are plotted using a special 2D or 3D scatter plot (depending on the dimensionality of the simulation).
 
 <img src="https://user-images.githubusercontent.com/12938964/91643717-8f7d4180-ea2d-11ea-834b-7f64e8347557.gif" alt="n_body" width="400"/>
@@ -99,7 +98,7 @@ Finally, 2D vector fields can be visualised as 2D quiver plots.
 
 <img src="https://user-images.githubusercontent.com/12938964/96521862-231f0180-126a-11eb-948f-718117b63895.gif" alt="shallow_water_2d" width="400"/>
 
-Finally, the solutions of partial differential equation in three spatial dimensions can be visualised in two different ways. The first one of these is 2D contour plots of slices of the solution along an arbitrary axis at arbitrary points.
+As for the solutions of partial differential equation in three spatial dimensions, they can be visualised in two different ways. The first one of these is 2D contour plots of slices of the solution along an arbitrary axis at arbitrary points.
 
 <p float="left">
   <img src="https://user-images.githubusercontent.com/12938964/97097322-369ce480-163d-11eb-9ccc-7505bca2b2b2.gif" alt="cahn_hilliard_slice_0" width="266"/>
@@ -107,7 +106,7 @@ Finally, the solutions of partial differential equation in three spatial dimensi
   <img src="https://user-images.githubusercontent.com/12938964/97097325-37ce1180-163d-11eb-8acb-b6d996ea178a.gif" alt="cahn_hilliard_slice_2" width="266"/>
 </p>
 
-The second way, only applicable to 3D vector fields, is the use of 3D quiver plots.
+Alternatively, the second way, only applicable to 3D vector fields, is the use of 3D quiver plots.
 
 <img src="https://user-images.githubusercontent.com/12938964/97097783-1708ba80-1643-11eb-8349-f065de5ddc4d.gif" alt="burger_3d" width="400"/>
 
