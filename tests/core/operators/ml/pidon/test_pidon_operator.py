@@ -308,6 +308,55 @@ def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
         )
 
 
+def test_pidon_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
+    diff_eq = DiffusionEquation(1, .25)
+    mesh = Mesh([(0., .5)], (.05,))
+    bcs = [
+        (NeumannBoundaryCondition(
+            lambda x, t: np.full((len(x), 1), t), is_static=False),
+         NeumannBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    t_interval = (0., .5)
+
+    ic_mean = .25
+    y_0_functions = [
+        GaussianInitialCondition(
+            cp,
+            [(
+                np.array([ic_mean]),
+                np.array([[sd]])
+            )]
+        ).y_0 for sd in [.1, .2, .3, .4]
+    ]
+
+    pidon = PIDONOperator(UniformRandomCollocationPointSampler(), .001, True)
+
+    with pytest.raises(ValueError):
+        pidon.train(
+            cp,
+            t_interval,
+            training_data_args=DataArgs(
+                y_0_functions=y_0_functions,
+                n_domain_points=50,
+                n_boundary_points=20,
+                n_batches=2
+            ),
+            model_args=ModelArgs(
+                latent_output_size=50,
+                branch_hidden_layer_sizes=[50, 50],
+                trunk_hidden_layer_sizes=[50, 50],
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer={'class_name': 'Adam'},
+                epochs=3,
+                ic_loss_weight=10.,
+                verbose=False
+            )
+        )
+
+
 def test_pidon_operator_in_ar_mode_on_ode():
     set_random_seed(0)
 

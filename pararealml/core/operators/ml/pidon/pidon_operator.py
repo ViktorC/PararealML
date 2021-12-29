@@ -232,6 +232,12 @@ class PIDONOperator(Operator):
                     'auto-regression mode is not compatible with differential '
                     'equations whose right-hand sides contain any t terms')
 
+            if diff_eq.x_dimension \
+                    and not cp.are_all_boundary_conditions_static:
+                raise ValueError(
+                    'auto-regression mode is not compatible with dynamic '
+                    'boundary conditions')
+
         training_data_set = DataSet(
             cp,
             t_interval,
