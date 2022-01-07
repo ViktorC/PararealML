@@ -82,8 +82,9 @@ class Mesh:
 
         self._vertices_shape = self._create_shape(d_x, True)
         self._cells_shape = self._create_shape(d_x, False)
-        self._vertex_coordinates = self._create_axis_coordinates(True)
-        self._cell_center_coordinates = self._create_axis_coordinates(False)
+        self._vertex_axis_coordinates = self._create_axis_coordinates(True)
+        self._cell_center_axis_coordinates = \
+            self._create_axis_coordinates(False)
         self._vertex_coordinate_grids = self._create_coordinate_grids(True)
         self._cell_center_coordinate_grids = \
             self._create_coordinate_grids(False)
@@ -135,7 +136,7 @@ class Mesh:
         """
         A tuple of the coordinates of the vertices of the mesh along each axis.
         """
-        return self._vertex_coordinates
+        return self._vertex_axis_coordinates
 
     @property
     def cell_center_axis_coordinates(self) -> Tuple[np.ndarray, ...]:
@@ -143,7 +144,7 @@ class Mesh:
         A tuple of the coordinates of the cell centers of the mesh along each
         axis.
         """
-        return self._cell_center_coordinates
+        return self._cell_center_axis_coordinates
 
     @property
     def vertex_coordinate_grids(self) -> Tuple[np.ndarray, ...]:

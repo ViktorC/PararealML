@@ -49,11 +49,11 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         optimization_args=OptimizationArgs(
             optimizer=optimizers.SGD(),
             epochs=100,
-            verbose=True
+            verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=100,
-            verbose=True
+            verbose=False
         )
     )
 
