@@ -160,9 +160,22 @@ class NumericalDifferentiator(ABC):
                 or mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
             if x_axis == 1:
                 r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-                r_rec = np.reciprocal(r)
-                return r_rec * derivative
+                return derivative / r
+
             return derivative
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+
+            if x_axis == 0:
+                return derivative
+
+            elif x_axis == 1:
+                return derivative / (r * np.sin(phi))
+
+            else:
+                return derivative / r
 
         else:
             raise ValueError(
@@ -225,20 +238,19 @@ class NumericalDifferentiator(ABC):
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR \
                 or mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+
             if (x_axis1 == 0 or x_axis1 == 2) \
                     or (x_axis2 == 0 or x_axis2 == 2):
                 return second_derivative
 
-            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            r_rec = np.reciprocal(r)
-
-            if x_axis1 == 1 and x_axis2 == 1:
+            elif x_axis1 == 1 and x_axis2 == 1:
                 d_y_over_d_r = self._derivative(
                     y,
                     mesh.d_x[0],
                     0,
                     derivative_boundary_constraints[0])
-                return r_rec * (r_rec * second_derivative + d_y_over_d_r)
+                return (second_derivative / r + d_y_over_d_r) / r
 
             elif (x_axis1 == 1 and x_axis2 == 0) \
                     or (x_axis1 == 0 and x_axis2 == 1):
@@ -247,10 +259,78 @@ class NumericalDifferentiator(ABC):
                     mesh.d_x[1],
                     1,
                     derivative_boundary_constraints[1])
-                return r_rec * (second_derivative - r_rec * d_y_over_d_theta)
+                return (second_derivative - d_y_over_d_theta / r) / r
 
             else:
-                return r_rec * second_derivative
+                return second_derivative / r
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+
+            if x_axis1 == 0 and x_axis2 == 0:
+                return second_derivative
+
+            elif x_axis1 == 1 and x_axis2 == 1:
+                sin_phi = np.sin(phi)
+                cos_phi = np.cos(phi)
+                d_y_over_d_r = self._derivative(
+                    y,
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0])
+                d_y_over_d_phi = self._derivative(
+                    y,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2])
+                return (
+                    d_y_over_d_r +
+                    (
+                        second_derivative / sin_phi +
+                        cos_phi * d_y_over_d_phi
+                    ) / (r * sin_phi)
+                ) / r
+
+            if x_axis1 == 2 and x_axis2 == 2:
+                d_y_over_d_r = self._derivative(
+                    y,
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0])
+                return (second_derivative / r + d_y_over_d_r) / r
+
+            if (x_axis1 == 0 and x_axis2 == 1) \
+                    or (x_axis1 == 1 and x_axis2 == 0):
+                d_y_over_d_theta = self._derivative(
+                    y,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1])
+                return (
+                    second_derivative - d_y_over_d_theta / r
+                ) / (r * np.sin(phi))
+
+            if (x_axis1 == 0 and x_axis2 == 2) \
+                    or (x_axis1 == 2 and x_axis2 == 0):
+                d_y_over_d_phi = self._derivative(
+                    y,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2])
+                return (second_derivative - d_y_over_d_phi / r) / r
+
+            else:
+                sin_phi = np.sin(phi)
+                cos_phi = np.cos(phi)
+                d_y_over_d_theta = self._derivative(
+                    y,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1])
+                return (
+                    sin_phi * second_derivative - cos_phi * d_y_over_d_theta
+                ) / (r * sin_phi) ** 2
 
         else:
             raise ValueError(
@@ -304,7 +384,6 @@ class NumericalDifferentiator(ABC):
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR \
                 or mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            r_rec = np.reciprocal(r)
             y_r = y[..., :1]
             y_theta = y[..., 1:2]
             d_y_r_over_d_r = self._derivative(
@@ -318,7 +397,7 @@ class NumericalDifferentiator(ABC):
                 1,
                 derivative_boundary_constraints[1, 1:2])
 
-            div = d_y_r_over_d_r + r_rec * (y_r + d_y_theta_over_d_theta)
+            div = d_y_r_over_d_r + (y_r + d_y_theta_over_d_theta) / r
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
                 return div
 
@@ -329,6 +408,35 @@ class NumericalDifferentiator(ABC):
                 2,
                 derivative_boundary_constraints[2, 2:])
             return div + d_y_z_over_d_z
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+            sin_phi = np.sin(phi)
+            cos_phi = np.cos(phi)
+            y_r = y[..., :1]
+            y_theta = y[..., 1:2]
+            y_phi = y[..., 2:]
+            d_y_r_over_d_r = self._derivative(
+                y_r,
+                mesh.d_x[0],
+                0,
+                derivative_boundary_constraints[0, :1])
+            d_y_theta_over_d_theta = self._derivative(
+                y_theta,
+                mesh.d_x[1],
+                1,
+                derivative_boundary_constraints[1, 1:2])
+            d_y_phi_over_d_phi = self._derivative(
+                y_phi,
+                mesh.d_x[2],
+                2,
+                derivative_boundary_constraints[2, 2:])
+
+            return d_y_r_over_d_r + (
+                d_y_phi_over_d_phi + 2 * y_r +
+                (d_y_theta_over_d_theta + cos_phi * y_phi) / sin_phi
+            ) / r
 
         else:
             raise ValueError(
@@ -381,61 +489,49 @@ class NumericalDifferentiator(ABC):
                 y.shape[-1])
 
         if mesh.coordinate_system_type == CoordinateSystem.CARTESIAN:
-            if mesh.dimensions == 2:
+            if mesh.dimensions == 2 or curl_ind == 2:
                 return self._derivative(
-                    y[..., 1:],
+                    y[..., 1:2],
                     mesh.d_x[0],
                     0,
-                    derivative_boundary_constraints[0, 1:]
+                    derivative_boundary_constraints[0, 1:2]
                 ) - self._derivative(
                     y[..., :1],
                     mesh.d_x[1],
                     1,
                     derivative_boundary_constraints[1, :1]
                 )
+
+            elif curl_ind == 0:
+                return self._derivative(
+                    y[..., 2:],
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 2:]
+                ) - self._derivative(
+                    y[..., 1:2],
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, 1:2]
+                )
+
             else:
-                if curl_ind == 0:
-                    return self._derivative(
-                        y[..., 2:],
-                        mesh.d_x[1],
-                        1,
-                        derivative_boundary_constraints[1, 2:]
-                    ) - self._derivative(
-                        y[..., 1:2],
-                        mesh.d_x[2],
-                        2,
-                        derivative_boundary_constraints[2, 1:2]
-                    )
-                if curl_ind == 1:
-                    return self._derivative(
-                        y[..., :1],
-                        mesh.d_x[2],
-                        2,
-                        derivative_boundary_constraints[2, :1]
-                    ) - self._derivative(
-                        y[..., 2:],
-                        mesh.d_x[0],
-                        0,
-                        derivative_boundary_constraints[0, 2:]
-                    )
-                else:
-                    return self._derivative(
-                        y[..., 1:2],
-                        mesh.d_x[0],
-                        0,
-                        derivative_boundary_constraints[0, 1:2]
-                    ) - self._derivative(
-                        y[..., :1],
-                        mesh.d_x[1],
-                        1,
-                        derivative_boundary_constraints[1, :1]
-                    )
+                return self._derivative(
+                    y[..., :1],
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, :1]
+                ) - self._derivative(
+                    y[..., 2:],
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0, 2:]
+                )
 
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR \
                 or (mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL
                     and curl_ind == 2):
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            r_rec = np.reciprocal(r)
             y_r = y[..., :1]
             y_theta = y[..., 1:2]
             d_y_r_over_d_theta = self._derivative(
@@ -448,12 +544,11 @@ class NumericalDifferentiator(ABC):
                 mesh.d_x[0],
                 0,
                 derivative_boundary_constraints[0, 1:2])
-            return d_y_theta_over_d_r + r_rec * (y_theta - d_y_r_over_d_theta)
+            return d_y_theta_over_d_r + (y_theta - d_y_r_over_d_theta) / r
 
         elif mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
             if curl_ind == 0:
                 r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-                r_rec = np.reciprocal(r)
                 d_y_z_over_d_theta = self._derivative(
                     y[..., 2:],
                     mesh.d_x[1],
@@ -464,7 +559,8 @@ class NumericalDifferentiator(ABC):
                     mesh.d_x[2],
                     2,
                     derivative_boundary_constraints[2, 1:2])
-                return r_rec * d_y_z_over_d_theta - d_y_theta_over_d_z
+                return d_y_z_over_d_theta / r - d_y_theta_over_d_z
+
             else:
                 d_y_r_over_d_z = self._derivative(
                     y[..., :1],
@@ -477,6 +573,66 @@ class NumericalDifferentiator(ABC):
                     0,
                     derivative_boundary_constraints[0, 2:])
                 return d_y_r_over_d_z - d_y_z_over_d_r
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+
+            if curl_ind == 0:
+                phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+                sin_phi = np.sin(phi)
+                cos_phi = np.cos(phi)
+                y_theta = y[..., 1:2]
+                y_phi = y[..., 2:]
+                d_y_theta_over_d_phi = self._derivative(
+                    y_theta,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, 1:2])
+                d_y_phi_over_d_theta = self._derivative(
+                    y_phi,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 2:])
+
+                return (
+                    d_y_theta_over_d_phi +
+                    (cos_phi * y_theta - d_y_phi_over_d_theta) / sin_phi
+                ) / r
+
+            elif curl_ind == 1:
+                y_r = y[..., :1]
+                y_phi = y[..., 2:]
+                d_y_r_over_d_phi = self._derivative(
+                    y_r,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, :1])
+                d_y_phi_over_d_r = self._derivative(
+                    y_phi,
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0, 2:])
+
+                return d_y_phi_over_d_r + (y_phi - d_y_r_over_d_phi) / r
+
+            else:
+                sin_phi = np.sin(
+                    mesh.vertex_coordinate_grids[2][..., np.newaxis])
+                y_r = y[..., :1]
+                y_theta = y[..., 1:2]
+                d_y_r_over_d_theta = self._derivative(
+                    y_r,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, :1])
+                d_y_theta_over_d_r = self._derivative(
+                    y_theta,
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0, 1:2])
+
+                return -d_y_theta_over_d_r + \
+                    (d_y_r_over_d_theta / sin_phi - y_theta) / r
 
         else:
             raise ValueError(
@@ -491,6 +647,11 @@ class NumericalDifferentiator(ABC):
             Optional[np.ndarray] = None) -> np.ndarray:
         """
         Computes the Laplacian of y at every point of the mesh.
+
+        If the last rank of y has a dimension greater than one, the
+        element-wise scalar Laplacian is computed instead of the vector
+        Laplacian (which only makes a difference in curvilinear coordinate
+        systems).
 
         :param y: the values of y at every point of the mesh
         :param mesh: the mesh representing the discretized spatial domain
@@ -527,7 +688,6 @@ class NumericalDifferentiator(ABC):
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR \
                 or mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            r_rec = np.reciprocal(r)
             d_y_over_d_r = self._derivative(
                 y, mesh.d_x[0], 0, derivative_boundary_constraints[0])
             d_sqr_y_over_d_r_sqr = self._second_derivative(
@@ -545,8 +705,8 @@ class NumericalDifferentiator(ABC):
                 1,
                 derivative_boundary_constraints[1])
 
-            laplacian = d_sqr_y_over_d_r_sqr + r_rec * \
-                (r_rec * d_sqr_y_over_d_theta_sqr + d_y_over_d_r)
+            laplacian = d_sqr_y_over_d_r_sqr + \
+                (d_sqr_y_over_d_theta_sqr / r + d_y_over_d_r) / r
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
                 return laplacian
 
@@ -558,6 +718,46 @@ class NumericalDifferentiator(ABC):
                 2,
                 derivative_boundary_constraints[2])
             return laplacian + d_sqr_y_over_d_z_sqr
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+            sin_phi = np.sin(phi)
+            cos_phi = np.cos(phi)
+            d_y_over_d_r = self._derivative(
+                y, mesh.d_x[0], 0, derivative_boundary_constraints[0])
+            d_y_over_d_phi = self._derivative(
+                y, mesh.d_x[2], 2, derivative_boundary_constraints[2])
+            d_sqr_y_over_d_r_sqr = self._second_derivative(
+                y,
+                mesh.d_x[0],
+                mesh.d_x[0],
+                0,
+                0,
+                derivative_boundary_constraints[0])
+            d_sqr_y_over_d_theta_sqr = self._second_derivative(
+                y,
+                mesh.d_x[1],
+                mesh.d_x[1],
+                1,
+                1,
+                derivative_boundary_constraints[1])
+            d_sqr_y_over_d_phi_sqr = self._second_derivative(
+                y,
+                mesh.d_x[2],
+                mesh.d_x[2],
+                2,
+                2,
+                derivative_boundary_constraints[2])
+
+            return d_sqr_y_over_d_r_sqr + (
+                2 * d_y_over_d_r + (
+                    d_sqr_y_over_d_phi_sqr + (
+                        cos_phi * d_y_over_d_phi +
+                        d_sqr_y_over_d_theta_sqr / sin_phi
+                    ) / sin_phi
+                ) / r
+            ) / r
 
         else:
             raise ValueError(
@@ -889,8 +1089,7 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
         elif mesh.coordinate_system_type == CoordinateSystem.POLAR or \
                 mesh.coordinate_system_type == CoordinateSystem.CYLINDRICAL:
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            r_rec = np.reciprocal(r)
-            r_rec_sqr = np.square(r_rec)
+            r_sqr = r ** 2
 
             # The r axis.
             d_r = d_x[0]
@@ -915,23 +1114,23 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
             slicer[0] = 0
             anti_laplacian[tuple(slicer)] += \
                 (y_lower_boundary_adjacent_r + y_lower_halo_r) / d_r_sqr + \
-                r_rec[1, ...] * (
-                        y_lower_boundary_adjacent_r - y_lower_halo_r
-                ) / (2 * d_r)
+                (
+                    y_lower_boundary_adjacent_r - y_lower_halo_r
+                ) / (2. * d_r * r[1, ...])
 
             # Internal points.
             slicer[0] = slice(1, -1)
             anti_laplacian[tuple(slicer)] += \
                 (y_next_r + y_prev_r) / d_r_sqr + \
-                r_rec[1:-1, ...] * (y_next_r - y_prev_r) / (2 * d_r)
+                (y_next_r - y_prev_r) / (2. * d_r * r[1:-1, ...])
 
             # Upper boundary.
             slicer[0] = -1
             anti_laplacian[tuple(slicer)] += \
                 (y_upper_halo_r + y_upper_boundary_adjacent_r) / d_r_sqr + \
-                r_rec[-1, ...] * (
-                        y_upper_halo_r - y_upper_boundary_adjacent_r
-                ) / (2 * d_r)
+                (
+                    y_upper_halo_r - y_upper_boundary_adjacent_r
+                ) / (2. * d_r * r[-1, ...])
 
             slicer[0] = slice(None)
 
@@ -956,27 +1155,27 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
 
             # Lower boundary.
             slicer[1] = 0
-            anti_laplacian[tuple(slicer)] += r_rec_sqr[:, 1, ...] * (
+            anti_laplacian[tuple(slicer)] += (
                 y_lower_boundary_adjacent_theta + y_lower_halo_theta
-            ) / d_theta_sqr
+            ) / (d_theta_sqr * r_sqr[:, 1, ...])
 
             # Internal points.
             slicer[1] = slice(1, -1)
-            anti_laplacian[tuple(slicer)] += r_rec_sqr[:, 1:-1, ...] * (
+            anti_laplacian[tuple(slicer)] += (
                 y_next_theta + y_prev_theta
-            ) / d_theta_sqr
+            ) / (d_theta_sqr * r_sqr[:, 1:-1, ...])
 
             # Upper boundary.
             slicer[1] = -1
-            anti_laplacian[tuple(slicer)] += r_rec_sqr[:, -1, ...] * (
+            anti_laplacian[tuple(slicer)] += (
                 y_upper_halo_theta + y_upper_boundary_adjacent_theta
-            ) / d_theta_sqr
+            ) / (d_theta_sqr * r_sqr[:, -1, ...])
 
             anti_laplacian -= laplacian
-            step_size_coefficient = 1. / d_r_sqr + r_rec_sqr * 1. / d_theta_sqr
+            step_size_coefficient = 1. / d_r_sqr + 1. / (d_theta_sqr * r_sqr)
 
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
-                return anti_laplacian / (2 * step_size_coefficient)
+                return anti_laplacian / (2. * step_size_coefficient)
 
             slicer[1] = slice(None)
 
@@ -1014,7 +1213,157 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
                 (y_upper_halo_z + y_upper_boundary_adjacent_z) / d_z_sqr
 
             step_size_coefficient += 1. / d_z_sqr
-            return anti_laplacian / (2 * step_size_coefficient)
+            return anti_laplacian / (2. * step_size_coefficient)
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            r_sqr = r ** 2
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+            cos_phi = np.cos(phi)
+            sin_phi = np.sin(phi)
+            sin_phi_sqr = sin_phi ** 2
+            r_sqr_sin_phi_sqr = r_sqr * sin_phi_sqr
+
+            # The r axis.
+            d_r = d_x[0]
+            d_r_sqr = d_x_sqr[0]
+
+            slicer[0] = 1
+            y_lower_boundary_adjacent_r = y_hat[tuple(slicer)]
+            slicer[0] = -2
+            y_upper_boundary_adjacent_r = y_hat[tuple(slicer)]
+            y_lower_halo_r, y_upper_halo_r = \
+                self._halos_from_derivative_boundary_constraints(
+                    y_lower_boundary_adjacent_r,
+                    y_upper_boundary_adjacent_r,
+                    d_r,
+                    derivative_boundary_constraints[0])
+            slicer[0] = slice(0, -2)
+            y_prev_r = y_hat[tuple(slicer)]
+            slicer[0] = slice(2, None)
+            y_next_r = y_hat[tuple(slicer)]
+
+            # Lower boundary.
+            slicer[0] = 0
+            anti_laplacian[tuple(slicer)] += \
+                (y_lower_boundary_adjacent_r + y_lower_halo_r) / d_r_sqr + \
+                (
+                    y_lower_boundary_adjacent_r - y_lower_halo_r
+                ) / (d_r * r[1, ...])
+
+            # Internal points.
+            slicer[0] = slice(1, -1)
+            anti_laplacian[tuple(slicer)] += \
+                (y_next_r + y_prev_r) / d_r_sqr + \
+                (y_next_r - y_prev_r) / (d_r * r[1:-1, ...])
+
+            # Upper boundary.
+            slicer[0] = -1
+            anti_laplacian[tuple(slicer)] += \
+                (y_upper_halo_r + y_upper_boundary_adjacent_r) / d_r_sqr + \
+                (
+                    y_upper_halo_r - y_upper_boundary_adjacent_r
+                ) / (d_r * r[-1, ...])
+
+            slicer[0] = slice(None)
+
+            # The theta axis.
+            d_theta = d_x[1]
+            d_theta_sqr = d_x_sqr[1]
+
+            slicer[1] = 1
+            y_lower_boundary_adjacent_theta = y_hat[tuple(slicer)]
+            slicer[1] = -2
+            y_upper_boundary_adjacent_theta = y_hat[tuple(slicer)]
+            y_lower_halo_theta, y_upper_halo_theta = \
+                self._halos_from_derivative_boundary_constraints(
+                    y_lower_boundary_adjacent_theta,
+                    y_upper_boundary_adjacent_theta,
+                    d_theta,
+                    derivative_boundary_constraints[1])
+            slicer[1] = slice(0, -2)
+            y_prev_theta = y_hat[tuple(slicer)]
+            slicer[1] = slice(2, None)
+            y_next_theta = y_hat[tuple(slicer)]
+
+            # Lower boundary.
+            slicer[1] = 0
+            anti_laplacian[tuple(slicer)] += (
+                y_lower_boundary_adjacent_theta + y_lower_halo_theta
+            ) / (d_theta_sqr * r_sqr_sin_phi_sqr[:, 1, ...])
+
+            # Internal points.
+            slicer[1] = slice(1, -1)
+            anti_laplacian[tuple(slicer)] += (
+                y_next_theta + y_prev_theta
+            ) / (d_theta_sqr * r_sqr_sin_phi_sqr[:, 1:-1, ...])
+
+            # Upper boundary.
+            slicer[1] = -1
+            anti_laplacian[tuple(slicer)] += (
+                y_upper_halo_theta + y_upper_boundary_adjacent_theta
+            ) / (d_theta_sqr * r_sqr_sin_phi_sqr[:, -1, ...])
+
+            slicer[1] = slice(None)
+
+            # The phi axis.
+            d_phi = d_x[2]
+            d_phi_sqr = d_x_sqr[2]
+
+            slicer[2] = 1
+            y_lower_boundary_adjacent_phi = y_hat[tuple(slicer)]
+            slicer[2] = -2
+            y_upper_boundary_adjacent_phi = y_hat[tuple(slicer)]
+            y_lower_halo_phi, y_upper_halo_phi = \
+                self._halos_from_derivative_boundary_constraints(
+                    y_lower_boundary_adjacent_phi,
+                    y_upper_boundary_adjacent_phi,
+                    d_phi,
+                    derivative_boundary_constraints[2])
+            slicer[2] = slice(0, -2)
+            y_prev_phi = y_hat[tuple(slicer)]
+            slicer[2] = slice(2, None)
+            y_next_phi = y_hat[tuple(slicer)]
+
+            # Lower boundary.
+            slicer[2] = 0
+            anti_laplacian[tuple(slicer)] += (
+                (
+                    y_lower_boundary_adjacent_phi + y_lower_halo_phi
+                ) / d_phi_sqr +
+                cos_phi[:, :, 1, :] * (
+                    y_lower_boundary_adjacent_phi - y_lower_halo_phi
+                ) / (2. * d_phi * sin_phi[:, :, 1, :])
+            ) / r_sqr[:, :, 1, :]
+
+            # Internal points.
+            slicer[2] = slice(1, -1)
+            anti_laplacian[tuple(slicer)] += (
+                (y_next_phi + y_prev_phi) / d_phi_sqr +
+                cos_phi[:, :, 1:-1, :] * (
+                    y_next_phi - y_prev_phi
+                ) / (2. * d_phi * sin_phi[:, :, 1:-1, :])
+            ) / r_sqr[:, :, 1:-1, :]
+
+            # Upper boundary.
+            slicer[2] = -1
+            anti_laplacian[tuple(slicer)] += (
+                (
+                    y_upper_halo_phi + y_upper_boundary_adjacent_phi
+                ) / d_phi_sqr +
+                cos_phi[:, :, -1, :] * (
+                    y_upper_halo_phi - y_upper_boundary_adjacent_phi
+                ) / (2. * d_phi * sin_phi[:, :, -1, :])
+            ) / r_sqr[:, :, -1, :]
+
+            anti_laplacian -= laplacian
+            return anti_laplacian / (
+                2. * (
+                    1. / d_r_sqr +
+                    1. / (d_theta_sqr * r_sqr_sin_phi_sqr) +
+                    1. / (d_phi_sqr * r_sqr)
+                )
+            )
 
         else:
             raise ValueError(

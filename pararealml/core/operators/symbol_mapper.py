@@ -118,8 +118,8 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
     @abstractmethod
     def y_laplacian_map_function(self, y_ind: int) -> SymbolMapFunction:
         """
-        Returns a function for mapping a component of the Laplacian of y to a
-        numerical value.
+        Returns a function for mapping a component of the element-wise scalar
+        Laplacian of y to a numerical value.
 
         :param y_ind: the component of y whose Laplacian to return a mp for
         :return: the mapper function for the Laplacian of y

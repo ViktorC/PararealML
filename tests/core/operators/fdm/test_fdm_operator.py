@@ -227,6 +227,30 @@ def test_fdm_operator_on_cylindrical_pde():
     assert solution.discrete_y(False).shape == (50, 5, 10, 2, 1)
 
 
+def test_fdm_operator_on_spherical_pde():
+    diff_eq = DiffusionEquation(3)
+    mesh = Mesh(
+        [(1., 11.), (0., 2 * np.pi), (np.pi, 2 * np.pi)],
+        [2., np.pi / 5., np.pi / 5],
+        CoordinateSystem.SPHERICAL)
+    bcs = [
+        (NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 1)), is_static=True))
+    ] * 3
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, lambda x: 1. / x[:, :1])
+    ivp = InitialValueProblem(cp, (0., 5.), ic)
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
+    solution = op.solve(ivp)
+
+    assert solution.vertex_oriented
+    assert solution.d_t == .1
+    assert solution.discrete_y().shape == (50, 6, 11, 6, 1)
+    assert solution.discrete_y(False).shape == (50, 5, 10, 5, 1)
+
+
 def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
     diff_eq = DiffusionEquation(1, 1.5)
     mesh = Mesh([(0., 10.)], [1.])

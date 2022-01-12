@@ -191,7 +191,7 @@ class AutoDifferentiator(tf.GradientTape):
             coordinate_system_type: CoordinateSystem =
             CoordinateSystem.CARTESIAN) -> tf.Tensor:
         """
-        Returns the Laplacian of y.
+        Returns the element-wise scalar Laplacian of y.
 
         :param x: the input tensor
         :param y: the output tensor
