@@ -751,12 +751,12 @@ def test_3pcfdm_2d_anti_laplacian_with_derivative_constraints():
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, -3.), np.ones((20, 1), dtype=bool))
+        np.full(20, -3.), np.ones((1, 20, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, 0.), np.ones((20, 1), dtype=bool))
+        np.full(20, 0.), np.ones((20, 1, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 
@@ -832,10 +832,14 @@ def test_3pcfdm_constrained_polar_gradient():
     boundary_constraints = np.empty((2, 2), dtype=object)
     boundary_constraints[1, 0] = (
         None,
-        Constraint(np.full(2, -9999.), np.array([[True], [False], [True]]))
+        Constraint(
+            np.full(2, -9999.),
+            np.array([[[True]], [[False]], [[True]]]))
     )
     boundary_constraints[1, 1] = (
-        Constraint(np.full(1, 9999.), np.array([[False], [True], [False]])),
+        Constraint(
+            np.full(1, 9999.),
+            np.array([[[False]], [[True]], [[False]]])),
         None
     )
 
@@ -1155,12 +1159,12 @@ def test_3pcfdm_polar_anti_laplacian_with_derivative_constraints():
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, -3.), np.ones((20, 1), dtype=bool))
+        np.full(20, -3.), np.ones((1, 20, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(20, 0.), np.ones((20, 1), dtype=bool))
+        np.full(20, 0.), np.ones((20, 1, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 
@@ -2034,12 +2038,12 @@ def test_3pcfdm_cylindrical_anti_laplacian_with_derivative_constraints():
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(80, -3.), np.ones((10, 8, 1), dtype=bool))
+        np.full(80, -3.), np.ones((1, 10, 8, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(40, 0.), np.ones((5, 8, 1), dtype=bool))
+        np.full(40, 0.), np.ones((5, 1, 8, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 
@@ -2950,12 +2954,12 @@ def test_3pcfdm_spherical_anti_laplacian_with_derivative_constraints():
     y_constraints = [y_0_constraint, y_1_constraint]
 
     x_0_upper_derivative_boundary_constraint = Constraint(
-        np.full(80, -3.), np.ones((10, 8, 1), dtype=bool))
+        np.full(80, -3.), np.ones((1, 10, 8, 1), dtype=bool))
     x_0_derivative_boundary_constraint_pair = (
         None, x_0_upper_derivative_boundary_constraint)
 
     x_1_upper_derivative_boundary_constraint = Constraint(
-        np.full(40, 0.), np.ones((5, 8, 1), dtype=bool))
+        np.full(40, 0.), np.ones((5, 1, 8, 1), dtype=bool))
     x_1_derivative_boundary_constraint_pair = (
         None, x_1_upper_derivative_boundary_constraint)
 

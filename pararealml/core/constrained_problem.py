@@ -267,7 +267,7 @@ class ConstrainedProblem:
                         enumerate(y_boundary_vertex_constraints[axis, y_ind]):
                     if bc is None:
                         continue
-                    slicer[axis] = bc_ind * -1
+                    slicer[axis] = slice(-1, None) if bc_ind else slice(0, 1)
                     bc.apply(y_element[tuple(slicer)])
 
                 slicer[axis] = slice(None)
@@ -362,7 +362,7 @@ class ConstrainedProblem:
                     static_boundary_constraints[1][axis, i][bc_ind]
                     for i in range(y_dimension)])
             else:
-                slicer[axis] = bc_ind * -1
+                slicer[axis] = slice(-1, None) if bc_ind else slice(0, 1)
                 boundary_index_coordinates = \
                     np.copy(all_index_coordinates[tuple(slicer)])
                 boundary_index_coordinates[..., axis] = \

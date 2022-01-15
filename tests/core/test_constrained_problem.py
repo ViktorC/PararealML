@@ -260,7 +260,7 @@ def test_cp_3d_pde():
     assert new_d_y_boundary_constraints[1, 0][1] is not None
     assert new_d_y_boundary_constraints[1, 1][1] is not None
 
-    d_y_boundary = np.full((41, 5, 2), np.nan)
+    d_y_boundary = np.full((41, 1, 5, 2), np.nan)
     new_d_y_boundary_constraints[1, 0][1].apply(d_y_boundary[..., :1])
     new_d_y_boundary_constraints[1, 1][1].apply(d_y_boundary[..., 1:])
     assert np.all(d_y_boundary == 1.)
