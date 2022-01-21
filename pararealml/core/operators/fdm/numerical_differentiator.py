@@ -132,10 +132,7 @@ class NumericalDifferentiator(ABC):
         :return: the element(s) of the gradient of y corresponding to the
             specified axis
         """
-        if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                f'y shape up to second to last axis {y.shape[:-1]} must match '
-                f'mesh vertices shape {mesh.vertices_shape}')
+        self._verify_input_shape_matches_mesh(y, mesh)
         if not (0 <= x_axis < mesh.dimensions):
             raise ValueError(
                 f'x axis ({x_axis}) must be non-negative and less than number '
@@ -159,13 +156,10 @@ class NumericalDifferentiator(ABC):
         elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
             phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
-
             if x_axis == 0:
                 return derivative
-
             elif x_axis == 1:
                 return derivative / (r * np.sin(phi))
-
             else:
                 return derivative / r
 
@@ -173,8 +167,8 @@ class NumericalDifferentiator(ABC):
             if x_axis == 1:
                 r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
                 return derivative / r
-
-            return derivative
+            else:
+                return derivative
 
     def hessian(
             self,
@@ -202,10 +196,7 @@ class NumericalDifferentiator(ABC):
         :return: the element(s) of the Hessian of y corresponding to the
             specified axes
         """
-        if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                f'y shape up to second to last axis {y.shape[:-1]} must match '
-                f'mesh vertices shape {mesh.vertices_shape}')
+        self._verify_input_shape_matches_mesh(y, mesh)
         if not (0 <= x_axis1 < mesh.dimensions) \
                 or not (0 <= x_axis2 < mesh.dimensions):
             raise ValueError(
@@ -258,7 +249,7 @@ class NumericalDifferentiator(ABC):
                     ) / (r * sin_phi)
                 ) / r
 
-            if x_axis1 == 2 and x_axis2 == 2:
+            elif x_axis1 == 2 and x_axis2 == 2:
                 d_y_over_d_r = self._derivative(
                     y,
                     mesh.d_x[0],
@@ -266,7 +257,7 @@ class NumericalDifferentiator(ABC):
                     derivative_boundary_constraints[0])
                 return (second_derivative / r + d_y_over_d_r) / r
 
-            if (x_axis1 == 0 and x_axis2 == 1) \
+            elif (x_axis1 == 0 and x_axis2 == 1) \
                     or (x_axis1 == 1 and x_axis2 == 0):
                 d_y_over_d_theta = self._derivative(
                     y,
@@ -277,7 +268,7 @@ class NumericalDifferentiator(ABC):
                     second_derivative - d_y_over_d_theta / r
                 ) / (r * np.sin(phi))
 
-            if (x_axis1 == 0 and x_axis2 == 2) \
+            elif (x_axis1 == 0 and x_axis2 == 2) \
                     or (x_axis1 == 2 and x_axis2 == 0):
                 d_y_over_d_phi = self._derivative(
                     y,
@@ -302,7 +293,7 @@ class NumericalDifferentiator(ABC):
             r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
 
             if (x_axis1 == 0 or x_axis1 == 2) \
-                    or (x_axis2 == 0 or x_axis2 == 2):
+                    and (x_axis2 == 0 or x_axis2 == 2):
                 return second_derivative
 
             elif x_axis1 == 1 and x_axis2 == 1:
@@ -343,14 +334,7 @@ class NumericalDifferentiator(ABC):
             to compute the divergence
         :return: the divergence of y
         """
-        if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                f'y shape up to second to last axis {y.shape[:-1]} must match '
-                f'mesh vertices shape {mesh.vertices_shape}')
-        if y.shape[-1] != mesh.dimensions:
-            raise ValueError(
-                f'y value vector length ({y.shape[-1]}) must match number of '
-                f'x dimensions ({mesh.dimensions})')
+        self._verify_input_is_a_vector_field(y, mesh)
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -392,9 +376,8 @@ class NumericalDifferentiator(ABC):
                 mesh.d_x[2],
                 2,
                 derivative_boundary_constraints[2, 2:])
-
             return d_y_r_over_d_r + (
-                d_y_phi_over_d_phi + 2 * y_r +
+                d_y_phi_over_d_phi + 2. * y_r +
                 (d_y_theta_over_d_theta + cos_phi * y_phi) / sin_phi
             ) / r
 
@@ -412,18 +395,18 @@ class NumericalDifferentiator(ABC):
                 mesh.d_x[1],
                 1,
                 derivative_boundary_constraints[1, 1:2])
-
             div = d_y_r_over_d_r + (y_r + d_y_theta_over_d_theta) / r
+
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
                 return div
-
-            y_z = y[..., 2:]
-            d_y_z_over_d_z = self._derivative(
-                y_z,
-                mesh.d_x[2],
-                2,
-                derivative_boundary_constraints[2, 2:])
-            return div + d_y_z_over_d_z
+            else:
+                y_z = y[..., 2:]
+                d_y_z_over_d_z = self._derivative(
+                    y_z,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, 2:])
+                return div + d_y_z_over_d_z
 
     def curl(
             self,
@@ -446,14 +429,7 @@ class NumericalDifferentiator(ABC):
             to compute the curl
         :return: the curl of y
         """
-        if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                f'y shape up to second to last axis {y.shape[:-1]} must match '
-                f'mesh vertices shape {mesh.vertices_shape}')
-        if y.shape[-1] != mesh.dimensions:
-            raise ValueError(
-                f'y value vector length ({y.shape[-1]}) must match number of '
-                f'x dimensions ({mesh.dimensions})')
+        self._verify_input_is_a_vector_field(y, mesh)
         if not (2 <= mesh.dimensions <= 3):
             raise ValueError(
                 f'number of x dimensions ({mesh.dimensions}) must be 2 or 3')
@@ -529,7 +505,6 @@ class NumericalDifferentiator(ABC):
                     mesh.d_x[1],
                     1,
                     derivative_boundary_constraints[1, 2:])
-
                 return (
                     d_y_theta_over_d_phi +
                     (cos_phi * y_theta - d_y_phi_over_d_theta) / sin_phi
@@ -548,7 +523,6 @@ class NumericalDifferentiator(ABC):
                     mesh.d_x[0],
                     0,
                     derivative_boundary_constraints[0, 2:])
-
                 return d_y_phi_over_d_r + (y_phi - d_y_r_over_d_phi) / r
 
             else:
@@ -566,7 +540,6 @@ class NumericalDifferentiator(ABC):
                     mesh.d_x[0],
                     0,
                     derivative_boundary_constraints[0, 1:2])
-
                 return -d_y_theta_over_d_r + \
                     (d_y_r_over_d_theta / sin_phi - y_theta) / r
 
@@ -637,10 +610,7 @@ class NumericalDifferentiator(ABC):
             to compute the second derivatives and the Laplacian
         :return: the Laplacian of y
         """
-        if y.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                f'y shape up to second to last axis {y.shape[:-1]} must match '
-                f'mesh vertices shape {mesh.vertices_shape}')
+        self._verify_input_shape_matches_mesh(y, mesh)
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -691,7 +661,6 @@ class NumericalDifferentiator(ABC):
                 2,
                 2,
                 derivative_boundary_constraints[2])
-
             return d_sqr_y_over_d_r_sqr + (
                 2 * d_y_over_d_r + (
                     d_sqr_y_over_d_phi_sqr + (
@@ -719,20 +688,20 @@ class NumericalDifferentiator(ABC):
                 1,
                 1,
                 derivative_boundary_constraints[1])
-
             laplacian = d_sqr_y_over_d_r_sqr + \
                 (d_sqr_y_over_d_theta_sqr / r + d_y_over_d_r) / r
+
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
                 return laplacian
-
-            d_sqr_y_over_d_z_sqr = self._second_derivative(
-                y,
-                mesh.d_x[2],
-                mesh.d_x[2],
-                2,
-                2,
-                derivative_boundary_constraints[2])
-            return laplacian + d_sqr_y_over_d_z_sqr
+            else:
+                d_sqr_y_over_d_z_sqr = self._second_derivative(
+                    y,
+                    mesh.d_x[2],
+                    mesh.d_x[2],
+                    2,
+                    2,
+                    derivative_boundary_constraints[2])
+                return laplacian + d_sqr_y_over_d_z_sqr
 
     def anti_laplacian(
             self,
@@ -758,11 +727,7 @@ class NumericalDifferentiator(ABC):
         :return: the array representing the solution to Poisson's equation at
             every point of the mesh
         """
-        if laplacian.shape[:-1] != mesh.vertices_shape:
-            raise ValueError(
-                'Laplacian shape up to second to last axis '
-                f'{laplacian.shape[:-1]} must match mesh vertices shape '
-                f'{mesh.vertices_shape}')
+        self._verify_input_shape_matches_mesh(laplacian, mesh, 'Laplacian')
 
         derivative_boundary_constraints = \
             self._verify_and_get_derivative_boundary_constraints(
@@ -792,6 +757,41 @@ class NumericalDifferentiator(ABC):
             diff = np.linalg.norm(y - y_old)
 
         return y
+
+    @staticmethod
+    def _verify_input_shape_matches_mesh(
+            input_array: np.ndarray, mesh: Mesh, input_name: str = 'y'):
+        """
+        Throws an error if the shape of the input array up to the last axis
+        does not match the shape of the vertices of the mesh.
+
+        :param input_array: the input array
+        :param mesh: the mesh to compare against
+        :param input_name: the name of the input array to include in the error
+            message
+        """
+        if input_array.shape[:-1] != mesh.vertices_shape:
+            raise ValueError(
+                f'{input_name} shape up to second to last axis '
+                f'{input_array.shape[:-1]} must match mesh vertices shape '
+                f'{mesh.vertices_shape}')
+
+    @staticmethod
+    def _verify_input_is_a_vector_field(
+            input_array: np.ndarray, mesh: Mesh):
+        """
+        Throws an error if the shape of the input array is not that of a vector
+        field evaluated over the vertices of the provided mesh.
+
+        :param input_array: the input array
+        :param mesh: the mesh to compare against
+        """
+        NumericalDifferentiator._verify_input_shape_matches_mesh(
+            input_array, mesh)
+        if input_array.shape[-1] != mesh.dimensions:
+            raise ValueError(
+                f'y value vector length ({input_array.shape[-1]}) '
+                f'must match number of x dimensions ({mesh.dimensions})')
 
     @staticmethod
     def _verify_and_get_derivative_boundary_constraints(
@@ -846,16 +846,10 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
         if y.shape[x_axis] <= 2:
             raise ValueError(
                 f'y must contain at least 3 points along x axis ({x_axis})')
-        if len(derivative_boundary_constraints) != y.shape[-1]:
-            raise ValueError(
-                'length of derivative boundary constraints '
-                f'({len(derivative_boundary_constraints)}) must match y value '
-                f'vector length ({y.shape[-1]})')
-
-        halo = np.zeros(y.shape[:x_axis] + (1,) + y.shape[x_axis + 1:])
-        y_extended = np.concatenate([halo, y, halo], axis=x_axis)
 
         slicer: Slicer = [slice(None)] * y.ndim
+        halo = np.zeros(y.shape[:x_axis] + (1,) + y.shape[x_axis + 1:])
+        y_extended = np.concatenate([halo, y, halo], axis=x_axis)
 
         slicer[x_axis] = slice(0, -2)
         y_prev = y_extended[tuple(slicer)]
@@ -911,7 +905,6 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
                 f'y must contain at least 3 points along x axis ({x_axis1})')
 
         slicer: Slicer = [slice(None)] * y.ndim
-
         y_extended = self._add_halos_along_axis(
             y, x_axis1, d_x1, slicer, derivative_boundary_constraints)
 
@@ -935,9 +928,8 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
             raise ValueError(
                 'y must contain at least 3 points along all x axes')
 
-        anti_laplacian = np.zeros_like(y_hat)
-
         slicer: Slicer = [slice(None)] * y_hat.ndim
+        anti_laplacian = np.zeros_like(y_hat)
 
         all_d_x_sqr = np.square(mesh.d_x)
         r = r_sqr = phi = sin_phi = r_sqr_sin_phi_sqr = None
@@ -973,10 +965,8 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
                 if axis == 0:
                     anti_laplacian += anti_laplacian_update + \
                         (y_hat_next - y_hat_prev) / (d_x * r)
-
                 elif axis == 1:
                     anti_laplacian += anti_laplacian_update / r_sqr_sin_phi_sqr
-
                 else:
                     anti_laplacian += (
                         anti_laplacian_update +
@@ -989,10 +979,8 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
                 if axis == 0:
                     anti_laplacian += anti_laplacian_update + \
                         (y_hat_next - y_hat_prev) / (2. * d_x * r)
-
                 elif axis == 1:
                     anti_laplacian += anti_laplacian_update / r_sqr
-
                 else:
                     anti_laplacian += anti_laplacian_update
 
@@ -1015,9 +1003,9 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
                 2. / (all_d_x_sqr[1] * r_sqr)
             if mesh.coordinate_system_type == CoordinateSystem.POLAR:
                 return anti_laplacian / step_size_coefficient
-
-            step_size_coefficient += 2. / all_d_x_sqr[2]
-            return anti_laplacian / step_size_coefficient
+            else:
+                step_size_coefficient += 2. / all_d_x_sqr[2]
+                return anti_laplacian / step_size_coefficient
 
     @staticmethod
     def _add_halos_along_axis(

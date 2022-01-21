@@ -25,7 +25,7 @@ The library provides out-of-the-box implementations for a number of differential
 To solve other differential equations, the `DifferentialEquation` class can be easily extended. The only method that needs to be implemented to do so is `symbolic_equation_system` which defines the system of differential equations using symbolic expressions.
 
 ### Mesh
-Meshes in PararealML are represented by the `Mesh` class which defines a hyper-grid with a pair of boundaries and a uniform step size along each dimension. Meshes may be defined in a Cartesian or curvilinear (polar, cylindrical, or spherical) coordinate system. However, there is no guarantee that all operators will support all coordinate system types.
+Meshes in PararealML are represented by the `Mesh` class which defines a hyper-grid with a pair of boundaries and a uniform step size along each dimension. Meshes may be defined in a Cartesian or curvilinear (polar, cylindrical, or spherical) coordinate system.
 
 ### Boundary conditions
 All boundary conditions extend the `BoundaryCondition` base class. In PararealML, boundary conditions are functions of time and space. It is possible to specify static boundary conditions that only depend on the spatial coordinates to enable the pre-computation of boundary values and thus potentially improve the performance of some of the solvers.

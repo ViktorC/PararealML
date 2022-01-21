@@ -105,8 +105,8 @@ class Symbols:
     @property
     def y_laplacian(self) -> Optional[np.ndarray]:
         """
-        An array of symbols denoting the spatial Laplacians of the elements of
-        the differential equation's solution.
+        An array of symbols denoting the spatial element-wise scalar Laplacians
+        of the elements of the differential equation's solution.
         """
         return copy(self._y_laplacian)
 

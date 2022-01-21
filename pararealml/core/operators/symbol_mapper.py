@@ -29,9 +29,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         self._rhs_functions: Dict[
             Optional[Lhs],
             Callable[[SymbolMapArg], Sequence[SymbolMapValue]]
-        ] = {
-            None: self.create_rhs_map_function(range(len(eq_sys.rhs)))
-        }
+        ] = {None: self.create_rhs_map_function(range(len(eq_sys.rhs)))}
         for lhs_type in Lhs:
             self._rhs_functions[lhs_type] = self.create_rhs_map_function(
                 eq_sys.equation_indices_by_type(lhs_type))

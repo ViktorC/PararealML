@@ -3,15 +3,16 @@ import pytest
 from tensorflow import optimizers
 
 from pararealml import SymbolicEquationSystem
-from pararealml.core.boundary_condition import NeumannBoundaryCondition
+from pararealml.core.boundary_condition import NeumannBoundaryCondition, \
+    vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import DifferentialEquation, \
     PopulationGrowthEquation, LotkaVolterraEquation, DiffusionEquation, \
-    WaveEquation
+    WaveEquation, ShallowWaterEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
-from pararealml.core.mesh import Mesh
+from pararealml.core.mesh import Mesh, CoordinateSystem
 from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
 from pararealml.core.operators.ml.pidon.pidon_operator import PIDONOperator, \
@@ -238,6 +239,182 @@ def test_pidon_operator_on_pde():
     solution = pidon.solve(ivp)
     assert solution.d_t == .001
     assert solution.discrete_y().shape == (500, 11, 1)
+
+
+def test_pidon_operator_on_polar_pde():
+    set_random_seed(0)
+
+    diff_eq = ShallowWaterEquation(.5)
+    mesh = Mesh(
+        [(1., 11.), (0., 2 * np.pi)],
+        [2., np.pi / 5.],
+        CoordinateSystem.POLAR)
+    bcs = [
+              (NeumannBoundaryCondition(
+                  vectorize_bc_function(lambda x, t: (.0, None, None)),
+                  is_static=True),
+               NeumannBoundaryCondition(
+                   vectorize_bc_function(lambda x, t: (.0, None, None)),
+                   is_static=True))
+          ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        [
+            (
+                np.array([-6., 0.]),
+                np.array([
+                    [.25, 0.],
+                    [0., .25]
+                ])
+            )
+        ] * 3,
+        [1., .0, .0]
+    )
+    t_interval = (0., .5)
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .001, True)
+
+    training_loss_history, test_loss_history = pidon.train(
+        cp,
+        t_interval,
+        training_data_args=DataArgs(
+            y_0_functions=[ic.y_0],
+            n_domain_points=20,
+            n_boundary_points=10,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=20,
+            branch_hidden_layer_sizes=[30, 30],
+            trunk_hidden_layer_sizes=[30, 30],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(learning_rate=2e-5),
+            epochs=3,
+            verbose=False
+        )
+    )
+
+    assert len(training_loss_history) == 3
+    for i in range(2):
+        assert np.all(
+            training_loss_history[i + 1].weighted_total_loss.numpy() <
+            training_loss_history[i].weighted_total_loss.numpy())
+
+    solution = pidon.solve(ivp)
+    assert solution.d_t == .001
+    assert solution.discrete_y().shape == (500, 6, 11, 3)
+
+
+def test_pidon_operator_on_cylindrical_pde():
+    set_random_seed(0)
+
+    diff_eq = DiffusionEquation(3)
+    mesh = Mesh(
+        [(1., 11.), (0., 2 * np.pi), (0., 2.)],
+        [2., np.pi / 5., 1.],
+        CoordinateSystem.CYLINDRICAL)
+    bcs = [
+              (NeumannBoundaryCondition(
+                  lambda x, t: np.zeros((len(x), 1)), is_static=True),
+               NeumannBoundaryCondition(
+                   lambda x, t: np.zeros((len(x), 1)), is_static=True))
+          ] * 3
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, lambda x: 1. / x[:, :1])
+    t_interval = (0., .5)
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .001, True)
+
+    training_loss_history, test_loss_history = pidon.train(
+        cp,
+        t_interval,
+        training_data_args=DataArgs(
+            y_0_functions=[ic.y_0],
+            n_domain_points=20,
+            n_boundary_points=10,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=20,
+            branch_hidden_layer_sizes=[30, 30],
+            trunk_hidden_layer_sizes=[30, 30],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(learning_rate=2e-5),
+            epochs=3,
+            verbose=False
+        )
+    )
+
+    assert len(training_loss_history) == 3
+    for i in range(2):
+        assert np.all(
+            training_loss_history[i + 1].weighted_total_loss.numpy() <
+            training_loss_history[i].weighted_total_loss.numpy())
+
+    solution = pidon.solve(ivp)
+    assert solution.d_t == .001
+    assert solution.discrete_y().shape == (500, 6, 11, 3, 1)
+
+
+def test_pidon_operator_on_spherical_pde():
+    set_random_seed(0)
+
+    diff_eq = DiffusionEquation(3)
+    mesh = Mesh(
+        [(1., 11.), (0., 2 * np.pi), (np.pi, 2 * np.pi)],
+        [2., np.pi / 5., np.pi / 2],
+        CoordinateSystem.SPHERICAL)
+    bcs = [
+              (NeumannBoundaryCondition(
+                  lambda x, t: np.zeros((len(x), 1)), is_static=True),
+               NeumannBoundaryCondition(
+                   lambda x, t: np.zeros((len(x), 1)), is_static=True))
+          ] * 3
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, lambda x: 1. / x[:, :1])
+    t_interval = (0., .5)
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .001, True)
+
+    training_loss_history, test_loss_history = pidon.train(
+        cp,
+        t_interval,
+        training_data_args=DataArgs(
+            y_0_functions=[ic.y_0],
+            n_domain_points=20,
+            n_boundary_points=10,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=20,
+            branch_hidden_layer_sizes=[30, 30],
+            trunk_hidden_layer_sizes=[30, 30],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(learning_rate=2e-5),
+            epochs=3,
+            verbose=False
+        )
+    )
+
+    assert len(training_loss_history) == 3
+    for i in range(2):
+        assert np.all(
+            training_loss_history[i + 1].weighted_total_loss.numpy() <
+            training_loss_history[i].weighted_total_loss.numpy())
+
+    solution = pidon.solve(ivp)
+    assert solution.d_t == .001
+    assert solution.discrete_y().shape == (500, 6, 11, 3, 1)
 
 
 def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():

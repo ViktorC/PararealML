@@ -438,15 +438,18 @@ class PIDeepONet(DeepONet):
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
                         arg.t, arg.y_hat[:, _y_ind:_y_ind + 1], 0))
+
             elif lhs_type == Lhs.Y:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.y_hat[:, _y_ind:_y_ind + 1])
+
             elif lhs_type == Lhs.Y_LAPLACIAN:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.auto_diff.batch_laplacian(
                         arg.x,
                         arg.y_hat[:, _y_ind:_y_ind + 1],
                         self._cp.mesh.coordinate_system_type))
+
             else:
                 raise ValueError(
                     f'unsupported left hand side type ({lhs_type.name})')

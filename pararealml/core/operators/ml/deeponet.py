@@ -40,7 +40,7 @@ class DeepONet(tf.keras.Model):
         if branch_layer_sizes[-1] != trunk_layer_sizes[-1]:
             raise ValueError(
                 'last branch layer must be the same size as last trunk layer')
-        if output_size <= 0 or branch_layer_sizes[1] % output_size != 0:
+        if output_size <= 0 or branch_layer_sizes[-1] % output_size != 0:
             raise ValueError(
                 'output size must be a divisor of final branch layer\'s size')
 
