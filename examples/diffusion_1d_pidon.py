@@ -6,7 +6,7 @@ from pararealml.core.operators.fdm import *
 from pararealml.core.operators.ml.pidon import *
 
 diff_eq = DiffusionEquation(1, .2)
-mesh = Mesh([(0., .5)], (.025,))
+mesh = Mesh([(0., 1.)], (.1,))
 bcs = [
     (NeumannBoundaryCondition(
         lambda x, t: np.zeros((len(x), 1)), is_static=True),
@@ -16,16 +16,12 @@ bcs = [
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 t_interval = (0., .5)
 
-ic_mean = .25
 training_y_0_functions = [
-    GaussianInitialCondition(
-        cp,
-        [(np.array([ic_mean]), np.array([[sd]]))]
-    ).y_0 for sd in np.arange(.05, .25, .05)
+    BetaInitialCondition(cp, [(p, p)]).y_0 for p in np.arange(1.2, 6., .2)
 ]
 
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, .001, False)
+pidon = PIDONOperator(sampler, .001, True)
 
 pidon.train(
     cp,
@@ -33,27 +29,21 @@ pidon.train(
     training_data_args=DataArgs(
         y_0_functions=training_y_0_functions,
         n_domain_points=500,
-        n_boundary_points=50,
-        n_batches=2,
+        n_boundary_points=100,
+        n_batches=1
     ),
     model_args=ModelArgs(
-        latent_output_size=100,
-        branch_hidden_layer_sizes=[100] * 6,
-        trunk_hidden_layer_sizes=[100] * 6,
+        latent_output_size=50,
+        branch_hidden_layer_sizes=[50] * 7,
+        trunk_hidden_layer_sizes=[50] * 7,
     ),
     optimization_args=OptimizationArgs(
-        optimizer={
-            'class_name': 'Adam',
-            'config': {
-                'learning_rate': optimizers.schedules.ExponentialDecay(
-                    1e-3, decay_steps=50, decay_rate=.95)
-            }
-        },
-        epochs=2000,
-        ic_loss_weight=10.,
-    ),
-    secondary_optimization_args=SecondaryOptimizationArgs(
-        max_iterations=1000,
+        optimizer=optimizers.Adam(
+            learning_rate=optimizers.schedules.ExponentialDecay(
+                2e-3, decay_steps=25, decay_rate=.98
+            )
+        ),
+        epochs=5000,
         ic_loss_weight=10.,
     )
 )
@@ -63,15 +53,12 @@ fdm = FDMOperator(
     ThreePointCentralDifferenceMethod(),
     .0001)
 
-for sd in [.075, .125, .175]:
-    ic = GaussianInitialCondition(
-        cp,
-        [(np.array([ic_mean]), np.array([[sd]]))]
-    )
+for p in [2., 3.5, 5.]:
+    ic = BetaInitialCondition(cp, [(p, p)])
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     pidon_solution = pidon.solve(ivp)
-    pidon_solution.plot(f'diff_1d_pidon_{"{:.3f}".format(sd)}')
+    pidon_solution.plot('diff_1d_pidon_{:.1f}'.format(p))
 
     fdm_solution = fdm.solve(ivp)
-    fdm_solution.plot(f'diff_1d_fdm_{"{:.3f}".format(sd)}')
+    fdm_solution.plot('diff_1d_fdm_{:.1f}'.format(p))
