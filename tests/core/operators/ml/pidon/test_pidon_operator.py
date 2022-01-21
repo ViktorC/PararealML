@@ -4,13 +4,13 @@ from tensorflow import optimizers
 
 from pararealml import SymbolicEquationSystem
 from pararealml.core.boundary_condition import NeumannBoundaryCondition, \
-    vectorize_bc_function
+    vectorize_bc_function, DirichletBoundaryCondition
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import DifferentialEquation, \
     PopulationGrowthEquation, LotkaVolterraEquation, DiffusionEquation, \
-    WaveEquation, ShallowWaterEquation
+    WaveEquation, ShallowWaterEquation, NavierStokesEquation
 from pararealml.core.initial_condition import ContinuousInitialCondition, \
-    GaussianInitialCondition
+    GaussianInitialCondition, vectorize_ic_function
 from pararealml.core.initial_value_problem import InitialValueProblem
 from pararealml.core.mesh import Mesh, CoordinateSystem
 from pararealml.core.operators.ml.pidon.collocation_point_sampler import \
@@ -152,16 +152,14 @@ def test_pidon_operator_on_ode_system():
     assert solution.discrete_y().shape == (50, 2)
 
 
-def test_pidon_operator_on_pde():
+def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
     set_random_seed(0)
 
     diff_eq = DiffusionEquation(1, .25)
     mesh = Mesh([(0., .5)], (.05,))
     bcs = [
-        (NeumannBoundaryCondition(
-            lambda x, t: np.zeros((len(x), 1)), is_static=True),
-         NeumannBoundaryCondition(
-             lambda x, t: np.zeros((len(x), 1)), is_static=True)),
+        (NeumannBoundaryCondition(lambda x, t: np.full((len(x), 1), t)),
+         NeumannBoundaryCondition(lambda x, t: np.full((len(x), 1), t))),
     ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0., .5)
@@ -239,6 +237,124 @@ def test_pidon_operator_on_pde():
     solution = pidon.solve(ivp)
     assert solution.d_t == .001
     assert solution.discrete_y().shape == (500, 11, 1)
+
+
+def test_pidon_operator_on_pde_system():
+    set_random_seed(0)
+
+    diff_eq = NavierStokesEquation()
+    mesh = Mesh([(-2.5, 2.5), (0., 4.)], [1., 1.])
+    ic_function = vectorize_ic_function(lambda x: [
+        2. * x[0] - 4.,
+        2. * x[0] ** 2 + 3. * x[1] - x[0] * x[1] ** 2,
+        4. * x[0] - x[1] ** 2,
+        2. * x[0] * x[1] - 3.
+    ])
+    bcs = [
+        (DirichletBoundaryCondition(
+            lambda x, t: ic_function(x),
+            is_static=True),
+         DirichletBoundaryCondition(
+             lambda x, t: ic_function(x),
+             is_static=True))
+    ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, ic_function)
+    t_interval = (0., .5)
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .001, True)
+
+    training_loss_history, test_loss_history = pidon.train(
+        cp,
+        t_interval,
+        training_data_args=DataArgs(
+            y_0_functions=[ic.y_0],
+            n_domain_points=20,
+            n_boundary_points=10,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=20,
+            branch_hidden_layer_sizes=[20, 20],
+            trunk_hidden_layer_sizes=[20, 20],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(learning_rate=1e-5),
+            epochs=3,
+            verbose=False
+        )
+    )
+
+    assert len(training_loss_history) == 3
+    for i in range(2):
+        assert np.all(
+            training_loss_history[i + 1].weighted_total_loss.numpy() <
+            training_loss_history[i].weighted_total_loss.numpy())
+
+    solution = pidon.solve(ivp)
+    assert solution.d_t == .001
+    assert solution.discrete_y().shape == (500, 6, 5, 4)
+
+
+def test_fdm_operator_on_pde_with_t_and_x_dependent_rhs():
+    class TestDiffEq(DifferentialEquation):
+
+        def __init__(self):
+            super(TestDiffEq, self).__init__(2, 1)
+
+        @property
+        def symbolic_equation_system(self) -> SymbolicEquationSystem:
+            return SymbolicEquationSystem([
+                self.symbols.t / 100. *
+                (self.symbols.x[0] + self.symbols.x[1]) ** 2
+            ])
+
+    diff_eq = TestDiffEq()
+    mesh = Mesh([(-1., 1.), (0., 2.)], [2., 1.])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+         NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))))
+    ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 1)))
+    t_interval = (0., 1.)
+    ivp = InitialValueProblem(cp, t_interval, ic)
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .05, True)
+
+    training_loss_history, test_loss_history = pidon.train(
+        cp,
+        t_interval,
+        training_data_args=DataArgs(
+            y_0_functions=[ic.y_0],
+            n_domain_points=20,
+            n_boundary_points=10,
+            n_batches=1
+        ),
+        model_args=ModelArgs(
+            latent_output_size=20,
+            branch_hidden_layer_sizes=[30, 30],
+            trunk_hidden_layer_sizes=[30, 30],
+        ),
+        optimization_args=OptimizationArgs(
+            optimizer=optimizers.Adam(learning_rate=2e-5),
+            epochs=3,
+            verbose=False
+        )
+    )
+
+    assert len(training_loss_history) == 3
+    for i in range(2):
+        assert np.all(
+            training_loss_history[i + 1].weighted_total_loss.numpy() <
+            training_loss_history[i].weighted_total_loss.numpy())
+
+    solution = pidon.solve(ivp)
+    assert solution.d_t == .05
+    assert solution.discrete_y().shape == (20, 2, 3, 1)
 
 
 def test_pidon_operator_on_polar_pde():

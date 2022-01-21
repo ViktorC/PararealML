@@ -24,6 +24,7 @@ class Symbols:
         self._y = symarray('y', (y_dimension,))
 
         if x_dimension:
+            self._x = symarray('x', (x_dimension,))
             self._y_gradient = symarray(
                 'y-gradient', (y_dimension, x_dimension))
             self._y_hessian = symarray(
@@ -39,6 +40,7 @@ class Symbols:
                 self._y_curl = None
             self._y_laplacian = symarray('y-laplacian', (y_dimension,))
         else:
+            self._x = None
             self._y_gradient = None
             self._y_hessian = None
             self._y_divergence = None
@@ -48,7 +50,7 @@ class Symbols:
     @property
     def t(self) -> Symbol:
         """
-        The temporal position.
+        A symbol denoting the temporal coordinate.
         """
         return self._t
 
@@ -59,6 +61,13 @@ class Symbols:
         differential equation.
         """
         return copy(self._y)
+
+    @property
+    def x(self) -> Optional[np.ndarray]:
+        """
+        An array of symbols denoting the elements of the spatial coordinates.
+        """
+        return copy(self._x)
 
     @property
     def y_gradient(self) -> Optional[np.ndarray]:
@@ -254,6 +263,7 @@ class DifferentialEquation(ABC):
         all_symbols.update(self._symbols.y)
 
         if self._x_dimension:
+            all_symbols.update(self._symbols.x)
             all_symbols.update(self._symbols.y_gradient.flatten())
             all_symbols.update(self._symbols.y_hessian.flatten())
             all_symbols.update(self._symbols.y_divergence.flatten())

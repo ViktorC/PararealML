@@ -42,10 +42,14 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
         self._mesh = cp.mesh
 
     def t_map_function(self) -> FDMSymbolMapFunction:
-        return lambda arg: np.ndarray([arg.t])
+        return lambda arg: np.array([arg.t])
 
     def y_map_function(self, y_ind: int) -> FDMSymbolMapFunction:
         return lambda arg: arg.y[..., y_ind:y_ind + 1]
+
+    def x_map_function(self, x_axis: int) -> FDMSymbolMapFunction:
+        return lambda arg: \
+            self._mesh.vertex_coordinate_grids[x_axis][..., np.newaxis]
 
     def y_gradient_map_function(
             self,

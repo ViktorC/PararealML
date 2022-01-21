@@ -50,6 +50,15 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         """
 
     @abstractmethod
+    def x_map_function(self, x_axis: int) -> SymbolMapFunction:
+        """
+        Returns a function for mapping a component of x to a numerical value.
+
+        :param x_axis: the component of x to return a map for
+        :return: the mapper function for x
+        """
+
+    @abstractmethod
     def y_gradient_map_function(
             self,
             y_ind: int,
@@ -145,6 +154,8 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
                 symbol_map[symbol] = self.t_map_function()
             elif prefix == 'y':
                 symbol_map[symbol] = self.y_map_function(*indices)
+            elif prefix == 'x':
+                symbol_map[symbol] = self.x_map_function(*indices)
             elif prefix == 'y-gradient':
                 symbol_map[symbol] = self.y_gradient_map_function(*indices)
             elif prefix == 'y-hessian':

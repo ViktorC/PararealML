@@ -1,11 +1,12 @@
 import numpy as np
 
+from pararealml import SymbolicEquationSystem
 from pararealml.core.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition, vectorize_bc_function
 from pararealml.core.constrained_problem import ConstrainedProblem
 from pararealml.core.differential_equation import PopulationGrowthEquation, \
     LorenzEquation, DiffusionEquation, CahnHilliardEquation, BurgerEquation, \
-    NavierStokesEquation, ShallowWaterEquation
+    NavierStokesEquation, ShallowWaterEquation, DifferentialEquation
 from pararealml.core.initial_condition import DiscreteInitialCondition, \
     ContinuousInitialCondition, GaussianInitialCondition
 from pararealml.core.initial_value_problem import InitialValueProblem
@@ -277,3 +278,35 @@ def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
 
     assert np.isclose(y[0, -1, 0], .1)
     assert np.isclose(y[-1, -1, 0], 2.)
+
+
+def test_fdm_operator_on_pde_with_t_and_x_dependent_rhs():
+    class TestDiffEq(DifferentialEquation):
+
+        def __init__(self):
+            super(TestDiffEq, self).__init__(2, 1)
+
+        @property
+        def symbolic_equation_system(self) -> SymbolicEquationSystem:
+            return SymbolicEquationSystem([
+                self.symbols.t / 100. *
+                (self.symbols.x[0] + self.symbols.x[1]) ** 2
+            ])
+
+    diff_eq = TestDiffEq()
+    mesh = Mesh([(-5., 5.), (0., 3.)], [2., 1.])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+         NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))))
+    ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ContinuousInitialCondition(cp, lambda x: np.zeros((len(x), 1)))
+    ivp = InitialValueProblem(cp, (0., 5.), ic)
+
+    op = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .25)
+    solution = op.solve(ivp)
+    y = solution.discrete_y()
+
+    assert solution.vertex_oriented
+    assert solution.d_t == .25
+    assert y.shape == (20, 6, 4, 1)

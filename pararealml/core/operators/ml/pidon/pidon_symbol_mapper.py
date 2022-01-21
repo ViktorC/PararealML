@@ -44,6 +44,9 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
     def y_map_function(self, y_ind: int) -> PIDONSymbolMapFunction:
         return lambda arg: arg.y_hat[:, y_ind:y_ind + 1]
 
+    def x_map_function(self, x_axis: int) -> PIDONSymbolMapFunction:
+        return lambda arg: arg.x[:, x_axis:x_axis + 1]
+
     def y_gradient_map_function(self, y_ind: int, x_axis: int) -> Callable:
         return lambda arg: arg.auto_diff.batch_gradient(
             arg.x,
