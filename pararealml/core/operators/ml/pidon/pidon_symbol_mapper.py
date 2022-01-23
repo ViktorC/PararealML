@@ -95,3 +95,15 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
             arg.x,
             arg.y_hat[:, y_ind:y_ind + 1],
             self._coordinate_system_type)
+
+    def y_vector_laplacian_map_function(
+            self,
+            y_indices: Sequence[int],
+            indices_contiguous: bool,
+            vector_laplacian_ind: int) -> PIDONSymbolMapFunction:
+        return lambda arg: arg.auto_diff.batch_vector_laplacian(
+            arg.x,
+            arg.y_hat[:, y_indices[0]:y_indices[-1] + 1]
+            if indices_contiguous else arg.y_hat[:, y_indices],
+            vector_laplacian_ind,
+            self._coordinate_system_type)

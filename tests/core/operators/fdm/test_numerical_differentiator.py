@@ -67,6 +67,24 @@ def test_num_diff_more_than_3d_curl():
         diff.curl(y, mesh)
 
 
+def test_num_diff_curl_with_out_of_bounds_ind():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh([(0., 1.)] * 3, [.5] * 3)
+    y = np.zeros((3, 3, 3, 3))
+
+    with pytest.raises(ValueError):
+        diff.curl(y, mesh, 3)
+
+
+def test_num_diff_vector_laplacian_with_out_of_bounds_ind():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh([(0., 1.)] * 3, [.5] * 3)
+    y = np.zeros((3, 3, 3, 3))
+
+    with pytest.raises(ValueError):
+        diff.vector_laplacian(y, mesh, 4)
+
+
 def test_3pcfdm_gradient_with_insufficient_dimension_extent():
     diff = ThreePointCentralDifferenceMethod()
     mesh = Mesh([(0., 1.), (0., 2.), (0., 1.)], [1., 1., 1.])
@@ -652,6 +670,27 @@ def test_3pcfdm_laplacian_is_hessian_trace():
     assert np.allclose(laplacian, trace)
 
 
+def test_3pcfdm_vector_laplacian_component_is_scalar_laplacian():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh([(0., 4.), (0., 2.)], [2., 1.])
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [2., 4.]
+        ],
+        [
+            [6., 4.], [4., 4.], [10., -4.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-2., 4.]
+        ]
+    ])
+
+    assert np.allclose(
+        diff.vector_laplacian(y, mesh, 0), diff.laplacian(y[..., :1], mesh))
+    assert np.allclose(
+        diff.vector_laplacian(y, mesh, 1), diff.laplacian(y[..., 1:], mesh))
+
+
 def test_3pcfdm_anti_laplacian():
     diff = ThreePointCentralDifferenceMethod(1e-12)
     y = np.random.random((20, 20, 2))
@@ -1102,6 +1141,36 @@ def test_3pcfdm_polar_laplacian_is_hessian_trace():
         diff.hessian(y, mesh, 1, 1)
 
     assert np.allclose(laplacian, trace)
+
+
+def test_3pcfdm_polar_vector_laplacian():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh([(1., 5.), (0., 2.)], [2., 1.], CoordinateSystem.POLAR)
+    y = np.array([
+        [
+            [2., 4.], [4., 8.], [2., 4.]
+        ],
+        [
+            [6., 4.], [4., 4.], [10., -4.]
+        ],
+        [
+            [2., 6.], [8., 2.], [-2., 4.]
+        ]
+    ])
+    expected_vector_laplacian = np.array([
+        [
+            [-8.], [-8.], [10.]
+        ],
+        [
+            [-4.], [2.66666667], [-7.77777778]
+        ],
+        [
+            [.2], [-4.08], [3.64]
+        ]
+    ])
+    actual_vector_laplacian = diff.vector_laplacian(y, mesh, 0)
+
+    assert np.allclose(actual_vector_laplacian, expected_vector_laplacian)
 
 
 def test_3pcfdm_polar_anti_laplacian():
@@ -1991,6 +2060,87 @@ def test_3pcfdm_cylindrical_laplacian_is_hessian_trace():
         diff.hessian(y, mesh, 2, 2)
 
     assert np.allclose(laplacian, trace)
+
+
+def test_3pcfdm_cylindrical_vector_laplacian():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh(
+        [(1., 5.), (0., 2), (-1., 1.)],
+        [2., 1., 1.],
+        CoordinateSystem.CYLINDRICAL)
+    y = np.array([
+        [
+            [
+                [2., 4., 12.], [4., 8., 8.], [-2., 3., 1.]
+            ],
+            [
+                [6., 4., -2.], [4., 4., -4.], [-2., 8., 5.]
+            ],
+            [
+                [1., 2., 3.], [5., 2., -1.], [3., 1., -4.]
+            ]
+        ],
+        [
+            [
+                [0., -2., 6.], [4., 0., 2.], [4., 3., 8.]
+            ],
+            [
+                [8., 6., -10.], [2., -4., 14.], [1., 1., 1.]
+            ],
+            [
+                [1., 2., 3.], [5., 2., -1.], [-2., 4., 3.]
+            ]
+        ],
+        [
+            [
+                [2., -1., 6.], [4., 5., 2.], [3., 8., -5.]
+            ],
+            [
+                [5., -1., 3.], [2., -6., 14.], [7., 8., 2.]
+            ],
+            [
+                [-4., 5., 0.], [3., 1., -1.], [9., 1., 2.]
+            ]
+        ]
+    ])
+    expected_vector_laplacian = np.array([
+        [
+            [
+                [-45.], [-26.], [12.5]
+            ],
+            [
+                [15.], [35.], [-29.]
+            ],
+            [
+                [-15.], [-1.], [23.5]
+            ]
+        ],
+        [
+            [
+                [-11.44444444], [12.11111111], [-21.16666667]
+            ],
+            [
+                [42.88888889], [-43.], [14.]
+            ],
+            [
+                [-9.77777778], [9.77777778], [-9.05555556]
+            ]
+        ],
+        [
+            [
+                [-12.16], [-3.2], [16.58]
+            ],
+            [
+                [4.5], [-28.28], [8.92]
+            ],
+            [
+                [-.28], [4.94], [-5.48]
+            ]
+        ]
+    ])
+    actual_vector_laplacian = diff.vector_laplacian(y, mesh, 2)
+
+    assert np.allclose(actual_vector_laplacian, expected_vector_laplacian)
 
 
 def test_3pcfdm_cylindrical_anti_laplacian():
@@ -2907,6 +3057,87 @@ def test_3pcfdm_spherical_laplacian_is_hessian_trace():
         diff.hessian(y, mesh, 2, 2)
 
     assert np.allclose(laplacian, trace)
+
+
+def test_3pcfdm_spherical_vector_laplacian():
+    diff = ThreePointCentralDifferenceMethod()
+    mesh = Mesh(
+        [(1., 5.), (0., 2), (1., 2.)],
+        [2., 1., .5],
+        CoordinateSystem.SPHERICAL)
+    y = np.array([
+        [
+            [
+                [2., 4., 12.], [4., 8., 8.], [-2., 3., 1.]
+            ],
+            [
+                [6., 4., -2.], [4., 4., -4.], [-2., 8., 5.]
+            ],
+            [
+                [1., 2., 3.], [5., 2., -1.], [3., 1., -4.]
+            ]
+        ],
+        [
+            [
+                [0., -2., 6.], [4., 0., 2.], [4., 3., 8.]
+            ],
+            [
+                [8., 6., -10.], [2., -4., 14.], [1., 1., 1.]
+            ],
+            [
+                [1., 2., 3.], [5., 2., -1.], [-2., 4., 3.]
+            ]
+        ],
+        [
+            [
+                [2., -1., 6.], [4., 5., 2.], [3., 8., -5.]
+            ],
+            [
+                [5., -1., 3.], [2., -6., 14.], [7., 8., 2.]
+            ],
+            [
+                [-4., 5., 0.], [3., 1., -1.], [9., 1., 2.]
+            ]
+        ]
+    ])
+    expected_vector_laplacian = np.array([
+        [
+            [
+                [-44.17619399], [-43.27594455], [26.94747506]
+            ],
+            [
+                [-12.81103472], [-2.12389621], [-61.15669914]
+            ],
+            [
+                [-5.31479004], [4.58096006], [7.80875866]
+            ]
+        ],
+        [
+            [
+                [2.17081636], [1.8678716], [-1.00827572]
+            ],
+            [
+                [-16.35305486], [4.24500852], [4.17024299]
+            ],
+            [
+                [1.18184067], [-1.9462908], [-4.35612694]
+            ]
+        ],
+        [
+            [
+                [.92424119], [-2.80843282], [-6.22047571]
+            ],
+            [
+                [-1.01447138], [6.19012735], [-6.87732868]
+            ],
+            [
+                [-3.88325659], [-.52788515], [-.12628033]
+            ]
+        ]
+    ])
+    actual_vector_laplacian = diff.vector_laplacian(y, mesh, 1)
+
+    assert np.allclose(actual_vector_laplacian, expected_vector_laplacian)
 
 
 def test_3pcfdm_spherical_anti_laplacian():

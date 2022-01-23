@@ -43,6 +43,18 @@ def test_divergence_with_non_matching_vector_field_dimension():
             diff.batch_divergence(x, y).numpy()
 
 
+def test_curl_with_non_matching_vector_field_dimension():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((2, 2), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant([[1., 2.], [-4., -5.]], dtype=tf.float32)
+        y = tf.concat([c * x, c / x], axis=1)
+
+        with pytest.raises(ValueError):
+            diff.batch_curl(x, y).numpy()
+
+
 def test_1d_curl():
     with AutoDifferentiator(persistent=True) as diff:
         x = tf.ones((2, 1), dtype=tf.float32)
@@ -67,6 +79,46 @@ def test_more_than_3d_curl():
 
         with pytest.raises(ValueError):
             diff.batch_curl(x, y).numpy()
+
+
+def test_curl_with_out_of_bounds_ind():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((2, 3), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2., 3.], [-4., -3., -2.]],
+            dtype=tf.float32)
+        y = c * x
+
+        with pytest.raises(ValueError):
+            diff.batch_curl(x, y, 4).numpy()
+
+
+def test_vector_laplacian_with_non_matching_vector_field_dimension():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((2, 2), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant([[1., 2.], [-4., -5.]], dtype=tf.float32)
+        y = tf.concat([c * x, c / x], axis=1)
+
+        with pytest.raises(ValueError):
+            diff.batch_vector_laplacian(x, y, 0).numpy()
+
+
+def test_vector_laplacian_with_out_of_bounds_ind():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((2, 3), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2., 3.], [-4., -3., -2.]],
+            dtype=tf.float32)
+        y = c * x
+
+        with pytest.raises(ValueError):
+            diff.batch_vector_laplacian(x, y, 4).numpy()
 
 
 def test_gradient_int_x_axis():
@@ -198,6 +250,28 @@ def test_laplacian_is_hessian_trace():
              diff.batch_hessian(x, y, 1, 1)).numpy())
 
 
+def test_vector_laplacian_component_is_scalar_laplacian():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((3, 2), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2.], [-4., -5.], [0., -2.]],
+            dtype=tf.float32)
+        y = tf.concat(
+            [
+                tf.reduce_sum(c * x ** 3, axis=1, keepdims=True),
+                tf.reduce_sum(c * x ** 2, axis=1, keepdims=True)
+            ], axis=1)
+
+        assert np.allclose(
+            diff.batch_vector_laplacian(x, y, 0).numpy(),
+            diff.batch_laplacian(x, y[:, :1]))
+        assert np.allclose(
+            diff.batch_vector_laplacian(x, y, 1).numpy(),
+            diff.batch_laplacian(x, y[:, 1:]))
+
+
 def test_polar_gradient():
     with AutoDifferentiator(persistent=True) as diff:
         x = tf.fill((2, 2), 2.)
@@ -320,6 +394,26 @@ def test_polar_laplacian_is_hessian_trace():
             diff.batch_laplacian(x, y, CoordinateSystem.POLAR).numpy(),
             (diff.batch_hessian(x, y, 0, 0, CoordinateSystem.POLAR) +
              diff.batch_hessian(x, y, 1, 1, CoordinateSystem.POLAR)).numpy())
+
+
+def test_polar_vector_laplacian():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((3, 2), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2.], [-4., -5.], [0., -2.]],
+            dtype=tf.float32)
+        y = tf.concat(
+            [
+                tf.reduce_sum(c * x ** 3, axis=1, keepdims=True),
+                tf.reduce_sum(c * x ** 2, axis=1, keepdims=True)
+            ], axis=1)
+
+        expected_vector_laplacian = [[7.], [-25.], [-2.]]
+        actual_vector_laplacian = diff.batch_vector_laplacian(
+            x, y, 0, CoordinateSystem.POLAR).numpy()
+        assert np.allclose(expected_vector_laplacian, actual_vector_laplacian)
 
 
 def test_cylindrical_gradient():
@@ -468,6 +562,27 @@ def test_cylindrical_laplacian_is_hessian_trace():
             ) + diff.batch_hessian(
                 x, y, 2, 2, CoordinateSystem.CYLINDRICAL
             )).numpy())
+
+
+def test_cylindrical_vector_laplacian():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((3, 3), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2., 3.], [-4., -5., -6.], [0., -2., 4.]],
+            dtype=tf.float32)
+        y = tf.concat(
+            [
+                tf.reduce_sum(c * x ** 3, axis=1, keepdims=True),
+                tf.reduce_sum(c * x ** 2, axis=1, keepdims=True),
+                tf.reduce_sum(x, axis=1, keepdims=True)
+            ], axis=1)
+
+        expected_vector_laplacian = [[18.], [-45.], [-10.]]
+        actual_vector_laplacian = diff.batch_vector_laplacian(
+            x, y, 1, CoordinateSystem.CYLINDRICAL).numpy()
+        assert np.allclose(expected_vector_laplacian, actual_vector_laplacian)
 
 
 def test_spherical_gradient():
@@ -619,3 +734,24 @@ def test_spherical_laplacian_is_hessian_trace():
             ) + diff.batch_hessian(
                 x, y, 2, 2, CoordinateSystem.SPHERICAL
             )).numpy())
+
+
+def test_spherical_vector_laplacian():
+    with AutoDifferentiator(persistent=True) as diff:
+        x = tf.ones((3, 3), dtype=tf.float32)
+        diff.watch(x)
+
+        c = tf.constant(
+            [[1., 2., 3.], [-4., -5., -6.], [0., -2., 4.]],
+            dtype=tf.float32)
+        y = tf.concat(
+            [
+                tf.reduce_sum(c * x ** 3, axis=1, keepdims=True),
+                tf.reduce_sum(c * x ** 2, axis=1, keepdims=True),
+                tf.reduce_sum(x, axis=1, keepdims=True)
+            ], axis=1)
+
+        expected_vector_laplacian = [[-15.359716], [17.915348], [3.6546054]]
+        actual_vector_laplacian = diff.batch_vector_laplacian(
+            x, y, 1, CoordinateSystem.SPHERICAL).numpy()
+        assert np.allclose(expected_vector_laplacian, actual_vector_laplacian)

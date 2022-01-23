@@ -132,6 +132,24 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         :return: the mapper function for the Laplacian of y
         """
 
+    @abstractmethod
+    def y_vector_laplacian_map_function(
+            self,
+            y_indices: Sequence[int],
+            indices_contiguous: bool,
+            vector_laplacian_ind: int) -> SymbolMapFunction:
+        """
+        Returns a function for mapping the vector Laplacian of a set of
+        components of y to a numerical value.
+
+        :param y_indices: the components of y whose vector Laplacian to return
+            a map for
+        :param indices_contiguous: whether the indices are contiguous
+        :param vector_laplacian_ind: the index of the component of the vector
+            Laplacian to map
+        :return: the mapper function for the vector Laplacian of y
+        """
+
     def create_symbol_map(self) -> Dict[sp.Symbol, SymbolMapFunction]:
         """
         Creates a dictionary linking the symbols present in the differential
@@ -172,14 +190,15 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
                     symbol_map[symbol] = self.y_divergence_map_function(
                         indices, indices_contiguous)
                 elif prefix == 'y-curl':
-                    if x_dimension == 2:
-                        symbol_map[symbol] = self.y_curl_map_function(
-                            indices, indices_contiguous, 0)
-                    else:
-                        y_indices = indices[:-1]
-                        curl_ind = indices[-1]
-                        symbol_map[symbol] = self.y_curl_map_function(
-                            y_indices, indices_contiguous, curl_ind)
+                    symbol_map[symbol] = \
+                        self.y_curl_map_function(
+                            indices, indices_contiguous, 0) \
+                        if x_dimension == 2 else \
+                        self.y_curl_map_function(
+                            indices[:-1], indices_contiguous, indices[-1])
+                elif prefix == 'y-vector-laplacian':
+                    self.y_vector_laplacian_map_function(
+                        indices[:-1], indices_contiguous, indices[-1])
 
         return symbol_map
 

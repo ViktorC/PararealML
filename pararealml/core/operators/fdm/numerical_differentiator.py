@@ -543,26 +543,26 @@ class NumericalDifferentiator(ABC):
                 return -d_y_theta_over_d_r + \
                     (d_y_r_over_d_theta / sin_phi - y_theta) / r
 
-        elif mesh.coordinate_system_type == CoordinateSystem.POLAR \
-                or curl_ind == 2:
-            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
-            y_r = y[..., :1]
-            y_theta = y[..., 1:2]
-            d_y_r_over_d_theta = self._derivative(
-                y_r,
-                mesh.d_x[1],
-                1,
-                derivative_boundary_constraints[1, :1])
-            d_y_theta_over_d_r = self._derivative(
-                y_theta,
-                mesh.d_x[0],
-                0,
-                derivative_boundary_constraints[0, 1:2])
-            return d_y_theta_over_d_r + (y_theta - d_y_r_over_d_theta) / r
-
         else:
-            if curl_ind == 0:
-                r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+
+            if mesh.coordinate_system_type == CoordinateSystem.POLAR \
+                    or curl_ind == 2:
+                y_r = y[..., :1]
+                y_theta = y[..., 1:2]
+                d_y_r_over_d_theta = self._derivative(
+                    y_r,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, :1])
+                d_y_theta_over_d_r = self._derivative(
+                    y_theta,
+                    mesh.d_x[0],
+                    0,
+                    derivative_boundary_constraints[0, 1:2])
+                return d_y_theta_over_d_r + (y_theta - d_y_r_over_d_theta) / r
+
+            elif curl_ind == 0:
                 d_y_z_over_d_theta = self._derivative(
                     y[..., 2:],
                     mesh.d_x[1],
@@ -703,6 +703,135 @@ class NumericalDifferentiator(ABC):
                     derivative_boundary_constraints[2])
                 return laplacian + d_sqr_y_over_d_z_sqr
 
+    def vector_laplacian(
+            self,
+            y: np.ndarray,
+            mesh: Mesh,
+            vector_laplacian_ind: int,
+            derivative_boundary_constraints: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """
+        Computes the vector_laplacian_ind-th component of the vector Laplacian
+        of y at every point of the mesh.
+
+        :param y: the values of y at every point of the mesh
+        :param mesh: the mesh representing the discretized spatial domain
+        :param vector_laplacian_ind: the index of the component of the vector
+            Laplacian of y to compute
+        :param derivative_boundary_constraints: a 2D array (x dimension,
+            y dimension) of boundary constraint pairs that allow for applying
+            constraints to the calculated first derivatives before using them
+            to compute the vector Laplacian
+        :return: the vector Laplacian of y
+        """
+        self._verify_input_is_a_vector_field(y, mesh)
+        if not (0 <= vector_laplacian_ind < mesh.dimensions):
+            raise ValueError(
+                f'vector Laplacian index ({vector_laplacian_ind}) must be '
+                'non-negative and less than number of x dimensions '
+                f'({mesh.dimensions})')
+
+        derivative_boundary_constraints = \
+            self._verify_and_get_derivative_boundary_constraints(
+                derivative_boundary_constraints,
+                mesh.dimensions,
+                y.shape[-1])
+
+        laplacian = self.laplacian(
+            y[..., vector_laplacian_ind:vector_laplacian_ind + 1],
+            mesh,
+            derivative_boundary_constraints[
+                :, vector_laplacian_ind:vector_laplacian_ind + 1
+            ])
+
+        if mesh.coordinate_system_type == CoordinateSystem.CARTESIAN:
+            return laplacian
+
+        elif mesh.coordinate_system_type == CoordinateSystem.SPHERICAL:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+            phi = mesh.vertex_coordinate_grids[2][..., np.newaxis]
+            y_r = y[..., :1]
+            y_theta = y[..., 1:2]
+            y_phi = y[..., 2:]
+            sin_phi = np.sin(phi)
+            cos_phi = np.cos(phi)
+
+            if vector_laplacian_ind == 1:
+                d_y_theta_over_d_theta = self._derivative(
+                    y_theta,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 1:2])
+                d_y_phi_over_d_phi = self._derivative(
+                    y_phi,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, 2:])
+                return laplacian - 2. * (
+                    y_r + d_y_phi_over_d_phi +
+                    (cos_phi * y_phi + d_y_theta_over_d_theta) / sin_phi
+                ) / r ** 2
+
+            elif vector_laplacian_ind == 2:
+                d_y_r_over_d_theta = self._derivative(
+                    y_r,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, :1])
+                d_y_phi_over_d_theta = self._derivative(
+                    y_phi,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 2:])
+                return laplacian + 2. * (
+                    d_y_r_over_d_theta +
+                    (cos_phi * d_y_phi_over_d_theta - y_theta / 2.) / sin_phi
+                ) / (sin_phi * r ** 2)
+
+            else:
+                d_y_r_over_d_phi = self._derivative(
+                    y_r,
+                    mesh.d_x[2],
+                    2,
+                    derivative_boundary_constraints[2, :1])
+                d_y_theta_over_d_theta = self._derivative(
+                    y_theta,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 1:2])
+                return laplacian + 2. * (
+                    d_y_r_over_d_phi -
+                    (
+                        y_phi / 2. + cos_phi * d_y_theta_over_d_theta
+                    ) / sin_phi ** 2
+                ) / r ** 2
+
+        else:
+            r = mesh.vertex_coordinate_grids[0][..., np.newaxis]
+
+            if vector_laplacian_ind == 0:
+                y_r = y[..., :1]
+                y_theta = y[..., 1:2]
+                d_y_theta_over_d_theta = self._derivative(
+                    y_theta,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, 1:2])
+                return laplacian - (y_r + 2. * d_y_theta_over_d_theta) / r ** 2
+
+            elif vector_laplacian_ind == 1:
+                y_theta = y[..., 1:2]
+                y_r = y[..., :1]
+                d_y_r_over_d_theta = self._derivative(
+                    y_r,
+                    mesh.d_x[1],
+                    1,
+                    derivative_boundary_constraints[1, :1])
+                return laplacian - (y_theta - 2. * d_y_r_over_d_theta) / r ** 2
+
+            else:
+                return laplacian
+
     def anti_laplacian(
             self,
             laplacian: np.ndarray,
@@ -711,7 +840,8 @@ class NumericalDifferentiator(ABC):
             derivative_boundary_constraints: Optional[np.ndarray] = None,
             y_init: Optional[np.ndarray] = None) -> np.ndarray:
         """
-        Computes the anti-Laplacian using the Jacobi method.
+        Computes the inverse of the element-wise scalar Laplacian using the
+        Jacobi method.
 
         :param laplacian: the right-hand side of the equation
         :param mesh: the mesh representing the discretized spatial domain

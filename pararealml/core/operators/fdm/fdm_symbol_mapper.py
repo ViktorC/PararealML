@@ -116,6 +116,25 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
             self._mesh,
             arg.d_y_constraint_function(arg.t)[:, y_ind:y_ind + 1])
 
+    def y_vector_laplacian_map_function(
+            self,
+            y_indices: Sequence[int],
+            indices_contiguous: bool,
+            vector_laplacian_ind: int) -> FDMSymbolMapFunction:
+        if indices_contiguous:
+            return lambda arg: self._differentiator.vector_laplacian(
+                arg.y[..., y_indices[0]:y_indices[-1] + 1],
+                self._mesh,
+                vector_laplacian_ind,
+                arg.d_y_constraint_function(
+                    arg.t)[:, y_indices[0]:y_indices[-1] + 1])
+        else:
+            return lambda arg: self._differentiator.vector_laplacian(
+                arg.y[..., y_indices],
+                self._mesh,
+                vector_laplacian_ind,
+                arg.d_y_constraint_function(arg.t)[:, y_indices])
+
     def map_concatenated(
             self,
             arg: FDMSymbolMapArg,

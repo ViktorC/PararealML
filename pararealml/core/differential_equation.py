@@ -23,6 +23,14 @@ class Symbols:
         self._t = Symbol('t')
         self._y = symarray('y', (y_dimension,))
 
+        self._x = None
+        self._y_gradient = None
+        self._y_hessian = None
+        self._y_divergence = None
+        self._y_curl = None
+        self._y_laplacian = None
+        self._y_vector_laplacian = None
+
         if x_dimension:
             self._x = symarray('x', (x_dimension,))
             self._y_gradient = symarray(
@@ -31,21 +39,15 @@ class Symbols:
                 'y-hessian', (y_dimension, x_dimension, x_dimension))
             self._y_divergence = symarray(
                 'y-divergence', (y_dimension,) * x_dimension)
-            if x_dimension == 2:
-                self._y_curl = symarray('y-curl', (y_dimension,) * x_dimension)
-            elif x_dimension == 3:
+            if 2 <= x_dimension <= 3:
                 self._y_curl = symarray(
-                    'y-curl', ((y_dimension,) * x_dimension) + (x_dimension,))
-            else:
-                self._y_curl = None
+                    'y-curl',
+                    ((y_dimension,) * x_dimension) +
+                    (x_dimension,) if x_dimension == 3 else ())
             self._y_laplacian = symarray('y-laplacian', (y_dimension,))
-        else:
-            self._x = None
-            self._y_gradient = None
-            self._y_hessian = None
-            self._y_divergence = None
-            self._y_curl = None
-            self._y_laplacian = None
+            self._y_vector_laplacian = symarray(
+                'y-vector-laplacian',
+                ((y_dimension,) * x_dimension) + (x_dimension,))
 
     @property
     def t(self) -> Symbol:
@@ -114,10 +116,22 @@ class Symbols:
     @property
     def y_laplacian(self) -> Optional[np.ndarray]:
         """
-        An array of symbols denoting the spatial element-wise scalar Laplacians
-        of the elements of the differential equation's solution.
+        An array of symbols denoting the spatial scalar Laplacian of the
+        elements of the differential equation's solution.
         """
         return copy(self._y_laplacian)
+
+    @property
+    def y_vector_laplacian(self) -> Optional[np.ndarray]:
+        """
+        A multidimensional array of symbols denoting the spatial vector
+        Laplacian of the corresponding elements of the differential equation's
+        solution.
+
+        An additional axis is appended to this multidimensional array to allow
+        for indexing the components of the vector Laplacian.
+        """
+        return copy(self._y_vector_laplacian)
 
 
 class Lhs(Enum):
@@ -270,6 +284,7 @@ class DifferentialEquation(ABC):
             if 2 <= self._x_dimension <= 3:
                 all_symbols.update(self._symbols.y_curl.flatten())
             all_symbols.update(self._symbols.y_laplacian)
+            all_symbols.update(self._symbols.y_vector_laplacian.flatten())
 
         for i, rhs_element in enumerate(self.symbolic_equation_system.rhs):
             rhs_symbols = rhs_element.free_symbols
