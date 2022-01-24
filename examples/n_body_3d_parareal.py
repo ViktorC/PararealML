@@ -1,8 +1,8 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.ode import *
-from pararealml.core.operators.parareal import *
+from pararealml.operators.ode import *
+from pararealml.operators.parareal import *
 from pararealml.utils.time import mpi_time
 
 n_planets = 10

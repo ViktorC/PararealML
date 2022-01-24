@@ -1,8 +1,8 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
-from pararealml.core.operators.parareal import *
+from pararealml.operators.fdm import *
+from pararealml.operators.parareal import *
 from pararealml.utils.time import mpi_time
 
 diff_eq = DiffusionEquation(2)

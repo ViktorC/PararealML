@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
+from pararealml.operators.fdm import *
 
 diff_eq = CahnHilliardEquation(3, d=.25, gamma=.1)
 mesh = Mesh([(0., 25.), (0., 25.), (0., 25.)], [.5, .5, .5])

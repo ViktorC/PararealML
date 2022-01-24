@@ -2,8 +2,8 @@ import numpy as np
 from tensorflow import optimizers
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
-from pararealml.core.operators.ml.pidon import *
+from pararealml.operators.fdm import *
+from pararealml.operators.ml.pidon import *
 
 diff_eq = LotkaVolterraEquation()
 cp = ConstrainedProblem(diff_eq)

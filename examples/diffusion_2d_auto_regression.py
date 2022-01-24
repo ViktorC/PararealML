@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
 from pararealml import *
-from pararealml.core.operators.ml.auto_regression import *
-from pararealml.core.operators.fdm import *
+from pararealml.operators.fdm import *
+from pararealml.operators.ml.auto_regression import *
 from pararealml.utils.rand import SEEDS, set_random_seed
 
 set_random_seed(SEEDS[0])

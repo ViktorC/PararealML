@@ -8,10 +8,10 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colors import Colormap
 from mpl_toolkits.mplot3d import Axes3D
 
-from pararealml.core.differential_equation import NBodyGravitationalEquation, \
+from pararealml.differential_equation import NBodyGravitationalEquation, \
     DiffusionEquation, WaveEquation, BurgerEquation, ShallowWaterEquation, \
     NavierStokesEquation, ConvectionDiffusionEquation
-from pararealml.core.solution import Solution
+from pararealml.solution import Solution
 
 
 def plot_y_against_t(

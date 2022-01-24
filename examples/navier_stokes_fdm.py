@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
+from pararealml.operators.fdm import *
 
 diff_eq = NavierStokesEquation(5000.)
 mesh = Mesh([(-2.5, 2.5), (0., 4.)], [.05, .05])

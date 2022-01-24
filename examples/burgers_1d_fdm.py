@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
+from pararealml.operators.fdm import *
 
 diff_eq = BurgerEquation(1, 100)
 mesh = Mesh([(0., 10.)], [.1])

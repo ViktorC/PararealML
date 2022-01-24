@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.ode import *
+from pararealml.operators.ode import *
 
 g = 6.6743e-11
 

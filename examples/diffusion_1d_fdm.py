@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml import *
-from pararealml.core.operators.fdm import *
+from pararealml.operators.fdm import *
 
 diff_eq = DiffusionEquation(1, 1.5)
 mesh = Mesh([(0., 10.)], [.1])
