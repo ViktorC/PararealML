@@ -4,14 +4,6 @@ pararealml.utils package
 Submodules
 ----------
 
-pararealml.utils.plot module
-----------------------------
-
-.. automodule:: pararealml.utils.plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pararealml.utils.rand module
 ----------------------------
 

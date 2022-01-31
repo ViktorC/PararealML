@@ -44,9 +44,6 @@ ivp = InitialValueProblem(cp, (0., 120 * day), ic)
 
 solver = ODEOperator('DOP853', minute)
 solution = solver.solve(ivp)
-solution.plot(
-    'pretty',
-    n_images=100,
-    smallest_marker_size=100.,
-    trajectory_line_width=.1,
-    trajectory_line_style='solid')
+
+for plot in solution.generate_plots():
+    plot.show().close()

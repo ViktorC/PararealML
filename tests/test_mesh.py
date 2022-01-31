@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pararealml.mesh import Mesh, CoordinateSystem, \
-    to_cartesian_coordinates, from_cartesian_coordinates
+    to_cartesian_coordinates, from_cartesian_coordinates, unit_vectors_at
 
 
 def test_mesh():
@@ -137,7 +137,7 @@ def test_polar_mesh():
         actual_cartesian_cell_center_coordinate_grids,
         expected_cartesian_cell_center_coordinate_grids)
 
-    expected_vertex_basis_vector_grids = [
+    expected_vertex_unit_vector_grids = [
         np.array([
             [
                 [1., 0.], [0., 1.], [-1., 0.]
@@ -161,12 +161,12 @@ def test_polar_mesh():
             ]
         ])
     ]
-    actual_vertex_basis_vector_grids = mesh.basis_vector_grids(True)
+    actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
     assert np.allclose(
-        actual_vertex_basis_vector_grids,
-        expected_vertex_basis_vector_grids)
+        actual_vertex_unit_vector_grids,
+        expected_vertex_unit_vector_grids)
 
-    expected_cell_center_basis_vector_grids = [
+    expected_cell_center_unit_vector_grids = [
         np.array([
             [
                 [.70710678, .70710678], [-.70710678, .70710678]
@@ -184,10 +184,10 @@ def test_polar_mesh():
             ]
         ])
     ]
-    actual_cell_center_basis_vector_grids = mesh.basis_vector_grids(False)
+    actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
     assert np.allclose(
-        actual_cell_center_basis_vector_grids,
-        expected_cell_center_basis_vector_grids)
+        actual_cell_center_unit_vector_grids,
+        expected_cell_center_unit_vector_grids)
 
 
 def test_cylindrical_mesh_with_negative_r():
@@ -363,7 +363,7 @@ def test_cylindrical_mesh():
         actual_cartesian_cell_center_coordinate_grids,
         expected_cartesian_cell_center_coordinate_grids)
 
-    expected_vertex_basis_vector_grids = [
+    expected_vertex_unit_vector_grids = [
         np.array([
             [
                 [
@@ -470,12 +470,12 @@ def test_cylindrical_mesh():
             ]
         ])
     ]
-    actual_vertex_basis_vector_grids = mesh.basis_vector_grids(True)
+    actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
     assert np.allclose(
-        actual_vertex_basis_vector_grids,
-        expected_vertex_basis_vector_grids)
+        actual_vertex_unit_vector_grids,
+        expected_vertex_unit_vector_grids)
 
-    expected_cell_center_basis_vector_grids = [
+    expected_cell_center_unit_vector_grids = [
         np.array([
             [
                 [
@@ -531,10 +531,10 @@ def test_cylindrical_mesh():
             ]
         ])
     ]
-    actual_cell_center_basis_vector_grids = mesh.basis_vector_grids(False)
+    actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
     assert np.allclose(
-        actual_cell_center_basis_vector_grids,
-        expected_cell_center_basis_vector_grids)
+        actual_cell_center_unit_vector_grids,
+        expected_cell_center_unit_vector_grids)
 
 
 def test_spherical_mesh_with_negative_r():
@@ -724,7 +724,7 @@ def test_spherical_mesh():
         actual_cartesian_cell_center_coordinate_grids,
         expected_cartesian_cell_center_coordinate_grids)
 
-    expected_vertex_basis_vector_grids = [
+    expected_vertex_unit_vector_grids = [
         np.array([
             [
                 [
@@ -763,80 +763,80 @@ def test_spherical_mesh():
         np.array([
             [
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ],
                 [
-                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
+                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
                 ],
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ]
             ],
             [
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ],
                 [
-                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
+                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
                 ],
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ]
             ],
             [
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ],
                 [
-                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
+                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
                 ],
                 [
-                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
+                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
                 ]
             ]
         ]),
         np.array([
             [
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ],
                 [
-                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
+                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
                 ],
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ]
             ],
             [
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ],
                 [
-                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
+                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
                 ],
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ]
             ],
             [
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ],
                 [
-                    [0., -1., 0.], [0., -1., 0.], [0., -1., 0.]
+                    [-1., 0., 0.], [0., 0., -1.], [1., 0., 0.]
                 ],
                 [
-                    [0., 1., 0.], [0., 1., 0.], [0., 1., 0.]
+                    [1., 0., 0.], [0., 0., -1.], [-1., 0., 0.]
                 ]
             ]
         ])
     ]
-    actual_vertex_basis_vector_grids = mesh.basis_vector_grids(True)
+    actual_vertex_unit_vector_grids = mesh.unit_vector_grids(True)
     assert np.allclose(
-        actual_vertex_basis_vector_grids,
-        expected_vertex_basis_vector_grids)
+        actual_vertex_unit_vector_grids,
+        expected_vertex_unit_vector_grids)
 
-    expected_cell_center_basis_vector_grids = [
+    expected_cell_center_unit_vector_grids = [
         np.array([
             [
                 [
@@ -862,48 +862,99 @@ def test_spherical_mesh():
         np.array([
             [
                 [
-                    [0., .707106781, -.707106781],
-                    [0., -.707106781, -.707106781]
+                    [-1., 0., 0.], [-1., 0., 0.]
                 ],
                 [
-                    [0., -.707106781, -.707106781],
-                    [0., .707106781, -.707106781]
+                    [1., 0., 0.], [1., 0., 0.]
                 ]
             ],
             [
                 [
-                    [0., .707106781, -.707106781],
-                    [0., -.707106781, -.707106781]
+                    [-1., 0., 0.], [-1., 0., 0.]
                 ],
                 [
-                    [0., -.707106781, -.707106781],
-                    [0., .707106781, -.707106781]
+                    [1., 0., 0.], [1., 0., 0.]
                 ]
             ]
         ]),
         np.array([
             [
                 [
-                    [-1., 0., 0.], [-1., 0., 0.]
+                    [0., .707106781, -.707106781],
+                    [0., -.707106781, -.707106781]
                 ],
                 [
-                    [1., 0., 0.], [1., 0., 0.]
+                    [0., -.707106781, -.707106781],
+                    [0., .707106781, -.707106781]
                 ]
             ],
             [
                 [
-                    [-1., 0., 0.], [-1., 0., 0.]
+                    [0., .707106781, -.707106781],
+                    [0., -.707106781, -.707106781]
                 ],
                 [
-                    [1., 0., 0.], [1., 0., 0.]
+                    [0., -.707106781, -.707106781],
+                    [0., .707106781, -.707106781]
                 ]
             ]
         ])
     ]
-    actual_cell_center_basis_vector_grids = mesh.basis_vector_grids(False)
+    actual_cell_center_unit_vector_grids = mesh.unit_vector_grids(False)
     assert np.allclose(
-        actual_cell_center_basis_vector_grids,
-        expected_cell_center_basis_vector_grids)
+        actual_cell_center_unit_vector_grids,
+        expected_cell_center_unit_vector_grids)
+
+
+def test_unit_vectors_at():
+    cartesian_coordinates = [1., 2., 3.]
+    cartesian_unit_vectors = \
+        unit_vectors_at(cartesian_coordinates, CoordinateSystem.CARTESIAN)
+    assert np.allclose(
+        cartesian_unit_vectors[0],
+        [1., 0., 0.])
+    assert np.allclose(
+        cartesian_unit_vectors[1],
+        [0., 1., 0.])
+    assert np.allclose(
+        cartesian_unit_vectors[2],
+        [0., 0., 1.])
+
+    polar_coordinates = [2., np.pi]
+    polar_unit_vectors = \
+        unit_vectors_at(polar_coordinates, CoordinateSystem.POLAR)
+    assert np.allclose(
+        polar_unit_vectors[0],
+        [-1., 0.])
+    assert np.allclose(
+        polar_unit_vectors[1],
+        [0., -1.])
+
+    cylindrical_coordinates = [5., np.pi / 2., 3.]
+    cylindrical_unit_vectors = \
+        unit_vectors_at(cylindrical_coordinates, CoordinateSystem.CYLINDRICAL)
+    assert np.allclose(
+        cylindrical_unit_vectors[0],
+        [0., 1., 0.])
+    assert np.allclose(
+        cylindrical_unit_vectors[1],
+        [-1., 0., 0.])
+    assert np.allclose(
+        cylindrical_unit_vectors[2],
+        [0., 0., 1.])
+
+    spherical_coordinates = [5., np.pi / 2., np.pi / 2.]
+    spherical_unit_vectors = \
+        unit_vectors_at(spherical_coordinates, CoordinateSystem.SPHERICAL)
+    assert np.allclose(
+        spherical_unit_vectors[0],
+        [0., 1., 0.])
+    assert np.allclose(
+        spherical_unit_vectors[1],
+        [-1., 0., 0.])
+    assert np.allclose(
+        spherical_unit_vectors[2],
+        [0., 0., -1.])
 
 
 def test_to_cartesian_coordinates():

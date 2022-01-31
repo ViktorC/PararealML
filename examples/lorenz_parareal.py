@@ -1,4 +1,5 @@
 import numpy as np
+from mpi4py import MPI
 
 from pararealml import *
 from pararealml.operators.ode import *
@@ -14,4 +15,8 @@ g = ODEOperator('RK45', 1e-5)
 p = PararealOperator(f, g, .5)
 
 solution = p.solve(ivp)
-solution.plot('lorenz', only_first_process=True)
+
+if MPI.COMM_WORLD.rank == 0:
+    for i, plot in enumerate(solution.generate_plots()):
+        plot.save(f'lorenz_parareal_{i}').close()
+

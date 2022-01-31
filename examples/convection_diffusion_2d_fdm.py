@@ -6,10 +6,14 @@ from pararealml.operators.fdm import *
 diff_eq = ConvectionDiffusionEquation(2, [2., 1.])
 mesh = Mesh([(0., 50.), (0., 50.)], [.5, .5])
 bcs = [
-    (NeumannBoundaryCondition(
-        lambda x, t: np.zeros((len(x), 1)), is_static=True),
-     NeumannBoundaryCondition(
-         lambda x, t: np.zeros((len(x), 1)), is_static=True))
+    (
+        NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True
+        ),
+        NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True
+        )
+    )
 ] * 2
 cp = ConstrainedProblem(diff_eq, mesh, bcs)
 ic = GaussianInitialCondition(
@@ -18,8 +22,8 @@ ic = GaussianInitialCondition(
         (
             np.array([12.5, 12.5]),
             np.array([
-                [10., 0.],
-                [0., 10.]
+                [1., 0.],
+                [0., 1.]
             ])
         )
     ],
@@ -28,4 +32,7 @@ ic = GaussianInitialCondition(
 ivp = InitialValueProblem(cp, (0., 30.), ic)
 
 solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .01)
-solver.solve(ivp).plot('2d_convection_diffusion', n_images=20, three_d=True)
+solution = solver.solve(ivp)
+
+for plot in solution.generate_plots():
+    plot.show().close()

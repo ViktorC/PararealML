@@ -2235,7 +2235,7 @@ def test_3pcfdm_cylindrical_anti_laplacian_with_derivative_constraints():
 def test_3pcfdm_spherical_gradient():
     diff = ThreePointCentralDifferenceMethod()
     mesh = Mesh(
-        [(1., 5.), (0., 2 * np.pi), (np.pi, 2 * np.pi)],
+        [(1., 5.), (0., 2. * np.pi), (0., np.pi)],
         [2., np.pi, np.pi / 2.],
         CoordinateSystem.SPHERICAL)
     x_axis = 2

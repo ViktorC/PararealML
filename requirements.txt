@@ -4,7 +4,7 @@ pytest~=5.0.0
 coverage~=5.3
 numpy~=1.19.5
 scipy~=1.5.0
-matplotlib<3.3.0
+matplotlib~=3.5.1
 mpi4py~=3.1.1
 sympy~=1.6.2
 scikit-learn~=0.24.2

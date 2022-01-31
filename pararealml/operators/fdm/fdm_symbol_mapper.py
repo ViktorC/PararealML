@@ -140,7 +140,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
             arg: FDMSymbolMapArg,
             lhs_type: Lhs) -> np.ndarray:
         """
-        Evaluates the right hand side of the differential equation system
+        Evaluates the right-hand side of the differential equation system
         given the map argument and concatenates the resulting sequence of map
         value arrays along the last axis.
         """

@@ -1,7 +1,8 @@
 import numpy as np
+from mpi4py import MPI
 
 from pararealml import *
-from pararealml.operators.ode import *
+from pararealml.operators.fdm import *
 from pararealml.operators.parareal import *
 from pararealml.utils.time import mpi_time
 
@@ -14,20 +15,26 @@ diff_eq = NBodyGravitationalEquation(3, masses)
 cp = ConstrainedProblem(diff_eq)
 ic = ContinuousInitialCondition(
     cp,
-    lambda _: np.append(initial_positions, [initial_velocities]))
+    lambda _: np.append(initial_positions, [initial_velocities])
+)
 ivp = InitialValueProblem(cp, (0., 5.), ic)
 
-f = ODEOperator('RK45', 1e-6)
-g = ODEOperator('RK45', 1e-2)
+f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 1e-3)
+g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 1e-2)
 p = PararealOperator(f, g, .5)
 
 f_solution_name = 'n_body_fine'
 g_solution_name = 'n_body_coarse'
 p_solution_name = 'n_body_parareal'
 
-mpi_time(f_solution_name)(f.solve)(ivp)[0].plot(
-    f_solution_name, only_first_process=True)
-mpi_time(g_solution_name)(g.solve)(ivp)[0].plot(
-    g_solution_name, only_first_process=True)
-mpi_time(p_solution_name)(p.solve)(ivp)[0].plot(
-    p_solution_name, only_first_process=True)
+f_solution, _ = mpi_time(f_solution_name)(f.solve)(ivp)
+g_solution, _ = mpi_time(g_solution_name)(g.solve)(ivp)
+p_solution, _ = mpi_time(p_solution_name)(p.solve)(ivp)
+
+if MPI.COMM_WORLD.rank == 0:
+    for i, plot in enumerate(f_solution.generate_plots()):
+        plot.save(f'{f_solution_name}_{i}').close()
+    for i, plot in enumerate(g_solution.generate_plots()):
+        plot.save(f'{g_solution_name}_{i}').close()
+    for i, plot in enumerate(p_solution.generate_plots()):
+        plot.save(f'{p_solution_name}_{i}').close()

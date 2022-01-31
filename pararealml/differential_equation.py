@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from copy import copy
+from copy import copy, deepcopy
 from enum import Enum
 from typing import Optional, Sequence, Dict, List
 from typing import Tuple
@@ -136,7 +136,7 @@ class Symbols:
 
 class Lhs(Enum):
     """
-    An enumeration defining the types of the left hand sides of symbolic
+    An enumeration defining the types of the left-hand sides of symbolic
     equations making up systems of differential equations.
     """
     D_Y_OVER_D_T = 0,
@@ -154,8 +154,8 @@ class SymbolicEquationSystem:
             rhs: Sequence[Expr],
             lhs_types: Optional[Sequence[Lhs]] = None):
         """
-        :param rhs: the right hand side of the symbolic equation system
-        :param lhs_types: the types of the left hand side of the symbolic
+        :param rhs: the right-hand side of the symbolic equation system
+        :param lhs_types: the types of the left-hand side of the symbolic
         equation system
         """
         if len(rhs) < 1:
@@ -166,8 +166,8 @@ class SymbolicEquationSystem:
 
         if len(rhs) != len(lhs_types):
             raise ValueError(
-                f'length of right hand side ({len(rhs)}) must match length of '
-                f'left hand side ({len(lhs_types)})')
+                f'length of right-hand side ({len(rhs)}) must match length of '
+                f'left-hand side ({len(lhs_types)})')
 
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
@@ -180,23 +180,23 @@ class SymbolicEquationSystem:
     @property
     def rhs(self) -> Sequence[Expr]:
         """
-        The right hand side of the symbolic equation system.
+        The right-hand side of the symbolic equation system.
         """
         return copy(self._rhs)
 
     @property
     def lhs_types(self) -> Sequence[Lhs]:
         """
-        The types of the left hand side of the symbolic equation system.
+        The types of the left-hand side of the symbolic equation system.
         """
         return copy(self._lhs_types)
 
     def equation_indices_by_type(self, lhs_type: Lhs) -> Sequence[int]:
         """
         Returns a sequence of integers denoting the indices of all equations of
-        the equation system with the specified type of left hand side.
+        the equation system with the specified type of left-hand side.
 
-        :param lhs_type: the type of left hand side
+        :param lhs_type: the type of left-hand side
         :return: the sequence of indices
         """
         return copy(self._equation_indices_by_type[lhs_type])
@@ -207,10 +207,18 @@ class DifferentialEquation(ABC):
     A representation of a time-dependent differential equation.
     """
 
-    def __init__(self, x_dimension: int, y_dimension: int):
+    def __init__(
+            self,
+            x_dimension: int,
+            y_dimension: int,
+            all_vector_field_indices: Optional[Sequence[Sequence[int]]] = None
+    ):
         """
         :param x_dimension: the number spatial dimensions
         :param y_dimension: the number of unknown variables
+        :param all_vector_field_indices: an optional sequence of index
+            sequences denoting the components of vector fields the solution
+            contains
         """
         if x_dimension < 0:
             raise ValueError(
@@ -218,9 +226,21 @@ class DifferentialEquation(ABC):
         if y_dimension < 1:
             raise ValueError(
                 f'number of y dimensions ({y_dimension}) must be at least 1')
+        if all_vector_field_indices:
+            for indices in all_vector_field_indices:
+                if len(indices) != x_dimension:
+                    raise ValueError(
+                        f'length of vector field indices {indices} must match '
+                        f'x dimensions ({x_dimension})')
+                for index in indices:
+                    if not (0 <= index < y_dimension):
+                        raise ValueError(
+                            'all indices must be non-negative and less than '
+                            f'the number of y dimensions ({y_dimension})')
 
         self._x_dimension = x_dimension
         self._y_dimension = y_dimension
+        self._all_vector_field_indices = deepcopy(all_vector_field_indices)
 
         self._symbols = Symbols(x_dimension, y_dimension)
 
@@ -251,14 +271,22 @@ class DifferentialEquation(ABC):
         return self._symbols
 
     @property
+    def all_vector_field_indices(self) -> Optional[Sequence[Sequence[int]]]:
+        """
+         An optional sequence of index sequences denoting the components of
+         vector fields the solution contains.
+        """
+        return deepcopy(self._all_vector_field_indices)
+
+    @property
     @abstractmethod
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
         """
         A system of symbolic equations defining the differential equation
-        system. Every element of the right hand side of the returned system
+        system. Every element of the right-hand side of the returned system
         defines the first time derivative, the direct value, or the spatial
         Laplacian of the respective element of the vector-valued solution of
-        the differential equation system depending on the type of the left hand
+        the differential equation system depending on the type of the left-hand
         side of the equation.
         """
 
@@ -290,7 +318,7 @@ class DifferentialEquation(ABC):
             rhs_symbols = rhs_element.free_symbols
             if not rhs_symbols.issubset(all_symbols):
                 raise ValueError(
-                    'invalid symbol in right hand side symbols '
+                    'invalid symbol in right-hand side symbols '
                     f'({rhs_symbols}) of equation {i}')
 
         d_y_over_d_t_indices = \
@@ -298,12 +326,12 @@ class DifferentialEquation(ABC):
         if self._x_dimension:
             if len(d_y_over_d_t_indices) == 0:
                 raise ValueError(
-                    'at least one equation\'s left hand side must be of type '
+                    'at least one equation\'s left-hand side must be of type '
                     'D_Y_OVER_D_T')
         elif len(d_y_over_d_t_indices) != self._y_dimension:
             raise ValueError(
                 'ordinary differential equation systems can only contain '
-                'equations with D_Y_OVER_D_T type left hand sides')
+                'equations with D_Y_OVER_D_T type left-hand sides')
 
 
 class PopulationGrowthEquation(DifferentialEquation):
@@ -634,7 +662,8 @@ class BurgerEquation(DifferentialEquation):
 
         self._re = re
 
-        super(BurgerEquation, self).__init__(x_dimension, x_dimension)
+        super(BurgerEquation, self).__init__(
+            x_dimension, x_dimension, [tuple(range(x_dimension))])
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
@@ -671,7 +700,7 @@ class ShallowWaterEquation(DifferentialEquation):
         self._f = f
         self._g = g
 
-        super(ShallowWaterEquation, self).__init__(2, 3)
+        super(ShallowWaterEquation, self).__init__(2, 3, [(1, 2)])
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:
@@ -710,7 +739,7 @@ class NavierStokesEquation(DifferentialEquation):
         :param re: the Reynolds number
         """
         self._re = re
-        super(NavierStokesEquation, self).__init__(2, 4)
+        super(NavierStokesEquation, self).__init__(2, 4, [(2, 3)])
 
     @property
     def symbolic_equation_system(self) -> SymbolicEquationSystem:

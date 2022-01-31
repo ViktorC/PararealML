@@ -36,6 +36,18 @@ from pararealml.mesh import CoordinateSystem
 from pararealml.mesh import Mesh
 from pararealml.mesh import from_cartesian_coordinates
 from pararealml.mesh import to_cartesian_coordinates
+from pararealml.mesh import unit_vectors_at
+from pararealml.plot import Plot
+from pararealml.plot import AnimatedPlot
+from pararealml.plot import TimePlot
+from pararealml.plot import PhaseSpacePlot
+from pararealml.plot import NBodyPlot
+from pararealml.plot import SpaceLinePlot
+from pararealml.plot import ContourPlot
+from pararealml.plot import SurfacePlot
+from pararealml.plot import ScatterPlot
+from pararealml.plot import StreamPlot
+from pararealml.plot import QuiverPlot
 from pararealml.solution import Solution
 
 __all__ = [
@@ -75,5 +87,17 @@ __all__ = [
     'Mesh',
     'to_cartesian_coordinates',
     'from_cartesian_coordinates',
-    'Solution',
+    'unit_vectors_at',
+    'Plot',
+    'AnimatedPlot',
+    'TimePlot',
+    'PhaseSpacePlot',
+    'NBodyPlot',
+    'SpaceLinePlot',
+    'ContourPlot',
+    'SurfacePlot',
+    'ScatterPlot',
+    'StreamPlot',
+    'QuiverPlot',
+    'Solution'
 ]

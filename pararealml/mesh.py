@@ -58,11 +58,11 @@ class Mesh:
                 raise ValueError(
                     f'lower bound of r interval ({x_intervals[0][0]}) '
                     'must be non-negative')
-            if x_intervals[1][1] - x_intervals[1][0] > 2 * np.pi:
+            if x_intervals[1][0] < 0. or x_intervals[1][1] > 2. * np.pi:
                 raise ValueError(
-                    f'difference between upper ({x_intervals[1][1]}) '
-                    f'and lower ({x_intervals[1][0]}) bounds of theta '
-                    'interval cannot be greater than 2 pi')
+                    f'lower bound of theta ({x_intervals[1][0]}) must be '
+                    f'non-negative and upper bound ({x_intervals[1][1]}) must '
+                    f'be no more than two Pi')
             if coordinate_system_type == CoordinateSystem.POLAR:
                 if self._dimensions != 2:
                     raise ValueError(
@@ -73,12 +73,12 @@ class Mesh:
                     raise ValueError(
                         f'number of dimensions ({self._dimensions}) of'
                         f'cylindrical and spherical meshes must be 3')
-                if coordinate_system_type == CoordinateSystem.SPHERICAL \
-                        and x_intervals[2][1] - x_intervals[2][0] > np.pi:
+                if coordinate_system_type == CoordinateSystem.SPHERICAL and \
+                        (x_intervals[2][0] < 0. or x_intervals[2][1] > np.pi):
                     raise ValueError(
-                        f'difference between upper ({x_intervals[2][1]}) and '
-                        f'lower ({x_intervals[2][0]}) bounds of phi interval '
-                        f'cannot be greater than pi')
+                        f'lower bound of phi ({x_intervals[2][0]}) must be '
+                        f'non-negative and upper bound ({x_intervals[2][1]}) '
+                        f'must be no more than Pi')
 
         self._vertices_shape = self._create_shape(d_x, True)
         self._cells_shape = self._create_shape(d_x, False)
@@ -239,73 +239,24 @@ class Mesh:
                 index_coordinates.reshape((-1, self._dimensions))
         return index_coordinates
 
-    def basis_vector_grids(
+    def unit_vector_grids(
             self,
             vertex_oriented: bool) -> Tuple[np.ndarray, ...]:
         """
-        Returns a tuple of orthonormal basis vector grids such that each
-        element of this tuple is an array containing the Cartesian coordinates
-        of one of the basis vectors of the mesh's coordinate system at each
-        vertex or cell center of the mesh.
+        Returns a tuple of orthonormal unit vector grids such that each element
+        of this tuple is an array containing the Cartesian coordinates of one
+        of the unit vectors of the mesh's coordinate system at each vertex or
+        cell center of the mesh.
 
-        :param vertex_oriented: whether to return the basis vectors at the
+        :param vertex_oriented: whether to return the unit vectors at the
             vertices or the cell centers of the mesh
-        :return: a tuple of arrays containing the basis vector grids
+        :return: a tuple of arrays containing the unit vector grids
         """
-        unit_vector_grids = []
-
-        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
-            for i in range(self._dimensions):
-                unit_vector_grid = np.zeros(
-                    self.shape(vertex_oriented) + (self._dimensions,))
-                unit_vector_grid[..., i] = 1.
-                unit_vector_grids.append(unit_vector_grid)
-
-        elif self._coordinate_system_type == CoordinateSystem.POLAR:
-            r, theta = self.coordinate_grids(vertex_oriented)
-            sin_theta = np.sin(theta)
-            cos_theta = np.cos(theta)
-            unit_vector_grids.append(
-                np.stack((cos_theta, sin_theta), axis=-1))
-            unit_vector_grids.append(
-                np.stack((-sin_theta, cos_theta), axis=-1))
-
-        elif self._coordinate_system_type == CoordinateSystem.CYLINDRICAL:
-            r, theta, z = self.coordinate_grids(vertex_oriented)
-            zero = np.zeros_like(z)
-            one = np.ones_like(z)
-            sin_theta = np.sin(theta)
-            cos_theta = np.cos(theta)
-            unit_vector_grids.append(
-                np.stack((cos_theta, sin_theta, zero), axis=-1))
-            unit_vector_grids.append(
-                np.stack((-sin_theta, cos_theta, zero), axis=-1))
-            unit_vector_grids.append(np.stack((zero, zero, one), axis=-1))
-
-        elif self._coordinate_system_type == CoordinateSystem.SPHERICAL:
-            r, theta, phi = self.coordinate_grids(vertex_oriented)
-            zero = np.zeros_like(r)
-            sin_theta = np.sin(theta)
-            cos_theta = np.cos(theta)
-            sin_phi = np.sin(phi)
-            cos_phi = np.cos(phi)
-            unit_vector_grids.append(
-                np.stack(
-                    (sin_phi * cos_theta, sin_phi * sin_theta, cos_phi),
-                    axis=-1))
-            unit_vector_grids.append(
-                np.stack(
-                    (cos_phi * cos_theta, cos_phi * sin_theta, -sin_phi),
-                    axis=-1))
-            unit_vector_grids.append(
-                np.stack((-sin_theta, cos_theta, zero), axis=-1))
-
-        else:
-            raise ValueError(
-                'unsupported coordinate system type '
-                f'({self._coordinate_system_type.name})')
-
-        return tuple(unit_vector_grids)
+        coordinate_grids = self.coordinate_grids(vertex_oriented)
+        return tuple([
+            np.stack(unit_vector_grid, axis=-1) for unit_vector_grid
+            in unit_vectors_at(coordinate_grids, self._coordinate_system_type)
+        ])
 
     def _create_shape(
             self,
@@ -380,6 +331,69 @@ class Mesh:
 Coordinates = TypeVar('Coordinates', Sequence[float], Sequence[np.ndarray])
 
 
+def unit_vectors_at(
+        x: Coordinates,
+        coordinate_system_type: CoordinateSystem) -> Sequence[Coordinates]:
+    """
+    Calculates the unit vectors of the specified coordinate system at the
+    provided spatial coordinates.
+
+    Each element of the returned sequence represents one unit vector in
+    Cartesian coordinates.
+
+    :param x: the spatial coordinates
+    :param coordinate_system_type: the coordinate system to compute the unit
+        vectors in
+    :return: the sequence of unit vectors at the provided spatial coordinates
+    """
+    unit_vectors = []
+
+    if coordinate_system_type == CoordinateSystem.CARTESIAN:
+        for i in range(len(x)):
+            zero = np.zeros_like(x[i])
+            one = np.ones_like(x[i])
+            unit_vector = [zero] * len(x)
+            unit_vector[i] = one
+            unit_vectors.append(unit_vector)
+
+    elif coordinate_system_type == CoordinateSystem.POLAR:
+        theta = x[1]
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        unit_vectors.append([cos_theta, sin_theta])
+        unit_vectors.append([-sin_theta, cos_theta])
+
+    elif coordinate_system_type == CoordinateSystem.CYLINDRICAL:
+        theta = x[1]
+        zero = np.zeros_like(theta)
+        one = np.ones_like(theta)
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        unit_vectors.append([cos_theta, sin_theta, zero])
+        unit_vectors.append([-sin_theta, cos_theta, zero])
+        unit_vectors.append([zero, zero, one])
+
+    elif coordinate_system_type == CoordinateSystem.SPHERICAL:
+        theta, phi = x[1], x[2]
+        zero = np.zeros_like(theta)
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        sin_phi = np.sin(phi)
+        cos_phi = np.cos(phi)
+        unit_vectors.append(
+            [sin_phi * cos_theta, sin_phi * sin_theta, cos_phi])
+        unit_vectors.append([-sin_theta, cos_theta, zero])
+        unit_vectors.append(
+            [cos_phi * cos_theta, cos_phi * sin_theta, -sin_phi])
+
+    else:
+        raise ValueError(
+            'unsupported coordinate system type '
+            f'({coordinate_system_type.name})')
+
+    return unit_vectors
+
+
 def to_cartesian_coordinates(
         x: Coordinates,
         from_coordinate_system_type: CoordinateSystem) -> Coordinates:
@@ -394,16 +408,20 @@ def to_cartesian_coordinates(
     """
     if from_coordinate_system_type == CoordinateSystem.CARTESIAN:
         return x
+
     elif from_coordinate_system_type == CoordinateSystem.POLAR:
         return [x[0] * np.cos(x[1]), x[0] * np.sin(x[1])]
+
     elif from_coordinate_system_type == CoordinateSystem.CYLINDRICAL:
         return [x[0] * np.cos(x[1]), x[0] * np.sin(x[1]), x[2]]
+
     elif from_coordinate_system_type == CoordinateSystem.SPHERICAL:
         return [
             x[0] * np.sin(x[2]) * np.cos(x[1]),
             x[0] * np.sin(x[2]) * np.sin(x[1]),
             x[0] * np.cos(x[2])
         ]
+
     else:
         raise ValueError(
             'unsupported coordinate system type '
@@ -424,16 +442,20 @@ def from_cartesian_coordinates(
     """
     if to_coordinate_system_type == CoordinateSystem.CARTESIAN:
         return x
+
     elif to_coordinate_system_type == CoordinateSystem.POLAR:
         return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan2(x[1], x[0])]
+
     elif to_coordinate_system_type == CoordinateSystem.CYLINDRICAL:
         return [np.sqrt(x[0] ** 2 + x[1] ** 2), np.arctan2(x[1], x[0]), x[2]]
+
     elif to_coordinate_system_type == CoordinateSystem.SPHERICAL:
         return [
             np.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2),
             np.arctan2(x[1], x[0]),
             np.arctan2(np.sqrt(x[0] ** 2 + x[1] ** 2), x[2])
         ]
+
     else:
         raise ValueError(
             'unsupported coordinate system type '

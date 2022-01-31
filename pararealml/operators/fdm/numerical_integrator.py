@@ -156,7 +156,7 @@ class ImplicitMethod(NumericalIntegrator, ABC):
         Solves the implicit equation for y at the next time step.
 
         :param y_next_residual_function: the difference of the left and the
-            right hand sides of the equation as a function of y at the next
+            right-hand sides of the equation as a function of y at the next
             time step
         :param y_next_init: the initial guess for the value of y at the next
             time step

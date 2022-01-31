@@ -135,7 +135,7 @@ class NumericalDifferentiator(ABC):
         self._verify_input_shape_matches_mesh(y, mesh)
         if not (0 <= x_axis < mesh.dimensions):
             raise ValueError(
-                f'x axis ({x_axis}) must be non-negative and less than number '
+                f'x-axis ({x_axis}) must be non-negative and less than number '
                 f'of x dimensions ({mesh.dimensions})')
 
         derivative_boundary_constraints = \
@@ -200,7 +200,7 @@ class NumericalDifferentiator(ABC):
         if not (0 <= x_axis1 < mesh.dimensions) \
                 or not (0 <= x_axis2 < mesh.dimensions):
             raise ValueError(
-                f'both first x axis ({x_axis1}) and second x axis ({x_axis2}) '
+                f'both first x-axis ({x_axis1}) and second x-axis ({x_axis2}) '
                 'must be non-negative and less than number of x dimensions '
                 f'({mesh.dimensions})')
 
@@ -975,7 +975,7 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
             Sequence[Optional[BoundaryConstraintPair]]) -> np.ndarray:
         if y.shape[x_axis] <= 2:
             raise ValueError(
-                f'y must contain at least 3 points along x axis ({x_axis})')
+                f'y must contain at least 3 points along x-axis ({x_axis})')
 
         slicer: Slicer = [slice(None)] * y.ndim
         halo = np.zeros(y.shape[:x_axis] + (1,) + y.shape[x_axis + 1:])
@@ -1032,7 +1032,7 @@ class ThreePointCentralDifferenceMethod(NumericalDifferentiator):
 
         if y.shape[x_axis1] <= 2:
             raise ValueError(
-                f'y must contain at least 3 points along x axis ({x_axis1})')
+                f'y must contain at least 3 points along x-axis ({x_axis1})')
 
         slicer: Slicer = [slice(None)] * y.ndim
         y_extended = self._add_halos_along_axis(

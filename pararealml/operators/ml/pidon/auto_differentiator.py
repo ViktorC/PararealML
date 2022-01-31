@@ -498,14 +498,14 @@ class AutoDifferentiator(tf.GradientTape):
         if isinstance(x_axis, int):
             if not (0 <= x_axis < x.shape[-1]):
                 raise ValueError(
-                    f'x axis ({x_axis}) must be non-negative and less than '
+                    f'x-axis ({x_axis}) must be non-negative and less than '
                     f'number of x dimensions ({x.shape[-1]})')
         elif isinstance(x_axis, tf.Tensor):
             if len(x_axis.shape) != 1:
-                raise ValueError('x axis must be a 1 dimensional array')
+                raise ValueError('x-axis must be a 1 dimensional array')
             if x_axis.shape[0] != x.shape[0]:
                 raise ValueError(
-                    f'length of x axis ({x_axis.shape[0]}) must match number '
+                    f'length of x-axis ({x_axis.shape[0]}) must match number '
                     f'of x instances ({x.shape[0]})')
 
         derivatives = self.batch_jacobian(y, x)

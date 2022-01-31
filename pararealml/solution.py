@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, Any, NamedTuple, List
+from typing import Optional, Sequence, NamedTuple, List, Generator, Set
 
 import numpy as np
-from mpi4py import MPI
 from scipy.interpolate import interpn
 
-from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.constraint import apply_constraints_along_last_axis
+from pararealml.differential_equation import NBodyGravitationalEquation
+from pararealml.initial_value_problem import InitialValueProblem
+from pararealml.plot import Plot, TimePlot, PhaseSpacePlot, NBodyPlot, \
+    SpaceLinePlot, ContourPlot, SurfacePlot, ScatterPlot, StreamPlot, \
+    QuiverPlot
 
 
 class Solution:
@@ -229,25 +232,67 @@ class Solution:
         diff_arrays = [np.array(diff) for diff in all_diffs]
         return Diffs(matching_time_point_array, diff_arrays)
 
-    def plot(
-            self,
-            solution_name: str,
-            only_first_process: bool = False,
-            **kwargs: Any):
+    def generate_plots(self, **kwargs) -> Generator[Plot, None, None]:
         """
-        Plots the solution and saves it to a file.
+        Returns a generator for generating all applicable plots for the
+        solution.
 
-        :param solution_name: the name of the solution; this is included in the
-            file name of the saved plot
-        :param only_first_process: if only the first (rank 0) process should
-            generate a plot
-        :param kwargs: plotting configuration;
-            see :func:`~src.utils.plot.plot_ivp_solution`
+        :param kwargs: arguments to pass onto the generated plot objects
+        :return: a generator for generating all plots
         """
-        from pararealml.utils.plot import plot_ivp_solution
+        cp = self._ivp.constrained_problem
+        diff_eq = cp.differential_equation
 
-        if (not only_first_process) or MPI.COMM_WORLD.rank == 0:
-            plot_ivp_solution(self, solution_name, **kwargs)
+        if diff_eq.x_dimension > 3:
+            return
+
+        if diff_eq.x_dimension == 0:
+            if isinstance(diff_eq, NBodyGravitationalEquation):
+                yield NBodyPlot(self._discrete_y, diff_eq, **kwargs)
+            else:
+                yield TimePlot(self._discrete_y, self._t_coordinates, **kwargs)
+                if 2 <= diff_eq.y_dimension <= 3:
+                    yield PhaseSpacePlot(self._discrete_y, **kwargs)
+
+        else:
+            vector_index_set: Set[int] = set()
+            if diff_eq.x_dimension > 1:
+                all_vector_field_indices = diff_eq.all_vector_field_indices
+                if all_vector_field_indices is not None:
+                    for indices in all_vector_field_indices:
+                        vector_index_set.update(indices)
+                        vector_field = self._discrete_y[..., indices]
+                        yield QuiverPlot(
+                            vector_field,
+                            cp.mesh,
+                            self._vertex_oriented,
+                            **kwargs)
+                        if diff_eq.x_dimension == 2:
+                            yield StreamPlot(
+                                vector_field,
+                                cp.mesh,
+                                self._vertex_oriented,
+                                **kwargs)
+
+            for i in range(diff_eq.y_dimension):
+                if i in vector_index_set:
+                    continue
+
+                scalar_field = self._discrete_y[..., i:i + 1]
+
+                if diff_eq.x_dimension == 1:
+                    yield SpaceLinePlot(
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+
+                elif diff_eq.x_dimension == 2:
+                    yield ContourPlot(
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+                    yield SurfacePlot(
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+
+                else:
+                    yield ScatterPlot(
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
 
 
 class Diffs(NamedTuple):

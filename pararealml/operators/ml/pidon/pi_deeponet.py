@@ -426,7 +426,7 @@ class PIDeepONet(DeepONet):
     def _create_diff_eq_lhs_functions(
             self) -> Sequence[PIDONSymbolMapFunction]:
         """
-        Creates a sequence of symbol map functions representing the left hand
+        Creates a sequence of symbol map functions representing the left-hand
         side of the differential equation system.
         """
         diff_eq = self._cp.differential_equation
@@ -452,6 +452,6 @@ class PIDeepONet(DeepONet):
 
             else:
                 raise ValueError(
-                    f'unsupported left hand side type ({lhs_type.name})')
+                    f'unsupported left-hand side type ({lhs_type.name})')
 
         return lhs_functions

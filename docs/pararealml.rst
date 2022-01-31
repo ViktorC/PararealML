@@ -77,6 +77,14 @@ pararealml.operator module
    :undoc-members:
    :show-inheritance:
 
+pararealml.plot module
+----------------------
+
+.. automodule:: pararealml.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pararealml.solution module
 --------------------------
 

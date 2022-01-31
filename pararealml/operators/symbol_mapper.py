@@ -67,7 +67,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         numerical value.
 
         :param y_ind: the component of y whose gradient to return a map for
-        :param x_axis: the x axis denoting the element of the gradient to
+        :param x_axis: the x-axis denoting the element of the gradient to
             return a map for
         :return: the mapper function for the gradient of y
         """
@@ -83,9 +83,9 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         numerical value.
 
         :param y_ind: the component of y whose Hessian to return a map for
-        :param x_axis1: the first x axis denoting the element of the gradient
+        :param x_axis1: the first x-axis denoting the element of the gradient
             to return a map for
-        :param x_axis2: the second x axis denoting the element of the gradient
+        :param x_axis2: the second x-axis denoting the element of the gradient
             to return a map for
         :return: the mapper function for the Hessian of y
         """
@@ -206,12 +206,12 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
             indices: Sequence[int]
     ) -> Callable[[SymbolMapArg], Sequence[SymbolMapValue]]:
         """
-        Creates a function for evaluating the right hand sides of the equations
+        Creates a function for evaluating the right-hand sides of the equations
         denoted by the provided indices.
 
         :param indices: the indices of the equations within the differential
             equation system whose evaluation function is to be created
-        :return: a function that returns the numerical value of the right hand
+        :return: a function that returns the numerical value of the right-hand
             sides given a substitution argument
         """
         rhs = self._diff_eq.symbolic_equation_system.rhs
@@ -237,15 +237,15 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
             arg: SymbolMapArg,
             lhs_type: Optional[Lhs] = None) -> Sequence[SymbolMapValue]:
         """
-        Evaluates the right hand side of the differential equation system
+        Evaluates the right-hand side of the differential equation system
         given the map argument.
 
-        :param arg: the map argument that the numerical values of the right
-            hand sides depend on
-        :param lhs_type: the left hand type of the equations whose right hand
+        :param arg: the map argument that the numerical values of the
+            right-hand sides depend on
+        :param lhs_type: the left-hand type of the equations whose right-hand
             sides are to be evaluated; if None, the whole differential equation
-            system's right hand side is evaluated
-        :return: the numerical value of the right hand side of the differential
+            system's right-hand side is evaluated
+        :return: the numerical value of the right-hand side of the differential
             equation as a sequence of map values where each element corresponds
             to an equation within the system
         """
