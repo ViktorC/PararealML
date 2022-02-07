@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Optional
+from typing import Callable, Sequence, Optional, Union
 
 import numpy as np
 from scipy.optimize import newton
@@ -21,7 +21,7 @@ class NumericalIntegrator(ABC):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         """
         Estimates the value of y(t + d_t).
@@ -51,7 +51,7 @@ class ForwardEulerMethod(NumericalIntegrator):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         y_next_constraints = y_constraint_function(t + d_t)
 
@@ -73,7 +73,7 @@ class ExplicitMidpointMethod(NumericalIntegrator):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         half_d_t = d_t / 2.
         y_half_next_constraints = y_constraint_function(t + half_d_t)
@@ -100,7 +100,7 @@ class RK4(NumericalIntegrator):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         half_d_t = d_t / 2.
         y_half_next_constraints = y_constraint_function(t + half_d_t)
@@ -191,7 +191,7 @@ class BackwardEulerMethod(ImplicitMethod):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         t_next = t + d_t
         y_next_constraints = y_constraint_function(t_next)
@@ -242,7 +242,7 @@ class CrankNicolsonMethod(ImplicitMethod):
             d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
             y_constraint_function: Callable[
                 [Optional[float]],
-                Optional[Sequence[Constraint]]
+                Optional[Union[Sequence[Constraint], np.ndarray]]
             ]) -> np.ndarray:
         t_next = t + d_t
         forward_update = d_t * d_y_over_d_t(t, y)

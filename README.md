@@ -1,4 +1,4 @@
-# PararealML [![Build Status](https://travis-ci.com/ViktorC/PararealML.svg?branch=master)](https://app.travis-ci.com/github/ViktorC/PararealML) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=net.viktorc%3Apararealml&metric=alert_status)](https://sonarcloud.io/dashboard?id=net.viktorc%3Apararealml) [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pararealml.readthedocs.io/en/latest/index.html) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+# PararealML [![Build Status](https://github.com/ViktorC/PararealML/actions/workflows/build.yml/badge.svg)](https://github.com/ViktorC/PararealML/actions/workflows/build.yml) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=net.viktorc%3Apararealml&metric=alert_status)](https://sonarcloud.io/dashboard?id=net.viktorc%3Apararealml) [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pararealml.readthedocs.io/en/latest/index.html) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 PararealML is a differential equation solver library featuring a [Parareal](https://en.wikipedia.org/wiki/Parareal) framework based on a unified interface for initial value problems and various solvers including a number of machine learning accelerated ones. The library's main purpose is to provide a toolset to investigate the properties of the Parareal algorithm, especially when using machine learning accelerated coarse operators, across various problems. The library's implementation of the Parareal algorithm uses [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) via [mpi4py](https://mpi4py.readthedocs.io/en/stable/).
 
@@ -101,15 +101,7 @@ Visualizing the solutions of differential equations is supported by PararealML t
 The [examples](https://git.ecdf.ed.ac.uk/msc-19-20/s1984842/tree/master/code/python/examples) folder contains a range of different examples of using the library for solving various differential equations both in serial and parallel. The scripts also include examples of using machine learning operators.
 
 ## Setup
-To use the Parareal operator, an implementation of the MPI standard must be installed (e.g. [MPICH](https://www.mpich.org/)). This can be easily done using [Anaconda](https://www.anaconda.com/). If an MPI implementation is already installed and available on the system, you can skip to step 6 of the setup guide.
- 1. make sure you have a working Anaconda installation (see the [guide](https://docs.anaconda.com/anaconda/install/))
- 1. `conda create -n {environment_name} python={python_version}` - replace `{environment_name}` with the name of your environment and replace `{python_version}` with any version number greater than or equal to `3.8`
- 1. `conda activate {environment_name}`
- 1. `conda install -c conda-forge mpi`
- 1. `conda install -c conda-forge mpi4py`
- 1. `make install`
- 
- On Windows, step 4 does not apply. Instead, Microsoft MPI must be installed and added to the PATH manually.
+To use the Parareal operator, an implementation of the MPI standard must be installed and the `mpicc` program must be on the search path as per the [installation guide](https://mpi4py.readthedocs.io/en/stable/install.html#using-pip) of mpi4py. With that set up, the dependencies of the library may be installed by running `make install`.
 
 ## Testing
 To perform linting, execute `make lint`.

@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, NamedTuple
+from typing import Callable, Sequence, NamedTuple, Union
 
 import numpy as np
 
@@ -76,7 +76,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     def y_divergence_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool) -> FDMSymbolMapFunction:
+            indices_contiguous: Union[bool, np.bool_]) -> FDMSymbolMapFunction:
         if indices_contiguous:
             return lambda arg: self._differentiator.divergence(
                 arg.y[..., y_indices[0]:y_indices[-1] + 1],
@@ -92,7 +92,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     def y_curl_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             curl_ind: int) -> FDMSymbolMapFunction:
         if indices_contiguous:
             return lambda arg: self._differentiator.curl(
@@ -119,7 +119,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     def y_vector_laplacian_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             vector_laplacian_ind: int) -> FDMSymbolMapFunction:
         if indices_contiguous:
             return lambda arg: self._differentiator.vector_laplacian(

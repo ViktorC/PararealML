@@ -87,8 +87,8 @@ class ConstrainedProblem:
             self._boundary_conditions = None
             self._y_vertices_shape = self._y_cells_shape = diff_eq.y_dimension,
 
-            self._are_all_bcs_static = False
-            self._are_there_bcs_on_y = False
+            self._are_all_bcs_static = np.bool_(False)
+            self._are_there_bcs_on_y = np.bool_(False)
 
             self._boundary_vertex_constraints = None
             self._boundary_cell_constraints = None
@@ -134,14 +134,14 @@ class ConstrainedProblem:
         return self._y_cells_shape
 
     @property
-    def are_all_boundary_conditions_static(self) -> bool:
+    def are_all_boundary_conditions_static(self) -> np.bool_:
         """
         Whether all boundary conditions of the constrained problem are static.
         """
         return self._are_all_bcs_static
 
     @property
-    def are_there_boundary_conditions_on_y(self) -> bool:
+    def are_there_boundary_conditions_on_y(self) -> np.bool_:
         """
         Whether any of the boundary conditions constrain the value of y. For
         example if all the boundary conditions are Neumann conditions, the

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional
+from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional, Union
 
 import numpy as np
 import sympy as sp
@@ -94,7 +94,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
     def y_divergence_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool) -> SymbolMapFunction:
+            indices_contiguous: Union[bool, np.bool_]) -> SymbolMapFunction:
         """
         Returns a function for mapping the divergence of a set of components of
         y to a numerical value.
@@ -109,7 +109,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
     def y_curl_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             curl_ind: int) -> SymbolMapFunction:
         """
         Returns a function for mapping the curl of a set of components of y to
@@ -135,7 +135,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
     def y_vector_laplacian_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             vector_laplacian_ind: int) -> SymbolMapFunction:
         """
         Returns a function for mapping the vector Laplacian of a set of

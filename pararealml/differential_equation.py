@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Optional, Sequence, Dict, List
+from typing import Optional, Sequence, Dict, List, Union
 from typing import Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 from sympy import symarray, Expr, Symbol
 
 
@@ -151,7 +152,7 @@ class SymbolicEquationSystem:
 
     def __init__(
             self,
-            rhs: Sequence[Expr],
+            rhs: Union[Sequence[Expr], NDArray[Expr]],
             lhs_types: Optional[Sequence[Lhs]] = None):
         """
         :param rhs: the right-hand side of the symbolic equation system
@@ -178,7 +179,7 @@ class SymbolicEquationSystem:
             self._equation_indices_by_type[lhs_type].append(i)
 
     @property
-    def rhs(self) -> Sequence[Expr]:
+    def rhs(self) -> Union[Sequence[Expr], NDArray[Expr]]:
         """
         The right-hand side of the symbolic equation system.
         """

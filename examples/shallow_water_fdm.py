@@ -37,5 +37,5 @@ ivp = InitialValueProblem(cp, (0., 20.), ic)
 solver = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .0025)
 solution = solver.solve(ivp)
 
-for i, plot in enumerate(solution.generate_plots(color_map=cm.ocean)):
-    plot.save(f'shallow_water_{i}').show().close()
+for plot in solution.generate_plots(color_map=cm.ocean):
+    plot.show().close()
