@@ -466,8 +466,8 @@ def test_pidon_operator_on_spherical_pde():
 
     diff_eq = DiffusionEquation(3)
     mesh = Mesh(
-        [(1., 11.), (0., 2 * np.pi), (0., np.pi)],
-        [2., np.pi / 5., np.pi / 2],
+        [(1., 11.), (0., 2 * np.pi), (.25 * np.pi, .75 * np.pi)],
+        [2., np.pi / 5., np.pi / 4],
         CoordinateSystem.SPHERICAL)
     bcs = [
         (DirichletBoundaryCondition(

@@ -231,7 +231,7 @@ def test_fdm_operator_on_cylindrical_pde():
 def test_fdm_operator_on_spherical_pde():
     diff_eq = DiffusionEquation(3)
     mesh = Mesh(
-        [(1., 11.), (0., 2. * np.pi), (0., np.pi)],
+        [(1., 11.), (0., 2. * np.pi), (.1 * np.pi, .9 * np.pi)],
         [2., np.pi / 5., np.pi / 5],
         CoordinateSystem.SPHERICAL)
     bcs = [
@@ -248,8 +248,8 @@ def test_fdm_operator_on_spherical_pde():
 
     assert solution.vertex_oriented
     assert solution.d_t == .1
-    assert solution.discrete_y().shape == (50, 6, 11, 6, 1)
-    assert solution.discrete_y(False).shape == (50, 5, 10, 5, 1)
+    assert solution.discrete_y().shape == (50, 6, 11, 5, 1)
+    assert solution.discrete_y(False).shape == (50, 5, 10, 4, 1)
 
 
 def test_fdm_operator_on_pde_with_dynamic_boundary_conditions():
