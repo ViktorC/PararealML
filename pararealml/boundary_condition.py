@@ -226,6 +226,6 @@ def vectorize_bc_function(
         values = []
         for i in range(len(x)):
             values.append(bc_function(x[i], t))
-        return np.array(values, dtype=np.float)
+        return np.array(values, dtype=float)
 
     return vectorized_bc_function

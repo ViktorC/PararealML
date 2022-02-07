@@ -93,7 +93,8 @@ class Constraint:
 
 
 def apply_constraints_along_last_axis(
-        constraints: Optional[Sequence[Optional[Constraint]]],
+        constraints:
+        Optional[Union[Sequence[Optional[Constraint]], np.ndarray]],
         array: np.ndarray) -> np.ndarray:
     """
     Applies the provided constraints to the array in-place and returns

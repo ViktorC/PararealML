@@ -1,5 +1,6 @@
-from typing import Callable, Sequence, NamedTuple, Optional
+from typing import Callable, Sequence, NamedTuple, Optional, Union
 
+import numpy as np
 import tensorflow as tf
 
 from pararealml.constrained_problem import ConstrainedProblem
@@ -69,7 +70,8 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
     def y_divergence_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool) -> PIDONSymbolMapFunction:
+            indices_contiguous: Union[bool, np.bool_]
+    ) -> PIDONSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_divergence(
             arg.x,
             arg.y_hat[:, y_indices[0]:y_indices[-1] + 1]
@@ -79,7 +81,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
     def y_curl_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             curl_ind: int) -> PIDONSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_curl(
             arg.x,
@@ -99,7 +101,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
     def y_vector_laplacian_map_function(
             self,
             y_indices: Sequence[int],
-            indices_contiguous: bool,
+            indices_contiguous: Union[bool, np.bool_],
             vector_laplacian_ind: int) -> PIDONSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_vector_laplacian(
             arg.x,

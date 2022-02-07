@@ -82,8 +82,10 @@ class UniformRandomCollocationPointSampler(CollocationPointSampler):
 
         t = np.random.uniform(*t_interval, (n_points, 1))
         if x_intervals is not None:
+            x_lower_bounds, x_upper_bounds = zip(*x_intervals)
             x = np.random.uniform(
-                *zip(*x_intervals),
+                x_lower_bounds,
+                x_upper_bounds,
                 (n_points, len(x_intervals)))
         else:
             x = None

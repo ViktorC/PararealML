@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Optional, Callable, Union, List, Tuple
 
 import matplotlib.pyplot as plt
@@ -94,7 +95,7 @@ class AnimatedPlot(Plot):
         :param interval: the number of milliseconds to pause between each frame
         """
         super(AnimatedPlot, self).__init__(figure)
-        time_steps = np.linspace(0, n_time_steps - 1, n_frames, dtype=np.int)
+        time_steps = np.linspace(0, n_time_steps - 1, n_frames, dtype=int)
         self._animation = FuncAnimation(
             figure,
             func=update_func,
@@ -396,9 +397,9 @@ class NBodyPlot(AnimatedPlot):
                     ax.set_box_aspect((
                         x_max - x_min, y_max - y_min, z_max - z_min))
                     ax.set_facecolor('black')
-                    ax.w_xaxis.pane.fill = False
-                    ax.w_yaxis.pane.fill = False
-                    ax.w_zaxis.pane.fill = False
+                    ax.xaxis.pane.fill = False
+                    ax.yaxis.pane.fill = False
+                    ax.zaxis.pane.fill = False
                     ax.grid(False)
 
             def update_plot(time_step: int):
@@ -797,7 +798,10 @@ class StreamPlot(AnimatedPlot):
                 ax.set_ylabel('y')
 
         def update_plot(time_step: int):
-            ax.patches.clear()
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                ax.patches.clear()
+
             self._stream_plot.lines.remove()
             self._stream_plot = ax.streamplot(
                 x_0,
@@ -847,10 +851,10 @@ class QuiverPlot(AnimatedPlot):
         x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
             vertex_oriented)
         unit_vector_grids = mesh.unit_vector_grids(vertex_oriented)
-        y_cartesian: np.ndarray = sum([
+        y_cartesian: np.ndarray = np.asarray(sum([
             y[..., i:i + 1] * unit_vector_grids[i][np.newaxis, ...]
             for i in range(mesh.dimensions)
-        ])
+        ]))
 
         self._quiver_plot: Optional[Quiver] = None
 

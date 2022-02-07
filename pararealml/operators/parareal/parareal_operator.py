@@ -127,7 +127,7 @@ class PararealOperator(Operator):
 
                 new_y_at_end_point = new_y_coarse_at_end_point + corrections[j]
 
-                max_update = max(
+                max_update = np.maximum(
                     max_update,
                     np.linalg.norm(
                         new_y_at_end_point - y_at_end_points[j + 1]))

@@ -328,7 +328,8 @@ class Mesh:
         return tuple(coordinate_grids)
 
 
-Coordinates = TypeVar('Coordinates', Sequence[float], Sequence[np.ndarray])
+Coordinate = TypeVar('Coordinate', float, np.ndarray)
+Coordinates = Sequence[Coordinate]
 
 
 def unit_vectors_at(
