@@ -1,5 +1,4 @@
 import sys
-from typing import Optional
 
 import numpy as np
 from mpi4py import MPI
@@ -34,18 +33,12 @@ class PararealOperator(Operator):
             processes and the accuracy requirements are not satisfied in fewer
             iterations)
         """
+        super(PararealOperator, self).__init__(f.d_t, f.vertex_oriented)
+
         self._f = f
         self._g = g
         self._tol = tol
         self._max_iterations = max_iterations
-
-    @property
-    def d_t(self) -> float:
-        return self._f.d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return self._f.vertex_oriented
 
     def solve(
             self,
@@ -67,7 +60,7 @@ class PararealOperator(Operator):
                 f'coarse operator time step size ({self._g.d_t}) must be a '
                 f'divisor of sub-IVP time slice length ({delta_t})')
 
-        vertex_oriented = self._f.vertex_oriented
+        vertex_oriented = self._vertex_oriented
         cp = ivp.constrained_problem
         y_shape = cp.y_shape(vertex_oriented)
 

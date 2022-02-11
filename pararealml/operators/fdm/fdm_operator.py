@@ -38,20 +38,10 @@ class FDMOperator(Operator):
         :param differentiator: the differentiator to use
         :param d_t: the temporal step size to use
         """
-        if d_t <= 0.:
-            raise ValueError('time step sizemust be greater than 0')
+        super(FDMOperator, self).__init__(d_t, True)
 
         self._integrator = integrator
         self._differentiator = differentiator
-        self._d_t = d_t
-
-    @property
-    def d_t(self) -> float:
-        return self._d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return True
 
     def solve(
             self,

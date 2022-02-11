@@ -33,23 +33,13 @@ class ODEOperator(Operator):
         :param rtol: the relative tolerance to use to manage local error
             estimates by controlling the time integration step size
         """
-        if d_t <= 0.:
-            raise ValueError('time step size must be greater than 0')
+        super(ODEOperator, self).__init__(d_t, None)
 
         self._method = method
-        self._d_t = d_t
         self._first_step = first_step
         self._max_step = max_step
         self._atol = atol
         self._rtol = rtol
-
-    @property
-    def d_t(self) -> float:
-        return self._d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return None
 
     def solve(
             self,

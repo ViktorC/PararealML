@@ -38,20 +38,9 @@ class AutoRegressionOperator(Operator):
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
         """
-        if d_t <= 0.:
-            raise ValueError('time step size must be greater than 0')
+        super(AutoRegressionOperator, self).__init__(d_t, vertex_oriented)
 
-        self._d_t = d_t
-        self._vertex_oriented = vertex_oriented
         self._model: Optional[RegressionModel] = None
-
-    @property
-    def d_t(self) -> float:
-        return self._d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return self._vertex_oriented
 
     @property
     def model(self) -> Optional[RegressionModel]:

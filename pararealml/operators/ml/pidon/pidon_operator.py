@@ -97,23 +97,12 @@ class PIDONOperator(Operator):
             step as the initial conditions for its prediction at the next time
             step
         """
-        if d_t <= 0.:
-            raise ValueError('time step size must be greater than 0')
+        super(PIDONOperator, self).__init__(d_t, vertex_oriented)
 
         self._sampler = sampler
-        self._d_t = d_t
-        self._vertex_oriented = vertex_oriented
         self._auto_regression_mode = auto_regression_mode
 
         self._model: Optional[PIDeepONet] = None
-
-    @property
-    def d_t(self) -> float:
-        return self._d_t
-
-    @property
-    def vertex_oriented(self) -> Optional[bool]:
-        return self._vertex_oriented
 
     @property
     def auto_regression_mode(self) -> bool:
