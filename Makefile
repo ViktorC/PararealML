@@ -16,4 +16,4 @@ coverage:
 	coverage xml -o coverage.xml
 
 run:
-	mpiexec -n 4 python -m mpi4py -m examples.$(example)
+	mpiexec -n $(p) python -m mpi4py -m examples.$(example)
