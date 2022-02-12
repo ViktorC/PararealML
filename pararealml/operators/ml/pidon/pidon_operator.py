@@ -3,7 +3,6 @@ from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import Optimizer
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.initial_condition import \
@@ -51,7 +50,7 @@ class OptimizationArgs(NamedTuple):
     A container class for arguments pertaining to the training of a PIDON
     model.
     """
-    optimizer: Union[str, Dict[str, Any], Optimizer]
+    optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
     epochs: int
     diff_eq_loss_weight: float = 1.
     ic_loss_weight: float = 1.

@@ -1,7 +1,6 @@
 from typing import Sequence, Optional
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, InputLayer
 
 
 class FNNRegressor(tf.keras.Sequential):
@@ -27,10 +26,11 @@ class FNNRegressor(tf.keras.Sequential):
 
         super(FNNRegressor, self).__init__()
 
-        self.add(InputLayer(input_shape=layer_sizes[0]))
+        self.add(tf.keras.layers.InputLayer(input_shape=layer_sizes[0]))
         for layer_size in layer_sizes[1:-1]:
-            self.add(Dense(
+            self.add(tf.keras.layers.Dense(
                 layer_size,
                 kernel_initializer=initialization,
                 activation=activation))
-        self.add(Dense(layer_sizes[-1], kernel_initializer=initialization))
+        self.add(tf.keras.layers.Dense(
+            layer_sizes[-1], kernel_initializer=initialization))

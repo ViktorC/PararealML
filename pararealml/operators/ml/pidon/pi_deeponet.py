@@ -2,8 +2,7 @@ from typing import Optional, Sequence, Dict, Any, Union, Tuple, List
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow_probability.python.optimizer import lbfgs_minimize
+import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import Lhs
@@ -99,7 +98,7 @@ class PIDeepONet(DeepONet):
     def fit(
             self,
             epochs: int,
-            optimizer: Union[str, Dict[str, Any], Optimizer],
+            optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer],
             training_data: DataSetIterator,
             test_data: Optional[DataSetIterator] = None,
             diff_eq_loss_weight: float = 1.,
@@ -244,7 +243,7 @@ class PIDeepONet(DeepONet):
         flattened_parameters = tf.concat(
             [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
             axis=1)
-        results = lbfgs_minimize(
+        results = tfp.optimizer.lbfgs_minimize(
             value_and_gradients_function=value_and_gradients_function,
             initial_position=flattened_parameters,
             max_iterations=max_iterations,
@@ -274,7 +273,7 @@ class PIDeepONet(DeepONet):
     def _step(
             self,
             batch: DataBatch,
-            optimizer: Optimizer,
+            optimizer: tf.optimizers.Optimizer,
             diff_eq_loss_weight: float,
             ic_loss_weight: float,
             bc_loss_weight: float) -> Loss:

@@ -1,11 +1,9 @@
 from typing import Union, Any
 
 import tensorflow as tf
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow.python.keras.wrappers.scikit_learn import KerasRegressor
 
 
-class SKLearnKerasRegressor(KerasRegressor):
+class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
     """
     A wrapper for Keras regression models to implement the implicit
     Scikit-learn model interface.
@@ -14,7 +12,7 @@ class SKLearnKerasRegressor(KerasRegressor):
     def __init__(
             self,
             model: tf.keras.Model,
-            optimizer: Union[str, Optimizer] = 'adam',
+            optimizer: Union[str, tf.optimizers.Optimizer] = 'adam',
             loss: str = 'mse',
             epochs: int = 1000,
             batch_size: int = 64,
