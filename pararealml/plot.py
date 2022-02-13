@@ -108,14 +108,14 @@ class AnimatedPlot(Plot):
         return self
 
     @staticmethod
-    def _validate_pde_solution_shape(
+    def _verify_pde_solution_shape_matches_problem(
             y: np.ndarray,
             mesh: Mesh,
             vertex_oriented: bool,
             expected_x_dims: Union[int, Tuple[int, int]],
             is_vector_field: bool):
         """
-        Validates that the shape of the input array representing the solution
+        Verifies that the shape of the input array representing the solution
         of a partial differential equation over the provided mesh and with the
         specified vertex orientation matches expectations.
 
@@ -454,7 +454,8 @@ class SpaceLinePlot(AnimatedPlot):
             (i.e. the values represent height)
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(y, mesh, vertex_oriented, 1, False)
+        self._verify_pde_solution_shape_matches_problem(
+            y, mesh, vertex_oriented, 1, False)
 
         self._line_plot: Optional[Line2D] = None
 
@@ -475,7 +476,7 @@ class SpaceLinePlot(AnimatedPlot):
                 ax.axis('equal')
 
         def update_plot(time_step: int):
-            self._line_plot.set_ydata(y[time_step, ...])
+            self._line_plot.set_ydata(y[time_step, ..., 0])
 
         super(SpaceLinePlot, self).__init__(
             fig, init_plot, update_plot, y.shape[0], n_frames, interval)
@@ -514,7 +515,8 @@ class ContourPlot(AnimatedPlot):
             set to the maximum of the solution
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(y, mesh, vertex_oriented, 2, False)
+        self._verify_pde_solution_shape_matches_problem(
+            y, mesh, vertex_oriented, 2, False)
 
         x_cartesian_coordinate_grids = \
             mesh.cartesian_coordinate_grids(vertex_oriented)
@@ -596,7 +598,8 @@ class SurfacePlot(AnimatedPlot):
             (i.e. the values represent height)
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(y, mesh, vertex_oriented, 2, False)
+        self._verify_pde_solution_shape_matches_problem(
+            y, mesh, vertex_oriented, 2, False)
 
         x_cartesian_coordinate_grids = \
             mesh.cartesian_coordinate_grids(vertex_oriented)
@@ -685,7 +688,8 @@ class ScatterPlot(AnimatedPlot):
         :param marker_opacity: the opacity of the point markers
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(y, mesh, vertex_oriented, 3, False)
+        self._verify_pde_solution_shape_matches_problem(
+            y, mesh, vertex_oriented, 3, False)
 
         x_cartesian_coordinate_grids = \
             mesh.cartesian_coordinate_grids(vertex_oriented)
@@ -753,7 +757,8 @@ class StreamPlot(AnimatedPlot):
         :param density: the density of the stream lines
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(y, mesh, vertex_oriented, 2, True)
+        self._verify_pde_solution_shape_matches_problem(
+            y, mesh, vertex_oriented, 2, True)
 
         coordinate_grids = mesh.coordinate_grids(vertex_oriented)
 
@@ -845,7 +850,7 @@ class QuiverPlot(AnimatedPlot):
         :param quiver_scale: the scaling factor to apply to the arrow lengths
         :param _: any ignored extra arguments
         """
-        self._validate_pde_solution_shape(
+        self._verify_pde_solution_shape_matches_problem(
             y, mesh, vertex_oriented, (2, 3), True)
 
         x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
