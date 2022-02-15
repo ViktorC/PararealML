@@ -1,9 +1,11 @@
+build/
+dist/
+docs/_build/
+.idea/
 *__pycache__*
+*.egg-info
+*.pytest_cache
+*.mypy_cache
 **/*.pdf
 **/*.jpg
 **/*.gif
-*.o
-*.pytest_cache
-*.mypy_cache
-docs/_build/
-.idea/*
