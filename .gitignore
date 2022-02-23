@@ -6,6 +6,5 @@ docs/_build/
 *.egg-info
 *.pytest_cache
 *.mypy_cache
-**/*.pdf
-**/*.jpg
+**/*.png
 **/*.gif
