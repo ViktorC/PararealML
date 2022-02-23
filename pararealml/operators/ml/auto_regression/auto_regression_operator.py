@@ -1,4 +1,6 @@
-from typing import Union, Tuple, Callable, Optional, Protocol, List
+from __future__ import annotations
+
+from typing import Tuple, Callable, Optional, Protocol, List
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -8,18 +10,7 @@ from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.initial_condition import DiscreteInitialCondition
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.operator import Operator, discretize_time_domain
-from pararealml.operators.ml.auto_regression.sklearn_keras_regressor \
-    import SKLearnKerasRegressor
 from pararealml.solution import Solution
-
-
-class SKLearnRegressor(Protocol):
-    def fit(self, x, y, sample_weight=None): ...
-    def predict(self, x): ...
-    def score(self, x, y, sample_weight=None): ...
-
-
-RegressionModel = Union[SKLearnRegressor, SKLearnKerasRegressor]
 
 
 class AutoRegressionOperator(Operator):
@@ -40,17 +31,17 @@ class AutoRegressionOperator(Operator):
         """
         super(AutoRegressionOperator, self).__init__(d_t, vertex_oriented)
 
-        self._model: Optional[RegressionModel] = None
+        self._model: Optional[SKLearnRegressor] = None
 
     @property
-    def model(self) -> Optional[RegressionModel]:
+    def model(self) -> Optional[SKLearnRegressor]:
         """
         The regression model behind the operator.
         """
         return self._model
 
     @model.setter
-    def model(self, model: Optional[RegressionModel]):
+    def model(self, model: Optional[SKLearnRegressor]):
         self._model = model
 
     def solve(
@@ -173,7 +164,7 @@ class AutoRegressionOperator(Operator):
 
     def fit_model(
             self,
-            model: RegressionModel,
+            model: SKLearnRegressor,
             data: Tuple[np.ndarray, np.ndarray],
             test_size: float = .2,
             score_func: Callable[[np.ndarray, np.ndarray], float] =
@@ -211,7 +202,7 @@ class AutoRegressionOperator(Operator):
             self,
             ivp: InitialValueProblem,
             oracle: Operator,
-            model: RegressionModel,
+            model: SKLearnRegressor,
             iterations: int,
             perturbation_function: Callable[[float, np.ndarray], np.ndarray],
             isolate_perturbations: bool = False,
@@ -274,3 +265,26 @@ class AutoRegressionOperator(Operator):
         t = np.empty((len(x), 1))
         y = np.empty((len(x), diff_eq.y_dimension * len(x)))
         return np.hstack([y, t, x])
+
+
+class SKLearnRegressor(Protocol):
+    """A protocol class for scikit-learn regression models."""
+
+    def fit(
+            self,
+            x: np.typing.ArrayLike,
+            y: np.typing.ArrayLike,
+            sample_weight: Optional[np.typing.ArrayLike] = None
+    ) -> SKLearnRegressor:
+        ...
+
+    def predict(self, x: np.typing.ArrayLike) -> np.ndarray:
+        ...
+
+    def score(
+            self,
+            x: np.typing.ArrayLike,
+            y: np.typing.ArrayLike,
+            sample_weight: Optional[np.typing.ArrayLike] = None
+    ) -> float:
+        ...
