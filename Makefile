@@ -1,6 +1,15 @@
 setup:
 	python setup.py install
 
+package:
+	python setup.py sdist bdist_wheel
+
+publish-test:
+	python -m twine upload --repository testpypi dist/*
+
+publish:
+	python -m twine upload dist/*
+
 install:
 	pip3 install -r requirements.txt
 
