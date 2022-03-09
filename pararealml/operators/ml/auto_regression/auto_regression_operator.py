@@ -22,16 +22,28 @@ class AutoRegressionOperator(Operator):
     def __init__(
             self,
             d_t: float,
-            vertex_oriented: bool):
+            vertex_oriented: bool,
+            time_variant: bool = True):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
+        :param time_variant: whether the time value should be used as a
+            predictor
         """
         super(AutoRegressionOperator, self).__init__(d_t, vertex_oriented)
 
+        self._time_variant = time_variant
         self._model: Optional[SKLearnRegressor] = None
+
+    @property
+    def time_variant(self) -> bool:
+        """
+        Whether the auto-regression operator uses time as a predictor of the
+        solution at the next time step.
+        """
+        return self._time_variant
 
     @property
     def model(self) -> Optional[SKLearnRegressor]:
@@ -66,8 +78,12 @@ class AutoRegressionOperator(Operator):
             .reshape((-1, diff_eq.y_dimension))
 
         for i, t_i in enumerate(t[:-1]):
-            inputs[:, -diff_eq.x_dimension - 1] = t_i
-            inputs[:, :-diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
+            if self._time_variant:
+                inputs[:, -diff_eq.x_dimension - 1] = t_i
+                inputs[:, :-diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
+            else:
+                inputs[:, :-diff_eq.x_dimension] = y_i.reshape((1, -1))
+
             y_i = self._model.predict(inputs)
             y[i, ...] = y_i.reshape(y_shape)
 
@@ -117,7 +133,9 @@ class AutoRegressionOperator(Operator):
         single_time_point_inputs = self._create_input_placeholder(cp)
         n_spatial_points = single_time_point_inputs.shape[0]
         single_epoch_inputs = np.tile(single_time_point_inputs, (len(t), 1))
-        single_epoch_inputs[:, -x_dim - 1] = np.repeat(t, n_spatial_points)
+
+        if self._time_variant:
+            single_epoch_inputs[:, -x_dim - 1] = np.repeat(t, n_spatial_points)
 
         inputs = np.tile(single_epoch_inputs, (iterations, 1))
         targets = np.empty((inputs.shape[0], y_dim))
@@ -141,8 +159,10 @@ class AutoRegressionOperator(Operator):
                     .discrete_y(self._vertex_oriented)[-1, ...]
 
                 t_offset = offset + i * n_spatial_points
-                inputs[t_offset:t_offset + n_spatial_points, :-x_dim - 1] = \
-                    perturbed_y_i.reshape((1, -1))
+                inputs[
+                    t_offset:t_offset + n_spatial_points,
+                    :inputs.shape[1] - x_dim - self._time_variant
+                ] = perturbed_y_i.reshape((1, -1))
                 targets[t_offset:t_offset + n_spatial_points, :] = \
                     y_next.reshape((-1, y_dim))
 
@@ -259,12 +279,16 @@ class AutoRegressionOperator(Operator):
         """
         diff_eq = cp.differential_equation
         if not diff_eq.x_dimension:
-            return np.empty((1, 1 + diff_eq.y_dimension))
+            return np.empty((1, diff_eq.y_dimension + self._time_variant))
 
         x = cp.mesh.all_index_coordinates(self._vertex_oriented, flatten=True)
-        t = np.empty((len(x), 1))
         y = np.empty((len(x), diff_eq.y_dimension * len(x)))
-        return np.hstack([y, t, x])
+
+        if self._time_variant:
+            t = np.empty((len(x), 1))
+            return np.hstack([y, t, x])
+
+        return np.hstack([y, x])
 
 
 class SKLearnRegressor(Protocol):

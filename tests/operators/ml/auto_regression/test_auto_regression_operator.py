@@ -4,10 +4,10 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from tensorflow import optimizers
 
-from pararealml.boundary_condition import DirichletBoundaryCondition
+from pararealml.boundary_condition import DirichletBoundaryCondition, NeumannBoundaryCondition
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LotkaVolterraEquation, \
-    LorenzEquation, WaveEquation
+    LorenzEquation, WaveEquation, DiffusionEquation
 from pararealml.initial_condition import ContinuousInitialCondition, \
     GaussianInitialCondition
 from pararealml.initial_value_problem import InitialValueProblem
@@ -19,6 +19,7 @@ from pararealml.operators.fdm.numerical_integrator import RK4
 from pararealml.operators.ml.auto_regression import AutoRegressionOperator, \
     SKLearnKerasRegressor
 from pararealml.operators.ml.deeponet import DeepONet
+from pararealml.operators.ml.fnn_regressor import FNNRegressor
 from pararealml.operators.ode.ode_operator import ODEOperator
 from pararealml.utils.rand import set_random_seed
 
@@ -172,3 +173,51 @@ def test_auto_regression_operator_on_pde():
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
     assert np.max(np.abs(diff.differences[0])) < .5
+
+
+def test_auto_regression_operator_on_pde_in_time_invariant_mode():
+    set_random_seed(0)
+
+    diff_eq = DiffusionEquation(1)
+    mesh = Mesh([(0., 5.)], [1.])
+    bcs = [
+        (NeumannBoundaryCondition(
+            lambda x, t: np.zeros((len(x), 1)), is_static=True),
+         NeumannBoundaryCondition(
+             lambda x, t: np.zeros((len(x), 1)), is_static=True))
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        [(np.array([2.5]), np.array([[.5]]))],
+    )
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
+    ref_solution = oracle.solve(ivp)
+
+    ml_op = AutoRegressionOperator(2.5, True, time_variant=False)
+    ml_op.train(
+        ivp,
+        oracle,
+        SKLearnKerasRegressor(
+            FNNRegressor([7, 50, 50, 1]),
+            optimizer=optimizers.Adam(
+                learning_rate=optimizers.schedules.ExponentialDecay(
+                        1e-2, decay_steps=500, decay_rate=.95
+                )
+            ),
+            batch_size=500,
+            epochs=500,
+        ),
+        20,
+        lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))
+    ml_solution = ml_op.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 2.5
+    assert ml_solution.discrete_y().shape == (4, 6, 1)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .01
