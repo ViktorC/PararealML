@@ -17,7 +17,7 @@ setup(
         'mpi4py>=3.0.0',
         'scikit-learn>=0.24.0',
         'tensorflow>=2.0.0',
-        'tensorflow-probability>=0.10.0',
+        'tensorflow-probability>=0.10.0'
     ],
     packages=find_packages(exclude=('tests',)),
     classifiers=[

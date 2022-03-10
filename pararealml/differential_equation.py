@@ -5,7 +5,6 @@ from typing import Optional, Sequence, Dict, List, Union
 from typing import Tuple
 
 import numpy as np
-from numpy.typing import NDArray
 from sympy import symarray, Expr, Symbol
 
 
@@ -152,7 +151,7 @@ class SymbolicEquationSystem:
 
     def __init__(
             self,
-            rhs: Union[Sequence[Expr], NDArray[Expr]],
+            rhs: Union[Sequence[Expr], np.ndarray],
             lhs_types: Optional[Sequence[Lhs]] = None):
         """
         :param rhs: the right-hand side of the symbolic equation system
@@ -179,7 +178,7 @@ class SymbolicEquationSystem:
             self._equation_indices_by_type[lhs_type].append(i)
 
     @property
-    def rhs(self) -> Union[Sequence[Expr], NDArray[Expr]]:
+    def rhs(self) -> Union[Sequence[Expr], np.ndarray]:
         """
         The right-hand side of the symbolic equation system.
         """

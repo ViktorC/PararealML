@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional, Union
+from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional, \
+    Union, Set
 
 import numpy as np
 import sympy as sp
@@ -149,13 +150,13 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         :return: the mapper function for the vector Laplacian of y
         """
 
-    def create_symbol_map(self) -> Dict[sp.Symbol, SymbolMapFunction]:
+    def create_symbol_map(self) -> Dict[sp.Basic, SymbolMapFunction]:
         """
         Creates a dictionary linking the symbols present in the differential
         equation instance associated with the symbol mapper to a set of
         functions used to map the symbols to numerical values.
         """
-        symbol_map = {}
+        symbol_map: Dict[sp.Basic, Callable] = {}
 
         x_dimension = self._diff_eq.x_dimension
         eq_sys = self._diff_eq.symbolic_equation_system
@@ -217,7 +218,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         rhs = self._diff_eq.symbolic_equation_system.rhs
 
         selected_rhs = []
-        selected_rhs_symbols = set()
+        selected_rhs_symbols: Set[sp.Basic] = set()
         for i in indices:
             rhs_i = rhs[i]
             selected_rhs.append(rhs_i)

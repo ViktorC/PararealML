@@ -4,7 +4,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from tensorflow import optimizers
 
-from pararealml.boundary_condition import DirichletBoundaryCondition, NeumannBoundaryCondition
+from pararealml.boundary_condition import DirichletBoundaryCondition, \
+    NeumannBoundaryCondition
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LotkaVolterraEquation, \
     LorenzEquation, WaveEquation, DiffusionEquation
@@ -115,6 +116,35 @@ def test_auto_regression_operator_on_ode_with_isolated_perturbations():
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
     assert np.max(np.abs(diff.differences[0])) < .01
+
+
+def test_auto_regression_operator_on_ode_in_time_invariant_mode():
+    set_random_seed(0)
+
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+
+    oracle = ODEOperator('DOP853', .001)
+    ref_solution = oracle.solve(ivp)
+
+    ml_op = AutoRegressionOperator(2.5, True, time_variant=False)
+    ml_op.train(
+        ivp,
+        oracle,
+        RandomForestRegressor(),
+        25,
+        lambda t, y: y + np.random.normal(0., .01, size=y.shape))
+    ml_solution = ml_op.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 2.5
+    assert ml_solution.discrete_y().shape == (4, 3)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
+    assert np.max(np.abs(diff.differences[0])) < .2
 
 
 def test_auto_regression_operator_on_pde():

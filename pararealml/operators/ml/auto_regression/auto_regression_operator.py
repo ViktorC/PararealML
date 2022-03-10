@@ -72,17 +72,15 @@ class AutoRegressionOperator(Operator):
         t = discretize_time_domain(ivp.t_interval, self._d_t)
         y = np.empty((len(t) - 1,) + y_shape)
 
-        y_i = ivp \
-            .initial_condition \
-            .discrete_y_0(self._vertex_oriented) \
-            .reshape((-1, diff_eq.y_dimension))
+        y_i = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
 
         for i, t_i in enumerate(t[:-1]):
             if self._time_variant:
                 inputs[:, -diff_eq.x_dimension - 1] = t_i
                 inputs[:, :-diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
             else:
-                inputs[:, :-diff_eq.x_dimension] = y_i.reshape((1, -1))
+                inputs[:, :inputs.shape[1] - diff_eq.x_dimension] = \
+                    y_i.reshape((1, -1))
 
             y_i = self._model.predict(inputs)
             y[i, ...] = y_i.reshape(y_shape)
@@ -139,8 +137,8 @@ class AutoRegressionOperator(Operator):
 
         inputs = np.tile(single_epoch_inputs, (iterations, 1))
         targets = np.empty((inputs.shape[0], y_dim))
-        for epoch in range(iterations):
-            offset = epoch * n_spatial_points * len(t)
+        for iteration in range(iterations):
+            offset = iteration * n_spatial_points * len(t)
             y_i = y_0
 
             for i, t_i in enumerate(t):
