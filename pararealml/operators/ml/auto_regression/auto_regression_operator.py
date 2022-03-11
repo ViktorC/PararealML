@@ -100,8 +100,7 @@ class AutoRegressionOperator(Operator):
             iterations: int,
             perturbation_function: Callable[[float, np.ndarray], np.ndarray],
             isolate_perturbations: bool = False,
-            n_jobs: int = 1
-    ) -> Tuple[np.ndarray, np.ndarray]:
+            n_jobs: int = 1) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates data to train an operator model by using the oracle to
         repeatedly solve sub-IVPs with perturbed initial conditions and a time
@@ -116,8 +115,9 @@ class AutoRegressionOperator(Operator):
             of the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
-        :param n_jobs: the number of processes to use to generate the data in
-            parallel
+        :param n_jobs: the number of parallel processes to use for the data
+            generation; if it is greater than one, all arguments of this method
+            must be pickleable
         :return: a tuple of the inputs and the target outputs
         """
         if iterations <= 0:
@@ -146,6 +146,7 @@ class AutoRegressionOperator(Operator):
         for job_iterations in iterations_per_job:
             queue = Queue()
             queues.append(queue)
+
             process = Process(
                 target=self._generate_data,
                 args=(
@@ -155,6 +156,7 @@ class AutoRegressionOperator(Operator):
                     perturbation_function,
                     isolate_perturbations,
                     queue))
+            process.daemon = True
             processes.append(process)
             process.start()
 
@@ -172,8 +174,7 @@ class AutoRegressionOperator(Operator):
             data: Tuple[np.ndarray, np.ndarray],
             test_size: float = .2,
             score_func: Callable[[np.ndarray, np.ndarray], float] =
-            mean_squared_error
-    ) -> Tuple[float, float]:
+            mean_squared_error) -> Tuple[float, float]:
         """
         Fits the regression model to the training share of the provided data
         points using random splitting, it stores the fitted model as a member
@@ -238,8 +239,9 @@ class AutoRegressionOperator(Operator):
             version of the initial values
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
-        :param n_jobs: the number of processes to use to generate the data in
-            parallel
+        :param n_jobs: the number of parallel processes to use for the data
+            generation; if it is greater than one, all arguments relating to
+            the data generation must be pickleable
         :param test_size: the fraction of all data points that should be used
             for testing
         :param score_func: the prediction scoring function to use
