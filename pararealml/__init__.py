@@ -2,6 +2,9 @@ from __future__ import absolute_import
 
 from pararealml.boundary_condition import BoundaryCondition
 from pararealml.boundary_condition import CauchyBoundaryCondition
+from pararealml.boundary_condition import ConstantBoundaryCondition
+from pararealml.boundary_condition import ConstantFluxBoundaryCondition
+from pararealml.boundary_condition import ConstantValueBoundaryCondition
 from pararealml.boundary_condition import DirichletBoundaryCondition
 from pararealml.boundary_condition import NeumannBoundaryCondition
 from pararealml.boundary_condition import VectorizedBoundaryConditionFunction
@@ -56,6 +59,9 @@ __all__ = [
     'DirichletBoundaryCondition',
     'NeumannBoundaryCondition',
     'CauchyBoundaryCondition',
+    'ConstantBoundaryCondition',
+    'ConstantValueBoundaryCondition',
+    'ConstantFluxBoundaryCondition',
     'VectorizedBoundaryConditionFunction',
     'vectorize_bc_function',
     'ConstrainedProblem',

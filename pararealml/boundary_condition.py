@@ -12,27 +12,44 @@ class BoundaryCondition(ABC):
     A base class for boundary conditions.
     """
 
-    @property
-    @abstractmethod
-    def is_static(self) -> bool:
+    def __init__(
+            self,
+            has_y_condition: bool,
+            has_d_y_condition: bool,
+            is_static: bool):
         """
-        Whether the boundary condition is time independent.
+        :param has_y_condition: whether the boundary conditions restrict the
+            value of y
+        :param has_d_y_condition: whether the boundary conditions restrict the
+            value of the derivative of y with respect to the normal vector of
+            the boundary
+        :param is_static: whether the boundary condition is time independent
         """
+        self._has_y_condition = has_y_condition
+        self._has_d_y_condition = has_d_y_condition
+        self._is_static = is_static
 
     @property
-    @abstractmethod
     def has_y_condition(self) -> bool:
         """
         Whether the boundary conditions restrict the value of y.
         """
+        return self._has_y_condition
 
     @property
-    @abstractmethod
     def has_d_y_condition(self) -> bool:
         """
         Whether the boundary conditions restrict the value of the derivative of
         y with respect to the normal vector of the boundary.
         """
+        return self._has_d_y_condition
+
+    @property
+    def is_static(self) -> bool:
+        """
+        Whether the boundary condition is time independent.
+        """
+        return self._is_static
 
     @abstractmethod
     def y_condition(
@@ -86,19 +103,9 @@ class DirichletBoundaryCondition(BoundaryCondition):
         :param is_static: whether the boundary condition is time independent
         """
         self._y_condition = y_condition
-        self._is_static = is_static
 
-    @property
-    def is_static(self) -> bool:
-        return self._is_static
-
-    @property
-    def has_y_condition(self) -> bool:
-        return True
-
-    @property
-    def has_d_y_condition(self) -> bool:
-        return False
+        super(DirichletBoundaryCondition, self).__init__(
+            True, False, is_static)
 
     def y_condition(
             self,
@@ -111,7 +118,7 @@ class DirichletBoundaryCondition(BoundaryCondition):
             x: np.ndarray,
             t: Optional[float]) -> np.ndarray:
         raise RuntimeError(
-            'Dirichlet conditions do not constrain the derivative of y')
+            'Dirichlet conditions do not constrain the normal derivative of y')
 
 
 class NeumannBoundaryCondition(BoundaryCondition):
@@ -131,19 +138,9 @@ class NeumannBoundaryCondition(BoundaryCondition):
         :param is_static: whether the boundary condition is time independent
         """
         self._d_y_condition = d_y_condition
-        self._is_static = is_static
 
-    @property
-    def is_static(self) -> bool:
-        return self._is_static
-
-    @property
-    def has_y_condition(self) -> bool:
-        return False
-
-    @property
-    def has_d_y_condition(self) -> bool:
-        return True
+        super(NeumannBoundaryCondition, self).__init__(
+            False, True, is_static)
 
     def y_condition(
             self,
@@ -178,19 +175,8 @@ class CauchyBoundaryCondition(BoundaryCondition):
         """
         self._y_condition = y_condition
         self._d_y_condition = d_y_condition
-        self._is_static = is_static
 
-    @property
-    def is_static(self) -> bool:
-        return self._is_static
-
-    @property
-    def has_y_condition(self) -> bool:
-        return True
-
-    @property
-    def has_d_y_condition(self) -> bool:
-        return True
+        super(CauchyBoundaryCondition, self).__init__(True, True, is_static)
 
     def y_condition(
             self,
@@ -203,6 +189,91 @@ class CauchyBoundaryCondition(BoundaryCondition):
             x: np.ndarray,
             t: Optional[float]) -> np.ndarray:
         return self._d_y_condition(x, t)
+
+
+class ConstantBoundaryCondition(BoundaryCondition):
+    """
+    A set of constant, space and time independent boundary conditions.
+    """
+
+    def __init__(
+            self,
+            constant_y_conditions: Optional[Sequence[Optional[float]]],
+            constant_d_y_conditions: Optional[Sequence[Optional[float]]]):
+        """
+        :param constant_y_conditions: a sequence of scalars each denoting the
+            boundary conditions on the corresponding element of y
+        :param constant_d_y_conditions: a sequence of scalars each denoting the
+            boundary conditions on the corresponding element of the normal
+            derivative of y
+        """
+        if constant_y_conditions is None and constant_d_y_conditions is None:
+            raise ValueError(
+                'at least one type of constant conditions must not be None')
+
+        self._constant_y_conditions = constant_y_conditions
+        self._constant_d_y_conditions = constant_d_y_conditions
+
+        super(ConstantBoundaryCondition, self).__init__(
+            constant_y_conditions is not None,
+            constant_d_y_conditions is not None,
+            True)
+
+    def y_condition(
+            self,
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
+        if not self._constant_y_conditions:
+            raise RuntimeError('no boundary conditions defined on y')
+
+        return np.hstack([
+            np.full((len(x), 1), y_condition)
+            for y_condition in self._constant_y_conditions
+        ])
+
+    def d_y_condition(
+            self,
+            x: np.ndarray,
+            t: Optional[float]) -> np.ndarray:
+        if not self._constant_d_y_conditions:
+            raise RuntimeError(
+                'no boundary conditions defined on the normal derivative of y')
+
+        return np.hstack([
+            np.full((len(x), 1), d_y_condition)
+            for d_y_condition in self._constant_d_y_conditions
+        ])
+
+
+class ConstantValueBoundaryCondition(ConstantBoundaryCondition):
+    """
+    A set of constant, space and time independent boundary conditions on the
+    value of the solution.
+    """
+
+    def __init__(self, constant_y_conditions: Sequence[Optional[float]]):
+        """
+        :param constant_y_conditions: a sequence of scalars each denoting the
+            boundary conditions on the corresponding element of y
+        """
+        super(ConstantValueBoundaryCondition, self).__init__(
+            constant_y_conditions, None)
+
+
+class ConstantFluxBoundaryCondition(ConstantBoundaryCondition):
+    """
+    A set of constant, space and time independent boundary conditions on the
+    normal derivative of the solution.
+    """
+
+    def __init__(self, constant_d_y_conditions: Sequence[Optional[float]]):
+        """
+        :param constant_d_y_conditions: a sequence of scalars each denoting the
+            boundary conditions on the corresponding element of the normal
+            derivative of y
+        """
+        super(ConstantFluxBoundaryCondition, self).__init__(
+            None, constant_d_y_conditions)
 
 
 def vectorize_bc_function(
