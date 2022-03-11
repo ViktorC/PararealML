@@ -287,8 +287,7 @@ class AutoRegressionOperator(Operator):
             iterations: int,
             perturbation_function: Callable[[float, np.ndarray], np.ndarray],
             isolate_perturbations: bool,
-            queue: Queue
-    ):
+            queue: Queue):
         """
         Generates data to train an operator model sequentially by using the
         oracle to repeatedly solve sub-IVPs with perturbed initial conditions
@@ -386,6 +385,5 @@ class SKLearnRegressor(Protocol):
             self,
             x: np.typing.ArrayLike,
             y: np.typing.ArrayLike,
-            sample_weight: Optional[np.typing.ArrayLike] = None
-    ) -> float:
+            sample_weight: Optional[np.typing.ArrayLike] = None) -> float:
         ...
