@@ -136,8 +136,11 @@ class AutoRegressionOperator(Operator):
                 queue)
             return queue.get()
 
-        processes = []
+        model = self._model
+        self._model = None
+
         queues = []
+        processes = []
 
         iterations_per_job = [
             len(array) for array
@@ -157,13 +160,16 @@ class AutoRegressionOperator(Operator):
                     isolate_perturbations,
                     queue))
             process.daemon = True
-            processes.append(process)
             process.start()
+            processes.append(process)
 
-        for process in processes:
+        input_target_pairs = []
+        for queue, process in zip(queues, processes):
+            input_target_pairs.append(queue.get())
             process.join()
 
-        input_target_pairs = [queue.get() for queue in queues]
+        self._model = model
+
         all_inputs, all_targets = zip(*input_target_pairs)
         return np.concatenate(all_inputs, axis=0), \
             np.concatenate(all_targets, axis=0)
