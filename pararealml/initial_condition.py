@@ -114,6 +114,35 @@ class DiscreteInitialCondition(InitialCondition):
         return y_0
 
 
+class ConstantInitialCondition(DiscreteInitialCondition):
+    """
+    An initial condition defined by a sequence of scalars each denoting the
+    constant initial value of the corresponding element of y.
+    """
+
+    def __init__(
+            self,
+            cp: ConstrainedProblem,
+            constant_y_0s: Sequence[float]):
+        """
+        :param cp: the constrained problem to turn into an initial value
+            problem by providing the initial conditions for it
+        :param constant_y_0s: the constant initial values of the components of
+            y (at every point of the mesh if the constrained problem is a PDE)
+        """
+        y_dim = cp.differential_equation.y_dimension
+        if len(constant_y_0s) != y_dim:
+            raise ValueError(
+                f'length of constant y0 values ({len(constant_y_0s)}) must '
+                f'match number of y components ({y_dim})')
+
+        ic = np.empty(cp.y_shape(True))
+        for i, y_0 in enumerate(constant_y_0s):
+            ic[..., i] = y_0
+
+        super(ConstantInitialCondition, self).__init__(cp, ic, True)
+
+
 class ContinuousInitialCondition(InitialCondition):
     """
     An initial condition defined by a function.

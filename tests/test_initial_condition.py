@@ -8,7 +8,7 @@ from pararealml.differential_equation import LotkaVolterraEquation, \
     DiffusionEquation, WaveEquation
 from pararealml.initial_condition import ContinuousInitialCondition, \
     DiscreteInitialCondition, GaussianInitialCondition, BetaInitialCondition, \
-    vectorize_ic_function
+    vectorize_ic_function, ConstantInitialCondition
 from pararealml.mesh import Mesh
 
 
@@ -95,6 +95,32 @@ def test_discrete_initial_condition_2d_pde():
 
     y_0_cell_centers = initial_condition.discrete_y_0(False)
     assert y_0_cell_centers.shape == (2, 2, 2)
+
+
+def test_constant_initial_condition_ode_with_wrong_number_of_y_0s():
+    diff_eq = LotkaVolterraEquation()
+    cp = ConstrainedProblem(diff_eq)
+    with pytest.raises(ValueError):
+        ConstantInitialCondition(cp, [1.])
+
+
+def test_constant_initial_condition_pde():
+    diff_eq = WaveEquation(1)
+    mesh = Mesh([(0., 10.)], [1.])
+    bcs = [
+        (DirichletBoundaryCondition(lambda x: np.zeros((len(x), 2))),) * 2
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = ConstantInitialCondition(cp, [1., -1.])
+
+    discrete_y_0 = ic.discrete_y_0(True)
+    assert discrete_y_0.shape == (11, 2)
+    assert np.all(discrete_y_0[:, 0] == 1.)
+    assert np.all(discrete_y_0[:, 1] == -1.)
+
+    assert np.allclose(
+        ic.y_0(np.array([[2.5], [7.5]])),
+        [[1., -1.], [1., -1.]])
 
 
 def test_continuous_initial_condition_ode_with_wrong_shape():

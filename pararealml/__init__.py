@@ -25,6 +25,7 @@ from pararealml.differential_equation import SymbolicEquationSystem
 from pararealml.differential_equation import Symbols
 from pararealml.differential_equation import WaveEquation
 from pararealml.initial_condition import BetaInitialCondition
+from pararealml.initial_condition import ConstantInitialCondition
 from pararealml.initial_condition import ContinuousInitialCondition
 from pararealml.initial_condition import DiscreteInitialCondition
 from pararealml.initial_condition import GaussianInitialCondition
@@ -77,6 +78,7 @@ __all__ = [
     'NavierStokesEquation',
     'InitialCondition',
     'DiscreteInitialCondition',
+    'ConstantInitialCondition',
     'ContinuousInitialCondition',
     'GaussianInitialCondition',
     'BetaInitialCondition',
