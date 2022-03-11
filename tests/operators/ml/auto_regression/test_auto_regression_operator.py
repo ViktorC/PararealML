@@ -10,7 +10,7 @@ from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LotkaVolterraEquation, \
     LorenzEquation, WaveEquation, DiffusionEquation
 from pararealml.initial_condition import ContinuousInitialCondition, \
-    GaussianInitialCondition
+    DiscreteInitialCondition, GaussianInitialCondition
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.mesh import Mesh
 from pararealml.operators.fdm.fdm_operator import FDMOperator
@@ -25,33 +25,55 @@ from pararealml.operators.ode.ode_operator import ODEOperator
 from pararealml.utils.rand import set_random_seed
 
 
-def test_auto_regression_operator_training_with_zero_iterations():
+def perturbation_function(_: float, y: np.ndarray) -> np.ndarray:
+    return y + np.random.normal(0., .01, size=y.shape)
+
+
+def test_ar_operator_training_with_zero_iterations():
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
     ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     oracle = ODEOperator('DOP853', .001)
-    ml_op = AutoRegressionOperator(2.5, True)
+    ar = AutoRegressionOperator(2.5, True)
 
     with pytest.raises(ValueError):
-        ml_op.train(
+        ar.train(
             ivp,
             oracle,
             LinearRegression(),
             0,
-            lambda t, y: y + np.random.normal(0., .01, size=y.shape))
+            perturbation_function)
 
 
-def test_auto_regression_operator_with_wrong_perturbed_initial_value_shape():
+def test_ar_operator_training_with_zero_n_jobs():
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
     ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     oracle = ODEOperator('DOP853', .001)
-    ml_op = AutoRegressionOperator(2.5, True)
+    ar = AutoRegressionOperator(2.5, True)
 
     with pytest.raises(ValueError):
-        ml_op.train(
+        ar.train(
+            ivp,
+            oracle,
+            LinearRegression(),
+            100,
+            perturbation_function,
+            n_jobs=0)
+
+
+def test_ar_operator_training_with_wrong_perturbed_initial_value_shape():
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = ContinuousInitialCondition(cp, lambda _: np.ones(3))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+    oracle = ODEOperator('DOP853', .001)
+    ar = AutoRegressionOperator(2.5, True)
+
+    with pytest.raises(ValueError):
+        ar.train(
             ivp,
             oracle,
             LinearRegression(),
@@ -59,7 +81,22 @@ def test_auto_regression_operator_with_wrong_perturbed_initial_value_shape():
             lambda t, y: np.array([1.]))
 
 
-def test_auto_regression_operator_on_ode():
+def test_ar_operator_data_generation_in_parallel():
+    diff_eq = LorenzEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = DiscreteInitialCondition(cp, np.ones(3))
+    ivp = InitialValueProblem(cp, (0., 10.), ic)
+    oracle = ODEOperator('DOP853', .001)
+    ar = AutoRegressionOperator(2.5, True)
+
+    inputs, targets = ar.generate_data(
+        ivp, oracle, 20, perturbation_function, n_jobs=4)
+
+    assert inputs.shape == (80, 4)
+    assert targets.shape == (80, 3)
+
+
+def test_ar_operator_on_ode():
     set_random_seed(0)
 
     diff_eq = LorenzEquation()
@@ -70,14 +107,14 @@ def test_auto_regression_operator_on_ode():
     oracle = ODEOperator('DOP853', .001)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = AutoRegressionOperator(2.5, True)
-    ml_op.train(
+    ar = AutoRegressionOperator(2.5, True)
+    ar.train(
         ivp,
         oracle,
         RandomForestRegressor(),
         25,
-        lambda t, y: y + np.random.normal(0., .01, size=y.shape))
-    ml_solution = ml_op.solve(ivp)
+        perturbation_function)
+    ml_solution = ar.solve(ivp)
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
@@ -88,7 +125,7 @@ def test_auto_regression_operator_on_ode():
     assert np.max(np.abs(diff.differences[0])) < .2
 
 
-def test_auto_regression_operator_on_ode_with_isolated_perturbations():
+def test_ar_operator_on_ode_with_isolated_perturbations():
     set_random_seed(0)
 
     diff_eq = LotkaVolterraEquation(2., 1., .8, 1.)
@@ -99,15 +136,15 @@ def test_auto_regression_operator_on_ode_with_isolated_perturbations():
     oracle = ODEOperator('DOP853', .001)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = AutoRegressionOperator(2.5, True)
-    ml_op.train(
+    ar = AutoRegressionOperator(2.5, True)
+    ar.train(
         ivp,
         oracle,
         RandomForestRegressor(),
         25,
-        lambda t, y: y + np.random.normal(0., .01, size=y.shape),
+        perturbation_function,
         isolate_perturbations=True)
-    ml_solution = ml_op.solve(ivp)
+    ml_solution = ar.solve(ivp)
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
@@ -118,7 +155,7 @@ def test_auto_regression_operator_on_ode_with_isolated_perturbations():
     assert np.max(np.abs(diff.differences[0])) < .01
 
 
-def test_auto_regression_operator_on_ode_in_time_invariant_mode():
+def test_ar_operator_on_ode_in_time_invariant_mode():
     set_random_seed(0)
 
     diff_eq = LorenzEquation()
@@ -129,14 +166,14 @@ def test_auto_regression_operator_on_ode_in_time_invariant_mode():
     oracle = ODEOperator('DOP853', .001)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = AutoRegressionOperator(2.5, True, time_variant=False)
-    ml_op.train(
+    ar = AutoRegressionOperator(2.5, True, time_variant=False)
+    ar.train(
         ivp,
         oracle,
         RandomForestRegressor(),
         25,
-        lambda t, y: y + np.random.normal(0., .01, size=y.shape))
-    ml_solution = ml_op.solve(ivp)
+        perturbation_function)
+    ml_solution = ar.solve(ivp)
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
@@ -147,7 +184,7 @@ def test_auto_regression_operator_on_ode_in_time_invariant_mode():
     assert np.max(np.abs(diff.differences[0])) < .2
 
 
-def test_auto_regression_operator_on_pde():
+def test_ar_operator_on_pde():
     set_random_seed(0)
 
     diff_eq = WaveEquation(2)
@@ -169,8 +206,8 @@ def test_auto_regression_operator_on_pde():
     oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = AutoRegressionOperator(2.5, True)
-    ml_op.train(
+    ar = AutoRegressionOperator(2.5, True)
+    ar.train(
         ivp,
         oracle,
         SKLearnKerasRegressor(
@@ -194,7 +231,7 @@ def test_auto_regression_operator_on_pde():
         ),
         20,
         lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))
-    ml_solution = ml_op.solve(ivp)
+    ml_solution = ar.solve(ivp)
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
@@ -205,7 +242,7 @@ def test_auto_regression_operator_on_pde():
     assert np.max(np.abs(diff.differences[0])) < .5
 
 
-def test_auto_regression_operator_on_pde_in_time_invariant_mode():
+def test_ar_operator_on_pde_in_time_invariant_mode():
     set_random_seed(0)
 
     diff_eq = DiffusionEquation(1)
@@ -226,8 +263,8 @@ def test_auto_regression_operator_on_pde_in_time_invariant_mode():
     oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
-    ml_op = AutoRegressionOperator(2.5, True, time_variant=False)
-    ml_op.train(
+    ar = AutoRegressionOperator(2.5, True, time_variant=False)
+    ar.train(
         ivp,
         oracle,
         SKLearnKerasRegressor(
@@ -242,7 +279,7 @@ def test_auto_regression_operator_on_pde_in_time_invariant_mode():
         ),
         20,
         lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))
-    ml_solution = ml_op.solve(ivp)
+    ml_solution = ar.solve(ivp)
 
     assert ml_solution.vertex_oriented
     assert ml_solution.d_t == 2.5
