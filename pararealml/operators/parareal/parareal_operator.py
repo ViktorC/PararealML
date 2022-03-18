@@ -87,7 +87,6 @@ class PararealOperator(Operator):
             y_border_points[j + 1] = y_coarse_end_point
 
         y_fine = None
-        y_coarse_end_point = None
 
         for i in range(min(comm.size, self._max_iterations)):
             sub_ivp = InitialValueProblem(
@@ -99,7 +98,7 @@ class PararealOperator(Operator):
             fine_solution = self._f.solve(sub_ivp, False)
             y_fine = fine_solution.discrete_y(vertex_oriented)
             y_fine_end_point = y_fine[-1]
-            y_coarse_end_point = np.copy(new_y_coarse_end_points[comm.rank])
+            y_coarse_end_point = new_y_coarse_end_points[comm.rank]
             correction = y_fine_end_point - y_coarse_end_point
             comm.Allgather([correction, MPI.DOUBLE], [corrections, MPI.DOUBLE])
 
@@ -128,9 +127,8 @@ class PararealOperator(Operator):
                 break
 
         t = discretize_time_domain(ivp.t_interval, self.d_t)[1:]
-
-        y_fine += new_y_coarse_end_points[comm.rank] - y_coarse_end_point
         all_y_fine = np.empty((len(t), *y_shape))
+        y_fine += y_border_points[comm.rank + 1] - y_fine[-1]
         comm.Allgather([y_fine, MPI.DOUBLE], [all_y_fine, MPI.DOUBLE])
 
         return Solution(
