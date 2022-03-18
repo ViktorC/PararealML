@@ -49,44 +49,39 @@ class PararealOperator(Operator):
 
         comm = MPI.COMM_WORLD
 
+        f = self._f
+        g = self._g
         t_interval = ivp.t_interval
         delta_t = (t_interval[1] - t_interval[0]) / comm.size
-        if not np.isclose(delta_t, self._f.d_t * round(delta_t / self._f.d_t)):
+        if not np.isclose(delta_t, f.d_t * round(delta_t / f.d_t)):
             raise ValueError(
-                f'fine operator time step size ({self._f.d_t}) must be a '
+                f'fine operator time step size ({f.d_t}) must be a '
                 f'divisor of sub-IVP time slice length ({delta_t})')
-        if not np.isclose(delta_t, self._g.d_t * round(delta_t / self._g.d_t)):
+        if not np.isclose(delta_t, g.d_t * round(delta_t / g.d_t)):
             raise ValueError(
-                f'coarse operator time step size ({self._g.d_t}) must be a '
+                f'coarse operator time step size ({g.d_t}) must be a '
                 f'divisor of sub-IVP time slice length ({delta_t})')
 
         vertex_oriented = self._vertex_oriented
         cp = ivp.constrained_problem
         y_shape = cp.y_shape(vertex_oriented)
 
-        time_slice_border_points = np.linspace(
-            t_interval[0],
-            t_interval[1],
-            comm.size + 1)
-        y_border_points = np.empty((comm.size + 1, *y_shape))
-        new_y_coarse_end_points = np.empty((comm.size, *y_shape))
+        time_slice_border_points = \
+            np.linspace(t_interval[0], t_interval[1], comm.size + 1)
+
+        y_coarse_end_points = g.solve(ivp).discrete_y(vertex_oriented)[
+            np.rint(
+                (time_slice_border_points[1:] - t_interval[0]) / g.d_t
+            ).astype(int) - 1,
+            ...
+        ]
+        y_border_points = np.concatenate([
+            ivp.initial_condition.discrete_y_0(vertex_oriented)[np.newaxis],
+            y_coarse_end_points
+        ])
+
+        sub_y_fine = None
         corrections = np.empty((comm.size, *y_shape))
-
-        y_border_points[0] = \
-            ivp.initial_condition.discrete_y_0(vertex_oriented)
-        for j in range(comm.size):
-            sub_ivp = InitialValueProblem(
-                cp,
-                (time_slice_border_points[j], time_slice_border_points[j + 1]),
-                DiscreteInitialCondition(
-                    cp, y_border_points[j], vertex_oriented))
-            coarse_solution = self._g.solve(sub_ivp)
-            y_coarse_end_point = \
-                coarse_solution.discrete_y(vertex_oriented)[-1]
-            new_y_coarse_end_points[j] = y_coarse_end_point
-            y_border_points[j + 1] = y_coarse_end_point
-
-        y_fine = None
 
         for i in range(min(comm.size, self._max_iterations)):
             sub_ivp = InitialValueProblem(
@@ -95,11 +90,8 @@ class PararealOperator(Operator):
                  time_slice_border_points[comm.rank + 1]),
                 DiscreteInitialCondition(
                     cp, y_border_points[comm.rank], vertex_oriented))
-            fine_solution = self._f.solve(sub_ivp, False)
-            y_fine = fine_solution.discrete_y(vertex_oriented)
-            y_fine_end_point = y_fine[-1]
-            y_coarse_end_point = new_y_coarse_end_points[comm.rank]
-            correction = y_fine_end_point - y_coarse_end_point
+            sub_y_fine = f.solve(sub_ivp, False).discrete_y(vertex_oriented)
+            correction = sub_y_fine[-1] - y_coarse_end_points[comm.rank]
             comm.Allgather([correction, MPI.DOUBLE], [corrections, MPI.DOUBLE])
 
             max_update = 0.
@@ -112,12 +104,10 @@ class PararealOperator(Operator):
                          time_slice_border_points[j + 1]),
                         DiscreteInitialCondition(
                             cp, y_border_points[j], vertex_oriented))
-                    new_coarse_solution = self._g.solve(sub_ivp)
-                    new_y_coarse_end_point = \
-                        new_coarse_solution.discrete_y(vertex_oriented)[-1]
-                    new_y_coarse_end_points[j] = new_y_coarse_end_point
+                    sub_y_coarse = g.solve(sub_ivp).discrete_y(vertex_oriented)
+                    y_coarse_end_points[j] = sub_y_coarse[-1]
 
-                new_y_end_point = new_y_coarse_end_points[j] + corrections[j]
+                new_y_end_point = y_coarse_end_points[j] + corrections[j]
                 max_update = np.maximum(
                     max_update,
                     np.linalg.norm(new_y_end_point - y_border_points[j + 1]))
@@ -126,14 +116,14 @@ class PararealOperator(Operator):
             if max_update < self._tol:
                 break
 
-        t = discretize_time_domain(ivp.t_interval, self.d_t)[1:]
-        all_y_fine = np.empty((len(t), *y_shape))
-        y_fine += y_border_points[comm.rank + 1] - y_fine[-1]
-        comm.Allgather([y_fine, MPI.DOUBLE], [all_y_fine, MPI.DOUBLE])
+        t = discretize_time_domain(ivp.t_interval, f.d_t)[1:]
+        y_fine = np.empty((len(t), *y_shape))
+        sub_y_fine += y_border_points[comm.rank + 1] - sub_y_fine[-1]
+        comm.Allgather([sub_y_fine, MPI.DOUBLE], [y_fine, MPI.DOUBLE])
 
         return Solution(
             ivp,
             t,
-            all_y_fine,
+            y_fine,
             vertex_oriented=vertex_oriented,
-            d_t=self.d_t)
+            d_t=f.d_t)
