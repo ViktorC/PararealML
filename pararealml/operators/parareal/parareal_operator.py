@@ -106,17 +106,19 @@ class PararealOperator(Operator):
             max_update = 0.
 
             for j in range(i, comm.size):
-                sub_ivp = InitialValueProblem(
-                    cp,
-                    (time_slice_border_points[j],
-                     time_slice_border_points[j + 1]),
-                    DiscreteInitialCondition(
-                        cp, y_border_points[j], vertex_oriented))
-                new_coarse_solution = self._g.solve(sub_ivp)
-                new_y_coarse_end_point = \
-                    new_coarse_solution.discrete_y(vertex_oriented)[-1]
-                new_y_coarse_end_points[j] = new_y_coarse_end_point
-                new_y_end_point = new_y_coarse_end_point + corrections[j]
+                if j > i:
+                    sub_ivp = InitialValueProblem(
+                        cp,
+                        (time_slice_border_points[j],
+                         time_slice_border_points[j + 1]),
+                        DiscreteInitialCondition(
+                            cp, y_border_points[j], vertex_oriented))
+                    new_coarse_solution = self._g.solve(sub_ivp)
+                    new_y_coarse_end_point = \
+                        new_coarse_solution.discrete_y(vertex_oriented)[-1]
+                    new_y_coarse_end_points[j] = new_y_coarse_end_point
+
+                new_y_end_point = new_y_coarse_end_points[j] + corrections[j]
                 max_update = np.maximum(
                     max_update,
                     np.linalg.norm(new_y_end_point - y_border_points[j + 1]))
