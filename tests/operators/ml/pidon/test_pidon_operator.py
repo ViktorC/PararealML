@@ -282,7 +282,7 @@ def test_pidon_operator_on_pde_system():
     assert solution.discrete_y().shape == (500, 6, 5, 4)
 
 
-def test_fdm_operator_on_pde_with_t_and_x_dependent_rhs():
+def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
     class TestDiffEq(DifferentialEquation):
 
         def __init__(self):
@@ -521,6 +521,33 @@ def test_pidon_operator_on_spherical_pde():
     solution = pidon.solve(ivp)
     assert solution.d_t == .001
     assert solution.discrete_y().shape == (500, 6, 11, 3, 1)
+
+
+def test_pidon_operator_with_no_model_training_without_model_args():
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    t_interval = (0., 1.)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.]))
+
+    sampler = UniformRandomCollocationPointSampler()
+    pidon = PIDONOperator(sampler, .001, True)
+
+    with pytest.raises(ValueError):
+        pidon.train(
+            cp,
+            t_interval,
+            training_data_args=DataArgs(
+                y_0_functions=[ic.y_0],
+                n_domain_points=25,
+                n_batches=5,
+                n_ic_repeats=5
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer=optimizers.SGD(),
+                epochs=100,
+                verbose=False
+            ),
+        )
 
 
 def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():

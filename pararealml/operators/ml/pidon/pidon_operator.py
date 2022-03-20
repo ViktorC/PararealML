@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
     List, Union, Any
 
@@ -16,60 +18,6 @@ from pararealml.operators.ml.pidon.data_set import DataSet
 from pararealml.operators.ml.pidon.loss import Loss
 from pararealml.operators.ml.pidon.pi_deeponet import PIDeepONet
 from pararealml.solution import Solution
-
-
-class DataArgs(NamedTuple):
-    """
-    A container class for arguments pertaining to the generation and traversal
-    of PIDON data sets.
-    """
-    y_0_functions: Iterable[VectorizedInitialConditionFunction]
-    n_domain_points: int
-    n_batches: int
-    n_boundary_points: int = 0
-    n_ic_repeats: int = 1
-    shuffle: bool = True
-
-
-class ModelArgs(NamedTuple):
-    """
-    A container class for arguments pertaining to the architecture of a PIDON
-    model.
-    """
-    latent_output_size: int
-    branch_hidden_layer_sizes: Optional[List[int]] = None
-    trunk_hidden_layer_sizes: Optional[List[int]] = None
-    branch_initialization: str = 'glorot_uniform'
-    trunk_initialization: str = 'glorot_uniform'
-    branch_activation: Optional[str] = 'tanh'
-    trunk_activation: Optional[str] = 'tanh'
-
-
-class OptimizationArgs(NamedTuple):
-    """
-    A container class for arguments pertaining to the training of a PIDON
-    model.
-    """
-    optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
-    epochs: int
-    diff_eq_loss_weight: float = 1.
-    ic_loss_weight: float = 1.
-    bc_loss_weight: float = 1.
-    verbose: bool = True
-
-
-class SecondaryOptimizationArgs(NamedTuple):
-    """
-    A container class for arguments pertaining to the training of a PIDON
-    model using a second order optimization method to fine tune the model
-    parameters.
-    """
-    max_iterations: int = 50
-    gradient_tol: float = 1e-8
-    diff_eq_loss_weight: float = 1.
-    ic_loss_weight: float = 1.
-    bc_loss_weight: float = 1.
-    verbose: bool = True
 
 
 class PIDONOperator(Operator):
@@ -180,8 +128,8 @@ class PIDONOperator(Operator):
             t_interval: TemporalDomainInterval,
             *,
             training_data_args: DataArgs,
-            model_args: ModelArgs,
             optimization_args: OptimizationArgs,
+            model_args: Optional[ModelArgs] = None,
             test_data_args: Optional[DataArgs] = None,
             secondary_optimization_args: Optional[SecondaryOptimizationArgs] =
             None) -> Tuple[Sequence[Loss], Sequence[Loss]]:
@@ -195,9 +143,10 @@ class PIDONOperator(Operator):
         :param t_interval: the time interval to train the operator on
         :param training_data_args: the training data generation and batch size
             arguments
-        :param model_args: the physics-informed DeepONet model arguments
         :param optimization_args: the physics-informed DeepONet model
             optimization arguments
+        :param model_args: the physics-informed DeepONet model arguments; if
+            the operator already has a model, it can be None
         :param test_data_args: the test data generation and batch size
             arguments
         :param secondary_optimization_args: the physics-informed DeepONet model
@@ -205,6 +154,11 @@ class PIDONOperator(Operator):
             a (quasi) second order optimization method
         :return: the training loss history and the test loss history
         """
+        if model_args is None and self._model is None:
+            raise ValueError(
+                'the model arguments cannot be None if the operator\'s model '
+                'is None')
+
         if self._auto_regression_mode:
             if t_interval != (0., self._d_t):
                 raise ValueError(
@@ -238,6 +192,7 @@ class PIDONOperator(Operator):
             training_data_args.n_batches,
             n_ic_repeats=training_data_args.n_ic_repeats,
             shuffle=training_data_args.shuffle)
+
         if test_data_args:
             test_data_set = DataSet(
                 cp,
@@ -254,12 +209,17 @@ class PIDONOperator(Operator):
         else:
             test_data = None
 
-        model = PIDeepONet(
-            cp, vertex_oriented=self._vertex_oriented, **model_args._asdict())
+        model = self._model if model_args is None else \
+            PIDeepONet(
+                cp,
+                vertex_oriented=self._vertex_oriented,
+                **model_args._asdict())
+
         loss_histories = model.fit(
             training_data=training_data,
             test_data=test_data,
             **optimization_args._asdict())
+
         if secondary_optimization_args:
             secondary_losses = model.fit_with_lbfgs(
                 training_data=training_data,
@@ -272,3 +232,57 @@ class PIDONOperator(Operator):
         self._model = model
 
         return loss_histories
+
+
+class DataArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the generation and traversal
+    of PIDON data sets.
+    """
+    y_0_functions: Iterable[VectorizedInitialConditionFunction]
+    n_domain_points: int
+    n_batches: int
+    n_boundary_points: int = 0
+    n_ic_repeats: int = 1
+    shuffle: bool = True
+
+
+class ModelArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the architecture of a PIDON
+    model.
+    """
+    latent_output_size: int
+    branch_hidden_layer_sizes: Optional[List[int]] = None
+    trunk_hidden_layer_sizes: Optional[List[int]] = None
+    branch_initialization: str = 'glorot_uniform'
+    trunk_initialization: str = 'glorot_uniform'
+    branch_activation: Optional[str] = 'tanh'
+    trunk_activation: Optional[str] = 'tanh'
+
+
+class OptimizationArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the training of a PIDON
+    model.
+    """
+    optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
+    epochs: int
+    diff_eq_loss_weight: float = 1.
+    ic_loss_weight: float = 1.
+    bc_loss_weight: float = 1.
+    verbose: bool = True
+
+
+class SecondaryOptimizationArgs(NamedTuple):
+    """
+    A container class for arguments pertaining to the training of a PIDON
+    model using a second order optimization method to fine tune the model
+    parameters.
+    """
+    max_iterations: int = 50
+    gradient_tol: float = 1e-8
+    diff_eq_loss_weight: float = 1.
+    ic_loss_weight: float = 1.
+    bc_loss_weight: float = 1.
+    verbose: bool = True
