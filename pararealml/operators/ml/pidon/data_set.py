@@ -134,8 +134,8 @@ class DataSet:
     def _create_initial_value_data(self) -> np.ndarray:
         """
         Creates the initial value data by evaluating the initial condition
-        functions (over the centers of the mesh's cells in case the constrained
-        problem is a PDE).
+        functions (over the vertices or the cell centers of the mesh in case
+        the constrained problem is a PDE).
         """
         if self._cp.differential_equation.x_dimension:
             x = self._cp.mesh.all_index_coordinates(
@@ -175,8 +175,9 @@ class DataSet:
     def _create_initial_collocation_data(self) -> np.ndarray:
         """
         Creates the initial collocation data by combining the coordinates of
-        the cell centers of the constrained problem's mesh (if the constrained
-        problem is a PDE) with an array of zeros representing the time points.
+        the vertices or the cell centers of the constrained problem's mesh (if
+        the constrained problem is a PDE) with an array of zeros representing
+        the time points.
         """
         if self._cp.differential_equation.x_dimension:
             x = self._cp.mesh.all_index_coordinates(
