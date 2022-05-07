@@ -26,6 +26,7 @@ from pararealml.differential_equation import PopulationGrowthEquation
 from pararealml.differential_equation import ShallowWaterEquation
 from pararealml.differential_equation import SymbolicEquationSystem
 from pararealml.differential_equation import Symbols
+from pararealml.differential_equation import VanDerPolEquation
 from pararealml.differential_equation import WaveEquation
 from pararealml.initial_condition import BetaInitialCondition
 from pararealml.initial_condition import ConstantInitialCondition
@@ -74,6 +75,7 @@ __all__ = [
     'PopulationGrowthEquation',
     'LotkaVolterraEquation',
     'LorenzEquation',
+    'VanDerPolEquation',
     'NBodyGravitationalEquation',
     'DiffusionEquation',
     'ConvectionDiffusionEquation',

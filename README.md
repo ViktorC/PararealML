@@ -21,6 +21,7 @@ The library provides out-of-the-box implementations for a number of differential
  * `PopulationGrowthEquation`
  * `LotkaVolterraEquation`
  * `LorenzEquation`
+ * `VanDerPolEquation`
  * `NBodyGravitationalEquation`
  * `DiffusionEquation`
  * `ConvectionDiffusionEquation`
@@ -38,7 +39,7 @@ Meshes in PararealML are represented by the `Mesh` class which defines a hyper-g
 ### Boundary conditions
 All boundary conditions extend the `BoundaryCondition` base class. In PararealML, boundary conditions are functions of time and space. It is possible to specify static boundary conditions that only depend on the spatial coordinates to enable the pre-computation of boundary values and thus potentially improve the performance of some of the solvers.
 
-The list of provided boundary conditions is:
+The most important boundary conditions provided are:
 
  * `DirichletBoundaryCondition`
  * `NeumannBoundaryCondition`

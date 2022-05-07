@@ -427,6 +427,33 @@ class LorenzEquation(DifferentialEquation):
         ])
 
 
+class VanDerPolEquation(DifferentialEquation):
+    """
+    A second order ordinary differential equation modelling a non-conservative
+    oscillator with non-linear damping.
+    """
+
+    def __init__(self, mu: float = 1.):
+        """
+        :param mu: the damping coefficient
+        """
+        if mu < .0:
+            raise ValueError('mu must be non-negative')
+
+        self._mu = mu
+
+        super(VanDerPolEquation, self).__init__(0, 2)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        u = self.symbols.y[0]
+        v = self.symbols.y[1]
+        return SymbolicEquationSystem([
+            v,
+            self._mu * (1. - u ** 2) * v - u
+        ])
+
+
 class NBodyGravitationalEquation(DifferentialEquation):
     """
     A system of ordinary differential equations modelling the motion of
