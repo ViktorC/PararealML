@@ -5,7 +5,7 @@ from pararealml.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import PopulationGrowthEquation, \
-    LotkaVolterraEquation, DiffusionEquation
+    VanDerPolEquation, DiffusionEquation
 from pararealml.initial_condition import ContinuousInitialCondition,\
     GaussianInitialCondition
 from pararealml.initial_value_problem import InitialValueProblem
@@ -39,9 +39,9 @@ def test_ode_operator_on_ode_with_analytic_solution():
 
 
 def test_ode_operator_on_ode():
-    diff_eq = LotkaVolterraEquation()
+    diff_eq = VanDerPolEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: np.array([100., 15.]))
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1., 1.]))
     ivp = InitialValueProblem(cp, (0., 10.), ic)
     op = ODEOperator('DOP853', 1e-3)
     solution = op.solve(ivp)
