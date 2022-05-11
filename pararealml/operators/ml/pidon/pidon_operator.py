@@ -255,10 +255,13 @@ class ModelArgs(NamedTuple):
     latent_output_size: int
     branch_hidden_layer_sizes: Optional[List[int]] = None
     trunk_hidden_layer_sizes: Optional[List[int]] = None
+    combiner_hidden_layer_sizes: Optional[List[int]] = None
     branch_initialization: str = 'glorot_uniform'
     trunk_initialization: str = 'glorot_uniform'
+    combiner_initialization: str = 'glorot_uniform'
     branch_activation: Optional[str] = 'tanh'
     trunk_activation: Optional[str] = 'tanh'
+    combiner_activation: Optional[str] = 'tanh'
 
 
 class OptimizationArgs(NamedTuple):

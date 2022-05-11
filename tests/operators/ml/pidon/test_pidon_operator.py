@@ -39,21 +39,23 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         t_interval,
         training_data_args=DataArgs(
             y_0_functions=[ic.y_0],
-            n_domain_points=25,
+            n_domain_points=100,
             n_batches=5,
             n_ic_repeats=5
         ),
         model_args=ModelArgs(
-            latent_output_size=1,
+            latent_output_size=10,
+            branch_hidden_layer_sizes=[50, 50, 50],
             trunk_hidden_layer_sizes=[50, 50, 50],
         ),
         optimization_args=OptimizationArgs(
-            optimizer=optimizers.SGD(),
+            optimizer=optimizers.Adam(1e-4),
             epochs=100,
             verbose=False
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=100,
+            gradient_tol=0.,
             verbose=False
         )
     )
@@ -260,12 +262,13 @@ def test_pidon_operator_on_pde_system():
             n_batches=1
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_hidden_layer_sizes=[20, 20],
-            trunk_hidden_layer_sizes=[20, 20],
+            latent_output_size=25,
+            branch_hidden_layer_sizes=[50, 50],
+            trunk_hidden_layer_sizes=[50, 50],
+            combiner_hidden_layer_sizes=[25]
         ),
         optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(learning_rate=1e-5),
+            optimizer=optimizers.Adam(learning_rate=5e-8),
             epochs=3,
             verbose=False
         )

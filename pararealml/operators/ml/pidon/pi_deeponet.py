@@ -29,10 +29,13 @@ class PIDeepONet(DeepONet):
             latent_output_size: int,
             branch_hidden_layer_sizes: Optional[List[int]] = None,
             trunk_hidden_layer_sizes: Optional[List[int]] = None,
+            combiner_hidden_layer_sizes: Optional[List[int]] = None,
             branch_initialization: str = 'glorot_uniform',
             trunk_initialization: str = 'glorot_uniform',
+            combiner_initialization: str = 'glorot_uniform',
             branch_activation: Optional[str] = 'tanh',
             trunk_activation: Optional[str] = 'tanh',
+            combiner_activation: Optional[str] = 'tanh',
             vertex_oriented: bool = False):
         """
         :param cp: the constrained problem to build a physics-informed neural
@@ -43,14 +46,20 @@ class PIDeepONet(DeepONet):
             layers of the branch net
         :param trunk_hidden_layer_sizes: a list of the sizes of the hidden
             layers of the trunk net
+        :param combiner_hidden_layer_sizes: a list of the sizes of the hidden
+            layers of the combiner net
         :param branch_initialization: the initialization method to use for the
             weights of the branch net
         :param trunk_initialization: the initialization method to use for the
             weights of the trunk net
-        :param branch_activation: the activation function to use for the layers
-            of the branch net
-        :param trunk_activation: the activation function to use for the layers
-            of the trunk net
+        :param combiner_initialization: the initialization method to use for
+            the weights of the combiner net
+        :param branch_activation: the activation function to use for the hidden
+            layers of the branch net
+        :param trunk_activation: the activation function to use for the hidden
+            layers of the trunk net
+        :param combiner_activation: the activation function to use for the
+            hidden layers of the combiner net
         :param vertex_oriented: whether the initial condition collocation
             points are the vertices or the cell centers of the mesh
         """
@@ -62,28 +71,22 @@ class PIDeepONet(DeepONet):
         y_dim = diff_eq.y_dimension
 
         self._cp = cp
-        self._latent_output_size = latent_output_size
-
-        if branch_hidden_layer_sizes is None:
-            branch_hidden_layer_sizes = []
-        if trunk_hidden_layer_sizes is None:
-            trunk_hidden_layer_sizes = []
 
         super(PIDeepONet, self).__init__(
-            [
-                np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
-                if x_dim else y_dim
-            ] +
-            branch_hidden_layer_sizes +
-            [latent_output_size * y_dim],
-            [x_dim + 1] +
-            trunk_hidden_layer_sizes +
-            [latent_output_size * y_dim],
+            np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
+            if x_dim else y_dim,
+            x_dim + 1,
+            latent_output_size,
             y_dim,
+            branch_hidden_layer_sizes=branch_hidden_layer_sizes,
             branch_initialization=branch_initialization,
             branch_activation=branch_activation,
+            trunk_hidden_layer_sizes=trunk_hidden_layer_sizes,
             trunk_initialization=trunk_initialization,
-            trunk_activation=trunk_activation)
+            trunk_activation=trunk_activation,
+            combiner_hidden_layer_sizes=combiner_hidden_layer_sizes,
+            combiner_initialization=combiner_initialization,
+            combiner_activation=combiner_activation)
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()

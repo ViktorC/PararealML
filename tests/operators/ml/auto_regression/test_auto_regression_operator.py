@@ -212,14 +212,12 @@ def test_ar_operator_on_pde():
         oracle,
         SKLearnKerasRegressor(
             DeepONet(
-                [
-                    np.prod(cp.y_shape(True)).item(),
-                    100,
-                    50,
-                    diff_eq.y_dimension * 10
-                ],
-                [1 + diff_eq.x_dimension, 50, 50, diff_eq.y_dimension * 10],
-                diff_eq.y_dimension
+                np.prod(cp.y_shape(True)).item(),
+                1 + diff_eq.x_dimension,
+                diff_eq.y_dimension * 10,
+                diff_eq.y_dimension,
+                [100, 50],
+                [50, 50]
             ),
             optimizer=optimizers.Adam(
                 learning_rate=optimizers.schedules.ExponentialDecay(
