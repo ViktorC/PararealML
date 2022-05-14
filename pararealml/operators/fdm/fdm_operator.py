@@ -4,7 +4,7 @@ import numpy as np
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.constraint import apply_constraints_along_last_axis
-from pararealml.differential_equation import Lhs
+from pararealml.differential_equation import LHS
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.operator import Operator, discretize_time_domain
 from pararealml.operators.fdm.numerical_differentiator import \
@@ -93,10 +93,10 @@ class FDMOperator(Operator):
         symbol_mapper = FDMSymbolMapper(cp, self._differentiator)
 
         d_y_over_d_t_eq_indices = \
-            eq_sys.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
-        y_eq_indices = eq_sys.equation_indices_by_type(Lhs.Y)
+            eq_sys.equation_indices_by_type(LHS.D_Y_OVER_D_T)
+        y_eq_indices = eq_sys.equation_indices_by_type(LHS.Y)
         y_laplacian_eq_indices = \
-            eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN)
+            eq_sys.equation_indices_by_type(LHS.Y_LAPLACIAN)
 
         y_constraint_func, d_y_constraint_func = \
             self._create_constraint_functions(
@@ -105,7 +105,7 @@ class FDMOperator(Operator):
         def d_y_over_d_t_function(t: float, y: np.ndarray) -> np.ndarray:
             d_y_over_d_t = np.zeros(y.shape)
             d_y_over_d_t_rhs = symbol_mapper.map_concatenated(
-                FDMSymbolMapArg(t, y, d_y_constraint_func), Lhs.D_Y_OVER_D_T)
+                FDMSymbolMapArg(t, y, d_y_constraint_func), LHS.D_Y_OVER_D_T)
             d_y_over_d_t[..., d_y_over_d_t_eq_indices] = d_y_over_d_t_rhs
             return d_y_over_d_t
 
@@ -118,7 +118,7 @@ class FDMOperator(Operator):
                 y_constraint = None if y_constraint is None \
                     else y_constraint[y_eq_indices]
                 y_rhs = symbol_mapper.map_concatenated(
-                    FDMSymbolMapArg(t, y, d_y_constraint_func), Lhs.Y)
+                    FDMSymbolMapArg(t, y, d_y_constraint_func), LHS.Y)
                 y_next[..., y_eq_indices] = \
                     apply_constraints_along_last_axis(y_constraint, y_rhs)
 
@@ -131,7 +131,7 @@ class FDMOperator(Operator):
                     else d_y_constraint[:, y_laplacian_eq_indices]
                 y_laplacian_rhs = symbol_mapper.map_concatenated(
                     FDMSymbolMapArg(t, y, d_y_constraint_func),
-                    Lhs.Y_LAPLACIAN)
+                    LHS.Y_LAPLACIAN)
                 y_next[..., y_laplacian_eq_indices] = \
                     self._differentiator.anti_laplacian(
                         y_laplacian_rhs,

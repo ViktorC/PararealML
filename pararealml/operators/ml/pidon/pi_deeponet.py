@@ -5,7 +5,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
-from pararealml.differential_equation import Lhs
+from pararealml.differential_equation import LHS
 from pararealml.operators.ml.deeponet import DeepONet
 from pararealml.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
@@ -436,16 +436,16 @@ class PIDeepONet(DeepONet):
         lhs_functions = []
         for y_ind, lhs_type in \
                 enumerate(diff_eq.symbolic_equation_system.lhs_types):
-            if lhs_type == Lhs.D_Y_OVER_D_T:
+            if lhs_type == LHS.D_Y_OVER_D_T:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
                         arg.t, arg.y_hat[:, _y_ind:_y_ind + 1], 0))
 
-            elif lhs_type == Lhs.Y:
+            elif lhs_type == LHS.Y:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.y_hat[:, _y_ind:_y_ind + 1])
 
-            elif lhs_type == Lhs.Y_LAPLACIAN:
+            elif lhs_type == LHS.Y_LAPLACIAN:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.auto_diff.batch_laplacian(
                         arg.x,

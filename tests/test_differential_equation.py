@@ -3,7 +3,7 @@ import pytest
 from sympy import Symbol
 
 from pararealml.differential_equation import DifferentialEquation, Symbols, \
-    SymbolicEquationSystem, Lhs
+    SymbolicEquationSystem, LHS
 
 
 def test_symbols_ode():
@@ -35,12 +35,12 @@ def test_symbolic_equation_system_with_no_equations():
 
 def test_symbolic_equation_system_with_mismatched_lhs_and_rhs_sizes():
     with pytest.raises(ValueError):
-        SymbolicEquationSystem([2 * Symbol('p')], [Lhs.D_Y_OVER_D_T, Lhs.Y])
+        SymbolicEquationSystem([2 * Symbol('p')], [LHS.D_Y_OVER_D_T, LHS.Y])
 
 
 def test_symbolic_equation_system():
     rhs = [Symbol('a'), Symbol('b'), Symbol('c'), Symbol('d'), Symbol('e')]
-    lhs = [Lhs.D_Y_OVER_D_T, Lhs.Y, Lhs.D_Y_OVER_D_T, Lhs.Y_LAPLACIAN, Lhs.Y]
+    lhs = [LHS.D_Y_OVER_D_T, LHS.Y, LHS.D_Y_OVER_D_T, LHS.Y_LAPLACIAN, LHS.Y]
     eq_sys = SymbolicEquationSystem(rhs, lhs)
 
     assert np.array_equal(eq_sys.rhs, rhs)
@@ -50,13 +50,13 @@ def test_symbolic_equation_system():
     expected_y_indices = [1, 4]
     expected_y_laplacian_indices = [3]
     assert np.array_equal(
-        eq_sys.equation_indices_by_type(Lhs.D_Y_OVER_D_T),
+        eq_sys.equation_indices_by_type(LHS.D_Y_OVER_D_T),
         expected_d_y_over_d_t_indices)
     assert np.array_equal(
-        eq_sys.equation_indices_by_type(Lhs.Y),
+        eq_sys.equation_indices_by_type(LHS.Y),
         expected_y_indices)
     assert np.array_equal(
-        eq_sys.equation_indices_by_type(Lhs.Y_LAPLACIAN),
+        eq_sys.equation_indices_by_type(LHS.Y_LAPLACIAN),
         expected_y_laplacian_indices)
 
 
@@ -105,7 +105,7 @@ def test_differential_equation_with_missing_d_y_over_d_t_lhs_in_pde_system():
                 [
                     self._symbols.t * self._symbols.y[0],
                     self._symbols.y_gradient[0, 0]
-                ], [Lhs.Y_LAPLACIAN, Lhs.Y])
+                ], [LHS.Y_LAPLACIAN, LHS.Y])
 
     with pytest.raises(ValueError):
         TestDiffEq()
@@ -123,7 +123,7 @@ def test_differential_equation_with_non_d_y_over_d_t_lhs_in_ode_system():
                 [
                     self._symbols.t * self._symbols.y[0],
                     self._symbols.t * self._symbols.y[1]
-                ], [Lhs.D_Y_OVER_D_T, Lhs.Y_LAPLACIAN])
+                ], [LHS.D_Y_OVER_D_T, LHS.Y_LAPLACIAN])
 
     with pytest.raises(ValueError):
         TestDiffEq()

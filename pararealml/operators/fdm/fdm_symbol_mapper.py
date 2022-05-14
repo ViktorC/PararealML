@@ -2,7 +2,7 @@ from typing import Callable, Sequence, NamedTuple, Union
 
 import numpy as np
 
-from pararealml import Lhs
+from pararealml import LHS
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.operators.fdm.numerical_differentiator import \
     NumericalDifferentiator
@@ -138,7 +138,7 @@ class FDMSymbolMapper(SymbolMapper[FDMSymbolMapArg, np.ndarray]):
     def map_concatenated(
             self,
             arg: FDMSymbolMapArg,
-            lhs_type: Lhs) -> np.ndarray:
+            lhs_type: LHS) -> np.ndarray:
         """
         Evaluates the right-hand side of the differential equation system
         given the map argument and concatenates the resulting sequence of map

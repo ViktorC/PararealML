@@ -17,7 +17,7 @@ from pararealml.differential_equation import CahnHilliardEquation
 from pararealml.differential_equation import ConvectionDiffusionEquation
 from pararealml.differential_equation import DifferentialEquation
 from pararealml.differential_equation import DiffusionEquation
-from pararealml.differential_equation import Lhs
+from pararealml.differential_equation import LHS
 from pararealml.differential_equation import LorenzEquation
 from pararealml.differential_equation import LotkaVolterraEquation
 from pararealml.differential_equation import NBodyGravitationalEquation
@@ -69,7 +69,7 @@ __all__ = [
     'apply_constraints_along_last_axis',
     'Constraint',
     'Symbols',
-    'Lhs',
+    'LHS',
     'SymbolicEquationSystem',
     'DifferentialEquation',
     'PopulationGrowthEquation',

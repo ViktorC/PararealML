@@ -134,7 +134,7 @@ class Symbols:
         return copy(self._y_vector_laplacian)
 
 
-class Lhs(Enum):
+class LHS(Enum):
     """
     An enumeration defining the types of the left-hand sides of symbolic
     equations making up systems of differential equations.
@@ -152,7 +152,7 @@ class SymbolicEquationSystem:
     def __init__(
             self,
             rhs: Union[Sequence[Expr], np.ndarray],
-            lhs_types: Optional[Sequence[Lhs]] = None):
+            lhs_types: Optional[Sequence[LHS]] = None):
         """
         :param rhs: the right-hand side of the symbolic equation system
         :param lhs_types: the types of the left-hand side of the symbolic
@@ -162,7 +162,7 @@ class SymbolicEquationSystem:
             raise ValueError('number of equations must be greater than 0')
 
         if lhs_types is None:
-            lhs_types = [Lhs.D_Y_OVER_D_T] * len(rhs)
+            lhs_types = [LHS.D_Y_OVER_D_T] * len(rhs)
 
         if len(rhs) != len(lhs_types):
             raise ValueError(
@@ -172,8 +172,8 @@ class SymbolicEquationSystem:
         self._rhs = copy(rhs)
         self._lhs_types = copy(lhs_types)
 
-        self._equation_indices_by_type: Dict[Lhs, List[int]] = \
-            {lhs_type: [] for lhs_type in Lhs}
+        self._equation_indices_by_type: Dict[LHS, List[int]] = \
+            {lhs_type: [] for lhs_type in LHS}
         for i, (lhs_type, rhs_element) in enumerate(zip(lhs_types, rhs)):
             self._equation_indices_by_type[lhs_type].append(i)
 
@@ -185,13 +185,13 @@ class SymbolicEquationSystem:
         return copy(self._rhs)
 
     @property
-    def lhs_types(self) -> Sequence[Lhs]:
+    def lhs_types(self) -> Sequence[LHS]:
         """
         The types of the left-hand side of the symbolic equation system.
         """
         return copy(self._lhs_types)
 
-    def equation_indices_by_type(self, lhs_type: Lhs) -> Sequence[int]:
+    def equation_indices_by_type(self, lhs_type: LHS) -> Sequence[int]:
         """
         Returns a sequence of integers denoting the indices of all equations of
         the equation system with the specified type of left-hand side.
@@ -322,7 +322,7 @@ class DifferentialEquation(ABC):
                     f'({rhs_symbols}) of equation {i}')
 
         d_y_over_d_t_indices = \
-            equation_system.equation_indices_by_type(Lhs.D_Y_OVER_D_T)
+            equation_system.equation_indices_by_type(LHS.D_Y_OVER_D_T)
         if self._x_dimension:
             if len(d_y_over_d_t_indices) == 0:
                 raise ValueError(
@@ -665,8 +665,8 @@ class CahnHilliardEquation(DifferentialEquation):
                 sym.y[0] ** 3 - sym.y[0] - self._gamma * sym.y_laplacian[0],
             ],
             [
-                Lhs.D_Y_OVER_D_T,
-                Lhs.Y
+                LHS.D_Y_OVER_D_T,
+                LHS.Y
             ]
         )
 
@@ -782,9 +782,9 @@ class NavierStokesEquation(DifferentialEquation):
                 -self._symbols.y_gradient[1, 0]
             ],
             [
-                Lhs.D_Y_OVER_D_T,
-                Lhs.Y_LAPLACIAN,
-                Lhs.Y,
-                Lhs.Y
+                LHS.D_Y_OVER_D_T,
+                LHS.Y_LAPLACIAN,
+                LHS.Y,
+                LHS.Y
             ]
         )

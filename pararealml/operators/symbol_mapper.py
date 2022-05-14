@@ -5,7 +5,7 @@ from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional, \
 import numpy as np
 import sympy as sp
 
-from pararealml.differential_equation import DifferentialEquation, Lhs
+from pararealml.differential_equation import DifferentialEquation, LHS
 
 
 SymbolMapArg = TypeVar('SymbolMapArg')
@@ -27,10 +27,10 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
         eq_sys = diff_eq.symbolic_equation_system
         self._rhs_functions: Dict[
-            Optional[Lhs],
+            Optional[LHS],
             Callable[[SymbolMapArg], Sequence[SymbolMapValue]]
         ] = {None: self.create_rhs_map_function(range(len(eq_sys.rhs)))}
-        for lhs_type in Lhs:
+        for lhs_type in LHS:
             self._rhs_functions[lhs_type] = self.create_rhs_map_function(
                 eq_sys.equation_indices_by_type(lhs_type))
 
@@ -236,7 +236,7 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     def map(self,
             arg: SymbolMapArg,
-            lhs_type: Optional[Lhs] = None) -> Sequence[SymbolMapValue]:
+            lhs_type: Optional[LHS] = None) -> Sequence[SymbolMapValue]:
         """
         Evaluates the right-hand side of the differential equation system
         given the map argument.
