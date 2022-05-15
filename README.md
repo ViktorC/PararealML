@@ -21,6 +21,7 @@ The library provides out-of-the-box implementations for a number of differential
  * `PopulationGrowthEquation`
  * `LotkaVolterraEquation`
  * `LorenzEquation`
+ * `SIREquation`
  * `VanDerPolEquation`
  * `NBodyGravitationalEquation`
  * `DiffusionEquation`

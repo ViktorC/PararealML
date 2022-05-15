@@ -5,7 +5,7 @@ from pararealml.boundary_condition import DirichletBoundaryCondition, \
     NeumannBoundaryCondition, vectorize_bc_function
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LotkaVolterraEquation, \
-    DiffusionEquation, WaveEquation
+    SIREquation, DiffusionEquation, WaveEquation
 from pararealml.initial_condition import ContinuousInitialCondition, \
     DiscreteInitialCondition, GaussianInitialCondition, BetaInitialCondition, \
     vectorize_ic_function, ConstantInitialCondition
@@ -13,7 +13,7 @@ from pararealml.mesh import Mesh
 
 
 def test_discrete_initial_condition_ode_with_wrong_shape():
-    diff_eq = LotkaVolterraEquation()
+    diff_eq = SIREquation()
     cp = ConstrainedProblem(diff_eq)
     with pytest.raises(ValueError):
         DiscreteInitialCondition(cp, np.array([10.]))

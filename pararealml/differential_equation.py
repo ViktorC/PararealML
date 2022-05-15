@@ -427,6 +427,42 @@ class LorenzEquation(DifferentialEquation):
         ])
 
 
+class SIREquation(DifferentialEquation):
+    """
+    A system of three ordinary differential equations modelling disease
+    transmission within a population through the numbers of susceptible,
+    infectious, and removed individuals.
+    """
+
+    def __init__(
+            self,
+            beta: float = .2,
+            gamma: float = .1):
+        """
+        :param beta: the contract rate
+        :param gamma: the recovery rate
+        """
+        if beta < 0. or gamma < 0.:
+            raise ValueError('beta and gamma must be non-negative')
+
+        self._beta = beta
+        self._gamma = gamma
+
+        super(SIREquation, self).__init__(0, 3)
+
+    @property
+    def symbolic_equation_system(self) -> SymbolicEquationSystem:
+        s = self._symbols.y[0]
+        i = self._symbols.y[1]
+        r = self._symbols.y[2]
+        n = s + i + r
+        return SymbolicEquationSystem([
+            -self._beta * s * i / n,
+            self._beta * s * i / n - self._gamma * i,
+            self._gamma * i
+        ])
+
+
 class VanDerPolEquation(DifferentialEquation):
     """
     A second order ordinary differential equation modelling a non-conservative
