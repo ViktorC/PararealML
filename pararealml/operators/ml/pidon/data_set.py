@@ -272,18 +272,20 @@ class DataSetIterator(Iterator):
         self._shuffle = shuffle
 
         self._iv_data_size = data_set.initial_value_data.shape[0]
-        self._domain_data_size = data_set.domain_collocation_data.shape[0]
-        self._initial_data_size = data_set.initial_collocation_data.shape[0]
-        self._boundary_data_size = \
+        self._domain_collocation_data_size = \
+            data_set.domain_collocation_data.shape[0]
+        self._initial_collocation_data_size = \
+            data_set.initial_collocation_data.shape[0]
+        self._boundary_collocation_data_size = \
             0 if data_set.boundary_collocation_data is None \
             else data_set.boundary_collocation_data.shape[0]
 
         self._total_domain_data_size = \
-            self._iv_data_size * self._domain_data_size
-        self._total_initial_data_size = \
-            n_ic_repeats * self._iv_data_size * self._initial_data_size
+            self._iv_data_size * self._domain_collocation_data_size
+        self._total_initial_data_size = n_ic_repeats * \
+            self._iv_data_size * self._initial_collocation_data_size
         self._total_boundary_data_size = \
-            self._iv_data_size * self._boundary_data_size
+            self._iv_data_size * self._boundary_collocation_data_size
 
         if self._total_domain_data_size % n_batches != 0 \
                 or self._total_initial_data_size % n_batches != 0 \
@@ -299,14 +301,14 @@ class DataSetIterator(Iterator):
         self._boundary_batch_size = self._total_boundary_data_size // n_batches
 
         self._domain_indices = self._create_cartesian_product_indices(
-            self._iv_data_size, self._domain_data_size)
+            self._iv_data_size, self._domain_collocation_data_size)
         self._initial_indices = np.tile(
             self._create_cartesian_product_indices(
-                self._iv_data_size, self._initial_data_size),
+                self._iv_data_size, self._initial_collocation_data_size),
             (n_ic_repeats, 1))
         self._boundary_indices = self._create_cartesian_product_indices(
-            self._iv_data_size, self._boundary_data_size) \
-            if self._boundary_data_size else None
+            self._iv_data_size, self._boundary_collocation_data_size) \
+            if self._boundary_collocation_data_size else None
 
         self._batch_counter = 0
 
@@ -369,7 +371,7 @@ class DataSetIterator(Iterator):
         if self._shuffle:
             np.random.shuffle(self._domain_indices)
             np.random.shuffle(self._initial_indices)
-            if self._boundary_data_size:
+            if self._boundary_collocation_data_size:
                 np.random.shuffle(self._boundary_indices)
 
     def _get_domain_batch(self, domain_batch_size: int) -> DomainDataBatch:
