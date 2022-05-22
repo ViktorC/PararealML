@@ -1,4 +1,5 @@
 import sys
+from typing import Callable, Optional
 
 import numpy as np
 from mpi4py import MPI
@@ -20,7 +21,9 @@ class PararealOperator(Operator):
             f: Operator,
             g: Operator,
             tol: float,
-            max_iterations: int = sys.maxsize):
+            max_iterations: int = sys.maxsize,
+            termination_condition_func:
+            Optional[Callable[[np.ndarray], bool]] = None):
         """
         :param f: the fine operator
         :param g: the coarse operator
@@ -32,6 +35,9 @@ class PararealOperator(Operator):
             (effective only if it is less than the number of executing
             processes and the accuracy requirements are not satisfied in fewer
             iterations)
+        :param termination_condition_func: a predicate function that takes the
+            latest sub-solution end point estimates and returns a Boolean
+            denoting whether the termination condition is met
         """
         super(PararealOperator, self).__init__(f.d_t, f.vertex_oriented)
 
@@ -39,6 +45,9 @@ class PararealOperator(Operator):
         self._g = g
         self._tol = tol
         self._max_iterations = max_iterations
+        self._termination_condition_func = termination_condition_func \
+            if termination_condition_func is not None \
+            else lambda _: False
 
     def solve(
             self,
@@ -113,7 +122,8 @@ class PararealOperator(Operator):
                     np.linalg.norm(new_y_end_point - y_border_points[j + 1]))
                 y_border_points[j + 1] = new_y_end_point
 
-            if max_update < self._tol:
+            if max_update < self._tol or \
+                    self._termination_condition_func(y_border_points[1:]):
                 break
 
         t = discretize_time_domain(ivp.t_interval, f.d_t)[1:]
