@@ -92,7 +92,7 @@ def test_ar_operator_data_generation_in_parallel():
     inputs, targets = ar.generate_data(
         ivp, oracle, 20, perturbation_function, n_jobs=4)
 
-    assert inputs.shape == (80, 4)
+    assert inputs.shape == (80, 3)
     assert targets.shape == (80, 3)
 
 
@@ -122,7 +122,7 @@ def test_ar_operator_on_ode():
 
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
-    assert np.max(np.abs(diff.differences[0])) < .2
+    assert np.max(np.abs(diff.differences[0])) < .1
 
 
 def test_ar_operator_on_ode_with_isolated_perturbations():
@@ -155,7 +155,7 @@ def test_ar_operator_on_ode_with_isolated_perturbations():
     assert np.max(np.abs(diff.differences[0])) < .01
 
 
-def test_ar_operator_on_ode_in_time_invariant_mode():
+def test_ar_operator_on_ode_in_time_variant_mode():
     set_random_seed(0)
 
     diff_eq = LorenzEquation()
@@ -166,7 +166,7 @@ def test_ar_operator_on_ode_in_time_invariant_mode():
     oracle = ODEOperator('DOP853', .001)
     ref_solution = oracle.solve(ivp)
 
-    ar = AutoRegressionOperator(2.5, True, time_variant=False)
+    ar = AutoRegressionOperator(2.5, True, time_variant=True)
     ar.train(
         ivp,
         oracle,
@@ -181,7 +181,7 @@ def test_ar_operator_on_ode_in_time_invariant_mode():
 
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10., 4))
-    assert np.max(np.abs(diff.differences[0])) < .2
+    assert np.max(np.abs(diff.differences[0])) < .1
 
 
 def test_ar_operator_on_pde():
@@ -213,7 +213,7 @@ def test_ar_operator_on_pde():
         SKLearnKerasRegressor(
             DeepONet(
                 np.prod(cp.y_shape(True)).item(),
-                1 + diff_eq.x_dimension,
+                diff_eq.x_dimension,
                 diff_eq.y_dimension * 10,
                 diff_eq.y_dimension,
                 [100, 50],
@@ -241,7 +241,7 @@ def test_ar_operator_on_pde():
     assert np.max(np.abs(diff.differences[0])) < .5
 
 
-def test_ar_operator_on_pde_in_time_invariant_mode():
+def test_ar_operator_on_pde_in_time_variant_mode():
     set_random_seed(0)
 
     diff_eq = DiffusionEquation(1)
@@ -262,12 +262,17 @@ def test_ar_operator_on_pde_in_time_invariant_mode():
     oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), .1)
     ref_solution = oracle.solve(ivp)
 
-    ar = AutoRegressionOperator(2.5, True, time_variant=False)
+    ar = AutoRegressionOperator(2.5, True, time_variant=True)
     ar.train(
         ivp,
         oracle,
         SKLearnKerasRegressor(
-            FNNRegressor([7, 50, 50, 1]),
+            FNNRegressor([
+                np.prod(cp.y_shape(True)).item() + diff_eq.x_dimension + 1,
+                50,
+                50,
+                diff_eq.y_dimension
+            ]),
             optimizer=optimizers.Adam(
                 learning_rate=optimizers.schedules.ExponentialDecay(
                         1e-2, decay_steps=500, decay_rate=.95

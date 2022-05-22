@@ -24,7 +24,7 @@ class AutoRegressionOperator(Operator):
             self,
             d_t: float,
             vertex_oriented: bool,
-            time_variant: bool = True):
+            time_variant: bool = False):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
