@@ -226,6 +226,7 @@ def test_ar_operator_on_pde():
             ),
             batch_size=968,
             epochs=500,
+            max_predict_batch_size=300
         ),
         20,
         lambda t, y: y + np.random.normal(0., t / 75., size=y.shape))

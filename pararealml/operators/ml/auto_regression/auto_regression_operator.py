@@ -192,7 +192,7 @@ class AutoRegressionOperator(Operator):
         :param test_size: the fraction of all data points that should be used
             for testing
         :param score_func: the prediction scoring function to use
-        :return: the training and test losses
+        :return: the training and test scores
         """
         x_train, x_test, y_train, y_test = train_test_split(
             data[0],
@@ -251,7 +251,7 @@ class AutoRegressionOperator(Operator):
         :param test_size: the fraction of all data points that should be used
             for testing
         :param score_func: the prediction scoring function to use
-        :return: the training and test losses
+        :return: the training and test scores
         """
         data = self.generate_data(
             ivp,
