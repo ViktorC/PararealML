@@ -100,15 +100,15 @@ class PIDONOperator(Operator):
         y = np.empty((len(t),) + y_shape)
 
         for i, t_i in enumerate(t):
-            y_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
-            y[i, ...] = y_tensor.numpy().reshape(y_shape)
+            y_i_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
+            y[i, ...] = y_i_tensor.numpy().reshape(y_shape)
 
             if i < len(t) - 1:
                 if self._auto_regression_mode:
                     u_tensor = tf.tile(
-                        tf.reshape(y_tensor, (1, -1)),
+                        tf.reshape(y_i_tensor, (1, -1)),
                         (x_tensor.shape[0], 1)) if diff_eq.x_dimension \
-                        else tf.reshape(y_tensor, u_tensor.shape)
+                        else tf.reshape(y_i_tensor, u_tensor.shape)
                 else:
                     t_tensor = tf.constant(
                         t[i + 1],
