@@ -23,7 +23,7 @@ test:
 	pytest -v tests/
 
 coverage:
-	coverage run --source=pararealml/ -m pytest -sv tests/
+	coverage run --source=pararealml/ -m pytest -v tests/
 	coverage xml -o coverage.xml
 
 run:
