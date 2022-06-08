@@ -138,18 +138,25 @@ class PIDeepONet(DeepONet):
 
         training_loss_history = []
         test_loss_history = []
-        for i in range(epochs):
+        for epoch in range(epochs):
             if verbose:
-                print('Epoch:', i)
+                print(f'Epoch: {epoch}')
 
             training_batch_losses = []
-            for batch in training_data:
-                training_batch_losses.append(self._step(
+            for batch_ind, batch in enumerate(training_data):
+                training_batch_loss = self._step(
                     batch,
                     optimizer_instance,
                     diff_eq_loss_weight,
                     ic_loss_weight,
-                    bc_loss_weight))
+                    bc_loss_weight)
+                training_batch_losses.append(training_batch_loss)
+                if verbose:
+                    print(
+                        f'\rTraining Batch {batch_ind}/{len(training_data)} '
+                        f'MSE - {training_batch_loss}',
+                        end='')
+
             training_epoch_loss = Loss.mean(
                 training_batch_losses,
                 diff_eq_loss_weight,
@@ -157,16 +164,23 @@ class PIDeepONet(DeepONet):
                 bc_loss_weight)
             training_loss_history.append(training_epoch_loss)
             if verbose:
-                print('Training MSE -', training_epoch_loss)
+                print(f'\rTraining MSE - {training_epoch_loss}')
 
             if test_data:
                 test_batch_losses = []
-                for batch in test_data:
-                    test_batch_losses.append(self._physics_informed_loss(
+                for batch_ind, batch in enumerate(test_data):
+                    test_batch_loss = self._physics_informed_loss(
                         batch,
                         diff_eq_loss_weight,
                         ic_loss_weight,
-                        bc_loss_weight))
+                        bc_loss_weight)
+                    test_batch_losses.append(test_batch_loss)
+                    if verbose:
+                        print(
+                            f'\rTest Batch {batch_ind}/{len(test_data)} '
+                            f'MSE - {test_batch_loss}',
+                            end='')
+
                 test_epoch_loss = Loss.mean(
                     test_batch_losses,
                     diff_eq_loss_weight,
@@ -174,7 +188,7 @@ class PIDeepONet(DeepONet):
                     bc_loss_weight)
                 test_loss_history.append(test_epoch_loss)
                 if verbose:
-                    print('Test MSE -', test_epoch_loss)
+                    print(f'\rTest MSE - {test_epoch_loss}')
 
         return training_loss_history, test_loss_history
 
@@ -259,7 +273,7 @@ class PIDeepONet(DeepONet):
             ic_loss_weight,
             bc_loss_weight)
         if verbose:
-            print('Training MSE -', training_loss)
+            print(f'Training MSE - {training_loss}')
 
         test_loss = None
         if test_data:
@@ -268,7 +282,7 @@ class PIDeepONet(DeepONet):
                 diff_eq_loss_weight,
                 ic_loss_weight,
                 bc_loss_weight)
-            print('Test MSE -', test_loss)
+            print(f'Test MSE - {test_loss}')
 
         return training_loss, test_loss
 

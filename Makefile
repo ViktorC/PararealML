@@ -20,7 +20,7 @@ type-check:
 	mypy --ignore-missing-imports --no-strict-optional pararealml/
 
 test:
-	pytest -sv tests/
+	pytest -v tests/
 
 coverage:
 	coverage run --source=pararealml/ -m pytest -sv tests/

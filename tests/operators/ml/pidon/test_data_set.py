@@ -101,6 +101,8 @@ def test_iterator_ode():
     data_set = DataSet(cp, t_interval, y_0_functions, sampler, n_points)
     iterator = data_set.get_iterator(5, n_ic_repeats=5)
 
+    assert len(iterator) == 5
+
     shuffled_batches = [batch for batch in iterator]
     assert len(shuffled_batches) == 5
     for batch in shuffled_batches:
@@ -190,6 +192,8 @@ def test_iterator_pde():
         n_domain_points,
         n_boundary_points)
     iterator = data_set.get_iterator(2)
+
+    assert len(iterator) == 2
 
     batches = [batch for batch in iterator]
     assert len(batches) == 2

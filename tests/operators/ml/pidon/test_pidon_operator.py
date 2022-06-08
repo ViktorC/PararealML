@@ -50,13 +50,11 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(1e-4),
-            epochs=100,
-            verbose=False
+            epochs=100
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=100,
-            gradient_tol=0.,
-            verbose=False
+            gradient_tol=0.
         )
     )
 
@@ -132,8 +130,7 @@ def test_pidon_operator_on_ode_system():
                 }
             },
             epochs=3,
-            ic_loss_weight=2.,
-            verbose=False
+            ic_loss_weight=2.
         )
     )
 

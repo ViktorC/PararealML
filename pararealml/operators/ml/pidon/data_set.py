@@ -329,6 +329,9 @@ class DataSetIterator(Iterator):
 
         return batch
 
+    def __len__(self) -> int:
+        return self._n_batches
+
     @property
     def domain_batch_size(self) -> int:
         """
