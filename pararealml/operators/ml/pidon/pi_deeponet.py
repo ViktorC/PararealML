@@ -153,8 +153,9 @@ class PIDeepONet(DeepONet):
                 training_batch_losses.append(training_batch_loss)
                 if verbose:
                     print(
-                        f'\rTraining Batch {batch_ind}/{len(training_data)} '
-                        f'MSE - {training_batch_loss}',
+                        '\rTraining Batch '
+                        f'{batch_ind + 1}/{len(training_data)} MSE - '
+                        f'{training_batch_loss}',
                         end='')
 
             training_epoch_loss = Loss.mean(
@@ -177,7 +178,7 @@ class PIDeepONet(DeepONet):
                     test_batch_losses.append(test_batch_loss)
                     if verbose:
                         print(
-                            f'\rTest Batch {batch_ind}/{len(test_data)} '
+                            f'\rTest Batch {batch_ind + 1}/{len(test_data)} '
                             f'MSE - {test_batch_loss}',
                             end='')
 
