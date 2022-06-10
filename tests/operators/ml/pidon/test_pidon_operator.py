@@ -53,16 +53,20 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             trunk_activation='softplus',
         ),
         optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(5e-5),
-            epochs=200
+            optimizer=optimizers.Adam(
+                learning_rate=optimizers.schedules.ExponentialDecay(
+                    1e-3, decay_steps=50, decay_rate=.95)),
+            epochs=500
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=200,
+            max_iterations=250,
+            max_line_search_iterations=100,
+            parallel_iterations=4,
             gradient_tol=0.
         )
     )
 
-    assert len(training_loss_history) == 201
+    assert len(training_loss_history) == 501
     assert len(test_loss_history) == 0
     assert training_loss_history[-1].weighted_total_loss.numpy() < 1e-4
 
