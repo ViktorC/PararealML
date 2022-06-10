@@ -284,6 +284,8 @@ class SecondaryOptimizationArgs(NamedTuple):
     parameters.
     """
     max_iterations: int = 50
+    max_line_search_iterations: int = 50
+    parallel_iterations: int = 1
     gradient_tol: float = 1e-8
     diff_eq_loss_weight: float = 1.
     ic_loss_weight: float = 1.

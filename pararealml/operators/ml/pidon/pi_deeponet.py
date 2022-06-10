@@ -197,6 +197,8 @@ class PIDeepONet(DeepONet):
             self,
             training_data: DataSetIterator,
             max_iterations: int,
+            max_line_search_iterations: int,
+            parallel_iterations: int,
             gradient_tol: float,
             test_data: Optional[DataSetIterator] = None,
             diff_eq_loss_weight: float = 1.,
@@ -212,6 +214,10 @@ class PIDeepONet(DeepONet):
         :param training_data: the data set providing the full training batch
         :param max_iterations: the maximum number of iterations to perform the
             optimization for
+        :param max_line_search_iterations: the maximum number of line search
+            iterations
+        :param parallel_iterations: the number of iterations allowed to run in
+            parallel
         :param gradient_tol: the threshold on the gradient vector; if the
             largest element of the absolute value of the gradient vector is
             less than this threshold, the optimization is stopped
@@ -265,6 +271,8 @@ class PIDeepONet(DeepONet):
             value_and_gradients_function=value_and_gradients_function,
             initial_position=flattened_parameters,
             max_iterations=max_iterations,
+            max_line_search_iterations=max_line_search_iterations,
+            parallel_iterations=parallel_iterations,
             tolerance=gradient_tol)
         set_model_parameters(results.position)
 
@@ -274,6 +282,10 @@ class PIDeepONet(DeepONet):
             ic_loss_weight,
             bc_loss_weight)
         if verbose:
+            print(
+                f'Iterations: {results.num_iterations}; '
+                f'Objective Evaluations: {results.num_objective_evaluations}; '
+                f'Converged: {results.converged}; Failed: {results.failed}')
             print(f'Training MSE - {training_loss}')
 
         test_loss = None
