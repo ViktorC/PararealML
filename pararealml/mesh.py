@@ -18,8 +18,10 @@ class CoordinateSystem(Enum):
 
 class Mesh:
     """
-    A hyper-rectangular grid of arbitrary dimensionality and shape with a
-    uniform spacing of grid points along each axis.
+    A hyper-rectangular grid of arbitrary dimensionality, size, and
+    axis-specific uniform point spacing defined in any one of the supported
+    coordinate systems. It provides both a definition and a discretisation of
+    the spatial domain of any partial differential equation.
     """
 
     def __init__(
@@ -29,11 +31,11 @@ class Mesh:
             coordinate_system_type: CoordinateSystem =
             CoordinateSystem.CARTESIAN):
         """
-        :param x_intervals: the bounds of each axis of the domain
-        :param d_x: the step sizes to use for each axis of the domain to create
-            the mesh
-        :param coordinate_system_type: the coordinate system type used by the
-            mesh
+        :param x_intervals: the bounds of each axis of the spatial domain
+        :param d_x: the step sizes to use for each axis of the spatial domain
+            to create the mesh
+        :param coordinate_system_type: the coordinate system the spatial domain
+            is defined in
         """
         if len(x_intervals) == 0:
             raise ValueError(
@@ -42,11 +44,12 @@ class Mesh:
             raise ValueError(
                 f'number of spatial domain intervals ({len(x_intervals)}) '
                 f'must match number of spatial step sizes ({len(d_x)})')
-        for interval in x_intervals:
-            if interval[1] <= interval[0]:
-                raise ValueError(
-                    f'lower bound of spatial domain interval ({interval[0]}) '
-                    f'cannot be greater than its upper bound ({interval[1]})')
+        if any(interval[1] <= interval[0] for interval in x_intervals):
+            raise ValueError(
+                'upper bound of every spatial domain interval must be greater '
+                'than its lower bound')
+        if any(d_x_axis <= 0. for d_x_axis in d_x):
+            raise ValueError('all spatial step sizes must be greater than 0')
 
         self._x_intervals = tuple(x_intervals)
         self._d_x = tuple(d_x)
@@ -80,6 +83,8 @@ class Mesh:
                         f'non-negative and upper bound ({x_intervals[2][1]}) '
                         f'must be no more than Pi')
 
+        self._volume = self._compute_volume()
+        self._boundary_sizes = tuple(self._compute_boundary_sizes())
         self._vertices_shape = self._create_shape(d_x, True)
         self._cells_shape = self._create_shape(d_x, False)
         self._vertex_axis_coordinates = self._create_axis_coordinates(True)
@@ -90,32 +95,46 @@ class Mesh:
             self._create_coordinate_grids(False)
 
     @property
-    def dimensions(self) -> int:
+    def x_intervals(self) -> Sequence[SpatialDomainInterval]:
         """
-        The number of spatial dimensions the mesh spans.
-        """
-        return self._dimensions
-
-    @property
-    def x_intervals(self) -> Tuple[SpatialDomainInterval, ...]:
-        """
-        The bounds of each axis of the domain
+        The bounds of each axis of the spatial domain.
         """
         return self._x_intervals
 
     @property
-    def d_x(self) -> Tuple[float, ...]:
+    def d_x(self) -> Sequence[float]:
         """
-        The step sizes along each axis of the domain.
+        The step sizes along each axis of the spatial domain.
         """
         return self._d_x
 
     @property
     def coordinate_system_type(self) -> CoordinateSystem:
         """
-        The coordinate system type used by the mesh.
+        The coordinate system the spatial domain is defined in.
         """
         return self._coordinate_system_type
+
+    @property
+    def dimensions(self) -> int:
+        """
+        The number of dimensions the spatial domain spans.
+        """
+        return self._dimensions
+
+    @property
+    def volume(self) -> float:
+        """
+        The volume of the spatial domain.
+        """
+        return self._volume
+
+    @property
+    def boundary_sizes(self) -> Sequence[Tuple[float, float]]:
+        """
+        The sizes of the two boundaries of the spatial domain along each axis.
+        """
+        return self._boundary_sizes
 
     @property
     def vertices_shape(self) -> Tuple[int, ...]:
@@ -326,6 +345,108 @@ class Mesh:
         for coordinate_grid in coordinate_grids:
             coordinate_grid.setflags(write=False)
         return tuple(coordinate_grids)
+
+    def _compute_volume(self) -> float:
+        """
+        Computes the volume of the spatial domain spanned by the mesh.
+        """
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            (lower_x_bounds, upper_x_bounds) = zip(*self._x_intervals)
+            return np.product(np.subtract(upper_x_bounds, lower_x_bounds))
+
+        elif self._coordinate_system_type == CoordinateSystem.SPHERICAL:
+            (r_lower, r_upper) = self._x_intervals[0]
+            (theta_lower, theta_upper) = self._x_intervals[1]
+            (phi_lower, phi_upper) = self._x_intervals[2]
+            return (r_upper ** 3 - r_lower ** 3) / 3. * \
+                (theta_upper - theta_lower) * \
+                (np.cos(phi_lower) - np.cos(phi_upper))
+
+        else:
+            (r_lower, r_upper) = self._x_intervals[0]
+            (theta_lower, theta_upper) = self._x_intervals[1]
+            base_area = (r_upper ** 2 - r_lower ** 2) * \
+                (theta_upper - theta_lower) / 2.
+
+            if self._dimensions == 2:
+                return base_area
+
+            (z_lower, z_upper) = self._x_intervals[2]
+            return base_area * (z_upper - z_lower)
+
+    def _compute_boundary_sizes(self) -> Sequence[Tuple[float, float]]:
+        """
+        Computes the sizes of the two boundaries of the spatial mesh along each
+        axis.
+        """
+        if self._coordinate_system_type == CoordinateSystem.CARTESIAN:
+            (lower_x_bounds, upper_x_bounds) = zip(*self._x_intervals)
+            x_interval_lengths = np.subtract(upper_x_bounds, lower_x_bounds)
+            volume = np.product(x_interval_lengths)
+            return [
+                (volume / x_interval_length,) * 2
+                for x_interval_length in x_interval_lengths
+            ]
+
+        elif self._coordinate_system_type == CoordinateSystem.SPHERICAL:
+            (r_lower, r_upper) = self._x_intervals[0]
+            (phi_lower, phi_upper) = self._x_intervals[2]
+            theta_span = self._x_intervals[1][1] - self._x_intervals[1][0]
+
+            r_axis_boundary_sizes = (
+                r_lower ** 2 * theta_span *
+                (np.cos(phi_lower) - np.cos(phi_upper)),
+                r_upper ** 2 * theta_span *
+                (np.cos(phi_lower) - np.cos(phi_upper))
+            )
+            theta_axis_boundary_sizes = (
+                (r_upper ** 2 - r_lower ** 2) / 2. * (phi_upper - phi_lower),
+            ) * 2
+            phi_axis_boundary_sizes = (
+                (r_upper ** 2 - r_lower ** 2) / 2. *
+                theta_span * np.sin(phi_lower),
+                (r_upper ** 2 - r_lower ** 2) / 2. *
+                theta_span * np.sin(phi_upper)
+            )
+            return [
+                r_axis_boundary_sizes,
+                theta_axis_boundary_sizes,
+                phi_axis_boundary_sizes
+            ]
+
+        else:
+            (r_lower, r_upper) = self._x_intervals[0]
+            theta_span = self._x_intervals[1][1] - self._x_intervals[1][0]
+
+            r_axis_boundary_sizes = (
+                r_lower * theta_span,
+                r_upper * theta_span
+            )
+            theta_axis_boundary_sizes = ((r_upper - r_lower),) * 2
+
+            if self._dimensions == 2:
+                return [
+                    r_axis_boundary_sizes, theta_axis_boundary_sizes
+                ]
+
+            z_span = self._x_intervals[2][1] - self._x_intervals[2][0]
+
+            r_axis_boundary_sizes = (
+                r_axis_boundary_sizes[0] * z_span,
+                r_axis_boundary_sizes[1] * z_span
+            )
+            theta_axis_boundary_sizes = (
+                theta_axis_boundary_sizes[0] * z_span,
+                theta_axis_boundary_sizes[1] * z_span
+            )
+            z_axis_boundary_sizes = (
+                (r_upper ** 2 - r_lower ** 2) * theta_span / 2.,
+            ) * 2
+            return [
+                r_axis_boundary_sizes,
+                theta_axis_boundary_sizes,
+                z_axis_boundary_sizes
+            ]
 
 
 Coordinate = TypeVar('Coordinate', float, np.ndarray)

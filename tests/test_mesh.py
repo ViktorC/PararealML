@@ -5,11 +5,34 @@ from pararealml.mesh import Mesh, CoordinateSystem, \
     to_cartesian_coordinates, from_cartesian_coordinates, unit_vectors_at
 
 
+def test_mesh_with_zero_dimensions():
+    with pytest.raises(ValueError):
+        Mesh([], [])
+
+
+def test_mesh_with_mismatched_x_interval_and_d_x_dimensions():
+    with pytest.raises(ValueError):
+        Mesh([(1., 2.)], [.1, .1])
+
+
+def test_mesh_with_invalid_x_interval():
+    with pytest.raises(ValueError):
+        Mesh([(1., 1.), (0., 2.)], [.1, .2])
+
+
+def test_mesh_with_invalid_d_x():
+    with pytest.raises(ValueError):
+        Mesh([(1., 2.), (0., 5.)], [.0, .5])
+
+
 def test_mesh():
     x_intervals = [(-10., 10.), (0., 50.)]
     d_x = [.1, .2]
     mesh = Mesh(x_intervals, d_x)
 
+    assert mesh.dimensions == 2
+    assert mesh.volume == 1000.
+    assert np.array_equal(mesh.boundary_sizes, [(50., 50.), (20., 20.)])
     assert mesh.vertices_shape == (201, 251)
     assert mesh.cells_shape == (200, 250)
     assert mesh.shape(True) == mesh.vertices_shape
@@ -70,6 +93,10 @@ def test_polar_mesh():
         [(0., 1.), (0., np.pi)],
         [.5, np.pi / 2.],
         CoordinateSystem.POLAR)
+
+    assert mesh.dimensions == 2
+    assert mesh.volume == np.pi / 2.
+    assert np.array_equal(mesh.boundary_sizes, [(0., np.pi), (1., 1.)])
 
     expected_polar_vertex_coordinate_grids = [
         np.array([
@@ -211,6 +238,12 @@ def test_cylindrical_mesh():
         [(1., 2.), (0., np.pi), (-1., 1.)],
         [.5, np.pi / 2., 1.],
         CoordinateSystem.CYLINDRICAL)
+
+    assert mesh.dimensions == 3
+    assert mesh.volume == 3. * np.pi
+    assert np.array_equal(
+        mesh.boundary_sizes,
+        [(2. * np.pi, 4. * np.pi), (2., 2.), (1.5 * np.pi, 1.5 * np.pi)])
 
     expected_cylindrical_vertex_coordinate_grids = [
         np.array([
@@ -566,6 +599,12 @@ def test_spherical_mesh():
         [(1., 2.), (0., 2 * np.pi), (0., np.pi)],
         [.5, np.pi, np.pi / 2.],
         CoordinateSystem.SPHERICAL)
+
+    assert mesh.dimensions == 3
+    assert mesh.volume == 28. / 3. * np.pi
+    assert np.allclose(
+        mesh.boundary_sizes,
+        [(4. * np.pi, 16 * np.pi), (1.5 * np.pi, 1.5 * np.pi), (0., 0.)])
 
     expected_spherical_vertex_coordinate_grids = [
         np.array([
