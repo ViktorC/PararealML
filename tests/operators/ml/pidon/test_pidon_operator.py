@@ -49,7 +49,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             trunk_hidden_layer_sizes=[50, 50, 50],
         ),
         optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(1e-4),
+            optimizer=optimizers.Adam(1e-5),
             epochs=100
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
@@ -262,7 +262,13 @@ def test_pidon_operator_on_pde_system():
             latent_output_size=25,
             branch_hidden_layer_sizes=[50, 50],
             trunk_hidden_layer_sizes=[50, 50],
-            combiner_hidden_layer_sizes=[25]
+            combiner_hidden_layer_sizes=[25],
+            branch_initialization='he_uniform',
+            trunk_initialization='he_uniform',
+            combiner_initialization='he_uniform',
+            branch_activation='softplus',
+            trunk_activation='softplus',
+            combiner_activation='softplus',
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=5e-8),

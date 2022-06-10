@@ -157,17 +157,14 @@ class DataSet:
         the space-time domain of the constrained problem combined with the time
         interval.
         """
-        if self._cp.differential_equation.x_dimension:
-            domain_points = self._point_sampler.sample_domain_points(
-                self._n_domain_points,
-                self._t_interval,
-                self._cp.mesh.x_intervals)
-            domain_collocation_data = \
-                np.concatenate((domain_points.t, domain_points.x), axis=1)
-        else:
-            domain_points = self._point_sampler.sample_domain_points(
-                self._n_domain_points, self._t_interval, None)
-            domain_collocation_data = domain_points.t
+        domain_points = self._point_sampler.sample_domain_points(
+            self._n_domain_points,
+            self._t_interval,
+            self._cp.mesh)
+        domain_collocation_data = \
+            np.concatenate((domain_points.t, domain_points.x), axis=1) \
+            if self._cp.differential_equation.x_dimension \
+            else domain_points.t
 
         domain_collocation_data.setflags(write=False)
         return domain_collocation_data
@@ -207,7 +204,7 @@ class DataSet:
         all_boundary_points = self._point_sampler.sample_boundary_points(
             self._n_boundary_points,
             self._t_interval,
-            self._cp.mesh.x_intervals)
+            self._cp.mesh)
 
         t = []
         x = []
