@@ -53,7 +53,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             epochs=100
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=100,
+            max_iterations=200,
             gradient_tol=0.
         )
     )
