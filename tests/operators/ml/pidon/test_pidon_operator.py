@@ -44,13 +44,17 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             n_ic_repeats=5
         ),
         model_args=ModelArgs(
-            latent_output_size=10,
+            latent_output_size=1,
             branch_hidden_layer_sizes=[50, 50, 50],
             trunk_hidden_layer_sizes=[50, 50, 50],
+            branch_initialization='he_uniform',
+            trunk_initialization='he_uniform',
+            branch_activation='softplus',
+            trunk_activation='softplus',
         ),
         optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(1e-5),
-            epochs=100
+            optimizer=optimizers.Adam(5e-5),
+            epochs=200
         ),
         secondary_optimization_args=SecondaryOptimizationArgs(
             max_iterations=200,
@@ -58,9 +62,9 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         )
     )
 
-    assert len(training_loss_history) == 101
+    assert len(training_loss_history) == 201
     assert len(test_loss_history) == 0
-    assert training_loss_history[-1].weighted_total_loss.numpy() < 5e-5
+    assert training_loss_history[-1].weighted_total_loss.numpy() < 1e-4
 
     ivp = InitialValueProblem(
         cp,
