@@ -199,6 +199,7 @@ class PIDeepONet(DeepONet):
             max_iterations: int,
             max_line_search_iterations: int,
             parallel_iterations: int,
+            num_correction_pairs: int,
             gradient_tol: float,
             test_data: Optional[DataSetIterator] = None,
             diff_eq_loss_weight: float = 1.,
@@ -218,6 +219,9 @@ class PIDeepONet(DeepONet):
             iterations
         :param parallel_iterations: the number of iterations allowed to run in
             parallel
+        :param num_correction_pairs: the maximum number of correction pairs
+            (position update and gradient update) to keep as implicit
+            approximation of the Hessian
         :param gradient_tol: the threshold on the gradient vector; if the
             largest element of the absolute value of the gradient vector is
             less than this threshold, the optimization is stopped
@@ -273,6 +277,7 @@ class PIDeepONet(DeepONet):
             max_iterations=max_iterations,
             max_line_search_iterations=max_line_search_iterations,
             parallel_iterations=parallel_iterations,
+            num_correction_pairs=num_correction_pairs,
             tolerance=gradient_tol)
         set_model_parameters(results.position)
 
