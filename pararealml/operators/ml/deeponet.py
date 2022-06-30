@@ -1,4 +1,6 @@
-from typing import Sequence, Optional, Union, Tuple
+from __future__ import annotations
+
+from typing import Sequence, Optional, Union, Tuple, NamedTuple
 
 import tensorflow as tf
 
@@ -23,39 +25,18 @@ class DeepONet(tf.keras.Model):
             trunk_input_size: int,
             latent_output_size: int,
             output_size: int,
-            branch_hidden_layer_sizes: Optional[Sequence[int]] = None,
-            trunk_hidden_layer_sizes: Optional[Sequence[int]] = None,
-            combiner_hidden_layer_sizes: Optional[Sequence[int]] = None,
-            branch_initialization: str = 'glorot_uniform',
-            trunk_initialization: str = 'glorot_uniform',
-            combiner_initialization: str = 'glorot_uniform',
-            branch_activation: Optional[str] = 'tanh',
-            trunk_activation: Optional[str] = 'tanh',
-            combiner_activation: Optional[str] = 'tanh'):
+            branch_net_args: DeepOSubNetArgs,
+            trunk_net_args: DeepOSubNetArgs,
+            combiner_net_args: DeepOSubNetArgs):
         """
         :param branch_input_size: the size of the input layer of the branch net
         :param trunk_input_size: the size of the input layer of the trunk net
         :param latent_output_size: the size of the output layers of the branch
             and trunk nets
         :param output_size: the size of the output layer of the combiner net
-        :param branch_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the branch net
-        :param trunk_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the trunk net
-        :param combiner_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the combiner net
-        :param branch_initialization: the initialization method to use for the
-            weights of the branch net
-        :param trunk_initialization: the initialization method to use for the
-            weights of the trunk net
-        :param combiner_initialization: the initialization method to use for
-            the weights of the combiner net
-        :param branch_activation: the activation function to use for the hidden
-            layers of the branch net
-        :param trunk_activation: the activation function to use for the hidden
-            layers of the trunk net
-        :param combiner_activation: the activation function to use for the
-            hidden layers of the combiner net
+        :param branch_net_args: the arguments for the branch net
+        :param trunk_net_args: the arguments for the trunk net
+        :param combiner_net_args: the arguments for the combiner net
         """
         if branch_input_size < 1 or trunk_input_size < 1 \
                 or latent_output_size < 1 or output_size < 1:
@@ -69,32 +50,72 @@ class DeepONet(tf.keras.Model):
         self._latent_output_size = latent_output_size
         self._output_size = output_size
 
-        if branch_hidden_layer_sizes is None:
-            branch_hidden_layer_sizes = []
-        if trunk_hidden_layer_sizes is None:
-            trunk_hidden_layer_sizes = []
-        if combiner_hidden_layer_sizes is None:
-            combiner_hidden_layer_sizes = []
-
         self._branch_net = FNNRegressor(
             [branch_input_size] +
-            list(branch_hidden_layer_sizes) +
+            list(branch_net_args.hidden_layer_sizes) +
             [latent_output_size],
-            branch_initialization,
-            branch_activation)
+            branch_net_args.initialization,
+            branch_net_args.activation)
         self._trunk_net = FNNRegressor(
             [trunk_input_size] +
-            list(trunk_hidden_layer_sizes) +
+            list(trunk_net_args.hidden_layer_sizes) +
             [latent_output_size],
-            trunk_initialization,
-            trunk_activation)
+            trunk_net_args.initialization,
+            trunk_net_args.activation)
         self._combiner_net = FNNRegressor(
             [3 * latent_output_size] +
-            list(combiner_hidden_layer_sizes) +
+            list(combiner_net_args.hidden_layer_sizes) +
             [output_size],
-            combiner_initialization,
-            combiner_activation
+            combiner_net_args.initialization,
+            combiner_net_args.activation
         )
+
+    @property
+    def branch_net(self) -> FNNRegressor:
+        """
+        The model's branch net that processes the initial condition sensor
+        readings.
+        """
+        return self._branch_net
+
+    @property
+    def trunk_net(self) -> FNNRegressor:
+        """
+        The model's trunk net that processes the domain coordinates.
+        """
+        return self._trunk_net
+
+    @property
+    def combiner_net(self) -> FNNRegressor:
+        """
+        The model's combiner net that combines the outputs of the branch and
+        trunk nets.
+        """
+        return self._combiner_net
+
+    @tf.function
+    def get_trainable_parameters(self) -> tf.Tensor:
+        """
+        All the trainable parameters of the model flattened into a single-row
+        matrix.
+        """
+        return tf.concat(
+            [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
+            axis=1)
+
+    @tf.function
+    def set_trainable_parameters(self, value: tf.Tensor):
+        """
+        Sets the trainable parameters of the model to the values provided.
+
+        :param value: the parameters values flattened into a single-row matrix
+        """
+        offset = 0
+        for var in self.trainable_variables:
+            var_size = tf.reduce_prod(var.shape)
+            var.assign(tf.reshape(
+                value[0, offset:offset + var_size], var.shape))
+            offset += var_size
 
     @tf.function
     def call(
@@ -119,3 +140,14 @@ class DeepONet(tf.keras.Model):
             axis=1
         )
         return self._combiner_net.call(combiner_input)
+
+
+class DeepOSubNetArgs(NamedTuple):
+    """
+    Arguments for a DeepONet sub-network including a list of the sizes of the
+    hidden layers, the initialization method to use for the model's weights,
+    and the activation function to apply to the hidden layers.
+    """
+    hidden_layer_sizes: Sequence[int] = []
+    initialization: str = 'glorot_uniform'
+    activation: Optional[str] = 'tanh'

@@ -13,6 +13,7 @@ from pararealml.initial_condition import ContinuousInitialCondition, \
     vectorize_ic_function, BetaInitialCondition
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.mesh import Mesh, CoordinateSystem
+from pararealml.operators.ml.deeponet import DeepOSubNetArgs
 from pararealml.operators.ml.pidon.collocation_point_sampler import \
     UniformRandomCollocationPointSampler
 from pararealml.operators.ml.pidon.pidon_operator import PIDONOperator, \
@@ -34,41 +35,49 @@ def test_pidon_operator_on_ode_with_analytic_solution():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
-        cp,
-        t_interval,
-        training_data_args=DataArgs(
-            y_0_functions=[ic.y_0],
-            n_domain_points=100,
-            n_batches=5,
-            n_ic_repeats=5
-        ),
-        model_args=ModelArgs(
-            latent_output_size=1,
-            branch_hidden_layer_sizes=[50, 50, 50],
-            trunk_hidden_layer_sizes=[50, 50, 50],
-            branch_initialization='he_uniform',
-            trunk_initialization='he_uniform',
-            branch_activation='softplus',
-            trunk_activation='softplus',
-        ),
-        optimization_args=OptimizationArgs(
-            optimizer=optimizers.Adam(
-                learning_rate=optimizers.schedules.ExponentialDecay(
-                    1e-3, decay_steps=50, decay_rate=.95)),
-            epochs=500
-        ),
-        secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=250,
-            max_line_search_iterations=100,
-            parallel_iterations=4,
-            gradient_tol=0.
+    training_loss_history, \
+        test_loss_history, \
+        final_training_loss, \
+        final_test_loss = pidon.train(
+            cp,
+            t_interval,
+            training_data_args=DataArgs(
+                y_0_functions=[ic.y_0],
+                n_domain_points=100,
+                n_batches=5,
+                n_ic_repeats=5
+            ),
+            model_args=ModelArgs(
+                latent_output_size=1,
+                branch_net_args=DeepOSubNetArgs(
+                    hidden_layer_sizes=[50] * 3,
+                    initialization='he_uniform',
+                    activation='softplus'
+                ),
+                trunk_net_args=DeepOSubNetArgs(
+                    hidden_layer_sizes=[50] * 3,
+                    initialization='he_uniform',
+                    activation='softplus'
+                )
+            ),
+            optimization_args=OptimizationArgs(
+                optimizer=optimizers.Adam(
+                    learning_rate=optimizers.schedules.ExponentialDecay(
+                        1e-3, decay_steps=50, decay_rate=.95)),
+                epochs=500
+            ),
+            secondary_optimization_args=SecondaryOptimizationArgs(
+                max_iterations=250,
+                max_line_search_iterations=100,
+                parallel_iterations=4,
+                gradient_tol=0.
+            )
         )
-    )
 
-    assert len(training_loss_history) == 501
-    assert len(test_loss_history) == 0
-    assert training_loss_history[-1].weighted_total_loss.numpy() < 1e-4
+    assert len(training_loss_history) == 500
+    assert test_loss_history is None
+    assert final_training_loss.weighted_total_loss.numpy() < 1e-4
+    assert final_test_loss is None
 
     ivp = InitialValueProblem(
         cp,
@@ -112,7 +121,7 @@ def test_pidon_operator_on_ode_system():
         lambda _: np.array([52.5, 27.5])
     ]
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -127,8 +136,9 @@ def test_pidon_operator_on_ode_system():
         ),
         model_args=ModelArgs(
             latent_output_size=20,
-            branch_hidden_layer_sizes=[20, 20, 20],
-            trunk_hidden_layer_sizes=[20, 20, 20],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[20] * 3),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[20] * 3),
+            ic_loss_weight=2.
         ),
         optimization_args=OptimizationArgs(
             optimizer={
@@ -137,8 +147,7 @@ def test_pidon_operator_on_ode_system():
                     'learning_rate': 1e-4
                 }
             },
-            epochs=3,
-            ic_loss_weight=2.
+            epochs=3
         )
     )
 
@@ -181,7 +190,7 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -198,8 +207,9 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
         ),
         model_args=ModelArgs(
             latent_output_size=50,
-            branch_hidden_layer_sizes=[50, 50],
-            trunk_hidden_layer_sizes=[50, 50],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            ic_loss_weight=10.
         ),
         optimization_args=OptimizationArgs(
             optimizer={
@@ -208,9 +218,7 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
                     'learning_rate': 1e-4
                 }
             },
-            epochs=3,
-            ic_loss_weight=10.,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -257,7 +265,7 @@ def test_pidon_operator_on_pde_system():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -268,20 +276,25 @@ def test_pidon_operator_on_pde_system():
         ),
         model_args=ModelArgs(
             latent_output_size=25,
-            branch_hidden_layer_sizes=[50, 50],
-            trunk_hidden_layer_sizes=[50, 50],
-            combiner_hidden_layer_sizes=[25],
-            branch_initialization='he_uniform',
-            trunk_initialization='he_uniform',
-            combiner_initialization='he_uniform',
-            branch_activation='softplus',
-            trunk_activation='softplus',
-            combiner_activation='softplus',
+            branch_net_args=DeepOSubNetArgs(
+                hidden_layer_sizes=[50] * 2,
+                initialization='he_uniform',
+                activation='softplus'
+            ),
+            trunk_net_args=DeepOSubNetArgs(
+                hidden_layer_sizes=[50] * 2,
+                initialization='he_uniform',
+                activation='softplus'
+            ),
+            combiner_net_args=DeepOSubNetArgs(
+                hidden_layer_sizes=[25],
+                initialization='he_uniform',
+                activation='softplus'
+            )
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=5e-8),
-            epochs=3,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -323,7 +336,7 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .05, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -334,13 +347,12 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
         ),
         model_args=ModelArgs(
             latent_output_size=20,
-            branch_hidden_layer_sizes=[30, 30],
-            trunk_hidden_layer_sizes=[30, 30],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2)
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5),
-            epochs=3,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -381,7 +393,7 @@ def test_pidon_operator_on_polar_pde():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -392,13 +404,12 @@ def test_pidon_operator_on_polar_pde():
         ),
         model_args=ModelArgs(
             latent_output_size=20,
-            branch_hidden_layer_sizes=[30, 30],
-            trunk_hidden_layer_sizes=[30, 30],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2)
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5),
-            epochs=3,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -443,7 +454,7 @@ def test_pidon_operator_on_cylindrical_pde():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -454,13 +465,12 @@ def test_pidon_operator_on_cylindrical_pde():
         ),
         model_args=ModelArgs(
             latent_output_size=20,
-            branch_hidden_layer_sizes=[30, 30],
-            trunk_hidden_layer_sizes=[30, 30],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2)
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5),
-            epochs=3,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -505,7 +515,7 @@ def test_pidon_operator_on_spherical_pde():
     sampler = UniformRandomCollocationPointSampler()
     pidon = PIDONOperator(sampler, .001, True)
 
-    training_loss_history, test_loss_history = pidon.train(
+    training_loss_history, test_loss_history, _, _ = pidon.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -516,13 +526,12 @@ def test_pidon_operator_on_spherical_pde():
         ),
         model_args=ModelArgs(
             latent_output_size=20,
-            branch_hidden_layer_sizes=[30, 30],
-            trunk_hidden_layer_sizes=[30, 30],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2)
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5),
-            epochs=3,
-            verbose=False
+            epochs=3
         )
     )
 
@@ -558,8 +567,7 @@ def test_pidon_operator_with_no_model_training_without_model_args():
             ),
             optimization_args=OptimizationArgs(
                 optimizer=optimizers.SGD(),
-                epochs=100,
-                verbose=False
+                epochs=100
             ),
         )
 
@@ -584,12 +592,11 @@ def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():
             ),
             model_args=ModelArgs(
                 latent_output_size=1,
-                trunk_hidden_layer_sizes=[50, 50, 50],
+                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3)
             ),
             optimization_args=OptimizationArgs(
                 optimizer={'class_name': 'Adam'},
-                epochs=100,
-                verbose=False
+                epochs=100
             )
         )
 
@@ -622,12 +629,11 @@ def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
             ),
             model_args=ModelArgs(
                 latent_output_size=1,
-                trunk_hidden_layer_sizes=[50, 50, 50],
+                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3)
             ),
             optimization_args=OptimizationArgs(
                 optimizer={'class_name': 'Adam'},
-                epochs=100,
-                verbose=False
+                epochs=100
             )
         )
 
@@ -659,14 +665,13 @@ def test_pidon_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
             ),
             model_args=ModelArgs(
                 latent_output_size=50,
-                branch_hidden_layer_sizes=[50, 50],
-                trunk_hidden_layer_sizes=[50, 50],
+                branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+                ic_loss_weight=10.
             ),
             optimization_args=OptimizationArgs(
                 optimizer={'class_name': 'Adam'},
-                epochs=3,
-                ic_loss_weight=10.,
-                verbose=False
+                epochs=3
             )
         )
 
@@ -698,7 +703,7 @@ def test_pidon_operator_in_ar_mode_on_ode():
         ),
         model_args=ModelArgs(
             latent_output_size=1,
-            trunk_hidden_layer_sizes=[50, 50, 50],
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3)
         ),
         optimization_args=OptimizationArgs(
             optimizer={
@@ -708,8 +713,7 @@ def test_pidon_operator_in_ar_mode_on_ode():
                         1e-2, decay_steps=25, decay_rate=.95)
                 }
             },
-            epochs=5,
-            verbose=False
+            epochs=5
         )
     )
 
@@ -754,14 +758,13 @@ def test_pidon_operator_in_ar_mode_on_pde():
         ),
         model_args=ModelArgs(
             latent_output_size=50,
-            branch_hidden_layer_sizes=[50, 50],
-            trunk_hidden_layer_sizes=[50, 50],
+            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            ic_loss_weight=10.
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=1e-4),
-            epochs=2,
-            ic_loss_weight=10.,
-            verbose=False
+            epochs=2
         )
     )
 

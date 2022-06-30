@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, Optional, Dict, Iterable, Tuple, NamedTuple, \
-    List, Union, Any
+from typing import Optional, Dict, Iterable, NamedTuple, List, Union, Any
 
 import numpy as np
 import tensorflow as tf
@@ -12,6 +11,7 @@ from pararealml.initial_condition import \
 from pararealml.initial_value_problem import InitialValueProblem, \
     TemporalDomainInterval
 from pararealml.operator import Operator, discretize_time_domain
+from pararealml.operators.ml.deeponet import DeepOSubNetArgs
 from pararealml.operators.ml.pidon.collocation_point_sampler import \
     CollocationPointSampler
 from pararealml.operators.ml.pidon.data_set import DataSet
@@ -132,7 +132,7 @@ class PIDONOperator(Operator):
             model_args: Optional[ModelArgs] = None,
             test_data_args: Optional[DataArgs] = None,
             secondary_optimization_args: Optional[SecondaryOptimizationArgs] =
-            None) -> Tuple[Sequence[Loss], Sequence[Loss]]:
+            None) -> TrainingResults:
         """
         Trains a physics-informed DeepONet model on the provided constrained
         problem, time interval, and initial condition functions using the model
@@ -152,7 +152,7 @@ class PIDONOperator(Operator):
         :param secondary_optimization_args: the physics-informed DeepONet model
             optimization arguments for fine tuning the model parameters using
             a (quasi) second order optimization method
-        :return: the training loss history and the test loss history
+        :return: the training results
         """
         if model_args is None and self._model is None:
             raise ValueError(
@@ -215,29 +215,31 @@ class PIDONOperator(Operator):
                 vertex_oriented=self._vertex_oriented,
                 **model_args._asdict())
 
-        loss_histories = model.fit(
+        training_loss_history, test_loss_history = model.fit(
             training_data=training_data,
             test_data=test_data,
             **optimization_args._asdict())
 
         if secondary_optimization_args:
-            secondary_losses = model.fit_with_lbfgs(
+            model.fit_with_lbfgs(
                 training_data=training_data,
-                test_data=test_data,
                 **secondary_optimization_args._asdict())
-            loss_histories[0].append(secondary_losses[0])
-            if secondary_losses[1] is not None:
-                loss_histories[1].append(secondary_losses[1])
+
+        final_training_loss = model.evaluate(training_data)
+        final_test_loss = model.evaluate(test_data) if test_data else None
 
         self._model = model
 
-        return loss_histories
+        return TrainingResults(
+            training_loss_history,
+            test_loss_history,
+            final_training_loss,
+            final_test_loss)
 
 
 class DataArgs(NamedTuple):
     """
-    A container class for arguments pertaining to the generation and traversal
-    of PIDON data sets.
+    Arguments pertaining to the generation and traversal of PIDON data sets.
     """
     y_0_functions: Iterable[VectorizedInitialConditionFunction]
     n_domain_points: int
@@ -249,46 +251,43 @@ class DataArgs(NamedTuple):
 
 class ModelArgs(NamedTuple):
     """
-    A container class for arguments pertaining to the architecture of a PIDON
-    model.
+    Arguments pertaining to the architecture of a PIDON model.
     """
     latent_output_size: int
-    branch_hidden_layer_sizes: Optional[List[int]] = None
-    trunk_hidden_layer_sizes: Optional[List[int]] = None
-    combiner_hidden_layer_sizes: Optional[List[int]] = None
-    branch_initialization: str = 'glorot_uniform'
-    trunk_initialization: str = 'glorot_uniform'
-    combiner_initialization: str = 'glorot_uniform'
-    branch_activation: Optional[str] = 'tanh'
-    trunk_activation: Optional[str] = 'tanh'
-    combiner_activation: Optional[str] = 'tanh'
+    branch_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
+    trunk_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
+    combiner_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
+    diff_eq_loss_weight: float = 1.
+    ic_loss_weight: float = 1.
+    bc_loss_weight: float = 1.
 
 
 class OptimizationArgs(NamedTuple):
     """
-    A container class for arguments pertaining to the training of a PIDON
-    model.
+    Arguments pertaining to the training of a PIDON model.
     """
     optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
     epochs: int
-    diff_eq_loss_weight: float = 1.
-    ic_loss_weight: float = 1.
-    bc_loss_weight: float = 1.
-    verbose: bool = True
+    restore_best_weights: bool = True
 
 
 class SecondaryOptimizationArgs(NamedTuple):
     """
-    A container class for arguments pertaining to the training of a PIDON
-    model using a second order optimization method to fine tune the model
-    parameters.
+    Arguments pertaining to the training of a PIDON model using a second order
+    optimization method to fine tune the model parameters.
     """
     max_iterations: int = 50
     max_line_search_iterations: int = 50
     parallel_iterations: int = 1
     num_correction_pairs: int = 10
     gradient_tol: float = 1e-8
-    diff_eq_loss_weight: float = 1.
-    ic_loss_weight: float = 1.
-    bc_loss_weight: float = 1.
-    verbose: bool = True
+
+
+class TrainingResults(NamedTuple):
+    """
+    The results of the training of the PIDON operator.
+    """
+    training_loss_history: List[Loss]
+    test_loss_history: Optional[List[Loss]]
+    final_training_loss: Loss
+    final_test_loss: Optional[Loss]

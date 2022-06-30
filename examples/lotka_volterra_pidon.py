@@ -45,8 +45,8 @@ pidon.train(
     ),
     model_args=ModelArgs(
         latent_output_size=100,
-        branch_hidden_layer_sizes=[100, 100, 100, 100, 100],
-        trunk_hidden_layer_sizes=[100, 100, 100, 100, 100],
+        branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[100] * 5),
+        trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[100] * 5)
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(

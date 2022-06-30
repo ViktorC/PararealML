@@ -3,23 +3,31 @@ import pytest
 import numpy as np
 import tensorflow as tf
 
-from pararealml.operators.ml.deeponet import DeepONet
+from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
 
 
 def test_deeponet_with_latent_output_size_less_than_one():
     with pytest.raises(ValueError):
-        DeepONet(2, 1, 0, 1)
+        DeepONet(
+            branch_input_size=2,
+            trunk_input_size=1,
+            latent_output_size=0,
+            output_size=1,
+            branch_net_args=DeepOSubNetArgs(),
+            trunk_net_args=DeepOSubNetArgs(),
+            combiner_net_args=DeepOSubNetArgs())
 
 
 def test_deeponet():
     net = DeepONet(
-        10,
-        4,
-        10,
-        5,
-        branch_initialization='ones',
-        trunk_initialization='ones',
-        combiner_initialization='ones')
+        branch_input_size=10,
+        trunk_input_size=4,
+        latent_output_size=10,
+        output_size=5,
+        branch_net_args=DeepOSubNetArgs(initialization='ones'),
+        trunk_net_args=DeepOSubNetArgs(initialization='ones'),
+        combiner_net_args=DeepOSubNetArgs(initialization='ones')
+    )
 
     assert len(net.trainable_variables) == 6
     assert np.all(net.trainable_variables[0].numpy() == 1.)
@@ -28,6 +36,14 @@ def test_deeponet():
     assert np.all(net.trainable_variables[3].numpy() == 0.)
     assert np.all(net.trainable_variables[4].numpy() == 1.)
     assert np.all(net.trainable_variables[5].numpy() == 0.)
+
+    assert np.allclose(
+        net.get_trainable_parameters().numpy(),
+        [
+            [1.] * 100 + [0.] * 10 +
+            [1.] * 40 + [0.] * 10 +
+            [1.] * 150 + [0.] * 5
+        ])
 
     u = tf.ones((3, 10), tf.float32)
     t = 2. * tf.ones((3, 1), tf.float32)
@@ -48,13 +64,14 @@ def test_deeponet():
 
 def test_deeponet_with_none_input_element():
     net = DeepONet(
-        5,
-        1,
-        5,
-        1,
-        branch_hidden_layer_sizes=[5],
-        trunk_hidden_layer_sizes=[5],
-        combiner_hidden_layer_sizes=[5])
+        branch_input_size=5,
+        trunk_input_size=1,
+        latent_output_size=5,
+        output_size=1,
+        branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5]),
+        trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5]),
+        combiner_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5])
+    )
 
     u = tf.ones((3, 5), tf.float32)
     t = 2. * tf.ones((3, 1), tf.float32)

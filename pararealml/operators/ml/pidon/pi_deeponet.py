@@ -1,3 +1,5 @@
+import logging
+from functools import partial
 from typing import Optional, Sequence, Dict, Any, Union, Tuple, List
 
 import numpy as np
@@ -6,7 +8,7 @@ import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LHS
-from pararealml.operators.ml.deeponet import DeepONet
+from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
 from pararealml.operators.ml.pidon.auto_differentiator import \
     AutoDifferentiator
 from pararealml.operators.ml.pidon.data_set import DataSetIterator, \
@@ -27,39 +29,28 @@ class PIDeepONet(DeepONet):
             self,
             cp: ConstrainedProblem,
             latent_output_size: int,
-            branch_hidden_layer_sizes: Optional[List[int]] = None,
-            trunk_hidden_layer_sizes: Optional[List[int]] = None,
-            combiner_hidden_layer_sizes: Optional[List[int]] = None,
-            branch_initialization: str = 'glorot_uniform',
-            trunk_initialization: str = 'glorot_uniform',
-            combiner_initialization: str = 'glorot_uniform',
-            branch_activation: Optional[str] = 'tanh',
-            trunk_activation: Optional[str] = 'tanh',
-            combiner_activation: Optional[str] = 'tanh',
+            branch_net_args: DeepOSubNetArgs,
+            trunk_net_args: DeepOSubNetArgs,
+            combiner_net_args: DeepOSubNetArgs,
+            diff_eq_loss_weight: float = 1.,
+            ic_loss_weight: float = 1.,
+            bc_loss_weight: float = 1.,
             vertex_oriented: bool = False):
         """
         :param cp: the constrained problem to build a physics-informed neural
             network around
         :param latent_output_size: the size of the latent output of the
             branch and trunk networks of the DeepONet model
-        :param branch_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the branch net
-        :param trunk_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the trunk net
-        :param combiner_hidden_layer_sizes: a list of the sizes of the hidden
-            layers of the combiner net
-        :param branch_initialization: the initialization method to use for the
-            weights of the branch net
-        :param trunk_initialization: the initialization method to use for the
-            weights of the trunk net
-        :param combiner_initialization: the initialization method to use for
-            the weights of the combiner net
-        :param branch_activation: the activation function to use for the hidden
-            layers of the branch net
-        :param trunk_activation: the activation function to use for the hidden
-            layers of the trunk net
-        :param combiner_activation: the activation function to use for the
-            hidden layers of the combiner net
+        :param branch_net_args: the arguments for the branch net
+        :param trunk_net_args: the arguments for the trunk net
+        :param combiner_net_args: the arguments for the combiner net
+        :param diff_eq_loss_weight: the weight of the differential equation
+            violation term of the physics-informed loss
+        :param ic_loss_weight: the weight of the initial condition violation
+            term of the physics-informed loss
+        :param bc_loss_weight: the weight of the boundary condition violation
+            terms of the total physics-informed loss; if the constrained
+            is an ODE, it is ignored
         :param vertex_oriented: whether the initial condition collocation
             points are the vertices or the cell centers of the mesh
         """
@@ -70,26 +61,24 @@ class PIDeepONet(DeepONet):
         x_dim = diff_eq.x_dimension
         y_dim = diff_eq.y_dimension
 
-        self._cp = cp
-
         super(PIDeepONet, self).__init__(
             np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
             if x_dim else y_dim,
             x_dim + 1,
             latent_output_size,
             y_dim,
-            branch_hidden_layer_sizes=branch_hidden_layer_sizes,
-            branch_initialization=branch_initialization,
-            branch_activation=branch_activation,
-            trunk_hidden_layer_sizes=trunk_hidden_layer_sizes,
-            trunk_initialization=trunk_initialization,
-            trunk_activation=trunk_activation,
-            combiner_hidden_layer_sizes=combiner_hidden_layer_sizes,
-            combiner_initialization=combiner_initialization,
-            combiner_activation=combiner_activation)
+            trunk_net_args,
+            branch_net_args,
+            combiner_net_args)
+
+        self._cp = cp
+        self._diff_eq_loss_weight = diff_eq_loss_weight
+        self._ic_loss_weight = ic_loss_weight
+        self._bc_loss_weight = bc_loss_weight
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
+        self._logger = logging.getLogger(__name__)
 
     @property
     def constrained_problem(self) -> ConstrainedProblem:
@@ -98,16 +87,38 @@ class PIDeepONet(DeepONet):
         """
         return self._cp
 
+    @property
+    def differential_equation_loss_weight(self) -> float:
+        """
+        The weight of the differential equation violation term of the
+        physics-informed loss.
+        """
+        return self._diff_eq_loss_weight
+
+    @property
+    def initial_condition_loss_weight(self) -> float:
+        """
+        The weight of the initial condition violation term of the
+        physics-informed loss.
+        """
+        return self._ic_loss_weight
+
+    @property
+    def boundary_condition_loss_weight(self) -> float:
+        """
+        The weight of the boundary condition violation terms of the
+        physics-informed loss.
+        """
+        return self._bc_loss_weight
+
     def fit(
             self,
             epochs: int,
             optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer],
             training_data: DataSetIterator,
             test_data: Optional[DataSetIterator] = None,
-            diff_eq_loss_weight: float = 1.,
-            ic_loss_weight: float = 1.,
-            bc_loss_weight: float = 1.,
-            verbose: bool = True) -> Tuple[List[Loss], List[Loss]]:
+            restore_best_weights: bool = True
+    ) -> Tuple[List[Loss], Optional[List[Loss]]]:
         """
         Fits the branch and trunk net parameters by minimising the
         physics-informed loss function over the provided training data set. It
@@ -116,16 +127,11 @@ class PIDeepONet(DeepONet):
 
         :param epochs: the number of epochs over the training data
         :param optimizer: the optimizer to use to minimize the loss function
-        :param training_data: the data set providing the training mini batches
-        :param test_data: the data set providing the test mini batches
-        :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
-        :param verbose: whether loss information should be periodically printed
-            to the console
+        :param training_data: an iterator over the training data set
+        :param test_data: an iterator over the test data set
+        :param restore_best_weights: whether to restore the model parameters
+            to those with the lowest test loss; if no test data is provided,
+            this parameter is ignored
         :return: the training and test loss histories
         """
         if epochs < 1:
@@ -133,63 +139,45 @@ class PIDeepONet(DeepONet):
 
         optimizer_instance = tf.keras.optimizers.get(optimizer)
 
-        if verbose:
-            print('Gradient Descent Optimization')
+        best_test_loss_sum = None
+        best_weights = None
+        best_epoch = 0
 
         training_loss_history = []
-        test_loss_history = []
+        test_loss_history = [] if test_data else None
+
+        self._logger.info('Gradient Descent Optimization')
         for epoch in range(epochs):
-            if verbose:
-                print(f'Epoch: {epoch}')
+            self._logger.info(f'Epoch: {epoch}')
 
-            training_batch_losses = []
-            for batch_ind, batch in enumerate(training_data):
-                training_batch_loss = self._step(
-                    batch,
-                    optimizer_instance,
-                    diff_eq_loss_weight,
-                    ic_loss_weight,
-                    bc_loss_weight)
-                training_batch_losses.append(training_batch_loss)
-                if verbose:
-                    print(
-                        '\rTraining Batch '
-                        f'{batch_ind + 1}/{len(training_data)} MSE - '
-                        f'{training_batch_loss}',
-                        end='')
-
-            training_epoch_loss = Loss.mean(
-                training_batch_losses,
-                diff_eq_loss_weight,
-                ic_loss_weight,
-                bc_loss_weight)
-            training_loss_history.append(training_epoch_loss)
-            if verbose:
-                print(f'\rTraining MSE - {training_epoch_loss}')
+            training_loss = self._compute_total_loss(
+                    training_data,
+                    optimizer=optimizer_instance)
+            self._logger.info('Training MSE - %s', training_loss)
+            training_loss_history.append(training_loss)
 
             if test_data:
-                test_batch_losses = []
-                for batch_ind, batch in enumerate(test_data):
-                    test_batch_loss = self._physics_informed_loss(
-                        batch,
-                        diff_eq_loss_weight,
-                        ic_loss_weight,
-                        bc_loss_weight)
-                    test_batch_losses.append(test_batch_loss)
-                    if verbose:
-                        print(
-                            f'\rTest Batch {batch_ind + 1}/{len(test_data)} '
-                            f'MSE - {test_batch_loss}',
-                            end='')
+                test_loss = self._compute_total_loss(
+                    test_data,
+                    optimizer=None)
+                self._logger.info('Test MSE -  %s', test_loss)
+                test_loss_history.append(test_loss)
 
-                test_epoch_loss = Loss.mean(
-                    test_batch_losses,
-                    diff_eq_loss_weight,
-                    ic_loss_weight,
-                    bc_loss_weight)
-                test_loss_history.append(test_epoch_loss)
-                if verbose:
-                    print(f'\rTest MSE - {test_epoch_loss}')
+                if restore_best_weights:
+                    test_loss_sum = tf.math.reduce_sum(
+                        test_loss.weighted_total_loss)
+                    if best_test_loss_sum is None \
+                            or test_loss_sum <= best_test_loss_sum:
+                        best_test_loss_sum = test_loss_sum
+                        best_weights = self.get_trainable_parameters()
+                        best_epoch = epoch
+
+        if test_data and restore_best_weights:
+            self.set_trainable_parameters(best_weights)
+            self._logger.info('Best Epoch: %s', best_epoch)
+            self._logger.info(
+                'Training MSE - %s', training_loss_history[best_epoch])
+            self._logger.info('Test MSE - %s', test_loss_history[best_epoch])
 
         return training_loss_history, test_loss_history
 
@@ -200,17 +188,11 @@ class PIDeepONet(DeepONet):
             max_line_search_iterations: int,
             parallel_iterations: int,
             num_correction_pairs: int,
-            gradient_tol: float,
-            test_data: Optional[DataSetIterator] = None,
-            diff_eq_loss_weight: float = 1.,
-            ic_loss_weight: float = 1.,
-            bc_loss_weight: float = 1.,
-            verbose: bool = True) -> Tuple[Loss, Optional[Loss]]:
+            gradient_tol: float):
         """
         Fits the branch and trunk net parameters by minimising the
         physics-informed loss function over the provided training data set
-        using the L-BFGS optimization method. It also evaluates the loss over
-        both the training data and the test data, if provided, for every epoch.
+        using the L-BFGS optimization method.
 
         :param training_data: the data set providing the full training batch
         :param max_iterations: the maximum number of iterations to perform the
@@ -225,38 +207,16 @@ class PIDeepONet(DeepONet):
         :param gradient_tol: the threshold on the gradient vector; if the
             largest element of the absolute value of the gradient vector is
             less than this threshold, the optimization is stopped
-        :param test_data: the data set providing the full test batch
-        :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
-        :param verbose: whether loss information should be periodically printed
-            to the console
-        :return: the training and test loss histories
         """
         full_training_data_batch = training_data.get_full_batch()
 
         @tf.function
-        def set_model_parameters(parameters: tf.Tensor):
-            offset = 0
-            for var in self.trainable_variables:
-                var_size = tf.reduce_prod(var.shape)
-                var.assign(tf.reshape(
-                    parameters[0, offset:offset + var_size], var.shape))
-                offset += var_size
-
-        @tf.function
         def value_and_gradients_function(
                 parameters: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
-            set_model_parameters(parameters)
+            self.set_trainable_parameters(parameters)
             with AutoDifferentiator() as auto_diff:
-                loss = self._physics_informed_loss(
-                    full_training_data_batch,
-                    diff_eq_loss_weight,
-                    ic_loss_weight,
-                    bc_loss_weight)
+                loss = self._compute_physics_informed_loss(
+                    full_training_data_batch)
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
 
             gradients = auto_diff.gradient(value, self.trainable_variables)
@@ -265,53 +225,104 @@ class PIDeepONet(DeepONet):
                 axis=1)
             return value, flattened_gradients
 
-        if verbose:
-            print('L-BFGS Optimization')
-
-        flattened_parameters = tf.concat(
-            [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
-            axis=1)
+        self._logger.info('L-BFGS Optimization')
         results = tfp.optimizer.lbfgs_minimize(
             value_and_gradients_function=value_and_gradients_function,
-            initial_position=flattened_parameters,
+            initial_position=self.get_trainable_parameters(),
             max_iterations=max_iterations,
             max_line_search_iterations=max_line_search_iterations,
             parallel_iterations=parallel_iterations,
             num_correction_pairs=num_correction_pairs,
             tolerance=gradient_tol)
-        set_model_parameters(results.position)
+        self.set_trainable_parameters(results.position)
+        self._logger.info(
+            'Iterations: %s; Objective Evaluations: %s; Objective Value: %s; '
+            'Converged: %s; Failed: %s',
+            results.num_iterations.numpy(),
+            results.num_objective_evaluations.numpy(),
+            results.objective_value.numpy(),
+            results.converged.numpy(),
+            results.failed.numpy())
 
-        training_loss = self._physics_informed_loss(
-            full_training_data_batch,
-            diff_eq_loss_weight,
-            ic_loss_weight,
-            bc_loss_weight)
-        if verbose:
-            print(
-                f'Iterations: {results.num_iterations}; '
-                f'Objective Evaluations: {results.num_objective_evaluations}; '
-                f'Converged: {results.converged}; Failed: {results.failed}')
-            print(f'Training MSE - {training_loss}')
+    def evaluate(self, data: DataSetIterator) -> Loss:
+        """
+        Evaluates the model by computing its mean physics-informed loss over
+        the provided data set.
 
-        test_loss = None
-        if test_data:
-            test_loss = self._physics_informed_loss(
-                test_data.get_full_batch(),
-                diff_eq_loss_weight,
-                ic_loss_weight,
-                bc_loss_weight)
-            print(f'Test MSE - {test_loss}')
+        :param data: the data set to evaluate the model on
+        :return: the mean physics-informed loss
+        """
+        self._logger.debug('Evaluation')
+        loss = self._compute_total_loss(data, optimizer=None)
+        self._logger.debug('Total MSE - %s', loss)
+        return loss
 
-        return training_loss, test_loss
+    def _create_diff_eq_lhs_functions(
+            self) -> Sequence[PIDONSymbolMapFunction]:
+        """
+        Creates a sequence of symbol map functions representing the left-hand
+        side of the differential equation system.
+        """
+        diff_eq = self._cp.differential_equation
+
+        lhs_functions = []
+        for y_ind, lhs_type in \
+                enumerate(diff_eq.symbolic_equation_system.lhs_types):
+            if lhs_type == LHS.D_Y_OVER_D_T:
+                lhs_functions.append(
+                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
+                        arg.t, arg.y_hat[:, _y_ind:_y_ind + 1], 0))
+
+            elif lhs_type == LHS.Y:
+                lhs_functions.append(
+                    lambda arg, _y_ind=y_ind: arg.y_hat[:, _y_ind:_y_ind + 1])
+
+            elif lhs_type == LHS.Y_LAPLACIAN:
+                lhs_functions.append(
+                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_laplacian(
+                        arg.x,
+                        arg.y_hat[:, _y_ind:_y_ind + 1],
+                        self._cp.mesh.coordinate_system_type))
+
+            else:
+                raise ValueError(
+                    f'unsupported left-hand side type ({lhs_type.name})')
+
+        return lhs_functions
+
+    def _compute_total_loss(
+            self,
+            data: DataSetIterator,
+            optimizer: Optional[tf.optimizers.Optimizer]) -> Loss:
+        """
+        Computes the mean physics-informed loss over a data set.
+
+        :param data: the data set to compute the loss over
+        :param optimizer: an optional optimizer instance; if one is provided,
+            the model parameters are updated after each batch
+        :return: the mean physics-informed loss
+        """
+        loss_function = self._compute_physics_informed_loss \
+            if optimizer is None else partial(self._train, optimizer=optimizer)
+
+        batch_losses = []
+        for batch_ind, batch in enumerate(data):
+            batch_loss = loss_function(batch)
+            batch_losses.append(batch_loss)
+            self._logger.debug(
+                'Batch %s/%s MSE - %s', batch_ind + 1, len(data), batch_loss)
+
+        return Loss.mean(
+            batch_losses,
+            self._diff_eq_loss_weight,
+            self._ic_loss_weight,
+            self._bc_loss_weight)
 
     @tf.function
-    def _step(
+    def _train(
             self,
             batch: DataBatch,
-            optimizer: tf.optimizers.Optimizer,
-            diff_eq_loss_weight: float,
-            ic_loss_weight: float,
-            bc_loss_weight: float) -> Loss:
+            optimizer: tf.optimizers.Optimizer) -> Loss:
         """
         Performs a forward pass on the batch, computes the batch loss, and
         updates the model parameters.
@@ -319,17 +330,10 @@ class PIDeepONet(DeepONet):
         :param batch: the batch to compute the losses over
         :param optimizer: the optimizer to use to update parameters of the
             model
-        :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
         :return: the various losses over the batch
         """
         with AutoDifferentiator() as auto_diff:
-            loss = self._physics_informed_loss(
-                batch, diff_eq_loss_weight, ic_loss_weight, bc_loss_weight)
+            loss = self._compute_physics_informed_loss(batch)
 
         optimizer.minimize(
             loss.weighted_total_loss,
@@ -339,12 +343,7 @@ class PIDeepONet(DeepONet):
         return loss
 
     @tf.function
-    def _physics_informed_loss(
-            self,
-            batch: DataBatch,
-            diff_eq_loss_weight: float,
-            ic_loss_weight: float,
-            bc_loss_weight: float) -> Loss:
+    def _compute_physics_informed_loss(self, batch: DataBatch) -> Loss:
         """
         Computes and returns the total physics-informed loss over the batch
         consisting of the mean squared differential equation error, the mean
@@ -352,32 +351,24 @@ class PIDeepONet(DeepONet):
         squared Dirichlet and Neumann boundary condition errors.
 
         :param batch: the batch to compute the losses over
-        :param diff_eq_loss_weight: the weight of the differential equation
-            part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
         :return: the total physics-informed loss over the batch
         """
         domain_batch, initial_batch, boundary_batch = batch
-        diff_eq_loss = \
-            self._mean_squared_differential_equation_error(domain_batch)
-        ic_loss = self._mean_squared_initial_condition_error(initial_batch)
-        bc_losses = \
-            self._mean_squared_boundary_condition_errors(boundary_batch) \
+        diff_eq_loss = self._compute_differential_equation_loss(domain_batch)
+        ic_loss = self._compute_initial_condition_loss(initial_batch)
+        bc_losses = self._compute_boundary_condition_loss(boundary_batch) \
             if boundary_batch else None
 
         return Loss.construct(
             diff_eq_loss,
             ic_loss,
             bc_losses,
-            diff_eq_loss_weight,
-            ic_loss_weight,
-            bc_loss_weight)
+            self._diff_eq_loss_weight,
+            self._ic_loss_weight,
+            self._bc_loss_weight)
 
     @tf.function
-    def _mean_squared_differential_equation_error(
+    def _compute_differential_equation_loss(
             self,
             batch: DomainDataBatch) -> tf.Tensor:
         """
@@ -406,7 +397,7 @@ class PIDeepONet(DeepONet):
         return tf.reduce_mean(squared_diff_eq_error, axis=0)
 
     @tf.function
-    def _mean_squared_initial_condition_error(
+    def _compute_initial_condition_loss(
             self,
             batch: InitialDataBatch) -> tf.Tensor:
         """
@@ -420,7 +411,7 @@ class PIDeepONet(DeepONet):
         return tf.reduce_mean(squared_ic_error, axis=0)
 
     @tf.function
-    def _mean_squared_boundary_condition_errors(
+    def _compute_boundary_condition_loss(
             self,
             batch: BoundaryDataBatch) -> Tuple[tf.Tensor, tf.Tensor]:
         """
@@ -456,36 +447,3 @@ class PIDeepONet(DeepONet):
             tf.reduce_mean(squared_neumann_bc_error, axis=0)
 
         return mean_squared_dirichlet_bc_error, mean_squared_neumann_bc_error
-
-    def _create_diff_eq_lhs_functions(
-            self) -> Sequence[PIDONSymbolMapFunction]:
-        """
-        Creates a sequence of symbol map functions representing the left-hand
-        side of the differential equation system.
-        """
-        diff_eq = self._cp.differential_equation
-
-        lhs_functions = []
-        for y_ind, lhs_type in \
-                enumerate(diff_eq.symbolic_equation_system.lhs_types):
-            if lhs_type == LHS.D_Y_OVER_D_T:
-                lhs_functions.append(
-                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
-                        arg.t, arg.y_hat[:, _y_ind:_y_ind + 1], 0))
-
-            elif lhs_type == LHS.Y:
-                lhs_functions.append(
-                    lambda arg, _y_ind=y_ind: arg.y_hat[:, _y_ind:_y_ind + 1])
-
-            elif lhs_type == LHS.Y_LAPLACIAN:
-                lhs_functions.append(
-                    lambda arg, _y_ind=y_ind: arg.auto_diff.batch_laplacian(
-                        arg.x,
-                        arg.y_hat[:, _y_ind:_y_ind + 1],
-                        self._cp.mesh.coordinate_system_type))
-
-            else:
-                raise ValueError(
-                    f'unsupported left-hand side type ({lhs_type.name})')
-
-        return lhs_functions

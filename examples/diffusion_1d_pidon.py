@@ -42,8 +42,9 @@ pidon.train(
     ),
     model_args=ModelArgs(
         latent_output_size=50,
-        branch_hidden_layer_sizes=[50] * 7,
-        trunk_hidden_layer_sizes=[50] * 7,
+        branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 7),
+        trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 7),
+        ic_loss_weight=10.
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(
@@ -51,8 +52,7 @@ pidon.train(
                 2e-3, decay_steps=25, decay_rate=.98
             )
         ),
-        epochs=5000,
-        ic_loss_weight=10.,
+        epochs=5000
     )
 )
 

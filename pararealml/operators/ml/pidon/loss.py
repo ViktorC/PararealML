@@ -26,6 +26,7 @@ class Loss(NamedTuple):
         return string
 
     @classmethod
+    @tf.function
     def construct(
             cls,
             diff_eq_loss: tf.Tensor,
@@ -59,6 +60,7 @@ class Loss(NamedTuple):
         return Loss(diff_eq_loss, ic_loss, bc_losses, weighted_total_loss)
 
     @classmethod
+    @tf.function
     def mean(
             cls,
             losses: Sequence[Loss],

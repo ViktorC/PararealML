@@ -19,7 +19,7 @@ from pararealml.operators.fdm.numerical_differentiator import \
 from pararealml.operators.fdm.numerical_integrator import RK4
 from pararealml.operators.ml.auto_regression import AutoRegressionOperator, \
     SKLearnKerasRegressor
-from pararealml.operators.ml.deeponet import DeepONet
+from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
 from pararealml.operators.ml.fnn_regressor import FNNRegressor
 from pararealml.operators.ode.ode_operator import ODEOperator
 from pararealml.utils.rand import set_random_seed
@@ -212,12 +212,13 @@ def test_ar_operator_on_pde():
         oracle,
         SKLearnKerasRegressor(
             DeepONet(
-                np.prod(cp.y_shape(True)).item(),
-                diff_eq.x_dimension,
-                diff_eq.y_dimension * 10,
-                diff_eq.y_dimension,
-                [100, 50],
-                [50, 50]
+                branch_input_size=np.prod(cp.y_shape(True)).item(),
+                trunk_input_size=diff_eq.x_dimension,
+                latent_output_size=diff_eq.y_dimension * 10,
+                output_size=diff_eq.y_dimension,
+                branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[100, 50]),
+                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50, 50]),
+                combiner_net_args=DeepOSubNetArgs()
             ),
             optimizer=optimizers.Adam(
                 learning_rate=optimizers.schedules.ExponentialDecay(
