@@ -28,6 +28,9 @@ jobs:
       - name: Type-check
         run: |
           make type-check
+      - name: Format-check
+        run: |
+          make format-check
       - name: Test
         run: |
           make coverage

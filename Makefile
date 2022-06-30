@@ -19,6 +19,14 @@ lint:
 type-check:
 	mypy --ignore-missing-imports --no-strict-optional pararealml/ tests/
 
+format:
+	black pararealml/ tests/ examples/
+	isort pararealml/ tests/ examples/
+
+format-check:
+	black --check pararealml/ tests/ examples/
+	isort --check-only pararealml/ tests/ examples/
+
 test:
 	pytest -v tests/
 
