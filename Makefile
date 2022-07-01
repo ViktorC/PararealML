@@ -14,10 +14,10 @@ install:
 	pip3 install -r requirements.txt
 
 lint:
-	flake8 pararealml/ tests/
+	flake8 pararealml/ tests/ examples/
 
 type-check:
-	mypy --ignore-missing-imports --no-strict-optional pararealml/ tests/
+	mypy pararealml/ tests/ examples/
 
 format:
 	black pararealml/ tests/ examples/

@@ -1,0 +1,10 @@
+[tool.mypy]
+ignore_missing_imports = true
+no_strict_optional = true
+
+[tool.black]
+line-length = 79
+
+[tool.isort]
+line_length = 79
+profile = "black"
