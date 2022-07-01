@@ -12,9 +12,8 @@ class AutoDifferentiator(tf.GradientTape):
     """
 
     def __init__(
-            self,
-            persistent: bool = False,
-            watch_accessed_variables: bool = True):
+        self, persistent: bool = False, watch_accessed_variables: bool = True
+    ):
         """
         :param persistent: whether the gradient tape should be persistent
             allowing for the calculation of multiple differential operators
@@ -22,15 +21,16 @@ class AutoDifferentiator(tf.GradientTape):
             accessed variables within the context of the differentiator
         """
         super(AutoDifferentiator, self).__init__(
-            persistent, watch_accessed_variables)
+            persistent, watch_accessed_variables
+        )
 
     def batch_gradient(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            x_axis: Union[int, tf.Tensor],
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        x_axis: Union[int, tf.Tensor],
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the element(s) of the gradient of y with respect to the element
         of x defined by x_axis.
@@ -66,13 +66,13 @@ class AutoDifferentiator(tf.GradientTape):
                 return derivative
 
     def batch_hessian(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            x_axis1: int,
-            x_axis2: int,
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        x_axis1: int,
+        x_axis2: int,
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the element(s) of the Hessian of y with respect to the elements
         of x defined by x_axis1 and x_axis2.
@@ -89,9 +89,8 @@ class AutoDifferentiator(tf.GradientTape):
             x_axis1 and x_axis2
         """
         second_derivative = self._batch_derivative(
-            x,
-            self._batch_derivative(x, y, x_axis1),
-            x_axis2)
+            x, self._batch_derivative(x, y, x_axis1), x_axis2
+        )
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return second_derivative
@@ -107,49 +106,54 @@ class AutoDifferentiator(tf.GradientTape):
                 d_y_over_d_r = self._batch_derivative(x, y, 0)
                 d_y_over_d_phi = self._batch_derivative(x, y, 2)
                 return (
-                    d_y_over_d_r +
-                    (
-                        second_derivative / tf.math.sin(phi) +
-                        tf.math.cos(phi) * d_y_over_d_phi
-                    ) / (r * tf.math.sin(phi))
+                    d_y_over_d_r
+                    + (
+                        second_derivative / tf.math.sin(phi)
+                        + tf.math.cos(phi) * d_y_over_d_phi
+                    )
+                    / (r * tf.math.sin(phi))
                 ) / r
 
             elif x_axis1 == 2 and x_axis2 == 2:
                 d_y_over_d_r = self._batch_derivative(x, y, 0)
                 return (second_derivative / r + d_y_over_d_r) / r
 
-            elif (x_axis1 == 0 and x_axis2 == 1) \
-                    or (x_axis1 == 1 and x_axis2 == 0):
+            elif (x_axis1 == 0 and x_axis2 == 1) or (
+                x_axis1 == 1 and x_axis2 == 0
+            ):
                 d_y_over_d_theta = self._batch_derivative(x, y, 1)
-                return (
-                    second_derivative - d_y_over_d_theta / r
-                ) / (r * tf.math.sin(phi))
+                return (second_derivative - d_y_over_d_theta / r) / (
+                    r * tf.math.sin(phi)
+                )
 
-            elif (x_axis1 == 0 and x_axis2 == 2) \
-                    or (x_axis1 == 2 and x_axis2 == 0):
+            elif (x_axis1 == 0 and x_axis2 == 2) or (
+                x_axis1 == 2 and x_axis2 == 0
+            ):
                 d_y_over_d_phi = self._batch_derivative(x, y, 2)
                 return (second_derivative - d_y_over_d_phi / r) / r
 
             else:
                 d_y_over_d_theta = self._batch_derivative(x, y, 1)
                 return (
-                    tf.math.sin(phi) * second_derivative -
-                    tf.math.cos(phi) * d_y_over_d_theta
+                    tf.math.sin(phi) * second_derivative
+                    - tf.math.cos(phi) * d_y_over_d_theta
                 ) / (r * tf.math.sin(phi)) ** 2
 
         else:
             r = x[:, :1]
 
-            if (x_axis1 == 0 or x_axis1 == 2) \
-                    and (x_axis2 == 0 or x_axis2 == 2):
+            if (x_axis1 == 0 or x_axis1 == 2) and (
+                x_axis2 == 0 or x_axis2 == 2
+            ):
                 return second_derivative
 
             elif x_axis1 == 1 and x_axis2 == 1:
                 d_y_over_d_r = self._batch_derivative(x, y, 0)
                 return (second_derivative / r + d_y_over_d_r) / r
 
-            elif (x_axis1 == 1 and x_axis2 == 0) \
-                    or (x_axis1 == 0 and x_axis2 == 1):
+            elif (x_axis1 == 1 and x_axis2 == 0) or (
+                x_axis1 == 0 and x_axis2 == 1
+            ):
                 d_y_over_d_theta = self._batch_derivative(x, y, 1)
                 return (second_derivative - d_y_over_d_theta / r) / r
 
@@ -157,11 +161,11 @@ class AutoDifferentiator(tf.GradientTape):
                 return second_derivative / r
 
     def batch_divergence(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the divergence of y.
 
@@ -173,16 +177,20 @@ class AutoDifferentiator(tf.GradientTape):
         """
         if y.shape[1] != x.shape[1]:
             raise ValueError(
-                f'number of y dimensions ({y.shape[1]}) must match number of '
-                f'x dimensions ({x.shape[1]})')
+                f"number of y dimensions ({y.shape[1]}) must match number of "
+                f"x dimensions ({x.shape[1]})"
+            )
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
-                tf.stack([
-                    self._batch_derivative(x, y[..., i:i + 1], i)
-                    for i in range(x.shape[-1])
-                ]),
-                axis=0)
+                tf.stack(
+                    [
+                        self._batch_derivative(x, y[..., i : i + 1], i)
+                        for i in range(x.shape[-1])
+                    ]
+                ),
+                axis=0,
+            )
 
         elif coordinate_system_type == CoordinateSystem.SPHERICAL:
             r = x[:, :1]
@@ -193,12 +201,16 @@ class AutoDifferentiator(tf.GradientTape):
             d_y_r_over_d_r = self._batch_derivative(x, y_r, 0)
             d_y_theta_over_d_theta = self._batch_derivative(x, y_theta, 1)
             d_y_phi_over_d_phi = self._batch_derivative(x, y_phi, 2)
-            return d_y_r_over_d_r + (
-                d_y_phi_over_d_phi + tf.math.multiply(y_r, 2.) +
-                (
-                    d_y_theta_over_d_theta + tf.math.cos(phi) * y_phi
-                ) / tf.math.sin(phi)
-            ) / r
+            return (
+                d_y_r_over_d_r
+                + (
+                    d_y_phi_over_d_phi
+                    + tf.math.multiply(y_r, 2.0)
+                    + (d_y_theta_over_d_theta + tf.math.cos(phi) * y_phi)
+                    / tf.math.sin(phi)
+                )
+                / r
+            )
 
         else:
             r = x[:, :1]
@@ -216,12 +228,12 @@ class AutoDifferentiator(tf.GradientTape):
                 return div + d_y_z_over_d_z
 
     def batch_curl(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            curl_ind: int = 0,
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        curl_ind: int = 0,
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the curl_ind-th component of the curl of y.
 
@@ -236,30 +248,36 @@ class AutoDifferentiator(tf.GradientTape):
         x_dimension = x.shape[1]
         if y.shape[1] != x_dimension:
             raise ValueError(
-                f'number of y dimensions ({y.shape[1]}) must match number of '
-                f'x dimensions ({x_dimension})')
+                f"number of y dimensions ({y.shape[1]}) must match number of "
+                f"x dimensions ({x_dimension})"
+            )
         if not (2 <= x_dimension <= 3):
             raise ValueError(
-                f'number of x dimensions ({x_dimension}) must be 2 or 3')
+                f"number of x dimensions ({x_dimension}) must be 2 or 3"
+            )
         if x_dimension == 2 and curl_ind != 0:
-            raise ValueError(f'curl index ({curl_ind}) must be 0 for 2D curl')
+            raise ValueError(f"curl index ({curl_ind}) must be 0 for 2D curl")
         if not (0 <= curl_ind < x_dimension):
             raise ValueError(
-                f'curl index ({curl_ind}) must be non-negative and less than '
-                f'number of x dimensions ({x_dimension})')
+                f"curl index ({curl_ind}) must be non-negative and less than "
+                f"number of x dimensions ({x_dimension})"
+            )
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             if x_dimension == 2 or curl_ind == 2:
-                return self._batch_derivative(x, y[..., 1:2], 0) - \
-                    self._batch_derivative(x, y[..., :1], 1)
+                return self._batch_derivative(
+                    x, y[..., 1:2], 0
+                ) - self._batch_derivative(x, y[..., :1], 1)
 
             elif curl_ind == 0:
-                return self._batch_derivative(x, y[..., 2:], 1) - \
-                    self._batch_derivative(x, y[..., 1:2], 2)
+                return self._batch_derivative(
+                    x, y[..., 2:], 1
+                ) - self._batch_derivative(x, y[..., 1:2], 2)
 
             else:
-                return self._batch_derivative(x, y[..., :1], 2) - \
-                    self._batch_derivative(x, y[..., 2:], 0)
+                return self._batch_derivative(
+                    x, y[..., :1], 2
+                ) - self._batch_derivative(x, y[..., 2:], 0)
 
         elif coordinate_system_type == CoordinateSystem.SPHERICAL:
             r = x[:, :1]
@@ -272,11 +290,9 @@ class AutoDifferentiator(tf.GradientTape):
                 d_y_theta_over_d_phi = self._batch_derivative(x, y_theta, 2)
                 d_y_phi_over_d_theta = self._batch_derivative(x, y_phi, 1)
                 return (
-                    d_y_theta_over_d_phi +
-                    (
-                        tf.math.cos(phi) * y_theta -
-                        d_y_phi_over_d_theta
-                    ) / tf.math.sin(phi)
+                    d_y_theta_over_d_phi
+                    + (tf.math.cos(phi) * y_theta - d_y_phi_over_d_theta)
+                    / tf.math.sin(phi)
                 ) / r
 
             elif curl_ind == 1:
@@ -287,17 +303,20 @@ class AutoDifferentiator(tf.GradientTape):
             else:
                 d_y_r_over_d_theta = self._batch_derivative(x, y_r, 1)
                 d_y_theta_over_d_r = self._batch_derivative(x, y_theta, 0)
-                return -d_y_theta_over_d_r + (
-                    d_y_r_over_d_theta / tf.math.sin(phi) - y_theta
-                ) / r
+                return (
+                    -d_y_theta_over_d_r
+                    + (d_y_r_over_d_theta / tf.math.sin(phi) - y_theta) / r
+                )
 
         else:
             r = x[:, :1]
             y_r = y[..., :1]
             y_theta = y[..., 1:2]
 
-            if coordinate_system_type == CoordinateSystem.POLAR \
-                    or curl_ind == 2:
+            if (
+                coordinate_system_type == CoordinateSystem.POLAR
+                or curl_ind == 2
+            ):
                 d_y_r_over_d_theta = self._batch_derivative(x, y_r, 1)
                 d_y_theta_over_d_r = self._batch_derivative(x, y_theta, 0)
                 return d_y_theta_over_d_r + (y_theta - d_y_r_over_d_theta) / r
@@ -315,11 +334,11 @@ class AutoDifferentiator(tf.GradientTape):
                 return d_y_r_over_d_z - d_y_z_over_d_r
 
     def batch_laplacian(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the element-wise scalar Laplacian of y.
 
@@ -331,14 +350,16 @@ class AutoDifferentiator(tf.GradientTape):
         """
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return tf.math.reduce_sum(
-                tf.stack([
-                    self._batch_derivative(
-                        x,
-                        self._batch_derivative(x, y, i),
-                        i)
-                    for i in range(x.shape[-1])
-                ]),
-                axis=0)
+                tf.stack(
+                    [
+                        self._batch_derivative(
+                            x, self._batch_derivative(x, y, i), i
+                        )
+                        for i in range(x.shape[-1])
+                    ]
+                ),
+                axis=0,
+            )
 
         elif coordinate_system_type == CoordinateSystem.SPHERICAL:
             r = x[:, :1]
@@ -347,44 +368,58 @@ class AutoDifferentiator(tf.GradientTape):
             d_y_over_d_theta = self._batch_derivative(x, y, 1)
             d_y_over_d_phi = self._batch_derivative(x, y, 2)
             d_sqr_y_over_d_r_sqr = self._batch_derivative(x, d_y_over_d_r, 0)
-            d_sqr_y_over_d_theta_sqr = \
-                self._batch_derivative(x, d_y_over_d_theta, 1)
-            d_sqr_y_over_d_phi_sqr = \
-                self._batch_derivative(x, d_y_over_d_phi, 2)
-            return d_sqr_y_over_d_r_sqr + (
-                tf.math.multiply(d_y_over_d_r, 2.) + (
-                    d_sqr_y_over_d_phi_sqr + (
-                        tf.math.cos(phi) * d_y_over_d_phi +
-                        d_sqr_y_over_d_theta_sqr / tf.math.sin(phi)
-                    ) / tf.math.sin(phi)
-                ) / r
-            ) / r
+            d_sqr_y_over_d_theta_sqr = self._batch_derivative(
+                x, d_y_over_d_theta, 1
+            )
+            d_sqr_y_over_d_phi_sqr = self._batch_derivative(
+                x, d_y_over_d_phi, 2
+            )
+            return (
+                d_sqr_y_over_d_r_sqr
+                + (
+                    tf.math.multiply(d_y_over_d_r, 2.0)
+                    + (
+                        d_sqr_y_over_d_phi_sqr
+                        + (
+                            tf.math.cos(phi) * d_y_over_d_phi
+                            + d_sqr_y_over_d_theta_sqr / tf.math.sin(phi)
+                        )
+                        / tf.math.sin(phi)
+                    )
+                    / r
+                )
+                / r
+            )
 
         else:
             r = x[:, :1]
             d_y_over_d_r = self._batch_derivative(x, y, 0)
             d_y_over_d_theta = self._batch_derivative(x, y, 1)
             d_sqr_y_over_d_r_sqr = self._batch_derivative(x, d_y_over_d_r, 0)
-            d_sqr_y_over_d_theta_sqr = \
-                self._batch_derivative(x, d_y_over_d_theta, 1)
-            laplacian = d_sqr_y_over_d_r_sqr + \
-                (d_sqr_y_over_d_theta_sqr / r + d_y_over_d_r) / r
+            d_sqr_y_over_d_theta_sqr = self._batch_derivative(
+                x, d_y_over_d_theta, 1
+            )
+            laplacian = (
+                d_sqr_y_over_d_r_sqr
+                + (d_sqr_y_over_d_theta_sqr / r + d_y_over_d_r) / r
+            )
 
             if coordinate_system_type == CoordinateSystem.POLAR:
                 return laplacian
             else:
                 d_y_over_d_z = self._batch_derivative(x, y, 2)
-                d_sqr_y_over_d_z_sqr = \
-                    self._batch_derivative(x, d_y_over_d_z, 2)
+                d_sqr_y_over_d_z_sqr = self._batch_derivative(
+                    x, d_y_over_d_z, 2
+                )
                 return laplacian + d_sqr_y_over_d_z_sqr
 
     def batch_vector_laplacian(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            vector_laplacian_ind: int,
-            coordinate_system_type: CoordinateSystem =
-            CoordinateSystem.CARTESIAN) -> tf.Tensor:
+        self,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        vector_laplacian_ind: int,
+        coordinate_system_type: CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ) -> tf.Tensor:
         """
         Returns the vector Laplacian of y.
 
@@ -399,16 +434,19 @@ class AutoDifferentiator(tf.GradientTape):
         x_dimension = x.shape[1]
         if y.shape[1] != x_dimension:
             raise ValueError(
-                f'number of y dimensions ({y.shape[1]}) must match number of '
-                f'x dimensions ({x_dimension})')
+                f"number of y dimensions ({y.shape[1]}) must match number of "
+                f"x dimensions ({x_dimension})"
+            )
         if not (0 <= vector_laplacian_ind < x_dimension):
             raise ValueError(
-                f'vector Laplacian index ({vector_laplacian_ind}) must be '
-                'non-negative and less than number of x dimensions '
-                f'({x_dimension})')
+                f"vector Laplacian index ({vector_laplacian_ind}) must be "
+                "non-negative and less than number of x dimensions "
+                f"({x_dimension})"
+            )
 
         laplacian = self.batch_laplacian(
-            x, y[:, vector_laplacian_ind:vector_laplacian_ind + 1])
+            x, y[:, vector_laplacian_ind : vector_laplacian_ind + 1]
+        )
 
         if coordinate_system_type == CoordinateSystem.CARTESIAN:
             return laplacian
@@ -423,37 +461,47 @@ class AutoDifferentiator(tf.GradientTape):
             if vector_laplacian_ind == 1:
                 d_y_theta_over_d_theta = self._batch_derivative(x, y_theta, 1)
                 d_y_phi_over_d_phi = self._batch_derivative(x, y_phi, 2)
-                return laplacian - tf.math.multiply(
-                    y_r + d_y_phi_over_d_phi +
-                    (
-                        tf.cos(phi) * y_phi + d_y_theta_over_d_theta
-                    ) / tf.sin(phi),
-                    2.
-                ) / r ** 2
+                return (
+                    laplacian
+                    - tf.math.multiply(
+                        y_r
+                        + d_y_phi_over_d_phi
+                        + (tf.cos(phi) * y_phi + d_y_theta_over_d_theta)
+                        / tf.sin(phi),
+                        2.0,
+                    )
+                    / r**2
+                )
 
             elif vector_laplacian_ind == 2:
                 d_y_r_over_d_theta = self._batch_derivative(x, y_r, 1)
                 d_y_phi_over_d_theta = self._batch_derivative(x, y_phi, 1)
                 return laplacian + tf.math.multiply(
-                    d_y_r_over_d_theta +
-                    (
-                        tf.cos(phi) * d_y_phi_over_d_theta -
-                        tf.math.divide(y_theta, 2.)
-                    ) / tf.sin(phi),
-                    2.
-                ) / (tf.sin(phi) * r ** 2)
+                    d_y_r_over_d_theta
+                    + (
+                        tf.cos(phi) * d_y_phi_over_d_theta
+                        - tf.math.divide(y_theta, 2.0)
+                    )
+                    / tf.sin(phi),
+                    2.0,
+                ) / (tf.sin(phi) * r**2)
 
             else:
                 d_y_r_over_d_phi = self._batch_derivative(x, y_r, 2)
                 d_y_theta_over_d_theta = self._batch_derivative(x, y_theta, 1)
-                return laplacian + tf.math.multiply(
-                    d_y_r_over_d_phi -
-                    (
-                        tf.math.divide(y_phi, 2.) +
-                        tf.cos(phi) * d_y_theta_over_d_theta
-                    ) / tf.sin(phi) ** 2,
-                    2.
-                ) / r ** 2
+                return (
+                    laplacian
+                    + tf.math.multiply(
+                        d_y_r_over_d_phi
+                        - (
+                            tf.math.divide(y_phi, 2.0)
+                            + tf.cos(phi) * d_y_theta_over_d_theta
+                        )
+                        / tf.sin(phi) ** 2,
+                        2.0,
+                    )
+                    / r**2
+                )
 
         else:
             r = x[:, :1]
@@ -462,24 +510,26 @@ class AutoDifferentiator(tf.GradientTape):
 
             if vector_laplacian_ind == 0:
                 d_y_theta_over_d_theta = self._batch_derivative(x, y_theta, 1)
-                return laplacian - (
-                    y_r + tf.math.multiply(d_y_theta_over_d_theta, 2.)
-                ) / r ** 2
+                return (
+                    laplacian
+                    - (y_r + tf.math.multiply(d_y_theta_over_d_theta, 2.0))
+                    / r**2
+                )
 
             elif vector_laplacian_ind == 1:
                 d_y_r_over_d_theta = self._batch_derivative(x, y_r, 1)
-                return laplacian - (
-                    y_theta - tf.math.multiply(d_y_r_over_d_theta, 2.)
-                ) / r ** 2
+                return (
+                    laplacian
+                    - (y_theta - tf.math.multiply(d_y_r_over_d_theta, 2.0))
+                    / r**2
+                )
 
             else:
                 return laplacian
 
     def _batch_derivative(
-            self,
-            x: tf.Tensor,
-            y: tf.Tensor,
-            x_axis: Union[int, tf.Tensor]) -> tf.Tensor:
+        self, x: tf.Tensor, y: tf.Tensor, x_axis: Union[int, tf.Tensor]
+    ) -> tf.Tensor:
         """
         Returns the element(s) of the first derivative of y with respect to the
         element of x defined by x_axis.
@@ -492,23 +542,28 @@ class AutoDifferentiator(tf.GradientTape):
         """
         if x.shape[0] != y.shape[0]:
             raise ValueError(
-                f'number of x instances ({x.shape[0]}) must match number of '
-                f'y instances ({y.shape[0]})')
+                f"number of x instances ({x.shape[0]}) must match number of "
+                f"y instances ({y.shape[0]})"
+            )
 
         if isinstance(x_axis, int):
             if not (0 <= x_axis < x.shape[-1]):
                 raise ValueError(
-                    f'x-axis ({x_axis}) must be non-negative and less than '
-                    f'number of x dimensions ({x.shape[-1]})')
+                    f"x-axis ({x_axis}) must be non-negative and less than "
+                    f"number of x dimensions ({x.shape[-1]})"
+                )
         elif isinstance(x_axis, tf.Tensor):
             if len(x_axis.shape) != 1:
-                raise ValueError('x-axis must be a 1 dimensional array')
+                raise ValueError("x-axis must be a 1 dimensional array")
             if x_axis.shape[0] != x.shape[0]:
                 raise ValueError(
-                    f'length of x-axis ({x_axis.shape[0]}) must match number '
-                    f'of x instances ({x.shape[0]})')
+                    f"length of x-axis ({x_axis.shape[0]}) must match number "
+                    f"of x instances ({x.shape[0]})"
+                )
 
         derivatives = self.batch_jacobian(y, x)
-        return tf.gather(derivatives, x_axis, axis=2, batch_dims=1) \
-            if isinstance(x_axis, tf.Tensor) \
+        return (
+            tf.gather(derivatives, x_axis, axis=2, batch_dims=1)
+            if isinstance(x_axis, tf.Tensor)
             else derivatives[:, :, x_axis]
+        )

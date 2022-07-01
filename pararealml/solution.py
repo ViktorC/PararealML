@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, NamedTuple, List, Generator, Set
+from typing import Generator, List, NamedTuple, Optional, Sequence, Set
 
 import numpy as np
 from scipy.interpolate import interpn
@@ -8,9 +8,18 @@ from scipy.interpolate import interpn
 from pararealml.constraint import apply_constraints_along_last_axis
 from pararealml.differential_equation import NBodyGravitationalEquation
 from pararealml.initial_value_problem import InitialValueProblem
-from pararealml.plot import Plot, TimePlot, PhaseSpacePlot, NBodyPlot, \
-    SpaceLinePlot, ContourPlot, SurfacePlot, ScatterPlot, StreamPlot, \
-    QuiverPlot
+from pararealml.plot import (
+    ContourPlot,
+    NBodyPlot,
+    PhaseSpacePlot,
+    Plot,
+    QuiverPlot,
+    ScatterPlot,
+    SpaceLinePlot,
+    StreamPlot,
+    SurfacePlot,
+    TimePlot,
+)
 
 
 class Solution:
@@ -19,12 +28,13 @@ class Solution:
     """
 
     def __init__(
-            self,
-            ivp: InitialValueProblem,
-            t_coordinates: np.ndarray,
-            discrete_y: np.ndarray,
-            vertex_oriented: Optional[bool] = None,
-            d_t: Optional[float] = None):
+        self,
+        ivp: InitialValueProblem,
+        t_coordinates: np.ndarray,
+        discrete_y: np.ndarray,
+        vertex_oriented: Optional[bool] = None,
+        d_t: Optional[float] = None,
+    ):
         """
         :param ivp: the solved initial value problem
         :param t_coordinates: the time steps at which the solution is evaluated
@@ -37,20 +47,25 @@ class Solution:
         """
         if t_coordinates.ndim != 1:
             raise ValueError(
-                f'number of t coordinate dimensions ({t_coordinates.ndim}) '
-                'must be 1')
+                f"number of t coordinate dimensions ({t_coordinates.ndim}) "
+                "must be 1"
+            )
         if len(t_coordinates) == 0:
-            raise ValueError('length of t coordinates must be greater than 0')
-        if ivp.constrained_problem.differential_equation.x_dimension \
-                and vertex_oriented is None:
+            raise ValueError("length of t coordinates must be greater than 0")
+        if (
+            ivp.constrained_problem.differential_equation.x_dimension
+            and vertex_oriented is None
+        ):
             raise ValueError(
-                'vertex orientation must be defined for solutions to PDEs')
+                "vertex orientation must be defined for solutions to PDEs"
+            )
         y_shape = ivp.constrained_problem.y_shape(vertex_oriented)
         if discrete_y.shape != ((len(t_coordinates),) + y_shape):
             raise ValueError(
-                'expected solution shape to be '
-                f'{((len(t_coordinates),) + y_shape)} but got '
-                f'{discrete_y.shape}')
+                "expected solution shape to be "
+                f"{((len(t_coordinates),) + y_shape)} but got "
+                f"{discrete_y.shape}"
+            )
 
         self._ivp = ivp
         self._t_coordinates = np.copy(t_coordinates)
@@ -60,8 +75,11 @@ class Solution:
         self._t_coordinates.setflags(write=False)
 
         if d_t is None:
-            d_t = 0. if len(t_coordinates) == 1 \
+            d_t = (
+                0.0
+                if len(t_coordinates) == 1
                 else t_coordinates[1] - t_coordinates[0]
+            )
         self._d_t = d_t
 
     @property
@@ -94,9 +112,10 @@ class Solution:
         return self._t_coordinates
 
     def y(
-            self,
-            x: Optional[np.ndarray] = None,
-            interpolation_method: str = 'linear') -> np.ndarray:
+        self,
+        x: Optional[np.ndarray] = None,
+        interpolation_method: str = "linear",
+    ) -> np.ndarray:
         """
         Interpolates and returns the values of y at the specified
         spatial coordinates at every time step.
@@ -117,18 +136,19 @@ class Solution:
             x,
             method=interpolation_method,
             bounds_error=False,
-            fill_value=None)
+            fill_value=None,
+        )
         y = np.moveaxis(y, -2, 0)
         y = y.reshape(
-            (len(self._t_coordinates),) +
-            x.shape[:-1] +
-            (diff_eq.y_dimension,))
+            (len(self._t_coordinates),) + x.shape[:-1] + (diff_eq.y_dimension,)
+        )
         return np.ascontiguousarray(y)
 
     def discrete_y(
-            self,
-            vertex_oriented: Optional[bool] = None,
-            interpolation_method: str = 'linear') -> np.ndarray:
+        self,
+        vertex_oriented: Optional[bool] = None,
+        interpolation_method: str = "linear",
+    ) -> np.ndarray:
         """
         Returns the discrete solution evaluated either at vertices or the cell
         centers of the spatial mesh.
@@ -145,21 +165,21 @@ class Solution:
             vertex_oriented = self._vertex_oriented
 
         cp = self._ivp.constrained_problem
-        if not cp.differential_equation.x_dimension \
-                or self._vertex_oriented == vertex_oriented:
+        if (
+            not cp.differential_equation.x_dimension
+            or self._vertex_oriented == vertex_oriented
+        ):
             return np.copy(self._discrete_y)
 
         x = cp.mesh.all_index_coordinates(vertex_oriented)
         discrete_y = self.y(x, interpolation_method)
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                cp.static_y_vertex_constraints, discrete_y)
+                cp.static_y_vertex_constraints, discrete_y
+            )
         return discrete_y
 
-    def diff(
-            self,
-            solutions: Sequence[Solution],
-            atol: float = 1e-8) -> Diffs:
+    def diff(self, solutions: Sequence[Solution], atol: float = 1e-8) -> Diffs:
         """
         Calculates and returns the difference between the provided solutions
         and this solution at every matching time point across all solutions.
@@ -173,7 +193,7 @@ class Solution:
             provided solutions at the matching time points
         """
         if len(solutions) == 0:
-            raise ValueError('length of solutions must be greater than 0')
+            raise ValueError("length of solutions must be greater than 0")
 
         matching_time_points = []
         all_diffs: List[List[np.ndarray]] = []
@@ -186,14 +206,17 @@ class Solution:
             all_time_points.append(solution.t_coordinates)
             all_time_steps.append(solution.d_t)
             other_discrete_ys.append(
-                solution.discrete_y(self._vertex_oriented))
+                solution.discrete_y(self._vertex_oriented)
+            )
 
         fewest_time_points_ind = 0
         fewest_time_points = None
         for i, time_points in enumerate(all_time_points):
             n_time_points = len(time_points)
-            if fewest_time_points is None \
-                    or n_time_points < fewest_time_points:
+            if (
+                fewest_time_points is None
+                or n_time_points < fewest_time_points
+            ):
                 fewest_time_points = n_time_points
                 fewest_time_points_ind = i
 
@@ -206,14 +229,14 @@ class Solution:
                     indices_of_time_points.append(i)
                     continue
 
-                index_of_time_point = int(round(
-                    (t - time_points[0]) / all_time_steps[j]))
-                if (0 <= index_of_time_point < len(time_points)) \
-                        and np.isclose(
-                            t,
-                            time_points[index_of_time_point],
-                            atol=atol,
-                            rtol=0.):
+                index_of_time_point = int(
+                    round((t - time_points[0]) / all_time_steps[j])
+                )
+                if (
+                    0 <= index_of_time_point < len(time_points)
+                ) and np.isclose(
+                    t, time_points[index_of_time_point], atol=atol, rtol=0.0
+                ):
                     indices_of_time_points.append(index_of_time_point)
                 else:
                     all_match = False
@@ -223,8 +246,10 @@ class Solution:
                 matching_time_points.append(t)
 
                 for j, discrete_y in enumerate(other_discrete_ys):
-                    diff = discrete_y[indices_of_time_points[j + 1]] - \
-                        self._discrete_y[indices_of_time_points[0]]
+                    diff = (
+                        discrete_y[indices_of_time_points[j + 1]]
+                        - self._discrete_y[indices_of_time_points[0]]
+                    )
 
                     all_diffs[j].append(diff)
 
@@ -266,33 +291,39 @@ class Solution:
                             vector_field,
                             cp.mesh,
                             self._vertex_oriented,
-                            **kwargs)
+                            **kwargs,
+                        )
                         if diff_eq.x_dimension == 2:
                             yield StreamPlot(
                                 vector_field,
                                 cp.mesh,
                                 self._vertex_oriented,
-                                **kwargs)
+                                **kwargs,
+                            )
 
             for i in range(diff_eq.y_dimension):
                 if i in vector_index_set:
                     continue
 
-                scalar_field = self._discrete_y[..., i:i + 1]
+                scalar_field = self._discrete_y[..., i : i + 1]
 
                 if diff_eq.x_dimension == 1:
                     yield SpaceLinePlot(
-                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs
+                    )
 
                 elif diff_eq.x_dimension == 2:
                     yield ContourPlot(
-                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs
+                    )
                     yield SurfacePlot(
-                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs
+                    )
 
                 else:
                     yield ScatterPlot(
-                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs)
+                        scalar_field, cp.mesh, self._vertex_oriented, **kwargs
+                    )
 
 
 class Diffs(NamedTuple):
@@ -300,5 +331,6 @@ class Diffs(NamedTuple):
     A representation of the difference between a solution and one or more other
     solutions at time points that match across all solutions.
     """
+
     matching_time_points: np.ndarray
     differences: Sequence[np.ndarray]

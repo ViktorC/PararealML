@@ -1,17 +1,18 @@
 from abc import ABC, abstractmethod
-from copy import deepcopy, copy
-from typing import Tuple, Optional, Callable, Sequence
+from copy import copy, deepcopy
+from typing import Callable, Optional, Sequence, Tuple
 
 import numpy as np
 from scipy.interpolate import interpn
-from scipy.stats import multivariate_normal, beta
+from scipy.stats import beta, multivariate_normal
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.constraint import apply_constraints_along_last_axis
 from pararealml.mesh import to_cartesian_coordinates
 
-VectorizedInitialConditionFunction = \
-    Callable[[Optional[np.ndarray]], np.ndarray]
+VectorizedInitialConditionFunction = Callable[
+    [Optional[np.ndarray]], np.ndarray
+]
 
 
 class InitialCondition(ABC):
@@ -33,8 +34,8 @@ class InitialCondition(ABC):
 
     @abstractmethod
     def discrete_y_0(
-            self,
-            vertex_oriented: Optional[bool] = None) -> np.ndarray:
+        self, vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
         """
         Returns the discretized initial values of y evaluated at the vertices
         or cell centers of the spatial mesh.
@@ -51,11 +52,12 @@ class DiscreteInitialCondition(InitialCondition):
     """
 
     def __init__(
-            self,
-            cp: ConstrainedProblem,
-            y_0: np.ndarray,
-            vertex_oriented: Optional[bool] = None,
-            interpolation_method: str = 'linear'):
+        self,
+        cp: ConstrainedProblem,
+        y_0: np.ndarray,
+        vertex_oriented: Optional[bool] = None,
+        interpolation_method: str = "linear",
+    ):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -69,12 +71,13 @@ class DiscreteInitialCondition(InitialCondition):
             grid; if the constrained problem is based on an ODE, it can be None
         """
         if cp.differential_equation.x_dimension and vertex_oriented is None:
-            raise ValueError('vertex orientation must be defined for PDEs')
+            raise ValueError("vertex orientation must be defined for PDEs")
         if y_0.shape != cp.y_shape(vertex_oriented):
             raise ValueError(
-                f'discrete initial value shape {y_0.shape} must match '
-                'constrained problem solution shape '
-                f'{cp.y_shape(vertex_oriented)}')
+                f"discrete initial value shape {y_0.shape} must match "
+                "constrained problem solution shape "
+                f"{cp.y_shape(vertex_oriented)}"
+            )
 
         self._cp = cp
         self._y_0 = np.copy(y_0)
@@ -83,7 +86,8 @@ class DiscreteInitialCondition(InitialCondition):
 
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                cp.static_y_vertex_constraints, self._y_0)
+                cp.static_y_vertex_constraints, self._y_0
+            )
 
     def y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         if not self._cp.differential_equation.x_dimension:
@@ -95,22 +99,26 @@ class DiscreteInitialCondition(InitialCondition):
             x,
             method=self._interpolation_method,
             bounds_error=False,
-            fill_value=None)
+            fill_value=None,
+        )
 
     def discrete_y_0(
-            self,
-            vertex_oriented: Optional[bool] = None) -> np.ndarray:
+        self, vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
         if vertex_oriented is None:
             vertex_oriented = self._vertex_oriented
 
-        if not self._cp.differential_equation.x_dimension \
-                or vertex_oriented == self._vertex_oriented:
+        if (
+            not self._cp.differential_equation.x_dimension
+            or vertex_oriented == self._vertex_oriented
+        ):
             return np.copy(self._y_0)
 
         y_0 = self.y_0(self._cp.mesh.all_index_coordinates(vertex_oriented))
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._cp.static_y_vertex_constraints, y_0)
+                self._cp.static_y_vertex_constraints, y_0
+            )
         return y_0
 
 
@@ -120,10 +128,7 @@ class ConstantInitialCondition(DiscreteInitialCondition):
     constant initial value of the corresponding element of y.
     """
 
-    def __init__(
-            self,
-            cp: ConstrainedProblem,
-            constant_y_0s: Sequence[float]):
+    def __init__(self, cp: ConstrainedProblem, constant_y_0s: Sequence[float]):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -133,8 +138,9 @@ class ConstantInitialCondition(DiscreteInitialCondition):
         y_dim = cp.differential_equation.y_dimension
         if len(constant_y_0s) != y_dim:
             raise ValueError(
-                f'length of constant y0 values ({len(constant_y_0s)}) must '
-                f'match number of y components ({y_dim})')
+                f"length of constant y0 values ({len(constant_y_0s)}) must "
+                f"match number of y components ({y_dim})"
+            )
 
         ic = np.empty(cp.y_shape(True))
         for i, y_0 in enumerate(constant_y_0s):
@@ -149,9 +155,10 @@ class ContinuousInitialCondition(InitialCondition):
     """
 
     def __init__(
-            self,
-            cp: ConstrainedProblem,
-            y_0_func: VectorizedInitialConditionFunction):
+        self,
+        cp: ConstrainedProblem,
+        y_0_func: VectorizedInitialConditionFunction,
+    ):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -168,11 +175,13 @@ class ContinuousInitialCondition(InitialCondition):
         return self._y_0_func(x)
 
     def discrete_y_0(
-            self,
-            vertex_oriented: Optional[bool] = None) -> np.ndarray:
+        self, vertex_oriented: Optional[bool] = None
+    ) -> np.ndarray:
         return np.copy(
-            self._discrete_y_0_vertices if vertex_oriented
-            else self._discrete_y_0_cells)
+            self._discrete_y_0_vertices
+            if vertex_oriented
+            else self._discrete_y_0_cells
+        )
 
     def _create_discrete_y_0(self, vertex_oriented: bool) -> np.ndarray:
         """
@@ -188,8 +197,9 @@ class ContinuousInitialCondition(InitialCondition):
             y_0 = np.array(self._y_0_func(None))
             if y_0.shape != self._cp.y_shape():
                 raise ValueError(
-                    'expected initial condition function output shape to be '
-                    f'{self._cp.y_shape()} but got {y_0.shape}')
+                    "expected initial condition function output shape to be "
+                    f"{self._cp.y_shape()} but got {y_0.shape}"
+                )
 
             return y_0
 
@@ -197,13 +207,15 @@ class ContinuousInitialCondition(InitialCondition):
         y_0 = self._y_0_func(x)
         if y_0.shape != (len(x), diff_eq.y_dimension):
             raise ValueError(
-                'expected initial condition function output shape to be '
-                f'{(len(x), diff_eq.y_dimension)} but got {y_0.shape}')
+                "expected initial condition function output shape to be "
+                f"{(len(x), diff_eq.y_dimension)} but got {y_0.shape}"
+            )
 
         y_0 = y_0.reshape(self._cp.y_shape(vertex_oriented))
         if vertex_oriented:
             apply_constraints_along_last_axis(
-                self._cp.static_y_vertex_constraints, y_0)
+                self._cp.static_y_vertex_constraints, y_0
+            )
         return y_0
 
     def _convert_coordinates_to_cartesian(self, x: np.ndarray) -> np.ndarray:
@@ -215,7 +227,8 @@ class ContinuousInitialCondition(InitialCondition):
         """
         cartesian_x = to_cartesian_coordinates(
             [x[:, i] for i in range(x.shape[1])],
-            self._cp.mesh.coordinate_system_type)
+            self._cp.mesh.coordinate_system_type,
+        )
         return np.stack(cartesian_x, axis=-1)
 
 
@@ -226,10 +239,11 @@ class GaussianInitialCondition(ContinuousInitialCondition):
     """
 
     def __init__(
-            self,
-            cp: ConstrainedProblem,
-            means_and_covs: Sequence[Tuple[np.ndarray, np.ndarray]],
-            multipliers: Optional[Sequence[float]] = None):
+        self,
+        cp: ConstrainedProblem,
+        means_and_covs: Sequence[Tuple[np.ndarray, np.ndarray]],
+        multipliers: Optional[Sequence[float]] = None,
+    ):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -241,32 +255,36 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         """
         diff_eq = cp.differential_equation
         if not diff_eq.x_dimension:
-            raise ValueError('constrained problem must be a PDE')
+            raise ValueError("constrained problem must be a PDE")
         if len(means_and_covs) != diff_eq.y_dimension:
             raise ValueError(
-                f'number of means and covariances ({len(means_and_covs)}) '
-                f'must match number of y dimensions ({diff_eq.y_dimension})')
+                f"number of means and covariances ({len(means_and_covs)}) "
+                f"must match number of y dimensions ({diff_eq.y_dimension})"
+            )
         for mean, cov in means_and_covs:
             if mean.shape != (diff_eq.x_dimension,):
                 raise ValueError(
-                    f'expected mean shape to be {(diff_eq.x_dimension,)} but '
-                    f'got {mean.shape}')
+                    f"expected mean shape to be {(diff_eq.x_dimension,)} but "
+                    f"got {mean.shape}"
+                )
             if cov.shape != (diff_eq.x_dimension, diff_eq.x_dimension):
                 raise ValueError(
-                    'expected covariance shape to be '
-                    f'{(diff_eq.x_dimension, diff_eq.x_dimension)} but got '
-                    f'{cov.shape}')
+                    "expected covariance shape to be "
+                    f"{(diff_eq.x_dimension, diff_eq.x_dimension)} but got "
+                    f"{cov.shape}"
+                )
 
         self._means_and_covs = deepcopy(means_and_covs)
 
         if multipliers is not None:
             if len(multipliers) != diff_eq.y_dimension:
                 raise ValueError(
-                    f'length of multipliers ({len(multipliers)}) must match '
-                    f'number of y dimensions ({diff_eq.y_dimension})')
+                    f"length of multipliers ({len(multipliers)}) must match "
+                    f"number of y dimensions ({diff_eq.y_dimension})"
+                )
             self._multipliers = copy(multipliers)
         else:
-            self._multipliers = [1.] * diff_eq.y_dimension
+            self._multipliers = [1.0] * diff_eq.y_dimension
 
         super(GaussianInitialCondition, self).__init__(cp, self._y_0)
 
@@ -296,9 +314,10 @@ class BetaInitialCondition(ContinuousInitialCondition):
     """
 
     def __init__(
-            self,
-            cp: ConstrainedProblem,
-            alpha_and_betas: Sequence[Tuple[float, float]]):
+        self,
+        cp: ConstrainedProblem,
+        alpha_and_betas: Sequence[Tuple[float, float]],
+    ):
         """
         :param cp: the constrained problem to turn into an initial value
             problem by providing the initial conditions for it
@@ -308,11 +327,12 @@ class BetaInitialCondition(ContinuousInitialCondition):
         """
         diff_eq = cp.differential_equation
         if diff_eq.x_dimension != 1:
-            raise ValueError('constrained problem must be a 1D PDE')
+            raise ValueError("constrained problem must be a 1D PDE")
         if len(alpha_and_betas) != diff_eq.y_dimension:
             raise ValueError(
-                f'number of alphas and betas ({len(alpha_and_betas)}) must '
-                f'match number of y dimensions ({diff_eq.y_dimension})')
+                f"number of alphas and betas ({len(alpha_and_betas)}) must "
+                f"match number of y dimensions ({diff_eq.y_dimension})"
+            )
 
         self._alpha_and_betas = copy(alpha_and_betas)
 
@@ -326,13 +346,13 @@ class BetaInitialCondition(ContinuousInitialCondition):
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
-        return np.concatenate([
-            beta.pdf(x, a, b) for a, b in self._alpha_and_betas
-        ], axis=-1)
+        return np.concatenate(
+            [beta.pdf(x, a, b) for a, b in self._alpha_and_betas], axis=-1
+        )
 
 
 def vectorize_ic_function(
-        ic_function: Callable[[Optional[Sequence[float]]], Sequence[float]]
+    ic_function: Callable[[Optional[Sequence[float]]], Sequence[float]]
 ) -> VectorizedInitialConditionFunction:
     """
     Vectorizes an initial condition function that operates on a single
@@ -345,6 +365,7 @@ def vectorize_ic_function(
     :param ic_function: the non-vectorized initial condition function
     :return: the vectorized initial condition function
     """
+
     def vectorized_ic_function(x: Optional[np.ndarray]) -> np.ndarray:
         if x is None:
             return np.array(ic_function(None))

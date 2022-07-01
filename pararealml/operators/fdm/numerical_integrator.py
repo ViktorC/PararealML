@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Optional, Union
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 from scipy.optimize import newton
@@ -14,15 +14,16 @@ class NumericalIntegrator(ABC):
 
     @abstractmethod
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
         """
         Estimates the value of y(t + d_t).
 
@@ -44,20 +45,21 @@ class ForwardEulerMethod(NumericalIntegrator):
     """
 
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
         y_next_constraints = y_constraint_function(t + d_t)
 
         return apply_constraints_along_last_axis(
-            y_next_constraints,
-            y + d_t * d_y_over_d_t(t, y))
+            y_next_constraints, y + d_t * d_y_over_d_t(t, y)
+        )
 
 
 class ExplicitMidpointMethod(NumericalIntegrator):
@@ -66,25 +68,26 @@ class ExplicitMidpointMethod(NumericalIntegrator):
     """
 
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
-        half_d_t = d_t / 2.
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
+        half_d_t = d_t / 2.0
         y_half_next_constraints = y_constraint_function(t + half_d_t)
         y_next_constraints = y_constraint_function(t + d_t)
 
         y_hat = apply_constraints_along_last_axis(
-            y_half_next_constraints,
-            y + half_d_t * d_y_over_d_t(t, y))
+            y_half_next_constraints, y + half_d_t * d_y_over_d_t(t, y)
+        )
         return apply_constraints_along_last_axis(
-            y_next_constraints,
-            y + d_t * d_y_over_d_t(t + half_d_t, y_hat))
+            y_next_constraints, y + d_t * d_y_over_d_t(t + half_d_t, y_hat)
+        )
 
 
 class RK4(NumericalIntegrator):
@@ -93,16 +96,17 @@ class RK4(NumericalIntegrator):
     """
 
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
-        half_d_t = d_t / 2.
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
+        half_d_t = d_t / 2.0
         y_half_next_constraints = y_constraint_function(t + half_d_t)
         y_next_constraints = y_constraint_function(t + d_t)
 
@@ -110,21 +114,22 @@ class RK4(NumericalIntegrator):
         k2 = d_t * d_y_over_d_t(
             t + half_d_t,
             apply_constraints_along_last_axis(
-                y_half_next_constraints,
-                y + k1 / 2.))
+                y_half_next_constraints, y + k1 / 2.0
+            ),
+        )
         k3 = d_t * d_y_over_d_t(
             t + half_d_t,
             apply_constraints_along_last_axis(
-                y_half_next_constraints,
-                y + k2 / 2.))
+                y_half_next_constraints, y + k2 / 2.0
+            ),
+        )
         k4 = d_t * d_y_over_d_t(
             t + d_t,
-            apply_constraints_along_last_axis(
-                y_next_constraints,
-                y + k3))
+            apply_constraints_along_last_axis(y_next_constraints, y + k3),
+        )
         return apply_constraints_along_last_axis(
-            y_next_constraints,
-            y + (k1 + 2. * k2 + 2. * k3 + k4) / 6.)
+            y_next_constraints, y + (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
+        )
 
 
 class ImplicitMethod(NumericalIntegrator, ABC):
@@ -139,19 +144,21 @@ class ImplicitMethod(NumericalIntegrator, ABC):
         :param max_iterations: the maximum allowed number of secant method
             iterations
         """
-        if tol < 0.:
-            raise ValueError('tolerance must be non-negative')
+        if tol < 0.0:
+            raise ValueError("tolerance must be non-negative")
         if max_iterations <= 0:
             raise ValueError(
-                'number of maximum iterations must be greater than 0')
+                "number of maximum iterations must be greater than 0"
+            )
 
         self._tol = tol
         self._max_iterations = max_iterations
 
     def _solve(
-            self,
-            y_next_residual_function: Callable[[np.ndarray], np.ndarray],
-            y_next_init: np.ndarray) -> np.ndarray:
+        self,
+        y_next_residual_function: Callable[[np.ndarray], np.ndarray],
+        y_next_init: np.ndarray,
+    ) -> np.ndarray:
         """
         Solves the implicit equation for y at the next time step.
 
@@ -166,7 +173,8 @@ class ImplicitMethod(NumericalIntegrator, ABC):
             y_next_residual_function,
             y_next_init,
             tol=self._tol,
-            maxiter=self._max_iterations)
+            maxiter=self._max_iterations,
+        )
 
 
 class BackwardEulerMethod(ImplicitMethod):
@@ -184,25 +192,26 @@ class BackwardEulerMethod(ImplicitMethod):
         super(BackwardEulerMethod, self).__init__(tol, max_iterations)
 
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
         t_next = t + d_t
         y_next_constraints = y_constraint_function(t_next)
         y_next_init = apply_constraints_along_last_axis(
-            y_next_constraints,
-            y + d_t * d_y_over_d_t(t, y))
+            y_next_constraints, y + d_t * d_y_over_d_t(t, y)
+        )
 
         def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
-                y_next_constraints,
-                y + d_t * d_y_over_d_t(t_next, y_next))
+                y_next_constraints, y + d_t * d_y_over_d_t(t_next, y_next)
+            )
 
         return self._solve(y_next_residual_function, y_next_init)
 
@@ -214,10 +223,8 @@ class CrankNicolsonMethod(ImplicitMethod):
     """
 
     def __init__(
-            self,
-            a: float = .5,
-            tol: float = 1.48e-8,
-            max_iterations: int = 50):
+        self, a: float = 0.5, tol: float = 1.48e-8, max_iterations: int = 50
+    ):
         """
         :param a: the weight of the backward Euler term of the update; the
             forward Euler term's weight is 1 - a
@@ -226,35 +233,38 @@ class CrankNicolsonMethod(ImplicitMethod):
         :param max_iterations: the maximum allowed number of secant method
             iterations
         """
-        if not (0. <= a <= 1.):
-            raise ValueError('the value of \'a\' must be between 0 and 1')
+        if not (0.0 <= a <= 1.0):
+            raise ValueError("the value of 'a' must be between 0 and 1")
 
         self._a = a
-        self._b = 1. - a
+        self._b = 1.0 - a
 
         super(CrankNicolsonMethod, self).__init__(tol, max_iterations)
 
     def integral(
-            self,
-            y: np.ndarray,
-            t: float,
-            d_t: float,
-            d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
-            y_constraint_function: Callable[
-                [Optional[float]],
-                Optional[Union[Sequence[Constraint], np.ndarray]]
-            ]) -> np.ndarray:
+        self,
+        y: np.ndarray,
+        t: float,
+        d_t: float,
+        d_y_over_d_t: Callable[[float, np.ndarray], np.ndarray],
+        y_constraint_function: Callable[
+            [Optional[float]],
+            Optional[Union[Sequence[Constraint], np.ndarray]],
+        ],
+    ) -> np.ndarray:
         t_next = t + d_t
         forward_update = d_t * d_y_over_d_t(t, y)
         y_next_constraints = y_constraint_function(t_next)
         y_next_init = apply_constraints_along_last_axis(
-            y_next_constraints, y + forward_update)
+            y_next_constraints, y + forward_update
+        )
 
         def y_next_residual_function(y_next: np.ndarray) -> np.ndarray:
             return y_next - apply_constraints_along_last_axis(
                 y_next_constraints,
-                y +
-                self._a * d_t * d_y_over_d_t(t_next, y_next) +
-                self._b * forward_update)
+                y
+                + self._a * d_t * d_y_over_d_t(t_next, y_next)
+                + self._b * forward_update,
+            )
 
         return self._solve(y_next_residual_function, y_next_init)

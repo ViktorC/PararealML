@@ -17,13 +17,15 @@ class PararealOperator(Operator):
     """
 
     def __init__(
-            self,
-            f: Operator,
-            g: Operator,
-            tol: float,
-            max_iterations: int = sys.maxsize,
-            termination_condition_func:
-            Optional[Callable[[np.ndarray], bool]] = None):
+        self,
+        f: Operator,
+        g: Operator,
+        tol: float,
+        max_iterations: int = sys.maxsize,
+        termination_condition_func: Optional[
+            Callable[[np.ndarray], bool]
+        ] = None,
+    ):
         """
         :param f: the fine operator
         :param g: the coarse operator
@@ -45,14 +47,15 @@ class PararealOperator(Operator):
         self._g = g
         self._tol = tol
         self._max_iterations = max_iterations
-        self._termination_condition_func = termination_condition_func \
-            if termination_condition_func is not None \
+        self._termination_condition_func = (
+            termination_condition_func
+            if termination_condition_func is not None
             else lambda _: False
+        )
 
     def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True) -> Solution:
+        self, ivp: InitialValueProblem, parallel_enabled: bool = True
+    ) -> Solution:
         if not parallel_enabled:
             return self._f.solve(ivp)
 
@@ -64,30 +67,38 @@ class PararealOperator(Operator):
         delta_t = (t_interval[1] - t_interval[0]) / comm.size
         if not np.isclose(delta_t, f.d_t * round(delta_t / f.d_t)):
             raise ValueError(
-                f'fine operator time step size ({f.d_t}) must be a '
-                f'divisor of sub-IVP time slice length ({delta_t})')
+                f"fine operator time step size ({f.d_t}) must be a "
+                f"divisor of sub-IVP time slice length ({delta_t})"
+            )
         if not np.isclose(delta_t, g.d_t * round(delta_t / g.d_t)):
             raise ValueError(
-                f'coarse operator time step size ({g.d_t}) must be a '
-                f'divisor of sub-IVP time slice length ({delta_t})')
+                f"coarse operator time step size ({g.d_t}) must be a "
+                f"divisor of sub-IVP time slice length ({delta_t})"
+            )
 
         vertex_oriented = self._vertex_oriented
         cp = ivp.constrained_problem
         y_shape = cp.y_shape(vertex_oriented)
 
-        time_slice_border_points = \
-            np.linspace(t_interval[0], t_interval[1], comm.size + 1)
+        time_slice_border_points = np.linspace(
+            t_interval[0], t_interval[1], comm.size + 1
+        )
 
         y_coarse_end_points = g.solve(ivp).discrete_y(vertex_oriented)[
             np.rint(
                 (time_slice_border_points[1:] - t_interval[0]) / g.d_t
-            ).astype(int) - 1,
-            ...
+            ).astype(int)
+            - 1,
+            ...,
         ]
-        y_border_points = np.concatenate([
-            ivp.initial_condition.discrete_y_0(vertex_oriented)[np.newaxis],
-            y_coarse_end_points
-        ])
+        y_border_points = np.concatenate(
+            [
+                ivp.initial_condition.discrete_y_0(vertex_oriented)[
+                    np.newaxis
+                ],
+                y_coarse_end_points,
+            ]
+        )
 
         sub_y_fine = None
         corrections = np.empty((comm.size, *y_shape))
@@ -95,35 +106,45 @@ class PararealOperator(Operator):
         for i in range(min(comm.size, self._max_iterations)):
             sub_ivp = InitialValueProblem(
                 cp,
-                (time_slice_border_points[comm.rank],
-                 time_slice_border_points[comm.rank + 1]),
+                (
+                    time_slice_border_points[comm.rank],
+                    time_slice_border_points[comm.rank + 1],
+                ),
                 DiscreteInitialCondition(
-                    cp, y_border_points[comm.rank], vertex_oriented))
+                    cp, y_border_points[comm.rank], vertex_oriented
+                ),
+            )
             sub_y_fine = f.solve(sub_ivp, False).discrete_y(vertex_oriented)
             correction = sub_y_fine[-1] - y_coarse_end_points[comm.rank]
             comm.Allgather([correction, MPI.DOUBLE], [corrections, MPI.DOUBLE])
 
-            max_update = 0.
+            max_update = 0.0
 
             for j in range(i, comm.size):
                 if j > i:
                     sub_ivp = InitialValueProblem(
                         cp,
-                        (time_slice_border_points[j],
-                         time_slice_border_points[j + 1]),
+                        (
+                            time_slice_border_points[j],
+                            time_slice_border_points[j + 1],
+                        ),
                         DiscreteInitialCondition(
-                            cp, y_border_points[j], vertex_oriented))
+                            cp, y_border_points[j], vertex_oriented
+                        ),
+                    )
                     sub_y_coarse = g.solve(sub_ivp).discrete_y(vertex_oriented)
                     y_coarse_end_points[j] = sub_y_coarse[-1]
 
                 new_y_end_point = y_coarse_end_points[j] + corrections[j]
                 max_update = np.maximum(
                     max_update,
-                    np.linalg.norm(new_y_end_point - y_border_points[j + 1]))
+                    np.linalg.norm(new_y_end_point - y_border_points[j + 1]),
+                )
                 y_border_points[j + 1] = new_y_end_point
 
-            if max_update < self._tol or \
-                    self._termination_condition_func(y_border_points[1:]):
+            if max_update < self._tol or self._termination_condition_func(
+                y_border_points[1:]
+            ):
                 break
 
         t = discretize_time_domain(ivp.t_interval, f.d_t)[1:]
@@ -132,8 +153,5 @@ class PararealOperator(Operator):
         comm.Allgather([sub_y_fine, MPI.DOUBLE], [y_fine, MPI.DOUBLE])
 
         return Solution(
-            ivp,
-            t,
-            y_fine,
-            vertex_oriented=vertex_oriented,
-            d_t=f.d_t)
+            ivp, t, y_fine, vertex_oriented=vertex_oriented, d_t=f.d_t
+        )

@@ -3,8 +3,10 @@ from typing import Optional
 
 import numpy as np
 
-from pararealml.initial_value_problem import TemporalDomainInterval, \
-    InitialValueProblem
+from pararealml.initial_value_problem import (
+    InitialValueProblem,
+    TemporalDomainInterval,
+)
 from pararealml.solution import Solution
 
 
@@ -20,8 +22,8 @@ class Operator(ABC):
         :param vertex_oriented: whether the operator evaluates the solutions at
             the vertices of the spatial mesh or at the cell centers
         """
-        if d_t <= 0.:
-            raise ValueError('time step sizemust be greater than 0')
+        if d_t <= 0.0:
+            raise ValueError("time step sizemust be greater than 0")
 
         self._d_t = d_t
         self._vertex_oriented = vertex_oriented
@@ -44,9 +46,8 @@ class Operator(ABC):
 
     @abstractmethod
     def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True) -> Solution:
+        self, ivp: InitialValueProblem, parallel_enabled: bool = True
+    ) -> Solution:
         """
         Returns the IVP's solution.
 
@@ -57,8 +58,8 @@ class Operator(ABC):
 
 
 def discretize_time_domain(
-        t: TemporalDomainInterval,
-        d_t: float) -> np.ndarray:
+    t: TemporalDomainInterval, d_t: float
+) -> np.ndarray:
     """
     Returns a discretization of the temporal interval using the provided
     temporal step size.

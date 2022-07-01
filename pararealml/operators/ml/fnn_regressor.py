@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import tensorflow as tf
 
@@ -9,10 +9,11 @@ class FNNRegressor(tf.keras.Sequential):
     """
 
     def __init__(
-            self,
-            layer_sizes: Sequence[int],
-            initialization: str = 'glorot_uniform',
-            activation: Optional[str] = 'tanh'):
+        self,
+        layer_sizes: Sequence[int],
+        initialization: str = "glorot_uniform",
+        activation: Optional[str] = "tanh",
+    ):
         """
         :param layer_sizes: a list of the sizes of the layers including the
             input layer
@@ -22,15 +23,22 @@ class FNNRegressor(tf.keras.Sequential):
         """
         if len(layer_sizes) < 2:
             raise ValueError(
-                f'number of layers ({len(layer_sizes)}) must be at least 2')
+                f"number of layers ({len(layer_sizes)}) must be at least 2"
+            )
 
         super(FNNRegressor, self).__init__()
 
         self.add(tf.keras.layers.InputLayer(input_shape=layer_sizes[0]))
         for layer_size in layer_sizes[1:-1]:
-            self.add(tf.keras.layers.Dense(
-                layer_size,
-                kernel_initializer=initialization,
-                activation=activation))
-        self.add(tf.keras.layers.Dense(
-            layer_sizes[-1], kernel_initializer=initialization))
+            self.add(
+                tf.keras.layers.Dense(
+                    layer_size,
+                    kernel_initializer=initialization,
+                    activation=activation,
+                )
+            )
+        self.add(
+            tf.keras.layers.Dense(
+                layer_sizes[-1], kernel_initializer=initialization
+            )
+        )

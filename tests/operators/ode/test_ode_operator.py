@@ -1,32 +1,40 @@
 import numpy as np
 import pytest
 
-from pararealml.boundary_condition import DirichletBoundaryCondition, \
-    NeumannBoundaryCondition
+from pararealml.boundary_condition import (
+    DirichletBoundaryCondition,
+    NeumannBoundaryCondition,
+)
 from pararealml.constrained_problem import ConstrainedProblem
-from pararealml.differential_equation import PopulationGrowthEquation, \
-    VanDerPolEquation, DiffusionEquation
-from pararealml.initial_condition import ContinuousInitialCondition,\
-    GaussianInitialCondition
+from pararealml.differential_equation import (
+    DiffusionEquation,
+    PopulationGrowthEquation,
+    VanDerPolEquation,
+)
+from pararealml.initial_condition import (
+    ContinuousInitialCondition,
+    GaussianInitialCondition,
+)
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.mesh import Mesh
 from pararealml.operators.ode.ode_operator import ODEOperator
 
 
 def test_ode_operator_on_ode_with_analytic_solution():
-    r = .02
-    y_0 = 100.
+    r = 0.02
+    y_0 = 100.0
 
     diff_eq = PopulationGrowthEquation(r)
     cp = ConstrainedProblem(diff_eq)
     ic = ContinuousInitialCondition(cp, lambda _: np.array([y_0]))
     ivp = InitialValueProblem(
         cp,
-        (0., 10.),
+        (0.0, 10.0),
         ic,
-        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)]))
+        lambda _ivp, t, x: np.array([y_0 * np.e ** (r * t)]),
+    )
 
-    op = ODEOperator('DOP853', 1e-4)
+    op = ODEOperator("DOP853", 1e-4)
 
     solution = op.solve(ivp)
 
@@ -41,9 +49,9 @@ def test_ode_operator_on_ode_with_analytic_solution():
 def test_ode_operator_on_ode():
     diff_eq = VanDerPolEquation()
     cp = ConstrainedProblem(diff_eq)
-    ic = ContinuousInitialCondition(cp, lambda _: np.array([1., 1.]))
-    ivp = InitialValueProblem(cp, (0., 10.), ic)
-    op = ODEOperator('DOP853', 1e-3)
+    ic = ContinuousInitialCondition(cp, lambda _: np.array([1.0, 1.0]))
+    ivp = InitialValueProblem(cp, (0.0, 10.0), ic)
+    op = ODEOperator("DOP853", 1e-3)
     solution = op.solve(ivp)
 
     assert solution.vertex_oriented is None
@@ -53,18 +61,18 @@ def test_ode_operator_on_ode():
 
 def test_ode_operator_on_pde():
     diff_eq = DiffusionEquation(1, 1.5)
-    mesh = Mesh([(0., 10.)], [.1])
+    mesh = Mesh([(0.0, 10.0)], [0.1])
     bcs = [
-        (NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
-         DirichletBoundaryCondition(lambda x, t: np.zeros((len(x), 1)))),
+        (
+            NeumannBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+            DirichletBoundaryCondition(lambda x, t: np.zeros((len(x), 1))),
+        ),
     ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
-        cp,
-        [(np.array([5.]), np.array([[2.5]]))],
-        [20.]
+        cp, [(np.array([5.0]), np.array([[2.5]]))], [20.0]
     )
-    ivp = InitialValueProblem(cp, (0., 10.), ic)
-    op = ODEOperator('RK23', 2.5e-3)
+    ivp = InitialValueProblem(cp, (0.0, 10.0), ic)
+    op = ODEOperator("RK23", 2.5e-3)
     with pytest.raises(ValueError):
         op.solve(ivp)

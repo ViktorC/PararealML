@@ -17,16 +17,16 @@ class InitialValueProblem:
     """
 
     def __init__(
-            self,
-            cp: ConstrainedProblem,
-            t_interval: TemporalDomainInterval,
-            initial_condition: InitialCondition,
-            exact_y: Optional[
-                Callable[
-                    [InitialValueProblem, float, Optional[np.ndarray]],
-                    np.ndarray
-                ]
-            ] = None):
+        self,
+        cp: ConstrainedProblem,
+        t_interval: TemporalDomainInterval,
+        initial_condition: InitialCondition,
+        exact_y: Optional[
+            Callable[
+                [InitialValueProblem, float, Optional[np.ndarray]], np.ndarray
+            ]
+        ] = None,
+    ):
         """
         :param cp: the constrained problem to base the initial value problem on
         :param t_interval: the bounds of the time domain of the initial value
@@ -38,8 +38,9 @@ class InitialValueProblem:
         """
         if t_interval[0] > t_interval[1]:
             raise ValueError(
-                f'lower bound of time interval ({t_interval[0]}) cannot be '
-                f'greater than its upper bound ({t_interval[1]})')
+                f"lower bound of time interval ({t_interval[0]}) cannot be "
+                f"greater than its upper bound ({t_interval[1]})"
+            )
 
         self._cp = cp
         self._t_interval = t_interval
@@ -74,10 +75,7 @@ class InitialValueProblem:
         """
         return self._exact_y is not None
 
-    def exact_y(
-            self,
-            t: float,
-            x: Optional[np.ndarray] = None) -> np.ndarray:
+    def exact_y(self, t: float, x: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Returns the exact value of y(t, x).
 
@@ -88,6 +86,7 @@ class InitialValueProblem:
         """
         if not self.has_exact_solution:
             raise RuntimeError(
-                'exact solution of initial value problem undefined')
+                "exact solution of initial value problem undefined"
+            )
 
         return self._exact_y(self, t, x)

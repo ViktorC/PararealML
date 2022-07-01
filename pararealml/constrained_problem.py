@@ -1,9 +1,11 @@
-from typing import Tuple, Optional, Sequence, List, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from pararealml.boundary_condition import BoundaryCondition, \
-    VectorizedBoundaryConditionFunction
+from pararealml.boundary_condition import (
+    BoundaryCondition,
+    VectorizedBoundaryConditionFunction,
+)
 from pararealml.constraint import Constraint
 from pararealml.differential_equation import DifferentialEquation
 from pararealml.mesh import Mesh
@@ -19,11 +21,11 @@ class ConstrainedProblem:
     """
 
     def __init__(
-            self,
-            diff_eq: DifferentialEquation,
-            mesh: Optional[Mesh] = None,
-            boundary_conditions:
-            Optional[Sequence[BoundaryConditionPair]] = None):
+        self,
+        diff_eq: DifferentialEquation,
+        mesh: Optional[Mesh] = None,
+        boundary_conditions: Optional[Sequence[BoundaryConditionPair]] = None,
+    ):
         """
         :param diff_eq: the differential equation to constrain
         :param mesh: the mesh over which the differential equation is to be
@@ -37,55 +39,67 @@ class ConstrainedProblem:
 
         if diff_eq.x_dimension:
             if mesh is None:
-                raise ValueError('mesh cannot be None for PDEs')
+                raise ValueError("mesh cannot be None for PDEs")
             if mesh.dimensions != diff_eq.x_dimension:
                 raise ValueError(
-                    f'mesh dimensions ({mesh.dimensions}) must match '
-                    'differential equation spatial dimensions '
-                    f'({diff_eq.x_dimension})')
+                    f"mesh dimensions ({mesh.dimensions}) must match "
+                    "differential equation spatial dimensions "
+                    f"({diff_eq.x_dimension})"
+                )
             if boundary_conditions is None:
-                raise ValueError('boundary conditions cannot be None for PDEs')
+                raise ValueError("boundary conditions cannot be None for PDEs")
             if len(boundary_conditions) != diff_eq.x_dimension:
                 raise ValueError(
-                    'number of boundary condition pairs '
-                    f'({len(boundary_conditions)}) must match differential '
-                    f'equation spatial dimensions ({diff_eq.x_dimension})')
+                    "number of boundary condition pairs "
+                    f"({len(boundary_conditions)}) must match differential "
+                    f"equation spatial dimensions ({diff_eq.x_dimension})"
+                )
 
             self._mesh = mesh
             self._boundary_conditions = tuple(boundary_conditions)
-            self._y_vertices_shape = \
-                mesh.vertices_shape + (diff_eq.y_dimension,)
+            self._y_vertices_shape = mesh.vertices_shape + (
+                diff_eq.y_dimension,
+            )
             self._y_cells_shape = mesh.cells_shape + (diff_eq.y_dimension,)
 
-            self._are_all_bcs_static = np.all([
-                bc_lower.is_static and bc_upper.is_static
-                for (bc_lower, bc_upper) in boundary_conditions
-            ])
-            self._are_there_bcs_on_y = np.any([
-                bc_lower.has_y_condition or bc_upper.has_y_condition
-                for (bc_lower, bc_upper) in boundary_conditions
-            ])
+            self._are_all_bcs_static = np.all(
+                [
+                    bc_lower.is_static and bc_upper.is_static
+                    for (bc_lower, bc_upper) in boundary_conditions
+                ]
+            )
+            self._are_there_bcs_on_y = np.any(
+                [
+                    bc_lower.has_y_condition or bc_upper.has_y_condition
+                    for (bc_lower, bc_upper) in boundary_conditions
+                ]
+            )
 
             self._boundary_vertex_constraints = None
             self._boundary_cell_constraints = None
 
-            self._boundary_vertex_constraints = \
+            self._boundary_vertex_constraints = (
                 self.create_boundary_constraints(True)
+            )
             self._boundary_vertex_constraints[0].setflags(write=False)
             self._boundary_vertex_constraints[1].setflags(write=False)
 
-            self._boundary_cell_constraints = \
-                self.create_boundary_constraints(False)
+            self._boundary_cell_constraints = self.create_boundary_constraints(
+                False
+            )
             self._boundary_cell_constraints[0].setflags(write=False)
             self._boundary_cell_constraints[1].setflags(write=False)
 
             self._y_vertex_constraints = self.create_y_vertex_constraints(
-                self._boundary_vertex_constraints[0])
+                self._boundary_vertex_constraints[0]
+            )
             self._y_vertex_constraints.setflags(write=False)
         else:
             self._mesh = None
             self._boundary_conditions = None
-            self._y_vertices_shape = self._y_cells_shape = diff_eq.y_dimension,
+            self._y_vertices_shape = self._y_cells_shape = (
+                diff_eq.y_dimension,
+            )
 
             self._are_all_bcs_static = np.bool_(False)
             self._are_there_bcs_on_y = np.bool_(False)
@@ -110,7 +124,8 @@ class ConstrainedProblem:
 
     @property
     def boundary_conditions(
-            self) -> Optional[Tuple[BoundaryConditionPair, ...]]:
+        self,
+    ) -> Optional[Tuple[BoundaryConditionPair, ...]]:
         """
         The boundary conditions of the differential equation. If differential
         equation is an ODE, it is None.
@@ -152,7 +167,8 @@ class ConstrainedProblem:
 
     @property
     def static_boundary_vertex_constraints(
-            self) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        self,
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
         """
         A tuple of two 2D arrays (x dimension, y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary conditions
@@ -171,7 +187,8 @@ class ConstrainedProblem:
 
     @property
     def static_boundary_cell_constraints(
-            self) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        self,
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
         """
         A tuple of two 2D arrays (x dimension, y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary conditions
@@ -199,8 +216,8 @@ class ConstrainedProblem:
         return self._y_vertex_constraints
 
     def y_shape(
-            self,
-            vertex_oriented: Optional[bool] = None) -> Tuple[int, ...]:
+        self, vertex_oriented: Optional[bool] = None
+    ) -> Tuple[int, ...]:
         """
         Returns the shape of the array of the array representing the
         discretized solution to the constrained problem.
@@ -210,12 +227,13 @@ class ConstrainedProblem:
             differential equation is an ODE, it can be None
         :return: the shape of result evaluated at the vertices or the cells
         """
-        return self._y_vertices_shape if vertex_oriented \
-            else self._y_cells_shape
+        return (
+            self._y_vertices_shape if vertex_oriented else self._y_cells_shape
+        )
 
     def static_boundary_constraints(
-            self,
-            vertex_oriented: bool) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        self, vertex_oriented: bool
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
         """
         A tuple of two 2D arrays (x dimension, y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary conditions
@@ -235,12 +253,14 @@ class ConstrainedProblem:
             the boundary vertices or the exterior faces of the boundary cells
         :return: an array of boundary value constraints
         """
-        return self._boundary_vertex_constraints if vertex_oriented \
+        return (
+            self._boundary_vertex_constraints
+            if vertex_oriented
             else self._boundary_cell_constraints
+        )
 
     def create_y_vertex_constraints(
-            self,
-            y_boundary_vertex_constraints: Optional[np.ndarray]
+        self, y_boundary_vertex_constraints: Optional[np.ndarray]
     ) -> Optional[np.ndarray]:
         """
         Creates a 1D array of solution value constraints evaluated on all
@@ -254,8 +274,9 @@ class ConstrainedProblem:
         if not diff_eq.x_dimension or y_boundary_vertex_constraints is None:
             return None
 
-        slicer: List[Union[int, slice]] = \
-            [slice(None)] * len(self._y_vertices_shape)
+        slicer: List[Union[int, slice]] = [slice(None)] * len(
+            self._y_vertices_shape
+        )
 
         y_constraints = np.empty(diff_eq.y_dimension, dtype=object)
         y_element = np.empty(self._y_vertices_shape[:-1] + (1,))
@@ -263,8 +284,9 @@ class ConstrainedProblem:
             y_element.fill(np.nan)
 
             for axis in range(diff_eq.x_dimension):
-                for bc_ind, bc in \
-                        enumerate(y_boundary_vertex_constraints[axis, y_ind]):
+                for bc_ind, bc in enumerate(
+                    y_boundary_vertex_constraints[axis, y_ind]
+                ):
                     if bc is None:
                         continue
                     slicer[axis] = slice(-1, None) if bc_ind else slice(0, 1)
@@ -279,9 +301,7 @@ class ConstrainedProblem:
         return y_constraints
 
     def create_boundary_constraints(
-            self,
-            vertex_oriented: bool,
-            t: Optional[float] = None
+        self, vertex_oriented: bool, t: Optional[float] = None
     ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Creates a tuple of two 2D arrays (x dimension, y dimension) of boundary
@@ -298,22 +318,29 @@ class ConstrainedProblem:
         if not diff_eq.x_dimension:
             return None, None
 
-        all_index_coordinates = \
-            self._mesh.all_index_coordinates(vertex_oriented)
+        all_index_coordinates = self._mesh.all_index_coordinates(
+            vertex_oriented
+        )
 
         all_y_bc_pairs = np.empty(
-            (diff_eq.x_dimension, diff_eq.y_dimension), dtype=object)
+            (diff_eq.x_dimension, diff_eq.y_dimension), dtype=object
+        )
         all_d_y_bc_pairs = np.empty(
-            (diff_eq.x_dimension, diff_eq.y_dimension), dtype=object)
-        for axis, boundary_condition_pair \
-                in enumerate(self._boundary_conditions):
-            y_bc_pairs, d_y_bc_pairs = \
-                self._create_boundary_constraint_pairs_for_all_y(
-                    boundary_condition_pair,
-                    all_index_coordinates,
-                    axis,
-                    vertex_oriented,
-                    t)
+            (diff_eq.x_dimension, diff_eq.y_dimension), dtype=object
+        )
+        for axis, boundary_condition_pair in enumerate(
+            self._boundary_conditions
+        ):
+            (
+                y_bc_pairs,
+                d_y_bc_pairs,
+            ) = self._create_boundary_constraint_pairs_for_all_y(
+                boundary_condition_pair,
+                all_index_coordinates,
+                axis,
+                vertex_oriented,
+                t,
+            )
 
             all_y_bc_pairs[axis, :] = y_bc_pairs
             all_d_y_bc_pairs[axis, :] = d_y_bc_pairs
@@ -321,12 +348,13 @@ class ConstrainedProblem:
         return all_y_bc_pairs, all_d_y_bc_pairs
 
     def _create_boundary_constraint_pairs_for_all_y(
-            self,
-            boundary_condition_pair: BoundaryConditionPair,
-            all_index_coordinates: np.ndarray,
-            axis: int,
-            vertex_oriented: bool,
-            t: Optional[float]) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        boundary_condition_pair: BoundaryConditionPair,
+        all_index_coordinates: np.ndarray,
+        axis: int,
+        vertex_oriented: bool,
+        t: Optional[float],
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Creates a tuple of two 1D arrays (y dimension) of boundary value
         constraint pairs that represent the lower and upper boundary
@@ -342,11 +370,13 @@ class ConstrainedProblem:
         :return: two 1D arrays of boundary constraint pairs
         """
         y_dimension = self._diff_eq.y_dimension
-        static_boundary_constraints = \
-            self.static_boundary_constraints(vertex_oriented)
+        static_boundary_constraints = self.static_boundary_constraints(
+            vertex_oriented
+        )
 
-        slicer: List[Union[int, slice]] = \
-            [slice(None)] * all_index_coordinates.ndim
+        slicer: List[Union[int, slice]] = [
+            slice(None)
+        ] * all_index_coordinates.ndim
 
         lower_and_upper_y_bcs: List[Sequence[Optional[Constraint]]] = []
         lower_and_upper_d_y_bcs: List[Sequence[Optional[Constraint]]] = []
@@ -355,30 +385,42 @@ class ConstrainedProblem:
                 lower_and_upper_y_bcs.append([None] * y_dimension)
                 lower_and_upper_d_y_bcs.append([None] * y_dimension)
             elif bc.is_static and static_boundary_constraints is not None:
-                lower_and_upper_y_bcs.append([
-                    static_boundary_constraints[0][axis, i][bc_ind]
-                    for i in range(y_dimension)])
-                lower_and_upper_d_y_bcs.append([
-                    static_boundary_constraints[1][axis, i][bc_ind]
-                    for i in range(y_dimension)])
+                lower_and_upper_y_bcs.append(
+                    [
+                        static_boundary_constraints[0][axis, i][bc_ind]
+                        for i in range(y_dimension)
+                    ]
+                )
+                lower_and_upper_d_y_bcs.append(
+                    [
+                        static_boundary_constraints[1][axis, i][bc_ind]
+                        for i in range(y_dimension)
+                    ]
+                )
             else:
                 slicer[axis] = slice(-1, None) if bc_ind else slice(0, 1)
-                boundary_index_coordinates = \
-                    np.copy(all_index_coordinates[tuple(slicer)])
-                boundary_index_coordinates[..., axis] = \
-                    self._mesh.vertex_axis_coordinates[axis][bc_ind * -1]
+                boundary_index_coordinates = np.copy(
+                    all_index_coordinates[tuple(slicer)]
+                )
+                boundary_index_coordinates[
+                    ..., axis
+                ] = self._mesh.vertex_axis_coordinates[axis][bc_ind * -1]
                 lower_and_upper_y_bcs.append(
                     self._create_boundary_constraints_for_all_y(
                         bc.has_y_condition,
                         bc.y_condition,
                         boundary_index_coordinates,
-                        t))
+                        t,
+                    )
+                )
                 lower_and_upper_d_y_bcs.append(
                     self._create_boundary_constraints_for_all_y(
                         bc.has_d_y_condition,
                         bc.d_y_condition,
                         boundary_index_coordinates,
-                        t))
+                        t,
+                    )
+                )
 
         y_bc_pairs = np.empty(y_dimension, dtype=object)
         y_bc_pairs[:] = list(zip(*lower_and_upper_y_bcs))
@@ -389,11 +431,12 @@ class ConstrainedProblem:
         return y_bc_pairs, d_y_bc_pairs
 
     def _create_boundary_constraints_for_all_y(
-            self,
-            has_condition: bool,
-            condition_function: VectorizedBoundaryConditionFunction,
-            boundary_index_coordinates: np.ndarray,
-            t: Optional[float]) -> Sequence[Optional[Constraint]]:
+        self,
+        has_condition: bool,
+        condition_function: VectorizedBoundaryConditionFunction,
+        boundary_index_coordinates: np.ndarray,
+        t: Optional[float],
+    ) -> Sequence[Optional[Constraint]]:
         """
         Creates a sequence of boundary constraints representing the boundary
         condition, defined by the condition function, evaluated on a single
@@ -415,15 +458,17 @@ class ConstrainedProblem:
         boundary_values = condition_function(x, t)
         if boundary_values.shape != (len(x), y_dimension):
             raise ValueError(
-                'expected boundary condition function output shape to be '
-                f'{(len(x), y_dimension)} but got {boundary_values.shape}')
+                "expected boundary condition function output shape to be "
+                f"{(len(x), y_dimension)} but got {boundary_values.shape}"
+            )
 
         boundary = boundary_values.reshape(
-            boundary_index_coordinates.shape[:-1] + (y_dimension,))
+            boundary_index_coordinates.shape[:-1] + (y_dimension,)
+        )
 
         boundary_constraints = []
         for i in range(y_dimension):
-            boundary_i = boundary[..., i:i + 1]
+            boundary_i = boundary[..., i : i + 1]
             mask = ~np.isnan(boundary_i)
             value = boundary_i[mask]
             boundary_constraints.append(Constraint(value, mask))

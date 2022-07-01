@@ -1,15 +1,22 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence, Dict, TypeVar, Generic, Optional, \
-    Union, Set
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    Optional,
+    Sequence,
+    Set,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import sympy as sp
 
-from pararealml.differential_equation import DifferentialEquation, LHS
+from pararealml.differential_equation import LHS, DifferentialEquation
 
-
-SymbolMapArg = TypeVar('SymbolMapArg')
-SymbolMapValue = TypeVar('SymbolMapValue')
+SymbolMapArg = TypeVar("SymbolMapArg")
+SymbolMapValue = TypeVar("SymbolMapValue")
 SymbolMapFunction = Callable[[SymbolMapArg], SymbolMapValue]
 
 
@@ -27,12 +34,12 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
         eq_sys = diff_eq.symbolic_equation_system
         self._rhs_functions: Dict[
-            Optional[LHS],
-            Callable[[SymbolMapArg], Sequence[SymbolMapValue]]
+            Optional[LHS], Callable[[SymbolMapArg], Sequence[SymbolMapValue]]
         ] = {None: self.create_rhs_map_function(range(len(eq_sys.rhs)))}
         for lhs_type in LHS:
             self._rhs_functions[lhs_type] = self.create_rhs_map_function(
-                eq_sys.equation_indices_by_type(lhs_type))
+                eq_sys.equation_indices_by_type(lhs_type)
+            )
 
     @abstractmethod
     def t_map_function(self) -> SymbolMapFunction:
@@ -60,9 +67,8 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     @abstractmethod
     def y_gradient_map_function(
-            self,
-            y_ind: int,
-            x_axis: int) -> SymbolMapFunction:
+        self, y_ind: int, x_axis: int
+    ) -> SymbolMapFunction:
         """
         Returns a function for mapping a component of the gradient of y to a
         numerical value.
@@ -75,10 +81,8 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     @abstractmethod
     def y_hessian_map_function(
-            self,
-            y_ind: int,
-            x_axis1: int,
-            x_axis2: int) -> SymbolMapFunction:
+        self, y_ind: int, x_axis1: int, x_axis2: int
+    ) -> SymbolMapFunction:
         """
         Returns a function for mapping a component of the Hessian of y to a
         numerical value.
@@ -93,9 +97,10 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     @abstractmethod
     def y_divergence_map_function(
-            self,
-            y_indices: Sequence[int],
-            indices_contiguous: Union[bool, np.bool_]) -> SymbolMapFunction:
+        self,
+        y_indices: Sequence[int],
+        indices_contiguous: Union[bool, np.bool_],
+    ) -> SymbolMapFunction:
         """
         Returns a function for mapping the divergence of a set of components of
         y to a numerical value.
@@ -108,10 +113,11 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     @abstractmethod
     def y_curl_map_function(
-            self,
-            y_indices: Sequence[int],
-            indices_contiguous: Union[bool, np.bool_],
-            curl_ind: int) -> SymbolMapFunction:
+        self,
+        y_indices: Sequence[int],
+        indices_contiguous: Union[bool, np.bool_],
+        curl_ind: int,
+    ) -> SymbolMapFunction:
         """
         Returns a function for mapping the curl of a set of components of y to
         a numerical value.
@@ -134,10 +140,11 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
 
     @abstractmethod
     def y_vector_laplacian_map_function(
-            self,
-            y_indices: Sequence[int],
-            indices_contiguous: Union[bool, np.bool_],
-            vector_laplacian_ind: int) -> SymbolMapFunction:
+        self,
+        y_indices: Sequence[int],
+        indices_contiguous: Union[bool, np.bool_],
+        vector_laplacian_ind: int,
+    ) -> SymbolMapFunction:
         """
         Returns a function for mapping the vector Laplacian of a set of
         components of y to a numerical value.
@@ -163,48 +170,57 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
         all_symbols = set.union(*[rhs.free_symbols for rhs in eq_sys.rhs])
 
         for symbol in all_symbols:
-            symbol_name_tokens = symbol.name.split('_')
+            symbol_name_tokens = symbol.name.split("_")
             prefix = symbol_name_tokens[0]
-            indices = [int(ind) for ind in symbol_name_tokens[1:]] \
-                if len(symbol_name_tokens) > 1 else []
+            indices = (
+                [int(ind) for ind in symbol_name_tokens[1:]]
+                if len(symbol_name_tokens) > 1
+                else []
+            )
 
-            if prefix == 't':
+            if prefix == "t":
                 symbol_map[symbol] = self.t_map_function()
-            elif prefix == 'y':
+            elif prefix == "y":
                 symbol_map[symbol] = self.y_map_function(*indices)
-            elif prefix == 'x':
+            elif prefix == "x":
                 symbol_map[symbol] = self.x_map_function(*indices)
-            elif prefix == 'y-gradient':
+            elif prefix == "y-gradient":
                 symbol_map[symbol] = self.y_gradient_map_function(*indices)
-            elif prefix == 'y-hessian':
+            elif prefix == "y-hessian":
                 symbol_map[symbol] = self.y_hessian_map_function(*indices)
-            elif prefix == 'y-laplacian':
+            elif prefix == "y-laplacian":
                 symbol_map[symbol] = self.y_laplacian_map_function(*indices)
             else:
-                indices_contiguous = np.all([
-                    indices[i] == indices[i + 1] - 1
-                    for i in range(len(indices) - 1)
-                ])
+                indices_contiguous = np.all(
+                    [
+                        indices[i] == indices[i + 1] - 1
+                        for i in range(len(indices) - 1)
+                    ]
+                )
 
-                if prefix == 'y-divergence':
+                if prefix == "y-divergence":
                     symbol_map[symbol] = self.y_divergence_map_function(
-                        indices, indices_contiguous)
-                elif prefix == 'y-curl':
-                    symbol_map[symbol] = \
+                        indices, indices_contiguous
+                    )
+                elif prefix == "y-curl":
+                    symbol_map[symbol] = (
                         self.y_curl_map_function(
-                            indices, indices_contiguous, 0) \
-                        if x_dimension == 2 else \
-                        self.y_curl_map_function(
-                            indices[:-1], indices_contiguous, indices[-1])
-                elif prefix == 'y-vector-laplacian':
+                            indices, indices_contiguous, 0
+                        )
+                        if x_dimension == 2
+                        else self.y_curl_map_function(
+                            indices[:-1], indices_contiguous, indices[-1]
+                        )
+                    )
+                elif prefix == "y-vector-laplacian":
                     self.y_vector_laplacian_map_function(
-                        indices[:-1], indices_contiguous, indices[-1])
+                        indices[:-1], indices_contiguous, indices[-1]
+                    )
 
         return symbol_map
 
     def create_rhs_map_function(
-            self,
-            indices: Sequence[int]
+        self, indices: Sequence[int]
     ) -> Callable[[SymbolMapArg], Sequence[SymbolMapValue]]:
         """
         Creates a function for evaluating the right-hand sides of the equations
@@ -224,19 +240,21 @@ class SymbolMapper(ABC, Generic[SymbolMapArg, SymbolMapValue]):
             selected_rhs.append(rhs_i)
             selected_rhs_symbols.update(rhs_i.free_symbols)
 
-        subst_functions = \
-            [self._symbol_map[symbol] for symbol in selected_rhs_symbols]
-        rhs_lambda = sp.lambdify([selected_rhs_symbols], selected_rhs, 'numpy')
+        subst_functions = [
+            self._symbol_map[symbol] for symbol in selected_rhs_symbols
+        ]
+        rhs_lambda = sp.lambdify([selected_rhs_symbols], selected_rhs, "numpy")
 
         def rhs_map_function(arg: SymbolMapArg) -> Sequence[SymbolMapValue]:
             return rhs_lambda(
-                [subst_function(arg) for subst_function in subst_functions])
+                [subst_function(arg) for subst_function in subst_functions]
+            )
 
         return rhs_map_function
 
-    def map(self,
-            arg: SymbolMapArg,
-            lhs_type: Optional[LHS] = None) -> Sequence[SymbolMapValue]:
+    def map(
+        self, arg: SymbolMapArg, lhs_type: Optional[LHS] = None
+    ) -> Sequence[SymbolMapValue]:
         """
         Evaluates the right-hand side of the differential equation system
         given the map argument.

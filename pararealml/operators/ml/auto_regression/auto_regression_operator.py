@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from multiprocessing import Process, Queue
-from typing import Tuple, Callable, Optional, Protocol, List
+from typing import Callable, List, Optional, Protocol, Tuple
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -21,10 +21,8 @@ class AutoRegressionOperator(Operator):
     """
 
     def __init__(
-            self,
-            d_t: float,
-            vertex_oriented: bool,
-            time_variant: bool = False):
+        self, d_t: float, vertex_oriented: bool, time_variant: bool = False
+    ):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
@@ -58,11 +56,10 @@ class AutoRegressionOperator(Operator):
         self._model = model
 
     def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True) -> Solution:
+        self, ivp: InitialValueProblem, parallel_enabled: bool = True
+    ) -> Solution:
         if self._model is None:
-            raise ValueError('operator has no model')
+            raise ValueError("operator has no model")
 
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
@@ -78,29 +75,28 @@ class AutoRegressionOperator(Operator):
         for i, t_i in enumerate(t[:-1]):
             if self._time_variant:
                 inputs[:, -diff_eq.x_dimension - 1] = t_i
-                inputs[:, :-diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
+                inputs[:, : -diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
             else:
-                inputs[:, :inputs.shape[1] - diff_eq.x_dimension] = \
-                    y_i.reshape((1, -1))
+                inputs[
+                    :, : inputs.shape[1] - diff_eq.x_dimension
+                ] = y_i.reshape((1, -1))
 
             y_i = self._model.predict(inputs)
             y[i, ...] = y_i.reshape(y_shape)
 
         return Solution(
-            ivp,
-            t[1:],
-            y,
-            vertex_oriented=self._vertex_oriented,
-            d_t=self._d_t)
+            ivp, t[1:], y, vertex_oriented=self._vertex_oriented, d_t=self._d_t
+        )
 
     def generate_data(
-            self,
-            ivp: InitialValueProblem,
-            oracle: Operator,
-            iterations: int,
-            perturbation_function: Callable[[float, np.ndarray], np.ndarray],
-            isolate_perturbations: bool = False,
-            n_jobs: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        ivp: InitialValueProblem,
+        oracle: Operator,
+        iterations: int,
+        perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+        isolate_perturbations: bool = False,
+        n_jobs: int = 1,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates data to train an operator model by using the oracle to
         repeatedly solve sub-IVPs with perturbed initial conditions and a time
@@ -121,9 +117,9 @@ class AutoRegressionOperator(Operator):
         :return: a tuple of the inputs and the target outputs
         """
         if iterations <= 0:
-            raise ValueError('number of iterations must be greater than 0')
+            raise ValueError("number of iterations must be greater than 0")
         if n_jobs < 1:
-            raise ValueError('number of jobs must be greater than 0')
+            raise ValueError("number of jobs must be greater than 0")
 
         if n_jobs == 1:
             queue: Queue[Tuple[np.ndarray, np.ndarray]] = Queue()
@@ -133,7 +129,8 @@ class AutoRegressionOperator(Operator):
                 iterations,
                 perturbation_function,
                 isolate_perturbations,
-                queue)
+                queue,
+            )
             return queue.get()
 
         model = self._model
@@ -143,8 +140,8 @@ class AutoRegressionOperator(Operator):
         processes = []
 
         iterations_per_job = [
-            len(array) for array
-            in np.array_split(np.arange(iterations), n_jobs)
+            len(array)
+            for array in np.array_split(np.arange(iterations), n_jobs)
         ]
         for job_iterations in iterations_per_job:
             queue = Queue()
@@ -158,7 +155,9 @@ class AutoRegressionOperator(Operator):
                     job_iterations,
                     perturbation_function,
                     isolate_perturbations,
-                    queue))
+                    queue,
+                ),
+            )
             process.daemon = True
             process.start()
             processes.append(process)
@@ -171,16 +170,19 @@ class AutoRegressionOperator(Operator):
         self._model = model
 
         all_inputs, all_targets = zip(*input_target_pairs)
-        return np.concatenate(all_inputs, axis=0), \
-            np.concatenate(all_targets, axis=0)
+        return np.concatenate(all_inputs, axis=0), np.concatenate(
+            all_targets, axis=0
+        )
 
     def fit_model(
-            self,
-            model: SKLearnRegressor,
-            data: Tuple[np.ndarray, np.ndarray],
-            test_size: float = .2,
-            score_func: Callable[[np.ndarray, np.ndarray], float] =
-            mean_squared_error) -> Tuple[float, float]:
+        self,
+        model: SKLearnRegressor,
+        data: Tuple[np.ndarray, np.ndarray],
+        test_size: float = 0.2,
+        score_func: Callable[
+            [np.ndarray, np.ndarray], float
+        ] = mean_squared_error,
+    ) -> Tuple[float, float]:
         """
         Fits the regression model to the training share of the provided data
         points using random splitting, it stores the fitted model as a member
@@ -195,10 +197,8 @@ class AutoRegressionOperator(Operator):
         :return: the training and test scores
         """
         x_train, x_test, y_train, y_test = train_test_split(
-            data[0],
-            data[1],
-            train_size=1. - test_size,
-            test_size=test_size)
+            data[0], data[1], train_size=1.0 - test_size, test_size=test_size
+        )
 
         model.fit(x_train, y_train)
         self._model = model
@@ -210,17 +210,19 @@ class AutoRegressionOperator(Operator):
         return train_score, test_score
 
     def train(
-            self,
-            ivp: InitialValueProblem,
-            oracle: Operator,
-            model: SKLearnRegressor,
-            iterations: int,
-            perturbation_function: Callable[[float, np.ndarray], np.ndarray],
-            isolate_perturbations: bool = False,
-            n_jobs: int = 1,
-            test_size: float = .2,
-            score_func: Callable[[np.ndarray, np.ndarray], float] =
-            mean_squared_error) -> Tuple[float, float]:
+        self,
+        ivp: InitialValueProblem,
+        oracle: Operator,
+        model: SKLearnRegressor,
+        iterations: int,
+        perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+        isolate_perturbations: bool = False,
+        n_jobs: int = 1,
+        test_size: float = 0.2,
+        score_func: Callable[
+            [np.ndarray, np.ndarray], float
+        ] = mean_squared_error,
+    ) -> Tuple[float, float]:
         """
         Fits a regression model to training data generated by the oracle.
 
@@ -259,12 +261,11 @@ class AutoRegressionOperator(Operator):
             iterations,
             perturbation_function,
             isolate_perturbations=isolate_perturbations,
-            n_jobs=n_jobs)
+            n_jobs=n_jobs,
+        )
         return self.fit_model(model, data, test_size, score_func)
 
-    def _create_input_placeholder(
-            self,
-            cp: ConstrainedProblem) -> np.ndarray:
+    def _create_input_placeholder(self, cp: ConstrainedProblem) -> np.ndarray:
         """
         Creates a placeholder array for the model inputs. If the constrained
         problem is a PDE, it pre-populates the first x_dimension columns
@@ -287,13 +288,14 @@ class AutoRegressionOperator(Operator):
         return np.hstack([y, x])
 
     def _generate_data(
-            self,
-            ivp: InitialValueProblem,
-            oracle: Operator,
-            iterations: int,
-            perturbation_function: Callable[[float, np.ndarray], np.ndarray],
-            isolate_perturbations: bool,
-            queue: Queue):
+        self,
+        ivp: InitialValueProblem,
+        oracle: Operator,
+        iterations: int,
+        perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+        isolate_perturbations: bool,
+        queue: Queue,
+    ):
         """
         Generates data to train an operator model sequentially by using the
         oracle to repeatedly solve sub-IVPs with perturbed initial conditions
@@ -337,24 +339,29 @@ class AutoRegressionOperator(Operator):
                 perturbed_y_i = perturbation_function(t_i, y_i)
                 if perturbed_y_i.shape != y_i.shape:
                     raise ValueError(
-                        f'perturbed y shape {perturbed_y_i.shape} must match '
-                        f'input y shape {y_i.shape}')
+                        f"perturbed y shape {perturbed_y_i.shape} must match "
+                        f"input y shape {y_i.shape}"
+                    )
 
                 sub_ivp = InitialValueProblem(
                     cp,
                     (t_i, t_i + self._d_t),
                     DiscreteInitialCondition(
-                        cp, perturbed_y_i, self._vertex_oriented))
-                y_next = oracle.solve(sub_ivp) \
-                    .discrete_y(self._vertex_oriented)[-1, ...]
+                        cp, perturbed_y_i, self._vertex_oriented
+                    ),
+                )
+                y_next = oracle.solve(sub_ivp).discrete_y(
+                    self._vertex_oriented
+                )[-1, ...]
 
                 t_offset = offset + i * n_spatial_points
                 inputs[
-                    t_offset:t_offset + n_spatial_points,
-                    :inputs.shape[1] - x_dim - self._time_variant
+                    t_offset : t_offset + n_spatial_points,
+                    : inputs.shape[1] - x_dim - self._time_variant,
                 ] = perturbed_y_i.reshape((1, -1))
-                targets[t_offset:t_offset + n_spatial_points, :] = \
-                    y_next.reshape((-1, y_dim))
+                targets[
+                    t_offset : t_offset + n_spatial_points, :
+                ] = y_next.reshape((-1, y_dim))
 
                 if isolate_perturbations and i < len(t) - 1:
                     y_next = unperturbed_sub_y0s[i]
@@ -363,9 +370,12 @@ class AutoRegressionOperator(Operator):
                             cp,
                             (t_i, t_i + self._d_t),
                             DiscreteInitialCondition(
-                                cp, y_i, self._vertex_oriented))
-                        y_next = oracle.solve(sub_ivp) \
-                            .discrete_y(self._vertex_oriented)[-1, ...]
+                                cp, y_i, self._vertex_oriented
+                            ),
+                        )
+                        y_next = oracle.solve(sub_ivp).discrete_y(
+                            self._vertex_oriented
+                        )[-1, ...]
                         unperturbed_sub_y0s[i] = y_next
 
                 y_i = y_next
@@ -377,10 +387,10 @@ class SKLearnRegressor(Protocol):
     """A protocol class for scikit-learn regression models."""
 
     def fit(
-            self,
-            x: np.typing.ArrayLike,
-            y: np.typing.ArrayLike,
-            sample_weight: Optional[np.typing.ArrayLike] = None
+        self,
+        x: np.typing.ArrayLike,
+        y: np.typing.ArrayLike,
+        sample_weight: Optional[np.typing.ArrayLike] = None,
     ) -> SKLearnRegressor:
         ...
 
@@ -388,8 +398,9 @@ class SKLearnRegressor(Protocol):
         ...
 
     def score(
-            self,
-            x: np.typing.ArrayLike,
-            y: np.typing.ArrayLike,
-            sample_weight: Optional[np.typing.ArrayLike] = None) -> float:
+        self,
+        x: np.typing.ArrayLike,
+        y: np.typing.ArrayLike,
+        sample_weight: Optional[np.typing.ArrayLike] = None,
+    ) -> float:
         ...

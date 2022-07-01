@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, Optional, Union, Tuple, NamedTuple
+from typing import NamedTuple, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
@@ -20,14 +20,15 @@ class DeepONet(tf.keras.Model):
     """
 
     def __init__(
-            self,
-            branch_input_size: int,
-            trunk_input_size: int,
-            latent_output_size: int,
-            output_size: int,
-            branch_net_args: DeepOSubNetArgs,
-            trunk_net_args: DeepOSubNetArgs,
-            combiner_net_args: DeepOSubNetArgs):
+        self,
+        branch_input_size: int,
+        trunk_input_size: int,
+        latent_output_size: int,
+        output_size: int,
+        branch_net_args: DeepOSubNetArgs,
+        trunk_net_args: DeepOSubNetArgs,
+        combiner_net_args: DeepOSubNetArgs,
+    ):
         """
         :param branch_input_size: the size of the input layer of the branch net
         :param trunk_input_size: the size of the input layer of the trunk net
@@ -38,10 +39,15 @@ class DeepONet(tf.keras.Model):
         :param trunk_net_args: the arguments for the trunk net
         :param combiner_net_args: the arguments for the combiner net
         """
-        if branch_input_size < 1 or trunk_input_size < 1 \
-                or latent_output_size < 1 or output_size < 1:
+        if (
+            branch_input_size < 1
+            or trunk_input_size < 1
+            or latent_output_size < 1
+            or output_size < 1
+        ):
             raise ValueError(
-                'all input and output sizes must be greater than zero')
+                "all input and output sizes must be greater than zero"
+            )
 
         super(DeepONet, self).__init__()
 
@@ -51,23 +57,25 @@ class DeepONet(tf.keras.Model):
         self._output_size = output_size
 
         self._branch_net = FNNRegressor(
-            [branch_input_size] +
-            list(branch_net_args.hidden_layer_sizes) +
-            [latent_output_size],
+            [branch_input_size]
+            + list(branch_net_args.hidden_layer_sizes)
+            + [latent_output_size],
             branch_net_args.initialization,
-            branch_net_args.activation)
+            branch_net_args.activation,
+        )
         self._trunk_net = FNNRegressor(
-            [trunk_input_size] +
-            list(trunk_net_args.hidden_layer_sizes) +
-            [latent_output_size],
+            [trunk_input_size]
+            + list(trunk_net_args.hidden_layer_sizes)
+            + [latent_output_size],
             trunk_net_args.initialization,
-            trunk_net_args.activation)
+            trunk_net_args.activation,
+        )
         self._combiner_net = FNNRegressor(
-            [3 * latent_output_size] +
-            list(combiner_net_args.hidden_layer_sizes) +
-            [output_size],
+            [3 * latent_output_size]
+            + list(combiner_net_args.hidden_layer_sizes)
+            + [output_size],
             combiner_net_args.initialization,
-            combiner_net_args.activation
+            combiner_net_args.activation,
         )
 
     @property
@@ -101,7 +109,8 @@ class DeepONet(tf.keras.Model):
         """
         return tf.concat(
             [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
-            axis=1)
+            axis=1,
+        )
 
     @tf.function
     def set_trainable_parameters(self, value: tf.Tensor):
@@ -113,15 +122,17 @@ class DeepONet(tf.keras.Model):
         offset = 0
         for var in self.trainable_variables:
             var_size = tf.reduce_prod(var.shape)
-            var.assign(tf.reshape(
-                value[0, offset:offset + var_size], var.shape))
+            var.assign(
+                tf.reshape(value[0, offset : offset + var_size], var.shape)
+            )
             offset += var_size
 
     @tf.function
     def call(
-            self,
-            inputs:
-            Union[tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]]
+        self,
+        inputs: Union[
+            tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
+        ],
     ) -> tf.Tensor:
         if isinstance(inputs, tuple):
             u = inputs[0]
@@ -130,14 +141,13 @@ class DeepONet(tf.keras.Model):
             branch_input = u
             trunk_input = t if x is None else tf.concat([t, x], axis=1)
         else:
-            branch_input = inputs[:, :self._branch_input_size]
-            trunk_input = inputs[:, self._branch_input_size:]
+            branch_input = inputs[:, : self._branch_input_size]
+            trunk_input = inputs[:, self._branch_input_size :]
 
         branch_output = self._branch_net.call(branch_input)
         trunk_output = self._trunk_net.call(trunk_input)
         combiner_input = tf.concat(
-            [branch_output, trunk_output, branch_output * trunk_output],
-            axis=1
+            [branch_output, trunk_output, branch_output * trunk_output], axis=1
         )
         return self._combiner_net.call(combiner_input)
 
@@ -148,6 +158,7 @@ class DeepOSubNetArgs(NamedTuple):
     hidden layers, the initialization method to use for the model's weights,
     and the activation function to apply to the hidden layers.
     """
+
     hidden_layer_sizes: Sequence[int] = []
-    initialization: str = 'glorot_uniform'
-    activation: Optional[str] = 'tanh'
+    initialization: str = "glorot_uniform"
+    activation: Optional[str] = "tanh"

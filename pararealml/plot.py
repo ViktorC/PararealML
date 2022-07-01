@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import warnings
-from typing import Optional, Callable, Union, List, Tuple
+from typing import Callable, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from matplotlib import cm
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
@@ -19,7 +18,7 @@ from matplotlib.streamplot import StreamplotSet
 from mpl_toolkits.mplot3d.art3d import Line3D, Poly3DCollection
 
 from pararealml.differential_equation import NBodyGravitationalEquation
-from pararealml.mesh import Mesh, CoordinateSystem
+from pararealml.mesh import CoordinateSystem, Mesh
 
 
 class Plot:
@@ -49,7 +48,7 @@ class Plot:
         plt.show()
         return self
 
-    def save(self, file_path: str, extension: str = 'png', **kwargs) -> Plot:
+    def save(self, file_path: str, extension: str = "png", **kwargs) -> Plot:
         """
         Saves the plot to the file system.
 
@@ -62,7 +61,7 @@ class Plot:
         :param kwargs: any extra arguments
         :return: the plot object the method is invoked on
         """
-        self._figure.savefig(f'{file_path}.{extension}', **kwargs)
+        self._figure.savefig(f"{file_path}.{extension}", **kwargs)
         return self
 
     def close(self):
@@ -78,13 +77,14 @@ class AnimatedPlot(Plot):
     """
 
     def __init__(
-            self,
-            figure: Figure,
-            init_func: Callable[[], None],
-            update_func: Callable[[int], None],
-            n_time_steps: int,
-            n_frames: int,
-            interval: int):
+        self,
+        figure: Figure,
+        init_func: Callable[[], None],
+        update_func: Callable[[int], None],
+        n_time_steps: int,
+        n_frames: int,
+        interval: int,
+    ):
         """
         :param figure: the figure of the plotted solution
         :param init_func: the animation initialization function
@@ -101,19 +101,21 @@ class AnimatedPlot(Plot):
             func=update_func,
             init_func=init_func,
             frames=time_steps,
-            interval=interval)
+            interval=interval,
+        )
 
-    def save(self, file_path: str, extension: str = 'gif', **kwargs) -> Plot:
-        self._animation.save(f'{file_path}.{extension}', **kwargs)
+    def save(self, file_path: str, extension: str = "gif", **kwargs) -> Plot:
+        self._animation.save(f"{file_path}.{extension}", **kwargs)
         return self
 
     @staticmethod
     def _verify_pde_solution_shape_matches_problem(
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            expected_x_dims: Union[int, Tuple[int, int]],
-            is_vector_field: bool):
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        expected_x_dims: Union[int, Tuple[int, int]],
+        is_vector_field: bool,
+    ):
         """
         Verifies that the shape of the input array representing the solution
         of a partial differential equation over the provided mesh and with the
@@ -130,30 +132,35 @@ class AnimatedPlot(Plot):
         """
         if isinstance(expected_x_dims, int):
             if mesh.dimensions != expected_x_dims:
-                raise ValueError(f'mesh must be {expected_x_dims} dimensional')
+                raise ValueError(f"mesh must be {expected_x_dims} dimensional")
         elif not (expected_x_dims[0] <= mesh.dimensions <= expected_x_dims[1]):
             raise ValueError(
-                f'mesh must be between {expected_x_dims[0]} and '
-                f'{expected_x_dims[1]} dimensional')
+                f"mesh must be between {expected_x_dims[0]} and "
+                f"{expected_x_dims[1]} dimensional"
+            )
 
         if y.ndim != mesh.dimensions + 2:
             raise ValueError(
-                f'number of y axes ({y.ndim}) must be two larger than mesh '
-                f'dimensions ({mesh.dimensions})')
+                f"number of y axes ({y.ndim}) must be two larger than mesh "
+                f"dimensions ({mesh.dimensions})"
+            )
 
         if y.shape[1:-1] != mesh.shape(vertex_oriented):
             raise ValueError(
-                f'y shape {y.shape} must be compatible with mesh shape '
-                f'{mesh.shape(vertex_oriented)}')
+                f"y shape {y.shape} must be compatible with mesh shape "
+                f"{mesh.shape(vertex_oriented)}"
+            )
 
         if is_vector_field:
             if y.shape[-1] != mesh.dimensions:
                 raise ValueError(
-                    f'number of y components ({y.shape[-1]}) must match '
-                    f'x dimensions {mesh.dimensions}')
+                    f"number of y components ({y.shape[-1]}) must match "
+                    f"x dimensions {mesh.dimensions}"
+                )
         elif y.shape[-1] != 1:
             raise ValueError(
-                f'number of y components ({y.shape[-1]}) must be one')
+                f"number of y components ({y.shape[-1]}) must be one"
+            )
 
 
 class TimePlot(Plot):
@@ -163,11 +170,12 @@ class TimePlot(Plot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            t: np.ndarray,
-            legend_location: Optional[str] = None,
-            **_):
+        self,
+        y: np.ndarray,
+        t: np.ndarray,
+        legend_location: Optional[str] = None,
+        **_,
+    ):
         """
         :param y: an array representing the solution of the ordinary
             differential equation system
@@ -177,21 +185,22 @@ class TimePlot(Plot):
         :param _: any ignored extra arguments
         """
         if y.ndim != 2:
-            raise ValueError(f'number of y axes ({y.ndim}) must be 2')
+            raise ValueError(f"number of y axes ({y.ndim}) must be 2")
         if t.ndim != 1:
-            raise ValueError(f'number of t axes ({t.ndim}) must be 1')
+            raise ValueError(f"number of t axes ({t.ndim}) must be 1")
         if y.shape[0] != t.shape[0]:
             raise ValueError(
-                f'first axis of y ({y.shape[0]}) must match length of t '
-                f'({t.shape[0]})')
+                f"first axis of y ({y.shape[0]}) must match length of t "
+                f"({t.shape[0]})"
+            )
 
         fig, ax = plt.subplots()
 
         for i in range(y.shape[1]):
-            ax.plot(t, y[:, i], label=f'y{i}')
+            ax.plot(t, y[:, i], label=f"y{i}")
 
-        ax.set_xlabel('t')
-        ax.set_ylabel('y')
+        ax.set_xlabel("t")
+        ax.set_ylabel("y")
         if legend_location is not None:
             ax.legend(loc=legend_location)
 
@@ -212,28 +221,30 @@ class PhaseSpacePlot(Plot):
         :param _: any ignored extra arguments
         """
         if y.ndim != 2:
-            raise ValueError(f'number of y axes ({y.ndim}) must be 2')
+            raise ValueError(f"number of y axes ({y.ndim}) must be 2")
         if not 2 <= y.shape[1] <= 3:
             raise ValueError(
-                f'number of y components ({y.shape[1]}) must be either 2 or 3')
+                f"number of y components ({y.shape[1]}) must be either 2 or 3"
+            )
 
         fig = plt.figure()
 
         if y.shape[1] == 2:
             ax = fig.add_subplot()
             ax.plot(y[:, 0], y[:, 1])
-            ax.set_xlabel('y0')
-            ax.set_ylabel('y1')
-            ax.axis('equal')
+            ax.set_xlabel("y0")
+            ax.set_ylabel("y1")
+            ax.axis("equal")
 
         else:
-            ax = fig.add_subplot(projection='3d')
+            ax = fig.add_subplot(projection="3d")
             ax.plot3D(y[:, 0], y[:, 1], y[:, 2])
-            ax.set_xlabel('y0')
-            ax.set_ylabel('y1')
-            ax.set_zlabel('y2')
-            ax.set_box_aspect((
-                np.ptp(y[:, 0]), np.ptp(y[:, 1]), np.ptp(y[:, 2])))
+            ax.set_xlabel("y0")
+            ax.set_ylabel("y1")
+            ax.set_zlabel("y2")
+            ax.set_box_aspect(
+                (np.ptp(y[:, 0]), np.ptp(y[:, 1]), np.ptp(y[:, 2]))
+            )
 
         super(PhaseSpacePlot, self).__init__(fig)
 
@@ -245,18 +256,19 @@ class NBodyPlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            diff_eq: NBodyGravitationalEquation,
-            n_frames: int = 100,
-            interval: int = 100,
-            color_map: Colormap = cm.cividis,
-            smallest_marker_size: float = 10.,
-            draw_trajectory: bool = True,
-            trajectory_line_style: str = ':',
-            trajectory_line_width: float = .5,
-            span_scaling_factor: float = .25,
-            **_):
+        self,
+        y: np.ndarray,
+        diff_eq: NBodyGravitationalEquation,
+        n_frames: int = 100,
+        interval: int = 100,
+        color_map: Colormap = cm.cividis,
+        smallest_marker_size: float = 10.0,
+        draw_trajectory: bool = True,
+        trajectory_line_style: str = ":",
+        trajectory_line_width: float = 0.5,
+        span_scaling_factor: float = 0.25,
+        **_,
+    ):
         """
         :param y: an array representing the solution of the n-body
             gravitational differential equation
@@ -280,17 +292,18 @@ class NBodyPlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         if y.ndim != 2:
-            raise ValueError(f'number of y axes ({y.ndim}) must be 2')
+            raise ValueError(f"number of y axes ({y.ndim}) must be 2")
         if y.shape[1] != diff_eq.y_dimension:
             raise ValueError(
-                f'number of y components ({y.ndim}) must match differential '
-                f'equation y dimension ({diff_eq.y_dimension})')
+                f"number of y components ({y.ndim}) must match differential "
+                f"equation y dimension ({diff_eq.y_dimension})"
+            )
 
         n_obj = diff_eq.n_objects
         n_obj_by_dims = n_obj * diff_eq.spatial_dimension
 
-        x_coordinates = y[:, :n_obj_by_dims:diff_eq.spatial_dimension]
-        y_coordinates = y[:, 1:n_obj_by_dims:diff_eq.spatial_dimension]
+        x_coordinates = y[:, : n_obj_by_dims : diff_eq.spatial_dimension]
+        y_coordinates = y[:, 1 : n_obj_by_dims : diff_eq.spatial_dimension]
 
         x_max = x_coordinates.max()
         x_min = x_coordinates.min()
@@ -307,20 +320,21 @@ class NBodyPlot(AnimatedPlot):
 
         masses = np.asarray(diff_eq.masses)
         scaled_masses = (smallest_marker_size / np.min(masses)) * masses
-        radii = np.power(3. * scaled_masses / (4. * np.pi), 1. / 3.)
+        radii = np.power(3.0 * scaled_masses / (4.0 * np.pi), 1.0 / 3.0)
         marker_sizes = np.power(radii, 2) * np.pi
 
-        colors = color_map(np.linspace(0., 1., n_obj))
+        colors = color_map(np.linspace(0.0, 1.0, n_obj))
 
         self._scatter_plot: Optional[PathCollection] = None
         self._line_plots: Optional[List[Union[Line2D, Line3D]]] = None
 
-        style = 'dark_background'
+        style = "dark_background"
 
         with plt.style.context(style):
             fig = plt.figure()
             ax = fig.add_subplot(
-                projection='3d' if diff_eq.spatial_dimension == 3 else None)
+                projection="3d" if diff_eq.spatial_dimension == 3 else None
+            )
 
         if diff_eq.spatial_dimension == 2:
             coordinates = np.stack((x_coordinates, y_coordinates), axis=2)
@@ -332,21 +346,25 @@ class NBodyPlot(AnimatedPlot):
                         x_coordinates[0, :],
                         y_coordinates[0, :],
                         s=marker_sizes,
-                        c=colors)
+                        c=colors,
+                    )
 
                     if draw_trajectory:
                         self._line_plots = []
                         for i in range(n_obj):
-                            self._line_plots.append(ax.plot(
-                                x_coordinates[:1, i],
-                                y_coordinates[:1, i],
-                                color=colors[i],
-                                linestyle=trajectory_line_style,
-                                linewidth=trajectory_line_width)[0])
+                            self._line_plots.append(
+                                ax.plot(
+                                    x_coordinates[:1, i],
+                                    y_coordinates[:1, i],
+                                    color=colors[i],
+                                    linestyle=trajectory_line_style,
+                                    linewidth=trajectory_line_width,
+                                )[0]
+                            )
 
-                    ax.set_xlabel('x')
-                    ax.set_ylabel('y')
-                    ax.axis('scaled')
+                    ax.set_xlabel("x")
+                    ax.set_ylabel("y")
+                    ax.axis("scaled")
                     ax.set_xlim(x_min, x_max)
                     ax.set_ylim(y_min, y_max)
 
@@ -355,8 +373,8 @@ class NBodyPlot(AnimatedPlot):
                 if draw_trajectory:
                     for i in range(n_obj):
                         line_plot = self._line_plots[i]
-                        line_plot.set_xdata(x_coordinates[:time_step + 1, i])
-                        line_plot.set_ydata(y_coordinates[:time_step + 1, i])
+                        line_plot.set_xdata(x_coordinates[: time_step + 1, i])
+                        line_plot.set_ydata(y_coordinates[: time_step + 1, i])
 
         else:
             z_coordinates = y[:, 2:n_obj_by_dims:3]
@@ -375,28 +393,33 @@ class NBodyPlot(AnimatedPlot):
                         z_coordinates[0, :],
                         s=marker_sizes,
                         c=colors,
-                        depthshade=False)
+                        depthshade=False,
+                    )
 
                     if draw_trajectory:
                         self._line_plots = []
                         for i in range(n_obj):
-                            self._line_plots.append(ax.plot(
-                                x_coordinates[:1, i],
-                                y_coordinates[:1, i],
-                                z_coordinates[:1, i],
-                                color=colors[i],
-                                linestyle=trajectory_line_style,
-                                linewidth=trajectory_line_width)[0])
+                            self._line_plots.append(
+                                ax.plot(
+                                    x_coordinates[:1, i],
+                                    y_coordinates[:1, i],
+                                    z_coordinates[:1, i],
+                                    color=colors[i],
+                                    linestyle=trajectory_line_style,
+                                    linewidth=trajectory_line_width,
+                                )[0]
+                            )
 
-                    ax.set_xlabel('x')
-                    ax.set_ylabel('y')
-                    ax.set_zlabel('z')
+                    ax.set_xlabel("x")
+                    ax.set_ylabel("y")
+                    ax.set_zlabel("z")
                     ax.set_xlim(x_min, x_max)
                     ax.set_ylim(y_min, y_max)
                     ax.set_zlim(z_min, z_max)
-                    ax.set_box_aspect((
-                        x_max - x_min, y_max - y_min, z_max - z_min))
-                    ax.set_facecolor('black')
+                    ax.set_box_aspect(
+                        (x_max - x_min, y_max - y_min, z_max - z_min)
+                    )
+                    ax.set_facecolor("black")
                     ax.xaxis.pane.fill = False
                     ax.yaxis.pane.fill = False
                     ax.zaxis.pane.fill = False
@@ -406,18 +429,20 @@ class NBodyPlot(AnimatedPlot):
                 self._scatter_plot._offsets3d = (
                     x_coordinates[time_step, ...],
                     y_coordinates[time_step, ...],
-                    z_coordinates[time_step, ...]
+                    z_coordinates[time_step, ...],
                 )
                 if draw_trajectory:
                     for i in range(n_obj):
                         line_plot = self._line_plots[i]
-                        line_plot.set_xdata(x_coordinates[:time_step + 1, i])
-                        line_plot.set_ydata(y_coordinates[:time_step + 1, i])
+                        line_plot.set_xdata(x_coordinates[: time_step + 1, i])
+                        line_plot.set_ydata(y_coordinates[: time_step + 1, i])
                         line_plot.set_3d_properties(
-                            z_coordinates[:time_step + 1, i])
+                            z_coordinates[: time_step + 1, i]
+                        )
 
         super(NBodyPlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class SpaceLinePlot(AnimatedPlot):
@@ -427,16 +452,17 @@ class SpaceLinePlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            v_min: Optional[float] = None,
-            v_max: Optional[float] = None,
-            equal_scale: bool = False,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None,
+        equal_scale: bool = False,
+        **_,
+    ):
         """
         :param y: an array representing the solution of the 1D partial
             differential equation
@@ -455,7 +481,8 @@ class SpaceLinePlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, 1, False)
+            y, mesh, vertex_oriented, 1, False
+        )
 
         self._line_plot: Optional[Line2D] = None
 
@@ -463,23 +490,25 @@ class SpaceLinePlot(AnimatedPlot):
 
         def init_plot():
             ax.clear()
-            self._line_plot, = ax.plot(
-                mesh.coordinate_grids(vertex_oriented)[0],
-                y[0, ..., 0])
+            (self._line_plot,) = ax.plot(
+                mesh.coordinate_grids(vertex_oriented)[0], y[0, ..., 0]
+            )
 
             ax.set_ylim(
                 np.min(y) if v_min is None else v_min,
-                np.max(y) if v_max is None else v_max)
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
+                np.max(y) if v_max is None else v_max,
+            )
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
             if equal_scale:
-                ax.axis('equal')
+                ax.axis("equal")
 
         def update_plot(time_step: int):
             self._line_plot.set_ydata(y[time_step, ..., 0])
 
         super(SpaceLinePlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class ContourPlot(AnimatedPlot):
@@ -489,16 +518,17 @@ class ContourPlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            color_map: Colormap = cm.viridis,
-            v_min: Optional[float] = None,
-            v_max: Optional[float] = None,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        color_map: Colormap = cm.viridis,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None,
+        **_,
+    ):
         """
         :param y: an array representing the solution scalar field of the 2D
             partial differential equation
@@ -516,10 +546,12 @@ class ContourPlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, 2, False)
+            y, mesh, vertex_oriented, 2, False
+        )
 
-        x_cartesian_coordinate_grids = \
-            mesh.cartesian_coordinate_grids(vertex_oriented)
+        x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+            vertex_oriented
+        )
 
         v_min = np.min(y) if v_min is None else v_min
         v_max = np.max(y) if v_max is None else v_max
@@ -536,11 +568,12 @@ class ContourPlot(AnimatedPlot):
                 y[0, ..., 0],
                 vmin=v_min,
                 vmax=v_max,
-                cmap=color_map)
+                cmap=color_map,
+            )
 
-            ax.set_xlabel('x0')
-            ax.set_ylabel('x1')
-            ax.axis('scaled')
+            ax.set_xlabel("x0")
+            ax.set_ylabel("x1")
+            ax.axis("scaled")
 
             mappable = ScalarMappable(cmap=color_map)
             mappable.set_clim(v_min, v_max)
@@ -555,10 +588,12 @@ class ContourPlot(AnimatedPlot):
                 y[time_step, ..., 0],
                 vmin=v_min,
                 vmax=v_max,
-                cmap=color_map)
+                cmap=color_map,
+            )
 
         super(ContourPlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class SurfacePlot(AnimatedPlot):
@@ -568,17 +603,18 @@ class SurfacePlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            color_map: Colormap = cm.viridis,
-            v_min: Optional[float] = None,
-            v_max: Optional[float] = None,
-            equal_scale: bool = False,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        color_map: Colormap = cm.viridis,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None,
+        equal_scale: bool = False,
+        **_,
+    ):
         """
         :param y: an array representing the solution scalar field of the 2D
             partial differential equation
@@ -599,10 +635,12 @@ class SurfacePlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, 2, False)
+            y, mesh, vertex_oriented, 2, False
+        )
 
-        x_cartesian_coordinate_grids = \
-            mesh.cartesian_coordinate_grids(vertex_oriented)
+        x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+            vertex_oriented
+        )
 
         v_min = np.min(y) if v_min is None else v_min
         v_max = np.max(y) if v_max is None else v_max
@@ -612,29 +650,30 @@ class SurfacePlot(AnimatedPlot):
         x_2_ptp = (v_max - v_min) if equal_scale else min(x_0_ptp, x_1_ptp)
 
         surface_plot_args = {
-            'vmin': v_min,
-            'vmax': v_max,
-            'rstride': 1,
-            'cstride': 1,
-            'linewidth': 0,
-            'antialiased': False,
-            'cmap': color_map
+            "vmin": v_min,
+            "vmax": v_max,
+            "rstride": 1,
+            "cstride": 1,
+            "linewidth": 0,
+            "antialiased": False,
+            "cmap": color_map,
         }
 
         self._surface_plot: Optional[Poly3DCollection] = None
 
         fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
+        ax = fig.add_subplot(projection="3d")
 
         def init_plot():
             ax.clear()
             self._surface_plot = ax.plot_surface(
                 *x_cartesian_coordinate_grids,
                 y[0, ..., 0],
-                **surface_plot_args)
-            ax.set_xlabel('x0')
-            ax.set_ylabel('x1')
-            ax.set_zlabel('y')
+                **surface_plot_args,
+            )
+            ax.set_xlabel("x0")
+            ax.set_ylabel("x1")
+            ax.set_zlabel("y")
             ax.set_zlim(v_min, v_max)
             ax.set_box_aspect((x_0_ptp, x_1_ptp, x_2_ptp))
 
@@ -643,10 +682,12 @@ class SurfacePlot(AnimatedPlot):
             self._surface_plot = ax.plot_surface(
                 *x_cartesian_coordinate_grids,
                 y[time_step, ..., 0],
-                **surface_plot_args)
+                **surface_plot_args,
+            )
 
         super(SurfacePlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class ScatterPlot(AnimatedPlot):
@@ -656,19 +697,20 @@ class ScatterPlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            color_map: Colormap = cm.viridis,
-            v_min: Optional[float] = None,
-            v_max: Optional[float] = None,
-            marker_shape: str = 'o',
-            marker_size: Union[float, np.ndarray] = 20.,
-            marker_opacity: float = 1.,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        color_map: Colormap = cm.viridis,
+        v_min: Optional[float] = None,
+        v_max: Optional[float] = None,
+        marker_shape: str = "o",
+        marker_size: Union[float, np.ndarray] = 20.0,
+        marker_opacity: float = 1.0,
+        **_,
+    ):
         """
         :param y: an array representing the solution of the 3D partial
             differential equation
@@ -689,43 +731,52 @@ class ScatterPlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, 3, False)
+            y, mesh, vertex_oriented, 3, False
+        )
 
-        x_cartesian_coordinate_grids = \
-            mesh.cartesian_coordinate_grids(vertex_oriented)
+        x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
+            vertex_oriented
+        )
 
         mappable = ScalarMappable(cmap=color_map)
         mappable.set_clim(
             np.min(y) if v_min is None else v_min,
-            np.max(y) if v_max is None else v_max)
+            np.max(y) if v_max is None else v_max,
+        )
 
         self._scatter_plot: Optional[PathCollection] = None
 
         fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
+        ax = fig.add_subplot(projection="3d")
 
         def init_plot():
             ax.clear()
-            ax.set_xlabel('x0')
-            ax.set_ylabel('x1')
-            ax.set_zlabel('x2')
-            ax.set_box_aspect((
-                np.ptp(x_cartesian_coordinate_grids[0]),
-                np.ptp(x_cartesian_coordinate_grids[1]),
-                np.ptp(x_cartesian_coordinate_grids[2])))
+            ax.set_xlabel("x0")
+            ax.set_ylabel("x1")
+            ax.set_zlabel("x2")
+            ax.set_box_aspect(
+                (
+                    np.ptp(x_cartesian_coordinate_grids[0]),
+                    np.ptp(x_cartesian_coordinate_grids[1]),
+                    np.ptp(x_cartesian_coordinate_grids[2]),
+                )
+            )
             self._scatter_plot = ax.scatter(
                 *x_cartesian_coordinate_grids,
                 c=mappable.to_rgba(y[0, ..., 0].flatten()),
                 marker=marker_shape,
                 s=marker_size,
-                alpha=marker_opacity)
+                alpha=marker_opacity,
+            )
 
         def update_plot(time_step: int):
             self._scatter_plot.set_color(
-                mappable.to_rgba(y[time_step, ..., 0].flatten()))
+                mappable.to_rgba(y[time_step, ..., 0].flatten())
+            )
 
         super(ScatterPlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class StreamPlot(AnimatedPlot):
@@ -735,15 +786,16 @@ class StreamPlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            color: str = 'black',
-            density: float = 1.,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        color: str = "black",
+        density: float = 1.0,
+        **_,
+    ):
         """
         :param y: an array representing the solution vector field of the 2D
             partial differential equation system
@@ -758,7 +810,8 @@ class StreamPlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, 2, True)
+            y, mesh, vertex_oriented, 2, True
+        )
 
         coordinate_grids = mesh.coordinate_grids(vertex_oriented)
 
@@ -774,7 +827,7 @@ class StreamPlot(AnimatedPlot):
             y_0 = y[..., 1]
             y_1 = y[..., 0]
 
-            ax = fig.add_subplot(projection='polar')
+            ax = fig.add_subplot(projection="polar")
 
         else:
             (x_0_min, x_0_max), (x_1_min, x_1_max) = mesh.x_intervals
@@ -793,18 +846,19 @@ class StreamPlot(AnimatedPlot):
                 y_0[0, ...],
                 y_1[0, ...],
                 color=color,
-                density=density)
+                density=density,
+            )
             ax.set_xlim(x_0_min, x_0_max)
             ax.set_ylim(x_1_min, x_1_max)
 
             if mesh.coordinate_system_type == CoordinateSystem.CARTESIAN:
-                ax.axis('scaled')
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
+                ax.axis("scaled")
+                ax.set_xlabel("x")
+                ax.set_ylabel("y")
 
         def update_plot(time_step: int):
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+                warnings.simplefilter("ignore")
                 ax.patches.clear()
 
             self._stream_plot.lines.remove()
@@ -814,10 +868,12 @@ class StreamPlot(AnimatedPlot):
                 y_0[time_step, ...],
                 y_1[time_step, ...],
                 color=color,
-                density=density)
+                density=density,
+            )
 
         super(StreamPlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )
 
 
 class QuiverPlot(AnimatedPlot):
@@ -827,16 +883,17 @@ class QuiverPlot(AnimatedPlot):
     """
 
     def __init__(
-            self,
-            y: np.ndarray,
-            mesh: Mesh,
-            vertex_oriented: bool,
-            n_frames: int = 100,
-            interval: int = 100,
-            normalize: bool = False,
-            pivot: str = 'middle',
-            quiver_scale: float = 10.,
-            **_):
+        self,
+        y: np.ndarray,
+        mesh: Mesh,
+        vertex_oriented: bool,
+        n_frames: int = 100,
+        interval: int = 100,
+        normalize: bool = False,
+        pivot: str = "middle",
+        quiver_scale: float = 10.0,
+        **_,
+    ):
         """
         :param y: an array representing the solution vector field of the
             partial differential equation system
@@ -851,15 +908,21 @@ class QuiverPlot(AnimatedPlot):
         :param _: any ignored extra arguments
         """
         self._verify_pde_solution_shape_matches_problem(
-            y, mesh, vertex_oriented, (2, 3), True)
+            y, mesh, vertex_oriented, (2, 3), True
+        )
 
         x_cartesian_coordinate_grids = mesh.cartesian_coordinate_grids(
-            vertex_oriented)
+            vertex_oriented
+        )
         unit_vector_grids = mesh.unit_vector_grids(vertex_oriented)
-        y_cartesian: np.ndarray = np.asarray(sum([
-            y[..., i:i + 1] * unit_vector_grids[i][np.newaxis, ...]
-            for i in range(mesh.dimensions)
-        ]))
+        y_cartesian: np.ndarray = np.asarray(
+            sum(
+                [
+                    y[..., i : i + 1] * unit_vector_grids[i][np.newaxis, ...]
+                    for i in range(mesh.dimensions)
+                ]
+            )
+        )
 
         self._quiver_plot: Optional[Quiver] = None
 
@@ -871,7 +934,7 @@ class QuiverPlot(AnimatedPlot):
 
             if normalize:
                 y_magnitude = np.sqrt(np.square(y_0) + np.square(y_1))
-                y_magnitude_gt_zero = y_magnitude > 0.
+                y_magnitude_gt_zero = y_magnitude > 0.0
                 y_0[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
                 y_1[y_magnitude_gt_zero] /= y_magnitude[y_magnitude_gt_zero]
 
@@ -879,29 +942,30 @@ class QuiverPlot(AnimatedPlot):
 
             def init_plot():
                 ax.clear()
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
+                ax.set_xlabel("x")
+                ax.set_ylabel("y")
                 self._quiver_plot = ax.quiver(
                     *x_cartesian_coordinate_grids,
                     y_0[0, ...],
                     y_1[0, ...],
                     pivot=pivot,
-                    angles='xy',
-                    scale_units='xy',
-                    scale=1. / quiver_scale)
-                ax.axis('scaled')
+                    angles="xy",
+                    scale_units="xy",
+                    scale=1.0 / quiver_scale,
+                )
+                ax.axis("scaled")
 
             def update_plot(time_step: int):
                 self._quiver_plot.set_UVC(
-                    y_0[time_step, ...],
-                    y_1[time_step, ...])
+                    y_0[time_step, ...], y_1[time_step, ...]
+                )
 
         else:
             y_0 = y_cartesian[..., 0] * quiver_scale
             y_1 = y_cartesian[..., 1] * quiver_scale
             y_2 = y_cartesian[..., 2] * quiver_scale
 
-            ax = fig.add_subplot(projection='3d')
+            ax = fig.add_subplot(projection="3d")
 
             def init_plot():
                 ax.clear()
@@ -911,15 +975,19 @@ class QuiverPlot(AnimatedPlot):
                     y_1[0, ...],
                     y_2[0, ...],
                     pivot=pivot,
-                    normalize=normalize)
+                    normalize=normalize,
+                )
 
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
-                ax.set_zlabel('z')
-                ax.set_box_aspect((
-                    np.ptp(x_cartesian_coordinate_grids[0]),
-                    np.ptp(x_cartesian_coordinate_grids[1]),
-                    np.ptp(x_cartesian_coordinate_grids[2])))
+                ax.set_xlabel("x")
+                ax.set_ylabel("y")
+                ax.set_zlabel("z")
+                ax.set_box_aspect(
+                    (
+                        np.ptp(x_cartesian_coordinate_grids[0]),
+                        np.ptp(x_cartesian_coordinate_grids[1]),
+                        np.ptp(x_cartesian_coordinate_grids[2]),
+                    )
+                )
 
             def update_plot(time_step: int):
                 self._quiver_plot.remove()
@@ -929,7 +997,9 @@ class QuiverPlot(AnimatedPlot):
                     y_1[time_step, ...],
                     y_2[time_step, ...],
                     pivot=pivot,
-                    normalize=normalize)
+                    normalize=normalize,
+                )
 
         super(QuiverPlot, self).__init__(
-            fig, init_plot, update_plot, y.shape[0], n_frames, interval)
+            fig, init_plot, update_plot, y.shape[0], n_frames, interval
+        )

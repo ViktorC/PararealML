@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, Sequence, NamedTuple
+from typing import NamedTuple, Optional, Sequence, Tuple
 
 import tensorflow as tf
 
@@ -9,32 +9,38 @@ class Loss(NamedTuple):
     """
     A collection of the various losses of a physics-informed DeepONet.
     """
+
     diff_eq_loss: tf.Tensor
     ic_loss: tf.Tensor
     bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]]
     weighted_total_loss: tf.Tensor
 
     def __str__(self):
-        string = f'Weighted Total: {self.weighted_total_loss}; ' + \
-                 f'DE: {self.diff_eq_loss}; ' + \
-                 f'IC: {self.ic_loss}'
+        string = (
+            f"Weighted Total: {self.weighted_total_loss}; "
+            + f"DE: {self.diff_eq_loss}; "
+            + f"IC: {self.ic_loss}"
+        )
 
         if self.bc_losses:
-            string += f'; Dirichlet BC: {self.bc_losses[0]}; ' + \
-                      f'Neumann BC: {self.bc_losses[1]}'
+            string += (
+                f"; Dirichlet BC: {self.bc_losses[0]}; "
+                + f"Neumann BC: {self.bc_losses[1]}"
+            )
 
         return string
 
     @classmethod
     @tf.function
     def construct(
-            cls,
-            diff_eq_loss: tf.Tensor,
-            ic_loss: tf.Tensor,
-            bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
-            diff_eq_loss_weight: float,
-            ic_loss_weight: float,
-            bc_loss_weight: float) -> Loss:
+        cls,
+        diff_eq_loss: tf.Tensor,
+        ic_loss: tf.Tensor,
+        bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
+        diff_eq_loss_weight: float,
+        ic_loss_weight: float,
+        bc_loss_weight: float,
+    ) -> Loss:
         """
         Calculates the weighted total loss given the weights for the different
         components of the total loss and returns a Loss instance.
@@ -51,22 +57,24 @@ class Loss(NamedTuple):
             total physics-informed loss
         :return: the losses including the weighted total
         """
-        weighted_total_loss = \
-            tf.scalar_mul(diff_eq_loss_weight, diff_eq_loss) + \
-            tf.scalar_mul(ic_loss_weight, ic_loss)
+        weighted_total_loss = tf.scalar_mul(
+            diff_eq_loss_weight, diff_eq_loss
+        ) + tf.scalar_mul(ic_loss_weight, ic_loss)
         if bc_losses:
-            weighted_total_loss += \
-                tf.scalar_mul(bc_loss_weight, bc_losses[0] + bc_losses[1])
+            weighted_total_loss += tf.scalar_mul(
+                bc_loss_weight, bc_losses[0] + bc_losses[1]
+            )
         return Loss(diff_eq_loss, ic_loss, bc_losses, weighted_total_loss)
 
     @classmethod
     @tf.function
     def mean(
-            cls,
-            losses: Sequence[Loss],
-            diff_eq_loss_weight: float,
-            ic_loss_weight: float,
-            bc_loss_weight: float) -> Loss:
+        cls,
+        losses: Sequence[Loss],
+        diff_eq_loss_weight: float,
+        ic_loss_weight: float,
+        bc_loss_weight: float,
+    ) -> Loss:
         """
         Computes the mean of the provided losses.
 
@@ -92,10 +100,14 @@ class Loss(NamedTuple):
 
         mean_diff_eq_loss = tf.reduce_mean(tf.stack(diff_eq_losses), axis=0)
         mean_ic_loss = tf.reduce_mean(tf.stack(ic_losses), axis=0)
-        mean_bc_losses = None \
-            if len(dirichlet_bc_losses) + len(neumann_bc_losses) == 0 \
-            else (tf.reduce_mean(tf.stack(dirichlet_bc_losses), axis=0),
-                  tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0))
+        mean_bc_losses = (
+            None
+            if len(dirichlet_bc_losses) + len(neumann_bc_losses) == 0
+            else (
+                tf.reduce_mean(tf.stack(dirichlet_bc_losses), axis=0),
+                tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0),
+            )
+        )
 
         return cls.construct(
             mean_diff_eq_loss,
@@ -103,4 +115,5 @@ class Loss(NamedTuple):
             mean_bc_losses,
             diff_eq_loss_weight,
             ic_loss_weight,
-            bc_loss_weight)
+            bc_loss_weight,
+        )

@@ -1,24 +1,32 @@
 import numpy as np
 import pytest
 
-from pararealml.boundary_condition import CauchyBoundaryCondition, \
-    DirichletBoundaryCondition, vectorize_bc_function
+from pararealml.boundary_condition import (
+    CauchyBoundaryCondition,
+    DirichletBoundaryCondition,
+    vectorize_bc_function,
+)
 from pararealml.constrained_problem import ConstrainedProblem
-from pararealml.differential_equation import LotkaVolterraEquation, \
-    CahnHilliardEquation, PopulationGrowthEquation, DiffusionEquation
+from pararealml.differential_equation import (
+    CahnHilliardEquation,
+    DiffusionEquation,
+    LotkaVolterraEquation,
+    PopulationGrowthEquation,
+)
 from pararealml.mesh import Mesh
-from pararealml.operators.ml.pidon.collocation_point_sampler import \
-    UniformRandomCollocationPointSampler
+from pararealml.operators.ml.pidon.collocation_point_sampler import (
+    UniformRandomCollocationPointSampler,
+)
 from pararealml.operators.ml.pidon.data_set import DataSet
 
 
 def test_data_set_ode():
     cp = ConstrainedProblem(LotkaVolterraEquation())
-    t_interval = (0., 100.)
+    t_interval = (0.0, 100.0)
     y_0_functions = [
-        lambda _: np.array([10., 20.]),
-        lambda _: np.array([15., 15.]),
-        lambda _: np.array([20., 10.])
+        lambda _: np.array([10.0, 20.0]),
+        lambda _: np.array([15.0, 15.0]),
+        lambda _: np.array([20.0, 10.0]),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_points = 200
@@ -27,36 +35,43 @@ def test_data_set_ode():
 
     assert np.array_equal(
         data_set.initial_value_data,
-        np.array([[10., 20.], [15., 15.], [20., 10.]]))
+        np.array([[10.0, 20.0], [15.0, 15.0], [20.0, 10.0]]),
+    )
     assert data_set.domain_collocation_data.shape == (200, 1)
-    assert np.allclose(data_set.initial_collocation_data, [[0.]])
+    assert np.allclose(data_set.initial_collocation_data, [[0.0]])
     assert data_set.boundary_collocation_data is None
 
 
 def test_data_set_pde():
     diff_eq = CahnHilliardEquation(2)
-    mesh = Mesh([(0., 5.), (0., 2.)], [.5, .25])
+    mesh = Mesh([(0.0, 5.0), (0.0, 2.0)], [0.5, 0.25])
     bcs = [
-        (CauchyBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0., 0.)),
-            vectorize_bc_function(lambda x, t: (1., 1.)),
-            is_static=True),
-         CauchyBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0., 0.)),
-             vectorize_bc_function(lambda x, t: (1., 1.)),
-             is_static=True))
+        (
+            CauchyBoundaryCondition(
+                vectorize_bc_function(lambda x, t: (0.0, 0.0)),
+                vectorize_bc_function(lambda x, t: (1.0, 1.0)),
+                is_static=True,
+            ),
+            CauchyBoundaryCondition(
+                vectorize_bc_function(lambda x, t: (0.0, 0.0)),
+                vectorize_bc_function(lambda x, t: (1.0, 1.0)),
+                is_static=True,
+            ),
+        )
     ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    t_interval = (0., 10.)
+    t_interval = (0.0, 10.0)
     y_0_functions = [
-        lambda x: np.stack([
-            x[:, 0] ** 2 - 2 * x[:, 0] * x[:, 1] + x[:, 1] ** 2,
-            x[:, 1] ** .5
-        ], axis=-1),
-        lambda x: np.stack([
-            x[:, 0] ** 3 - x[:, 1] ** 3,
-            x[:, 0] ** .5
-        ], axis=-1),
+        lambda x: np.stack(
+            [
+                x[:, 0] ** 2 - 2 * x[:, 0] * x[:, 1] + x[:, 1] ** 2,
+                x[:, 1] ** 0.5,
+            ],
+            axis=-1,
+        ),
+        lambda x: np.stack(
+            [x[:, 0] ** 3 - x[:, 1] ** 3, x[:, 0] ** 0.5], axis=-1
+        ),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_domain_points = 200
@@ -68,21 +83,24 @@ def test_data_set_pde():
         y_0_functions,
         sampler,
         n_domain_points,
-        n_boundary_points)
+        n_boundary_points,
+    )
 
     assert data_set.initial_value_data.shape == (2, 80 * 2)
     assert data_set.domain_collocation_data.shape == (200, 1 + 2)
     assert data_set.initial_collocation_data.shape == (80, 1 + 2)
     assert data_set.boundary_collocation_data.shape == (50, 1 + 2 + 2 + 2 + 1)
 
-    assert np.all(data_set.boundary_collocation_data[:, 3:5] == 0.)
-    assert np.all(data_set.boundary_collocation_data[:, 5:7] == 1.)
+    assert np.all(data_set.boundary_collocation_data[:, 3:5] == 0.0)
+    assert np.all(data_set.boundary_collocation_data[:, 5:7] == 1.0)
 
 
 def test_iterator_raises_error_if_n_batches_not_divisor():
     cp = ConstrainedProblem(PopulationGrowthEquation())
     sampler = UniformRandomCollocationPointSampler()
-    data_set = DataSet(cp, (0., 5.), [lambda _: np.array([5.])], sampler, 100)
+    data_set = DataSet(
+        cp, (0.0, 5.0), [lambda _: np.array([5.0])], sampler, 100
+    )
 
     with pytest.raises(ValueError):
         data_set.get_iterator(2)
@@ -90,10 +108,10 @@ def test_iterator_raises_error_if_n_batches_not_divisor():
 
 def test_iterator_ode():
     cp = ConstrainedProblem(LotkaVolterraEquation())
-    t_interval = (0., 40.)
+    t_interval = (0.0, 40.0)
     y_0_functions = [
-        lambda _: np.array([10., 20.]),
-        lambda _: np.array([15., 15.]),
+        lambda _: np.array([10.0, 20.0]),
+        lambda _: np.array([15.0, 15.0]),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_points = 5
@@ -132,8 +150,8 @@ def test_iterator_ode():
     assert full_batch.boundary is None
 
     batches = [
-        batch for batch in
-        data_set.get_iterator(5, n_ic_repeats=5, shuffle=False)
+        batch
+        for batch in data_set.get_iterator(5, n_ic_repeats=5, shuffle=False)
     ]
     assert len(batches) == 5
     for batch in batches:
@@ -149,36 +167,40 @@ def test_iterator_ode():
         assert batch.boundary is None
 
     assert np.allclose(
-        batches[0].domain.u.numpy(),
-        [[10., 20.], [10., 20.]])
+        batches[0].domain.u.numpy(), [[10.0, 20.0], [10.0, 20.0]]
+    )
     assert np.allclose(
-        batches[1].domain.u.numpy(),
-        [[10., 20.], [10., 20.]])
+        batches[1].domain.u.numpy(), [[10.0, 20.0], [10.0, 20.0]]
+    )
     assert np.allclose(
-        batches[2].domain.u.numpy(),
-        [[10., 20.], [15., 15.]])
+        batches[2].domain.u.numpy(), [[10.0, 20.0], [15.0, 15.0]]
+    )
     assert np.allclose(
-        batches[3].domain.u.numpy(),
-        [[15., 15.], [15., 15.]])
+        batches[3].domain.u.numpy(), [[15.0, 15.0], [15.0, 15.0]]
+    )
     assert np.allclose(
-        batches[4].domain.u.numpy(),
-        [[15., 15.], [15., 15.]])
+        batches[4].domain.u.numpy(), [[15.0, 15.0], [15.0, 15.0]]
+    )
 
 
 def test_iterator_pde():
     diff_eq = DiffusionEquation(2)
-    mesh = Mesh([(0., 5.), (0., 5.)], [.1, .1])
+    mesh = Mesh([(0.0, 5.0), (0.0, 5.0)], [0.1, 0.1])
     bcs = [
-        (DirichletBoundaryCondition(
-            vectorize_bc_function(lambda x, t: (0.,)), is_static=True),
-         DirichletBoundaryCondition(
-             vectorize_bc_function(lambda x, t: (0.,)), is_static=True))
+        (
+            DirichletBoundaryCondition(
+                vectorize_bc_function(lambda x, t: (0.0,)), is_static=True
+            ),
+            DirichletBoundaryCondition(
+                vectorize_bc_function(lambda x, t: (0.0,)), is_static=True
+            ),
+        )
     ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    t_interval = (0., 5.)
+    t_interval = (0.0, 5.0)
     y_0_functions = [
         lambda x: x[:, :1] ** 2 - x[:, 1:] ** 2,
-        lambda x: x[:, :1] * x[:, 1:] / (x[:, :1] ** 2 + x[:, 1:] ** 2)
+        lambda x: x[:, :1] * x[:, 1:] / (x[:, :1] ** 2 + x[:, 1:] ** 2),
     ]
     sampler = UniformRandomCollocationPointSampler()
     n_domain_points = 200
@@ -190,7 +212,8 @@ def test_iterator_pde():
         y_0_functions,
         sampler,
         n_domain_points,
-        n_boundary_points)
+        n_boundary_points,
+    )
     iterator = data_set.get_iterator(2)
 
     assert len(iterator) == 2
@@ -214,7 +237,7 @@ def test_iterator_pde():
         assert batch.boundary.d_y_over_d_n.shape == (50, 1)
         assert batch.boundary.axes.shape == (50,)
 
-        assert np.all(batch.boundary.y.numpy() == 0.)
+        assert np.all(batch.boundary.y.numpy() == 0.0)
         assert np.isnan(batch.boundary.d_y_over_d_n.numpy()).all()
 
     assert len([batch for batch in iterator]) == 2

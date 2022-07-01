@@ -1,8 +1,8 @@
-from typing import Optional, Union, Type
+from typing import Optional, Type, Union
 
 import numpy as np
 import sympy as sp
-from scipy.integrate import solve_ivp, OdeSolver
+from scipy.integrate import OdeSolver, solve_ivp
 
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.operator import Operator, discretize_time_domain
@@ -15,13 +15,14 @@ class ODEOperator(Operator):
     """
 
     def __init__(
-            self,
-            method: Union[str, Type[OdeSolver]],
-            d_t: float,
-            first_step: Optional[float] = None,
-            max_step: float = np.inf,
-            atol: float = 1e-6,
-            rtol: float = 1e-3):
+        self,
+        method: Union[str, Type[OdeSolver]],
+        d_t: float,
+        first_step: Optional[float] = None,
+        max_step: float = np.inf,
+        atol: float = 1e-6,
+        rtol: float = 1e-3,
+    ):
         """
         :param method: the ODE solver to use
         :param d_t: the temporal step size to use
@@ -42,12 +43,11 @@ class ODEOperator(Operator):
         self._rtol = rtol
 
     def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True) -> Solution:
+        self, ivp: InitialValueProblem, parallel_enabled: bool = True
+    ) -> Solution:
         diff_eq = ivp.constrained_problem.differential_equation
         if diff_eq.x_dimension != 0:
-            raise ValueError('initial value problem must be an ODE')
+            raise ValueError("initial value problem must be an ODE")
 
         t_interval = ivp.t_interval
         t = discretize_time_domain(t_interval, self._d_t)
@@ -55,7 +55,7 @@ class ODEOperator(Operator):
 
         sym = diff_eq.symbols
         rhs = diff_eq.symbolic_equation_system.rhs
-        rhs_lambda = sp.lambdify([sym.t, sym.y], rhs, 'numpy')
+        rhs_lambda = sp.lambdify([sym.t, sym.y], rhs, "numpy")
 
         def d_y_over_d_t(_t: float, _y: np.ndarray) -> np.ndarray:
             return np.asarray(rhs_lambda(_t, _y))
@@ -71,13 +71,15 @@ class ODEOperator(Operator):
             first_step=self._first_step,
             max_step=self._max_step,
             atol=self._atol,
-            rtol=self._rtol)
+            rtol=self._rtol,
+        )
 
         if not result.success:
             raise ValueError(
-                'error solving initial value problem',
-                f'status code: {result.status}',
-                f'message: {result.message}')
+                "error solving initial value problem",
+                f"status code: {result.status}",
+                f"message: {result.message}",
+            )
 
         y = np.ascontiguousarray(result.y.T)
         return Solution(ivp, t[1:], y, d_t=self._d_t)

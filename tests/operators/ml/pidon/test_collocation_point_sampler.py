@@ -1,19 +1,21 @@
 import numpy as np
-from pararealml.mesh import Mesh
 
-from pararealml.operators.ml.pidon.collocation_point_sampler import \
-    UniformRandomCollocationPointSampler
+from pararealml.mesh import Mesh
+from pararealml.operators.ml.pidon.collocation_point_sampler import (
+    UniformRandomCollocationPointSampler,
+)
 
 
 def test_urcps_sample_ode_domain_points():
     sampler = UniformRandomCollocationPointSampler()
 
     n_points = 50
-    t_interval = (-1., 1.)
+    t_interval = (-1.0, 1.0)
     x_intervals = None
 
     domain_points = sampler.sample_domain_points(
-        n_points, t_interval, x_intervals)
+        n_points, t_interval, x_intervals
+    )
 
     assert domain_points.t.shape == (n_points, 1)
     assert domain_points.x is None
@@ -25,9 +27,9 @@ def test_urcps_sample_pde_domain_points():
     sampler = UniformRandomCollocationPointSampler()
 
     n_points = 200
-    t_interval = (0., 100.)
-    x_intervals = [(-10., 10.), (300., 2400.)]
-    mesh = Mesh(x_intervals, [1., 1.])
+    t_interval = (0.0, 100.0)
+    x_intervals = [(-10.0, 10.0), (300.0, 2400.0)]
+    mesh = Mesh(x_intervals, [1.0, 1.0])
 
     domain_points = sampler.sample_domain_points(n_points, t_interval, mesh)
 
@@ -45,12 +47,13 @@ def test_urcps_sample_boundary_points():
     sampler = UniformRandomCollocationPointSampler()
 
     n_points = 100
-    t_interval = (0., 10.)
-    x_intervals = [(-10., 10.), (300., 2400.)]
-    mesh = Mesh(x_intervals, [1., 1.])
+    t_interval = (0.0, 10.0)
+    x_intervals = [(-10.0, 10.0), (300.0, 2400.0)]
+    mesh = Mesh(x_intervals, [1.0, 1.0])
 
-    all_boundary_points = \
-        sampler.sample_boundary_points(n_points, t_interval, mesh)
+    all_boundary_points = sampler.sample_boundary_points(
+        n_points, t_interval, mesh
+    )
 
     assert len(all_boundary_points) == 2
 
@@ -70,6 +73,7 @@ def test_urcps_sample_boundary_points():
                 assert np.all(boundary_points.x[:, 1] >= x_intervals[1][0])
                 assert np.all(boundary_points.x[:, 1] <= x_intervals[1][1])
                 assert np.all(
-                    boundary_points.x[:, axis] == x_intervals[axis][axis_end])
+                    boundary_points.x[:, axis] == x_intervals[axis][axis_end]
+                )
 
     assert total_boundary_points == n_points

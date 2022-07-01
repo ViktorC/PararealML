@@ -1,6 +1,6 @@
 import functools
-from typing import Callable, Optional, Any, Tuple
 from timeit import default_timer as timer
+from typing import Any, Callable, Optional, Tuple
 
 from mpi4py import MPI
 
@@ -14,11 +14,12 @@ def time(function_name: Optional[str] = None) -> Callable:
     :param function_name: the name of the function
     :return: a function that returns the wrapped function
     """
+
     def _time_wrapper_provider(
-            function: Callable,
-            name: Optional[str]) -> Callable:
+        function: Callable, name: Optional[str]
+    ) -> Callable:
         if name is None:
-            name = f'{function.__name__!r}'
+            name = f"{function.__name__!r}"
 
         @functools.wraps(function)
         def _time_wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, float]:
@@ -26,7 +27,7 @@ def time(function_name: Optional[str] = None) -> Callable:
             value = function(*args, **kwargs)
             end_time = timer()
             run_time = end_time - start_time
-            print(f'{name} completed in {run_time}s')
+            print(f"{name} completed in {run_time}s")
             return value, run_time
 
         return _time_wrapper
@@ -43,11 +44,12 @@ def mpi_time(function_name: Optional[str] = None) -> Callable:
     :param function_name: the name of the function
     :return: a function that returns the wrapped function
     """
+
     def _mpi_time_wrapper_provider(
-            function: Callable,
-            name: Optional[str]) -> Callable:
+        function: Callable, name: Optional[str]
+    ) -> Callable:
         if name is None:
-            name = f'{function.__name__!r}'
+            name = f"{function.__name__!r}"
 
         @functools.wraps(function)
         def _mpi_time_wrapper(*args: Any, **kwargs: Any) -> Tuple[Any, float]:
@@ -60,7 +62,7 @@ def mpi_time(function_name: Optional[str] = None) -> Callable:
             run_time = end_time - start_time
 
             if MPI.COMM_WORLD.rank == 0:
-                print(f'{name} completed in {run_time}s')
+                print(f"{name} completed in {run_time}s")
 
             return value, run_time
 

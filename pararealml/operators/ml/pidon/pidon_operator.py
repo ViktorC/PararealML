@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Iterable, NamedTuple, List, Union, Any
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union
 
 import numpy as np
 import tensorflow as tf
 
 from pararealml.constrained_problem import ConstrainedProblem
-from pararealml.initial_condition import \
-    VectorizedInitialConditionFunction
-from pararealml.initial_value_problem import InitialValueProblem, \
-    TemporalDomainInterval
+from pararealml.initial_condition import VectorizedInitialConditionFunction
+from pararealml.initial_value_problem import (
+    InitialValueProblem,
+    TemporalDomainInterval,
+)
 from pararealml.operator import Operator, discretize_time_domain
 from pararealml.operators.ml.deeponet import DeepOSubNetArgs
-from pararealml.operators.ml.pidon.collocation_point_sampler import \
-    CollocationPointSampler
+from pararealml.operators.ml.pidon.collocation_point_sampler import (
+    CollocationPointSampler,
+)
 from pararealml.operators.ml.pidon.data_set import DataSet
 from pararealml.operators.ml.pidon.loss import Loss
 from pararealml.operators.ml.pidon.pi_deeponet import PIDeepONet
@@ -27,11 +29,12 @@ class PIDONOperator(Operator):
     """
 
     def __init__(
-            self,
-            sampler: CollocationPointSampler,
-            d_t: float,
-            vertex_oriented: bool,
-            auto_regression_mode: bool = False):
+        self,
+        sampler: CollocationPointSampler,
+        d_t: float,
+        vertex_oriented: bool,
+        auto_regression_mode: bool = False,
+    ):
         """
         :param sampler: the collocation point sampler to use to generate the
             data to train and test models
@@ -70,9 +73,8 @@ class PIDONOperator(Operator):
         self._model = model
 
     def solve(
-            self,
-            ivp: InitialValueProblem,
-            parallel_enabled: bool = True) -> Solution:
+        self, ivp: InitialValueProblem, parallel_enabled: bool = True
+    ) -> Solution:
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
 
@@ -80,12 +82,13 @@ class PIDONOperator(Operator):
 
         if diff_eq.x_dimension:
             x = cp.mesh.all_index_coordinates(
-                self._vertex_oriented, flatten=True)
+                self._vertex_oriented, flatten=True
+            )
             x_tensor = tf.convert_to_tensor(x, tf.float32)
             u = ivp.initial_condition.y_0(x).reshape((1, -1))
             u_tensor = tf.tile(
-                tf.convert_to_tensor(u, tf.float32),
-                (x.shape[0], 1))
+                tf.convert_to_tensor(u, tf.float32), (x.shape[0], 1)
+            )
         else:
             x_tensor = None
             u = np.array([ivp.initial_condition.y_0(None)])
@@ -94,7 +97,8 @@ class PIDONOperator(Operator):
         t_tensor = tf.constant(
             self._d_t if self._auto_regression_mode else t[0],
             dtype=tf.float32,
-            shape=(u_tensor.shape[0], 1))
+            shape=(u_tensor.shape[0], 1),
+        )
 
         y_shape = cp.y_shape(self._vertex_oriented)
         y = np.empty((len(t),) + y_shape)
@@ -105,34 +109,38 @@ class PIDONOperator(Operator):
 
             if i < len(t) - 1:
                 if self._auto_regression_mode:
-                    u_tensor = tf.tile(
-                        tf.reshape(y_i_tensor, (1, -1)),
-                        (x_tensor.shape[0], 1)) if diff_eq.x_dimension \
+                    u_tensor = (
+                        tf.tile(
+                            tf.reshape(y_i_tensor, (1, -1)),
+                            (x_tensor.shape[0], 1),
+                        )
+                        if diff_eq.x_dimension
                         else tf.reshape(y_i_tensor, u_tensor.shape)
+                    )
                 else:
                     t_tensor = tf.constant(
                         t[i + 1],
                         dtype=tf.float32,
-                        shape=(u_tensor.shape[0], 1))
+                        shape=(u_tensor.shape[0], 1),
+                    )
 
         return Solution(
-            ivp,
-            t,
-            y,
-            vertex_oriented=self._vertex_oriented,
-            d_t=self._d_t)
+            ivp, t, y, vertex_oriented=self._vertex_oriented, d_t=self._d_t
+        )
 
     def train(
-            self,
-            cp: ConstrainedProblem,
-            t_interval: TemporalDomainInterval,
-            *,
-            training_data_args: DataArgs,
-            optimization_args: OptimizationArgs,
-            model_args: Optional[ModelArgs] = None,
-            test_data_args: Optional[DataArgs] = None,
-            secondary_optimization_args: Optional[SecondaryOptimizationArgs] =
-            None) -> TrainingResults:
+        self,
+        cp: ConstrainedProblem,
+        t_interval: TemporalDomainInterval,
+        *,
+        training_data_args: DataArgs,
+        optimization_args: OptimizationArgs,
+        model_args: Optional[ModelArgs] = None,
+        test_data_args: Optional[DataArgs] = None,
+        secondary_optimization_args: Optional[
+            SecondaryOptimizationArgs
+        ] = None,
+    ) -> TrainingResults:
         """
         Trains a physics-informed DeepONet model on the provided constrained
         problem, time interval, and initial condition functions using the model
@@ -156,29 +164,35 @@ class PIDONOperator(Operator):
         """
         if model_args is None and self._model is None:
             raise ValueError(
-                'the model arguments cannot be None if the operator\'s model '
-                'is None')
+                "the model arguments cannot be None if the operator's model "
+                "is None"
+            )
 
         if self._auto_regression_mode:
-            if t_interval != (0., self._d_t):
+            if t_interval != (0.0, self._d_t):
                 raise ValueError(
-                    'in auto-regression mode, the training time interval '
-                    f'{t_interval} must range from 0 to the time step size of '
-                    f'the operator ({self._d_t})')
+                    "in auto-regression mode, the training time interval "
+                    f"{t_interval} must range from 0 to the time step size of "
+                    f"the operator ({self._d_t})"
+                )
 
             diff_eq = cp.differential_equation
             t_symbol = diff_eq.symbols.t
             eq_sys = diff_eq.symbolic_equation_system
             if any([t_symbol in rhs.free_symbols for rhs in eq_sys.rhs]):
                 raise ValueError(
-                    'auto-regression mode is not compatible with differential '
-                    'equations whose right-hand sides contain any t terms')
+                    "auto-regression mode is not compatible with differential "
+                    "equations whose right-hand sides contain any t terms"
+                )
 
-            if diff_eq.x_dimension \
-                    and not cp.are_all_boundary_conditions_static:
+            if (
+                diff_eq.x_dimension
+                and not cp.are_all_boundary_conditions_static
+            ):
                 raise ValueError(
-                    'auto-regression mode is not compatible with dynamic '
-                    'boundary conditions')
+                    "auto-regression mode is not compatible with dynamic "
+                    "boundary conditions"
+                )
 
         training_data_set = DataSet(
             cp,
@@ -187,11 +201,13 @@ class PIDONOperator(Operator):
             y_0_functions=training_data_args.y_0_functions,
             n_domain_points=training_data_args.n_domain_points,
             n_boundary_points=training_data_args.n_boundary_points,
-            vertex_oriented=self._vertex_oriented)
+            vertex_oriented=self._vertex_oriented,
+        )
         training_data = training_data_set.get_iterator(
             training_data_args.n_batches,
             n_ic_repeats=training_data_args.n_ic_repeats,
-            shuffle=training_data_args.shuffle)
+            shuffle=training_data_args.shuffle,
+        )
 
         if test_data_args:
             test_data_set = DataSet(
@@ -201,29 +217,37 @@ class PIDONOperator(Operator):
                 y_0_functions=test_data_args.y_0_functions,
                 n_domain_points=test_data_args.n_domain_points,
                 n_boundary_points=test_data_args.n_boundary_points,
-                vertex_oriented=self._vertex_oriented)
+                vertex_oriented=self._vertex_oriented,
+            )
             test_data = test_data_set.get_iterator(
                 test_data_args.n_batches,
                 n_ic_repeats=test_data_args.n_ic_repeats,
-                shuffle=test_data_args.shuffle)
+                shuffle=test_data_args.shuffle,
+            )
         else:
             test_data = None
 
-        model = self._model if model_args is None else \
-            PIDeepONet(
+        model = (
+            self._model
+            if model_args is None
+            else PIDeepONet(
                 cp,
                 vertex_oriented=self._vertex_oriented,
-                **model_args._asdict())
+                **model_args._asdict(),
+            )
+        )
 
         training_loss_history, test_loss_history = model.fit(
             training_data=training_data,
             test_data=test_data,
-            **optimization_args._asdict())
+            **optimization_args._asdict(),
+        )
 
         if secondary_optimization_args:
             model.fit_with_lbfgs(
                 training_data=training_data,
-                **secondary_optimization_args._asdict())
+                **secondary_optimization_args._asdict(),
+            )
 
         final_training_loss = model.evaluate(training_data)
         final_test_loss = model.evaluate(test_data) if test_data else None
@@ -234,13 +258,15 @@ class PIDONOperator(Operator):
             training_loss_history,
             test_loss_history,
             final_training_loss,
-            final_test_loss)
+            final_test_loss,
+        )
 
 
 class DataArgs(NamedTuple):
     """
     Arguments pertaining to the generation and traversal of PIDON data sets.
     """
+
     y_0_functions: Iterable[VectorizedInitialConditionFunction]
     n_domain_points: int
     n_batches: int
@@ -253,19 +279,21 @@ class ModelArgs(NamedTuple):
     """
     Arguments pertaining to the architecture of a PIDON model.
     """
+
     latent_output_size: int
     branch_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
     trunk_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
     combiner_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
-    diff_eq_loss_weight: float = 1.
-    ic_loss_weight: float = 1.
-    bc_loss_weight: float = 1.
+    diff_eq_loss_weight: float = 1.0
+    ic_loss_weight: float = 1.0
+    bc_loss_weight: float = 1.0
 
 
 class OptimizationArgs(NamedTuple):
     """
     Arguments pertaining to the training of a PIDON model.
     """
+
     optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
     epochs: int
     restore_best_weights: bool = True
@@ -276,6 +304,7 @@ class SecondaryOptimizationArgs(NamedTuple):
     Arguments pertaining to the training of a PIDON model using a second order
     optimization method to fine tune the model parameters.
     """
+
     max_iterations: int = 50
     max_line_search_iterations: int = 50
     parallel_iterations: int = 1
@@ -287,6 +316,7 @@ class TrainingResults(NamedTuple):
     """
     The results of the training of the PIDON operator.
     """
+
     training_loss_history: List[Loss]
     test_loss_history: Optional[List[Loss]]
     final_training_loss: Loss
