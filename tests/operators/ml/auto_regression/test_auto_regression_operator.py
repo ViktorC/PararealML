@@ -95,7 +95,7 @@ def test_ar_operator_data_generation_in_parallel():
     ar = AutoRegressionOperator(2.5, True)
 
     inputs, targets = ar.generate_data(
-        ivp, oracle, 20, perturbation_function, n_jobs=4
+        ivp, oracle, 20, perturbation_function, n_jobs=4, seeds=list(range(4))
     )
 
     assert inputs.shape == (80, 3)

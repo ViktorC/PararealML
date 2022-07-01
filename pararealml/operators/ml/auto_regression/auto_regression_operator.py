@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from multiprocessing import Process, Queue
-from typing import Callable, List, Optional, Protocol, Tuple
+from typing import Callable, List, Optional, Protocol, Sequence, Tuple
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -96,6 +96,7 @@ class AutoRegressionOperator(Operator):
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
         n_jobs: int = 1,
+        seeds: Optional[Sequence[int]] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates data to train an operator model by using the oracle to
@@ -114,12 +115,23 @@ class AutoRegressionOperator(Operator):
         :param n_jobs: the number of parallel processes to use for the data
             generation; if it is greater than one, all arguments of this method
             must be pickleable
+        :param seeds: a sequence of NumPy random seeds to use in the data
+            generation processes; the length of this sequence must match the
+            number of jobs
         :return: a tuple of the inputs and the target outputs
         """
         if iterations <= 0:
             raise ValueError("number of iterations must be greater than 0")
         if n_jobs < 1:
             raise ValueError("number of jobs must be greater than 0")
+        if seeds is not None:
+            if len(seeds) != n_jobs:
+                raise ValueError(
+                    f"number of seeds ({len(seeds)}) must match "
+                    f"number of jobs ({n_jobs})"
+                )
+        else:
+            seeds = [None] * n_jobs
 
         if n_jobs == 1:
             queue: Queue[Tuple[np.ndarray, np.ndarray]] = Queue()
@@ -129,6 +141,7 @@ class AutoRegressionOperator(Operator):
                 iterations,
                 perturbation_function,
                 isolate_perturbations,
+                seeds[0],
                 queue,
             )
             return queue.get()
@@ -143,7 +156,7 @@ class AutoRegressionOperator(Operator):
             len(array)
             for array in np.array_split(np.arange(iterations), n_jobs)
         ]
-        for job_iterations in iterations_per_job:
+        for process_rank, iterations in enumerate(iterations_per_job):
             queue = Queue()
             queues.append(queue)
 
@@ -152,9 +165,10 @@ class AutoRegressionOperator(Operator):
                 args=(
                     ivp,
                     oracle,
-                    job_iterations,
+                    iterations,
                     perturbation_function,
                     isolate_perturbations,
+                    seeds[process_rank],
                     queue,
                 ),
             )
@@ -294,6 +308,7 @@ class AutoRegressionOperator(Operator):
         iterations: int,
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool,
+        seed: Optional[int],
         queue: Queue,
     ):
         """
@@ -310,9 +325,13 @@ class AutoRegressionOperator(Operator):
             of the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
+        :param seed: the NumPy random seed to use for the data generation
         :param queue: a queue to add the results to in the form of a tuple of
             the inputs and the target outputs
         """
+        if seed is not None:
+            np.random.seed(seed)
+
         cp = ivp.constrained_problem
         diff_eq = cp.differential_equation
         x_dim = diff_eq.x_dimension
