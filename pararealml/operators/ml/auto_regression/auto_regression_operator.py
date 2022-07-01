@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from multiprocessing import Process, Queue
-from typing import Callable, List, Optional, Protocol, Sequence, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -34,7 +32,7 @@ class AutoRegressionOperator(Operator):
         super(AutoRegressionOperator, self).__init__(d_t, vertex_oriented)
 
         self._time_variant = time_variant
-        self._model: Optional[SKLearnRegressor] = None
+        self._model: Optional[Any] = None
 
     @property
     def time_variant(self) -> bool:
@@ -45,14 +43,14 @@ class AutoRegressionOperator(Operator):
         return self._time_variant
 
     @property
-    def model(self) -> Optional[SKLearnRegressor]:
+    def model(self) -> Optional[Any]:
         """
         The regression model behind the operator.
         """
         return self._model
 
     @model.setter
-    def model(self, model: Optional[SKLearnRegressor]):
+    def model(self, model: Optional[Any]):
         self._model = model
 
     def solve(
@@ -190,7 +188,7 @@ class AutoRegressionOperator(Operator):
 
     def fit_model(
         self,
-        model: SKLearnRegressor,
+        model: Any,
         data: Tuple[np.ndarray, np.ndarray],
         test_size: float = 0.2,
         score_func: Callable[
@@ -227,7 +225,7 @@ class AutoRegressionOperator(Operator):
         self,
         ivp: InitialValueProblem,
         oracle: Operator,
-        model: SKLearnRegressor,
+        model: Any,
         iterations: int,
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
@@ -400,26 +398,3 @@ class AutoRegressionOperator(Operator):
                 y_i = y_next
 
         queue.put((inputs, targets))
-
-
-class SKLearnRegressor(Protocol):
-    """A protocol class for scikit-learn regression models."""
-
-    def fit(
-        self,
-        x: np.typing.ArrayLike,
-        y: np.typing.ArrayLike,
-        sample_weight: Optional[np.typing.ArrayLike] = None,
-    ) -> SKLearnRegressor:
-        ...
-
-    def predict(self, x: np.typing.ArrayLike) -> np.ndarray:
-        ...
-
-    def score(
-        self,
-        x: np.typing.ArrayLike,
-        y: np.typing.ArrayLike,
-        sample_weight: Optional[np.typing.ArrayLike] = None,
-    ) -> float:
-        ...
