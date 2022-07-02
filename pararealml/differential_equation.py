@@ -145,8 +145,8 @@ class LHS(Enum):
     equations making up systems of differential equations.
     """
 
-    D_Y_OVER_D_T = (0,)
-    Y = (1,)
+    D_Y_OVER_D_T = 0
+    Y = 1
     Y_LAPLACIAN = 2
 
 
