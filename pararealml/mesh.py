@@ -11,9 +11,9 @@ class CoordinateSystem(Enum):
     An enumeration defining the types of coordinate systems supported.
     """
 
-    CARTESIAN = (0,)
-    POLAR = (1,)
-    CYLINDRICAL = (2,)
+    CARTESIAN = 0
+    POLAR = 1
+    CYLINDRICAL = 2
     SPHERICAL = 3
 
 
