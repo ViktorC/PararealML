@@ -37,9 +37,9 @@ class Loss(NamedTuple):
         diff_eq_loss: tf.Tensor,
         ic_loss: tf.Tensor,
         bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
-        diff_eq_loss_weight: float,
-        ic_loss_weight: float,
-        bc_loss_weight: float,
+        diff_eq_loss_weights: Sequence[float],
+        ic_loss_weights: Sequence[float],
+        bc_loss_weights: Sequence[float],
     ) -> Loss:
         """
         Calculates the weighted total loss given the weights for the different
@@ -49,20 +49,20 @@ class Loss(NamedTuple):
         :param ic_loss: the initial condition loss tensor
         :param bc_losses: a tuple of the Dirichlet and Neumann boundary
             condition loss tensors
-        :param diff_eq_loss_weight: the weight of the differential equation
+        :param diff_eq_loss_weights: the weights of the differential equation
             part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
+        :param ic_loss_weights: the weights of the initial condition part of
+            the total physics-informed loss
+        :param bc_loss_weights: the weights of the boundary condition part of
+            the total physics-informed loss
         :return: the losses including the weighted total
         """
-        weighted_total_loss = tf.scalar_mul(
-            diff_eq_loss_weight, diff_eq_loss
-        ) + tf.scalar_mul(ic_loss_weight, ic_loss)
+        weighted_total_loss = tf.multiply(
+            tf.constant(diff_eq_loss_weights), diff_eq_loss
+        ) + tf.multiply(tf.constant(ic_loss_weights), ic_loss)
         if bc_losses:
-            weighted_total_loss += tf.scalar_mul(
-                bc_loss_weight, bc_losses[0] + bc_losses[1]
+            weighted_total_loss += tf.multiply(
+                tf.constant(bc_loss_weights), bc_losses[0] + bc_losses[1]
             )
         return Loss(diff_eq_loss, ic_loss, bc_losses, weighted_total_loss)
 
@@ -71,20 +71,20 @@ class Loss(NamedTuple):
     def mean(
         cls,
         losses: Sequence[Loss],
-        diff_eq_loss_weight: float,
-        ic_loss_weight: float,
-        bc_loss_weight: float,
+        diff_eq_loss_weights: Sequence[float],
+        ic_loss_weights: Sequence[float],
+        bc_loss_weights: Sequence[float],
     ) -> Loss:
         """
         Computes the mean of the provided losses.
 
         :param losses: the losses to average over
-        :param diff_eq_loss_weight: the weight of the differential equation
+        :param diff_eq_loss_weights: the weights of the differential equation
             part of the total physics-informed loss
-        :param ic_loss_weight: the weight of the initial condition part of the
-            total physics-informed loss
-        :param bc_loss_weight: the weight of the boundary condition part of the
-            total physics-informed loss
+        :param ic_loss_weights: the weights of the initial condition part of
+            the total physics-informed loss
+        :param bc_loss_weights: the weights of the boundary condition part of
+            the total physics-informed loss
         :return: the mean loss
         """
         diff_eq_losses = []
@@ -113,7 +113,7 @@ class Loss(NamedTuple):
             mean_diff_eq_loss,
             mean_ic_loss,
             mean_bc_losses,
-            diff_eq_loss_weight,
-            ic_loss_weight,
-            bc_loss_weight,
+            diff_eq_loss_weights,
+            ic_loss_weights,
+            bc_loss_weights,
         )

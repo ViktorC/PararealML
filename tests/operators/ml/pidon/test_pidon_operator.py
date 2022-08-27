@@ -824,6 +824,7 @@ def test_pidon_operator_in_ar_mode_on_pde():
             latent_output_size=50,
             branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
             trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            diff_eq_loss_weight=[2.0, 1.0],
             ic_loss_weight=10.0,
         ),
         optimization_args=OptimizationArgs(

@@ -41,9 +41,9 @@ class PIDeepONet(DeepONet):
         branch_net_args: DeepOSubNetArgs,
         trunk_net_args: DeepOSubNetArgs,
         combiner_net_args: DeepOSubNetArgs,
-        diff_eq_loss_weight: float = 1.0,
-        ic_loss_weight: float = 1.0,
-        bc_loss_weight: float = 1.0,
+        diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0,
+        ic_loss_weight: Union[float, Sequence[float]] = 1.0,
+        bc_loss_weight: Union[float, Sequence[float]] = 1.0,
         vertex_oriented: bool = False,
     ):
         """
@@ -71,6 +71,31 @@ class PIDeepONet(DeepONet):
         x_dim = diff_eq.x_dimension
         y_dim = diff_eq.y_dimension
 
+        diff_eq_loss_weights = (
+            (diff_eq_loss_weight,) * y_dim
+            if isinstance(diff_eq_loss_weight, float)
+            else tuple(diff_eq_loss_weight)
+        )
+        ic_loss_weights = (
+            (ic_loss_weight,) * y_dim
+            if isinstance(ic_loss_weight, float)
+            else tuple(ic_loss_weight)
+        )
+        bc_loss_weights = (
+            (bc_loss_weight,) * y_dim
+            if isinstance(bc_loss_weight, float)
+            else tuple(bc_loss_weight)
+        )
+
+        if (
+            len(diff_eq_loss_weights) != y_dim
+            or len(ic_loss_weights) != y_dim
+            or len(bc_loss_weights) != y_dim
+        ):
+            raise ValueError(
+                f"length of all loss weights must match y dimension ({y_dim})"
+            )
+
         super(PIDeepONet, self).__init__(
             np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
             if x_dim
@@ -84,9 +109,9 @@ class PIDeepONet(DeepONet):
         )
 
         self._cp = cp
-        self._diff_eq_loss_weight = diff_eq_loss_weight
-        self._ic_loss_weight = ic_loss_weight
-        self._bc_loss_weight = bc_loss_weight
+        self._diff_eq_loss_weights = diff_eq_loss_weights
+        self._ic_loss_weights = ic_loss_weights
+        self._bc_loss_weights = bc_loss_weights
 
         self._symbol_mapper = PIDONSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
@@ -100,28 +125,28 @@ class PIDeepONet(DeepONet):
         return self._cp
 
     @property
-    def differential_equation_loss_weight(self) -> float:
+    def differential_equation_loss_weights(self) -> Sequence[float]:
         """
-        The weight of the differential equation violation term of the
+        The weights of the differential equation violation term of the
         physics-informed loss.
         """
-        return self._diff_eq_loss_weight
+        return self._diff_eq_loss_weights
 
     @property
-    def initial_condition_loss_weight(self) -> float:
+    def initial_condition_loss_weights(self) -> Sequence[float]:
         """
-        The weight of the initial condition violation term of the
+        The weights of the initial condition violation term of the
         physics-informed loss.
         """
-        return self._ic_loss_weight
+        return self._ic_loss_weights
 
     @property
-    def boundary_condition_loss_weight(self) -> float:
+    def boundary_condition_loss_weights(self) -> Sequence[float]:
         """
-        The weight of the boundary condition violation terms of the
+        The weights of the boundary condition violation terms of the
         physics-informed loss.
         """
-        return self._bc_loss_weight
+        return self._bc_loss_weights
 
     def fit(
         self,
@@ -347,9 +372,9 @@ class PIDeepONet(DeepONet):
 
         return Loss.mean(
             batch_losses,
-            self._diff_eq_loss_weight,
-            self._ic_loss_weight,
-            self._bc_loss_weight,
+            self._diff_eq_loss_weights,
+            self._ic_loss_weights,
+            self._bc_loss_weights,
         )
 
     @tf.function
@@ -398,9 +423,9 @@ class PIDeepONet(DeepONet):
             diff_eq_loss,
             ic_loss,
             bc_losses,
-            self._diff_eq_loss_weight,
-            self._ic_loss_weight,
-            self._bc_loss_weight,
+            self._diff_eq_loss_weights,
+            self._ic_loss_weights,
+            self._bc_loss_weights,
         )
 
     @tf.function

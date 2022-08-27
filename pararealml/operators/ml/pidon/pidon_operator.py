@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 import tensorflow as tf
@@ -284,9 +293,9 @@ class ModelArgs(NamedTuple):
     branch_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
     trunk_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
     combiner_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
-    diff_eq_loss_weight: float = 1.0
-    ic_loss_weight: float = 1.0
-    bc_loss_weight: float = 1.0
+    diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0
+    ic_loss_weight: Union[float, Sequence[float]] = 1.0
+    bc_loss_weight: Union[float, Sequence[float]] = 1.0
 
 
 class OptimizationArgs(NamedTuple):
