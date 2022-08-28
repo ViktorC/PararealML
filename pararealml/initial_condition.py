@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import Callable, Optional, Sequence, Tuple
 
 import numpy as np
@@ -59,8 +59,7 @@ class DiscreteInitialCondition(InitialCondition):
         interpolation_method: str = "linear",
     ):
         """
-        :param cp: the constrained problem to turn into an initial value
-            problem by providing the initial conditions for it
+        :param cp: the constrained problem to provide initial conditions for
         :param y_0: the array containing the initial values of y over a spatial
             mesh (which may be 0 dimensional in case of an ODE)
         :param vertex_oriented: whether the initial conditions are evaluated at
@@ -130,8 +129,7 @@ class ConstantInitialCondition(DiscreteInitialCondition):
 
     def __init__(self, cp: ConstrainedProblem, constant_y_0s: Sequence[float]):
         """
-        :param cp: the constrained problem to turn into an initial value
-            problem by providing the initial conditions for it
+        :param cp: the constrained problem to provide initial conditions for
         :param constant_y_0s: the constant initial values of the components of
             y (at every point of the mesh if the constrained problem is a PDE)
         """
@@ -158,21 +156,34 @@ class ContinuousInitialCondition(InitialCondition):
         self,
         cp: ConstrainedProblem,
         y_0_func: VectorizedInitialConditionFunction,
+        multipliers: Optional[Sequence[float]] = None,
     ):
         """
-        :param cp: the constrained problem to turn into an initial value
-            problem by providing the initial conditions for it
+        :param cp: the constrained problem to provide initial conditions for
         :param y_0_func: the initial value function that returns an array
             containing the values of y at the spatial coordinates defined by
             its input
+        :param multipliers: an array of multipliers for each element of the
+            initial y values
         """
+        diff_eq = cp.differential_equation
+        if multipliers is not None:
+            if len(multipliers) != diff_eq.y_dimension:
+                raise ValueError(
+                    f"length of multipliers ({len(multipliers)}) must match "
+                    f"number of y dimensions ({diff_eq.y_dimension})"
+                )
+            self._multipliers = np.array(multipliers)
+        else:
+            self._multipliers = np.ones(diff_eq.y_dimension)
+
         self._cp = cp
         self._y_0_func = y_0_func
         self._discrete_y_0_vertices = self._create_discrete_y_0(True)
         self._discrete_y_0_cells = self._create_discrete_y_0(False)
 
     def y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
-        return self._y_0_func(x)
+        return np.multiply(self._y_0_func(x), self._multipliers)
 
     def discrete_y_0(
         self, vertex_oriented: Optional[bool] = None
@@ -194,7 +205,7 @@ class ContinuousInitialCondition(InitialCondition):
         """
         diff_eq = self._cp.differential_equation
         if not diff_eq.x_dimension:
-            y_0 = np.array(self._y_0_func(None))
+            y_0 = np.array(self.y_0(None))
             if y_0.shape != self._cp.y_shape():
                 raise ValueError(
                     "expected initial condition function output shape to be "
@@ -204,7 +215,7 @@ class ContinuousInitialCondition(InitialCondition):
             return y_0
 
         x = self._cp.mesh.all_index_coordinates(vertex_oriented, flatten=True)
-        y_0 = self._y_0_func(x)
+        y_0 = self.y_0(x)
         if y_0.shape != (len(x), diff_eq.y_dimension):
             raise ValueError(
                 "expected initial condition function output shape to be "
@@ -234,8 +245,7 @@ class ContinuousInitialCondition(InitialCondition):
 
 class GaussianInitialCondition(ContinuousInitialCondition):
     """
-    An initial condition defined explicitly by Gaussian probability density
-    functions.
+    An initial condition defined by a Gaussian probability density function.
     """
 
     def __init__(
@@ -245,8 +255,7 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         multipliers: Optional[Sequence[float]] = None,
     ):
         """
-        :param cp: the constrained problem to turn into an initial value
-            problem by providing the initial conditions for it
+        :param cp: the constrained problem to provide initial conditions for
         :param means_and_covs: a sequence of tuples of mean vectors and
             covariance matrices defining the multivariate Gaussian PDFs
             corresponding to each element of y_0
@@ -276,17 +285,9 @@ class GaussianInitialCondition(ContinuousInitialCondition):
 
         self._means_and_covs = deepcopy(means_and_covs)
 
-        if multipliers is not None:
-            if len(multipliers) != diff_eq.y_dimension:
-                raise ValueError(
-                    f"length of multipliers ({len(multipliers)}) must match "
-                    f"number of y dimensions ({diff_eq.y_dimension})"
-                )
-            self._multipliers = copy(multipliers)
-        else:
-            self._multipliers = [1.0] * diff_eq.y_dimension
-
-        super(GaussianInitialCondition, self).__init__(cp, self._y_0)
+        super(GaussianInitialCondition, self).__init__(
+            cp, self._y_0, multipliers
+        )
 
     def _y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         """
@@ -300,54 +301,80 @@ class GaussianInitialCondition(ContinuousInitialCondition):
         y_0 = np.empty((len(x), self._cp.differential_equation.y_dimension))
         for i in range(self._cp.differential_equation.y_dimension):
             mean, cov = self._means_and_covs[i]
-            multiplier = self._multipliers[i]
-            y_0_i = multivariate_normal.pdf(cartesian_x, mean=mean, cov=cov)
-            y_0[:, i] = multiplier * y_0_i
+            y_0[:, i] = multivariate_normal.pdf(
+                cartesian_x, mean=mean, cov=cov
+            )
 
         return y_0
 
 
-class BetaInitialCondition(ContinuousInitialCondition):
+class MarginalBetaProductInitialCondition(ContinuousInitialCondition):
     """
-    An initial condition defined explicitly by Beta probability density
-    functions.
+    An initial condition defined by the product of marginal Beta probability
+    density functions.
     """
 
     def __init__(
         self,
         cp: ConstrainedProblem,
-        alpha_and_betas: Sequence[Tuple[float, float]],
+        all_alphas_and_betas: Sequence[Sequence[Tuple[float, float]]],
+        multipliers: Optional[Sequence[float]] = None,
     ):
         """
-        :param cp: the constrained problem to turn into an initial value
-            problem by providing the initial conditions for it
-        :param alpha_and_betas: a sequence of tuples containing the two
-            parameters defining the beta distributions corresponding to each
-            element of y_0
+        :param cp: the constrained problem to provide initial conditions for
+        :param all_alphas_and_betas: a sequence (with an entry for each element
+            of y) of sequences (with an entry for each spatial dimension) of
+            tuples containing alpha and beta, the two parameters defining the
+            beta distribution of the initial values of the corresponding
+            element of y along the corresponding spatial axis
+        :param multipliers: an array of multipliers for each element of y
         """
         diff_eq = cp.differential_equation
-        if diff_eq.x_dimension != 1:
-            raise ValueError("constrained problem must be a 1D PDE")
-        if len(alpha_and_betas) != diff_eq.y_dimension:
+        if len(all_alphas_and_betas) != diff_eq.y_dimension:
             raise ValueError(
-                f"number of alphas and betas ({len(alpha_and_betas)}) must "
-                f"match number of y dimensions ({diff_eq.y_dimension})"
+                "number of alphas and betas sequences "
+                f"({len(all_alphas_and_betas)}) must match the number of y "
+                f"dimensions ({diff_eq.y_dimension})"
             )
 
-        self._alpha_and_betas = copy(alpha_and_betas)
+        if any(
+            [
+                len(alphas_and_betas) != diff_eq.x_dimension
+                for alphas_and_betas in all_alphas_and_betas
+            ]
+        ):
+            raise ValueError(
+                "all sequences of alphas and betas must have same length as "
+                f"number of spatial dimensions ({diff_eq.x_dimension})"
+            )
 
-        super(BetaInitialCondition, self).__init__(cp, self._y_0)
+        self._all_alphas_and_betas = deepcopy(all_alphas_and_betas)
+
+        super(MarginalBetaProductInitialCondition, self).__init__(
+            cp, self._y_0, multipliers
+        )
 
     def _y_0(self, x: Optional[np.ndarray]) -> np.ndarray:
         """
-        Calculates and returns the values of the beta PDFs corresponding to
-        each element of y_0 at x.
+        Calculates and returns the values of the products of the beta PDFs
+        corresponding to each axis of x for each element of y_0 at x.
 
         :param x: the spatial coordinates
         :return: the initial value of y at the coordinates
         """
+        cartesian_x = self._convert_coordinates_to_cartesian(x)
         return np.concatenate(
-            [beta.pdf(x, a, b) for a, b in self._alpha_and_betas], axis=-1
+            [
+                np.prod(
+                    [
+                        beta.pdf(cartesian_x[:, x_ind : x_ind + 1], a, b)
+                        for x_ind, (a, b) in enumerate(alpha_and_betas)
+                    ],
+                    axis=0,
+                )
+                for alpha_and_betas in self._all_alphas_and_betas
+            ],
+            axis=-1,
         )
 
 

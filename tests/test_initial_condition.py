@@ -14,11 +14,11 @@ from pararealml.differential_equation import (
     WaveEquation,
 )
 from pararealml.initial_condition import (
-    BetaInitialCondition,
     ConstantInitialCondition,
     ContinuousInitialCondition,
     DiscreteInitialCondition,
     GaussianInitialCondition,
+    MarginalBetaProductInitialCondition,
     vectorize_ic_function,
 )
 from pararealml.mesh import Mesh
@@ -302,54 +302,61 @@ def test_gaussian_initial_condition_2d_pde():
     assert np.allclose(actual_cell_discrete_y_0, expected_cell_discrete_y_0)
 
 
-def test_beta_initial_condition_with_more_than_1d_pde():
-    diff_eq = DiffusionEquation(2)
-    mesh = Mesh([(0.0, 1.0), (0.0, 1.0)], [0.1, 0.1])
-    bcs = [
-        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 1))),) * 2
-    ] * 2
-    cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    with pytest.raises(ValueError):
-        BetaInitialCondition(cp, [(1.0, 1.0), (1.0, 1)])
-
-
-def test_beta_initial_condition_with_wrong_number_of_alpha_and_betas():
+def test_beta_initial_condition_with_wrong_number_of_alphas_and_betas():
     diff_eq = DiffusionEquation(1)
     mesh = Mesh([(0.0, 1.0)], [0.1])
     bcs = [(NeumannBoundaryCondition(lambda x: np.zeros((len(x), 1))),) * 2]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     with pytest.raises(ValueError):
-        BetaInitialCondition(cp, [(1.0, 1.0), (1.0, 1)])
+        MarginalBetaProductInitialCondition(cp, [[(1.0, 1.0)], [(1.0, 1)]])
+
+
+def test_beta_initial_condition_with_wrong_alpha_and_betas_length():
+    diff_eq = DiffusionEquation(2)
+    mesh = Mesh([(0.0, 1.0), (0.0, 2.0)], [0.1, 0.5])
+    bcs = [
+        (NeumannBoundaryCondition(lambda x: np.zeros((len(x), 1))),) * 2
+    ] * 2
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    with pytest.raises(ValueError):
+        MarginalBetaProductInitialCondition(cp, [[(1.0, 1.0)]])
 
 
 def test_beta_initial_condition():
-    diff_eq = WaveEquation(1)
-    mesh = Mesh([(0.0, 1.0)], [0.5])
+    diff_eq = WaveEquation(2)
+    mesh = Mesh([(0.0, 1.0), (0.0, 1.0)], [0.5, 0.5])
     bcs = [
         (
             NeumannBoundaryCondition(
                 lambda x, t: np.zeros((len(x), 2)), is_static=True
             ),
-            NeumannBoundaryCondition(
-                lambda x, t: np.zeros((len(x), 2)), is_static=True
-            ),
         )
-    ]
+        * 2
+    ] * 2
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
-    initial_condition = BetaInitialCondition(cp, [(2.0, 3.0), (3.0, 2.0)])
+    initial_condition = MarginalBetaProductInitialCondition(
+        cp, [[(2.0, 3.0), (5.0, 4.0)], [(3.0, 2.0), (4.0, 5.0)]]
+    )
 
-    x_coordinates = np.array([[0.125], [0.625]])
-    expected_y_0 = [[1.1484375, 0.1640625], [1.0546875, 1.7578125]]
+    x_coordinates = np.array([[0.125, 0.5], [0.625, 0.5]])
+    expected_y_0 = [[2.51220703, 0.35888672], [2.30712891, 3.84521484]]
     actual_y_0 = initial_condition.y_0(x_coordinates)
     assert np.allclose(actual_y_0, expected_y_0)
 
-    expected_vertex_discrete_y_0 = [[0.0, 0.0], [1.5, 1.5], [0.0, 0.0]]
+    expected_vertex_discrete_y_0 = [
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [3.28125, 3.28125], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+    ]
     actual_vertex_discrete_y_0 = initial_condition.discrete_y_0(True)
     assert np.allclose(
         actual_vertex_discrete_y_0, expected_vertex_discrete_y_0
     )
 
-    expected_cell_discrete_y_0 = [[1.6875, 0.5625], [0.5625, 1.6875]]
+    expected_cell_discrete_y_0 = [
+        [[0.77865601, 0.77865601], [2.33596802, 0.259552]],
+        [[0.259552, 2.33596802], [0.77865601, 0.77865601]],
+    ]
     actual_cell_discrete_y_0 = initial_condition.discrete_y_0(False)
     assert np.allclose(actual_cell_discrete_y_0, expected_cell_discrete_y_0)
 

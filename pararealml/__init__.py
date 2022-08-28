@@ -33,12 +33,12 @@ from pararealml.differential_equation import (
     WaveEquation,
 )
 from pararealml.initial_condition import (
-    BetaInitialCondition,
     ConstantInitialCondition,
     ContinuousInitialCondition,
     DiscreteInitialCondition,
     GaussianInitialCondition,
     InitialCondition,
+    MarginalBetaProductInitialCondition,
     VectorizedInitialConditionFunction,
     vectorize_ic_function,
 )
@@ -100,7 +100,7 @@ __all__ = [
     "ConstantInitialCondition",
     "ContinuousInitialCondition",
     "GaussianInitialCondition",
-    "BetaInitialCondition",
+    "MarginalBetaProductInitialCondition",
     "VectorizedInitialConditionFunction",
     "vectorize_ic_function",
     "InitialValueProblem",

@@ -27,7 +27,8 @@ fdm = FDMOperator(
 sampler = UniformRandomCollocationPointSampler()
 pidon = PIDONOperator(sampler, 0.001, True)
 training_y_0_functions = [
-    BetaInitialCondition(cp, [(p, p)]).y_0 for p in np.arange(1.2, 6.0, 0.2)
+    MarginalBetaProductInitialCondition(cp, [[(p, p)]]).y_0
+    for p in np.arange(1.2, 6.0, 0.2)
 ]
 pidon.train(
     cp,
@@ -55,7 +56,7 @@ pidon.train(
 )
 
 for p in [2.0, 3.5, 5.0]:
-    ic = BetaInitialCondition(cp, [(p, p)])
+    ic = MarginalBetaProductInitialCondition(cp, [[(p, p)]])
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     fdm_solution = fdm.solve(ivp)

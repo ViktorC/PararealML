@@ -17,8 +17,8 @@ from pararealml.differential_equation import (
     WaveEquation,
 )
 from pararealml.initial_condition import (
-    BetaInitialCondition,
     ContinuousInitialCondition,
+    MarginalBetaProductInitialCondition,
     vectorize_ic_function,
 )
 from pararealml.initial_value_problem import InitialValueProblem
@@ -200,10 +200,12 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
     t_interval = (0.0, 0.5)
 
     training_y_0_functions = [
-        BetaInitialCondition(cp, [(p, p)]).y_0 for p in [2.0, 3.0, 4.0, 5.0]
+        MarginalBetaProductInitialCondition(cp, [[(p, p)]]).y_0
+        for p in [2.0, 3.0, 4.0, 5.0]
     ]
     test_y_0_functions = [
-        BetaInitialCondition(cp, [(p, p)]).y_0 for p in [2.5, 3.5, 4.5]
+        MarginalBetaProductInitialCondition(cp, [[(p, p)]]).y_0
+        for p in [2.5, 3.5, 4.5]
     ]
 
     sampler = UniformRandomCollocationPointSampler()
@@ -251,7 +253,7 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
             < test_loss_history[i].weighted_total_loss.numpy()
         )
 
-    ic = BetaInitialCondition(cp, [(3.5, 3.5)])
+    ic = MarginalBetaProductInitialCondition(cp, [[(3.5, 3.5)]])
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     solution = pidon.solve(ivp)
@@ -799,11 +801,11 @@ def test_pidon_operator_in_ar_mode_on_pde():
     ]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     t_interval = (0.0, 1.0)
-    ic = BetaInitialCondition(cp, [(3.5, 3.5), (3.5, 3.5)])
+    ic = MarginalBetaProductInitialCondition(cp, [[(3.5, 3.5)], [(3.5, 3.5)]])
     ivp = InitialValueProblem(cp, t_interval, ic)
 
     training_y_0_functions = [
-        BetaInitialCondition(cp, [(p, p), (p, p)]).y_0
+        MarginalBetaProductInitialCondition(cp, [[(p, p)], [(p, p)]]).y_0
         for p in [2.0, 3.0, 4.0, 5.0]
     ]
     sampler = UniformRandomCollocationPointSampler()
