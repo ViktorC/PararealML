@@ -57,7 +57,7 @@ The library provides a number initial condition implementations including:
  * `DiscreteInitialCondition`
  * `ContinuousInitialCondition`
     * `GaussianInitialCondition`
-    * `BetaInitialCondition`
+    * `MarginalBetaProductInitialCondition`
 
 ### Initial value problem
 Initial value problems are constrained problems associated with a time domain and initial conditions. They are represented by the `InitialValueProblem` class whose constructor takes a constrained problem, a tuple of two bounds defining the time interval, and an initial condition instance.
