@@ -1,4 +1,4 @@
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, connection
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -131,8 +131,9 @@ class AutoRegressionOperator(Operator):
         else:
             seeds = [None] * n_jobs
 
+        queue: Queue[Tuple[np.ndarray, np.ndarray]] = Queue()
+
         if n_jobs == 1:
-            queue: Queue[Tuple[np.ndarray, np.ndarray]] = Queue()
             self._generate_data(
                 ivp,
                 oracle,
@@ -147,23 +148,16 @@ class AutoRegressionOperator(Operator):
         model = self._model
         self._model = None
 
-        queues = []
-        processes = []
-
-        iterations_per_job = [
-            len(array)
-            for array in np.array_split(np.arange(iterations), n_jobs)
-        ]
-        for process_rank, iterations in enumerate(iterations_per_job):
-            queue = Queue()
-            queues.append(queue)
-
+        process_sentinels = []
+        for process_rank, iterations_indices in enumerate(
+            np.array_split(np.arange(iterations), n_jobs)
+        ):
             process = Process(
                 target=self._generate_data,
                 args=(
                     ivp,
                     oracle,
-                    iterations,
+                    len(iterations_indices),
                     perturbation_function,
                     isolate_perturbations,
                     seeds[process_rank],
@@ -172,12 +166,10 @@ class AutoRegressionOperator(Operator):
             )
             process.daemon = True
             process.start()
-            processes.append(process)
+            process_sentinels.append(process.sentinel)
 
-        input_target_pairs = []
-        for queue, process in zip(queues, processes):
-            input_target_pairs.append(queue.get())
-            process.join()
+        input_target_pairs = [queue.get() for _ in range(n_jobs)]
+        connection.wait(process_sentinels)
 
         self._model = model
 
