@@ -33,7 +33,7 @@ ivp = InitialValueProblem(cp, (0.0, 40.0), ic)
 
 f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.001)
 g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.01)
-p = PararealOperator(f, g, 0.01)
+p = PararealOperator(f, g, 0.0025)
 
 mpi_time("fine")(f.solve)(ivp)
 mpi_time("coarse")(g.solve)(ivp)

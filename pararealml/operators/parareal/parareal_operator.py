@@ -30,7 +30,7 @@ class PararealOperator(Operator):
         :param g: the coarse operator
         :param termination_condition: the termination condition provided in one
             of the following forms: a floating point number representing the
-            minimum Euclidean norm of the largest update to the solution
+            minimum root mean square of the largest update to the solution
             required to perform another corrective iteration (if all updates
             are smaller than this threshold, the solution is considered
             accurate enough); a sequence of such numbers with one for each
@@ -90,7 +90,9 @@ class PararealOperator(Operator):
             ):
                 max_diff_norm = np.maximum(
                     max_diff_norm,
-                    np.linalg.norm(new_y_end_point - old_y_end_point),
+                    np.sqrt(
+                        np.square(new_y_end_point - old_y_end_point).mean()
+                    ),
                 )
 
             max_diff_norms[y_ind] = max_diff_norm

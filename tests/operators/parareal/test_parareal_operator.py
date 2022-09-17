@@ -124,7 +124,7 @@ def test_parareal_operator_on_pde():
 
     f = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.05)
     g = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.5)
-    p = PararealOperator(f, g, [0.005])
+    p = PararealOperator(f, g, [0.0025])
 
     f_solution = f.solve(ivp)
     p_solution = p.solve(ivp)
