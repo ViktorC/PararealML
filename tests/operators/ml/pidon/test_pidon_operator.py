@@ -23,7 +23,6 @@ from pararealml.initial_condition import (
 )
 from pararealml.initial_value_problem import InitialValueProblem
 from pararealml.mesh import CoordinateSystem, Mesh
-from pararealml.operators.ml.deeponet import DeepOSubNetArgs
 from pararealml.operators.ml.pidon.collocation_point_sampler import (
     UniformRandomCollocationPointSampler,
 )
@@ -35,6 +34,7 @@ from pararealml.operators.ml.pidon.pidon_operator import (
     SecondaryOptimizationArgs,
 )
 from pararealml.utils.rand import set_random_seed
+from pararealml.utils.tf import create_fnn_regressor
 
 
 def test_pidon_operator_on_ode_with_analytic_solution():
@@ -66,17 +66,17 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             n_ic_repeats=5,
         ),
         model_args=ModelArgs(
-            latent_output_size=1,
-            branch_net_args=DeepOSubNetArgs(
-                hidden_layer_sizes=[50] * 3,
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 50, 50, 50, 1],
                 initialization="he_uniform",
-                activation="softplus",
+                hidden_layer_activation="softplus",
             ),
-            trunk_net_args=DeepOSubNetArgs(
-                hidden_layer_sizes=[50] * 3,
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 50, 50, 50, 1],
                 initialization="he_uniform",
-                activation="softplus",
+                hidden_layer_activation="softplus",
             ),
+            combiner_net=create_fnn_regressor([3, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(
@@ -153,9 +153,13 @@ def test_pidon_operator_on_ode_system():
             y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[20] * 3),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[20] * 3),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item()] + [20] * 4,
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1] + [20] * 4,
+            ),
+            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
             ic_loss_weight=2.0,
         ),
         optimization_args=OptimizationArgs(
@@ -227,9 +231,13 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=50,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item()] + [50] * 3,
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1] + [50] * 3,
+            ),
+            combiner_net=create_fnn_regressor([150, diff_eq.y_dimension]),
             ic_loss_weight=10.0,
         ),
         optimization_args=OptimizationArgs(
@@ -302,21 +310,20 @@ def test_pidon_operator_on_pde_system():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=25,
-            branch_net_args=DeepOSubNetArgs(
-                hidden_layer_sizes=[50] * 2,
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 50, 50, 25],
                 initialization="he_uniform",
-                activation="softplus",
+                hidden_layer_activation="softplus",
             ),
-            trunk_net_args=DeepOSubNetArgs(
-                hidden_layer_sizes=[50] * 2,
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 50, 50, 25],
                 initialization="he_uniform",
-                activation="softplus",
+                hidden_layer_activation="softplus",
             ),
-            combiner_net_args=DeepOSubNetArgs(
-                hidden_layer_sizes=[25],
+            combiner_net=create_fnn_regressor(
+                [75, 25, diff_eq.y_dimension],
                 initialization="he_uniform",
-                activation="softplus",
+                hidden_layer_activation="softplus",
             ),
         ),
         optimization_args=OptimizationArgs(
@@ -377,9 +384,13 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 30, 30, 20],
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 30, 30, 20],
+            ),
+            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5), epochs=3
@@ -443,9 +454,13 @@ def test_pidon_operator_on_polar_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 30, 30, 20],
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 30, 30, 20],
+            ),
+            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5), epochs=3
@@ -517,9 +532,13 @@ def test_pidon_operator_on_cylindrical_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 30, 30, 20],
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 30, 30, 20],
+            ),
+            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5), epochs=3
@@ -591,9 +610,13 @@ def test_pidon_operator_on_spherical_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=20,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[30] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 30, 30, 20],
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 30, 30, 20],
+            ),
+            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5), epochs=3
@@ -654,8 +677,13 @@ def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():
                 y_0_functions=[ic.y_0], n_domain_points=50, n_batches=1
             ),
             model_args=ModelArgs(
-                latent_output_size=1,
-                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3),
+                branch_net=create_fnn_regressor(
+                    [np.prod(cp.y_vertices_shape).item(), 1],
+                ),
+                trunk_net=create_fnn_regressor(
+                    [diff_eq.x_dimension + 1, 50, 50, 50, 1],
+                ),
+                combiner_net=create_fnn_regressor([3, diff_eq.y_dimension]),
             ),
             optimization_args=OptimizationArgs(
                 optimizer={"class_name": "Adam"}, epochs=100
@@ -687,8 +715,13 @@ def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
                 y_0_functions=[ic.y_0], n_domain_points=50, n_batches=1
             ),
             model_args=ModelArgs(
-                latent_output_size=1,
-                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3),
+                branch_net=create_fnn_regressor(
+                    [np.prod(cp.y_vertices_shape).item(), 1],
+                ),
+                trunk_net=create_fnn_regressor(
+                    [diff_eq.x_dimension + 1, 50, 50, 50, 1],
+                ),
+                combiner_net=create_fnn_regressor([3, diff_eq.y_dimension]),
             ),
             optimization_args=OptimizationArgs(
                 optimizer={"class_name": "Adam"}, epochs=100
@@ -726,9 +759,13 @@ def test_pidon_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
                 n_batches=2,
             ),
             model_args=ModelArgs(
-                latent_output_size=50,
-                branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
-                trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+                branch_net=create_fnn_regressor(
+                    [np.prod(cp.y_vertices_shape).item()] + [50] * 3,
+                ),
+                trunk_net=create_fnn_regressor(
+                    [diff_eq.x_dimension + 1] + [50] * 3,
+                ),
+                combiner_net=create_fnn_regressor([150, diff_eq.y_dimension]),
                 ic_loss_weight=10.0,
             ),
             optimization_args=OptimizationArgs(
@@ -763,8 +800,13 @@ def test_pidon_operator_in_ar_mode_on_ode():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            latent_output_size=1,
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 3),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_vertices_shape).item(), 1],
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1, 50, 50, 50, 1],
+            ),
+            combiner_net=create_fnn_regressor([3, diff_eq.y_dimension]),
         ),
         optimization_args=OptimizationArgs(
             optimizer={
@@ -823,9 +865,13 @@ def test_pidon_operator_in_ar_mode_on_pde():
             n_batches=2,
         ),
         model_args=ModelArgs(
-            latent_output_size=50,
-            branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
-            trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[50] * 2),
+            branch_net=create_fnn_regressor(
+                [np.prod(cp.y_cells_shape).item()] + [50] * 3,
+            ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension + 1] + [50] * 3,
+            ),
+            combiner_net=create_fnn_regressor([150, diff_eq.y_dimension]),
             diff_eq_loss_weight=[2.0, 1.0],
             ic_loss_weight=10.0,
         ),

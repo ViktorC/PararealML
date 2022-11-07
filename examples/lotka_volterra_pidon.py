@@ -4,6 +4,7 @@ from tensorflow import optimizers
 from pararealml import *
 from pararealml.operators.fdm import *
 from pararealml.operators.ml.pidon import *
+from pararealml.utils.tf import create_fnn_regressor
 
 diff_eq = LotkaVolterraEquation()
 cp = ConstrainedProblem(diff_eq)
@@ -42,9 +43,13 @@ pidon.train(
         y_0_functions=test_y_0_functions, n_domain_points=50, n_batches=1
     ),
     model_args=ModelArgs(
-        latent_output_size=100,
-        branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[100] * 5),
-        trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[100] * 5),
+        branch_net=create_fnn_regressor(
+            [np.prod(cp.y_vertices_shape).item()] + [100] * 6,
+        ),
+        trunk_net=create_fnn_regressor(
+            [diff_eq.x_dimension + 1] + [100] * 6,
+        ),
+        combiner_net=create_fnn_regressor([300, diff_eq.y_dimension]),
     ),
     optimization_args=OptimizationArgs(
         optimizer=optimizers.Adam(

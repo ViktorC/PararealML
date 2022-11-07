@@ -21,7 +21,6 @@ from pararealml.initial_value_problem import (
     TemporalDomainInterval,
 )
 from pararealml.operator import Operator, discretize_time_domain
-from pararealml.operators.ml.deeponet import DeepOSubNetArgs
 from pararealml.operators.ml.pidon.collocation_point_sampler import (
     CollocationPointSampler,
 )
@@ -240,7 +239,7 @@ class PIDONOperator(Operator):
             self._model
             if model_args is None
             else PIDeepONet(
-                cp,
+                cp=cp,
                 vertex_oriented=self._vertex_oriented,
                 **model_args._asdict(),
             )
@@ -289,10 +288,9 @@ class ModelArgs(NamedTuple):
     Arguments pertaining to the architecture of a PIDON model.
     """
 
-    latent_output_size: int
-    branch_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
-    trunk_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
-    combiner_net_args: DeepOSubNetArgs = DeepOSubNetArgs()
+    branch_net: tf.keras.Model
+    trunk_net: tf.keras.Model
+    combiner_net: tf.keras.Model
     diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0
     ic_loss_weight: Union[float, Sequence[float]] = 1.0
     bc_loss_weight: Union[float, Sequence[float]] = 1.0

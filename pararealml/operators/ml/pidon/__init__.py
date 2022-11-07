@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from pararealml.operators.ml.deeponet import DeepOSubNetArgs
 from pararealml.operators.ml.pidon.auto_differentiator import (
     AutoDifferentiator,
 )
@@ -21,7 +20,6 @@ from pararealml.operators.ml.pidon.pidon_operator import (
 )
 
 __all__ = [
-    "DeepOSubNetArgs",
     "AutoDifferentiator",
     "CollocationPointSampler",
     "UniformRandomCollocationPointSampler",

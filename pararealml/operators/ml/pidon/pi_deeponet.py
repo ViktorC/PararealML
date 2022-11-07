@@ -8,7 +8,7 @@ import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LHS
-from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
+from pararealml.operators.ml.deeponet import DeepONet
 from pararealml.operators.ml.pidon.auto_differentiator import (
     AutoDifferentiator,
 )
@@ -36,24 +36,24 @@ class PIDeepONet(DeepONet):
 
     def __init__(
         self,
+        branch_net: tf.keras.Model,
+        trunk_net: tf.keras.Model,
+        combiner_net: tf.keras.Model,
         cp: ConstrainedProblem,
-        latent_output_size: int,
-        branch_net_args: DeepOSubNetArgs,
-        trunk_net_args: DeepOSubNetArgs,
-        combiner_net_args: DeepOSubNetArgs,
         diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0,
         ic_loss_weight: Union[float, Sequence[float]] = 1.0,
         bc_loss_weight: Union[float, Sequence[float]] = 1.0,
         vertex_oriented: bool = False,
     ):
         """
+        :param branch_net: the model's branch net that processes the initial
+            condition sensor readings
+        :param trunk_net: the model's trunk net that processes the domain
+            coordinates
+        :param combiner_net: the model's combiner net that combines the outputs
+            of the branch and trunk nets
         :param cp: the constrained problem to build a physics-informed neural
             network around
-        :param latent_output_size: the size of the latent output of the
-            branch and trunk networks of the DeepONet model
-        :param branch_net_args: the arguments for the branch net
-        :param trunk_net_args: the arguments for the trunk net
-        :param combiner_net_args: the arguments for the combiner net
         :param diff_eq_loss_weight: the weight of the differential equation
             violation term of the physics-informed loss
         :param ic_loss_weight: the weight of the initial condition violation
@@ -64,12 +64,30 @@ class PIDeepONet(DeepONet):
         :param vertex_oriented: whether the initial condition collocation
             points are the vertices or the cell centers of the mesh
         """
-        if latent_output_size < 1:
-            raise ValueError("latent output size must be greater than 0")
-
         diff_eq = cp.differential_equation
         x_dim = diff_eq.x_dimension
         y_dim = diff_eq.y_dimension
+
+        branch_net_output_shape = branch_net.compute_output_shape(
+            (None, np.prod(cp.y_shape(vertex_oriented)))
+        )
+        trunk_net_output_shape = trunk_net.compute_output_shape(
+            (None, x_dim + 1)
+        )
+        if branch_net_output_shape != trunk_net_output_shape:
+            raise ValueError(
+                f"branch net output shape {branch_net_output_shape} and "
+                f"trunk net output shape {trunk_net_output_shape} must match"
+            )
+
+        combiner_net_output_shape = combiner_net.compute_output_shape(
+            (None,) + tuple(3 * np.array(branch_net_output_shape[1:]))
+        )
+        if combiner_net_output_shape != (None, y_dim):
+            raise ValueError(
+                f"combiner net output shape {combiner_net_output_shape} "
+                f"must be {(None, y_dim)}"
+            )
 
         diff_eq_loss_weights = (
             (diff_eq_loss_weight,) * y_dim
@@ -96,17 +114,7 @@ class PIDeepONet(DeepONet):
                 f"length of all loss weights must match y dimension ({y_dim})"
             )
 
-        super(PIDeepONet, self).__init__(
-            np.prod(cp.mesh.shape(vertex_oriented)).item() * y_dim
-            if x_dim
-            else y_dim,
-            x_dim + 1,
-            latent_output_size,
-            y_dim,
-            trunk_net_args,
-            branch_net_args,
-            combiner_net_args,
-        )
+        super(PIDeepONet, self).__init__(branch_net, trunk_net, combiner_net)
 
         self._cp = cp
         self._diff_eq_loss_weights = diff_eq_loss_weights

@@ -6,13 +6,10 @@ from pararealml.operators.ml.auto_regression.auto_regression_operator import (
 from pararealml.operators.ml.auto_regression.sklearn_keras_regressor import (
     SKLearnKerasRegressor,
 )
-from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
-from pararealml.operators.ml.fnn_regressor import FNNRegressor
+from pararealml.operators.ml.deeponet import DeepONet
 
 __all__ = [
-    "FNNRegressor",
     "DeepONet",
-    "DeepOSubNetArgs",
     "AutoRegressionOperator",
     "SKLearnKerasRegressor",
 ]

@@ -1,32 +1,29 @@
 import numpy as np
-import pytest
 import tensorflow as tf
 
-from pararealml.operators.ml.deeponet import DeepONet, DeepOSubNetArgs
-
-
-def test_deeponet_with_latent_output_size_less_than_one():
-    with pytest.raises(ValueError):
-        DeepONet(
-            branch_input_size=2,
-            trunk_input_size=1,
-            latent_output_size=0,
-            output_size=1,
-            branch_net_args=DeepOSubNetArgs(),
-            trunk_net_args=DeepOSubNetArgs(),
-            combiner_net_args=DeepOSubNetArgs(),
-        )
+from pararealml.operators.ml.deeponet import DeepONet
 
 
 def test_deeponet():
     net = DeepONet(
-        branch_input_size=10,
-        trunk_input_size=4,
-        latent_output_size=10,
-        output_size=5,
-        branch_net_args=DeepOSubNetArgs(initialization="ones"),
-        trunk_net_args=DeepOSubNetArgs(initialization="ones"),
-        combiner_net_args=DeepOSubNetArgs(initialization="ones"),
+        branch_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(10),
+                tf.keras.layers.Dense(10, kernel_initializer="ones"),
+            ]
+        ),
+        trunk_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(4),
+                tf.keras.layers.Dense(10, kernel_initializer="ones"),
+            ]
+        ),
+        combiner_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(30),
+                tf.keras.layers.Dense(5, kernel_initializer="ones"),
+            ]
+        ),
     )
 
     assert len(net.trainable_variables) == 6
@@ -64,13 +61,27 @@ def test_deeponet():
 
 def test_deeponet_with_none_input_element():
     net = DeepONet(
-        branch_input_size=5,
-        trunk_input_size=1,
-        latent_output_size=5,
-        output_size=1,
-        branch_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5]),
-        trunk_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5]),
-        combiner_net_args=DeepOSubNetArgs(hidden_layer_sizes=[5]),
+        branch_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(5),
+                tf.keras.layers.Dense(5),
+                tf.keras.layers.Dense(5),
+            ]
+        ),
+        trunk_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(1),
+                tf.keras.layers.Dense(5),
+                tf.keras.layers.Dense(5),
+            ]
+        ),
+        combiner_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(15),
+                tf.keras.layers.Dense(5),
+                tf.keras.layers.Dense(1),
+            ]
+        ),
     )
 
     u = tf.ones((3, 5), tf.float32)
