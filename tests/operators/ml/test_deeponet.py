@@ -8,19 +8,19 @@ def test_deeponet():
     net = DeepONet(
         branch_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(10),
+                tf.keras.layers.InputLayer(10),
                 tf.keras.layers.Dense(10, kernel_initializer="ones"),
             ]
         ),
         trunk_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(4),
+                tf.keras.layers.InputLayer(4),
                 tf.keras.layers.Dense(10, kernel_initializer="ones"),
             ]
         ),
         combiner_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(30),
+                tf.keras.layers.InputLayer(30),
                 tf.keras.layers.Dense(5, kernel_initializer="ones"),
             ]
         ),
@@ -63,21 +63,21 @@ def test_deeponet_with_none_input_element():
     net = DeepONet(
         branch_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(5),
+                tf.keras.layers.InputLayer(5),
                 tf.keras.layers.Dense(5),
                 tf.keras.layers.Dense(5),
             ]
         ),
         trunk_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(1),
+                tf.keras.layers.InputLayer(1),
                 tf.keras.layers.Dense(5),
                 tf.keras.layers.Dense(5),
             ]
         ),
         combiner_net=tf.keras.Sequential(
             [
-                tf.keras.layers.Input(15),
+                tf.keras.layers.InputLayer(15),
                 tf.keras.layers.Dense(5),
                 tf.keras.layers.Dense(1),
             ]
