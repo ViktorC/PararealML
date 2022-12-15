@@ -112,7 +112,7 @@ class PIDONOperator(Operator):
         y = np.empty((len(t),) + y_shape)
 
         for i, t_i in enumerate(t):
-            y_i_tensor = self._model.call((u_tensor, t_tensor, x_tensor))
+            y_i_tensor = self._model.__call__((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_i_tensor.numpy().reshape(y_shape)
 
             if i < len(t) - 1:

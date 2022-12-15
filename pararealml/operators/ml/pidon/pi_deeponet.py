@@ -265,7 +265,7 @@ class PIDeepONet(DeepONet):
             self.set_trainable_parameters(parameters)
             with AutoDifferentiator() as auto_diff:
                 loss = self._compute_physics_informed_loss(
-                    full_training_data_batch
+                    full_training_data_batch, True
                 )
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
 
@@ -365,7 +365,7 @@ class PIDeepONet(DeepONet):
         :return: the mean physics-informed loss
         """
         loss_function = (
-            self._compute_physics_informed_loss
+            partial(self._compute_physics_informed_loss, training=False)
             if optimizer is None
             else partial(self._train, optimizer=optimizer)
         )
@@ -399,7 +399,7 @@ class PIDeepONet(DeepONet):
         :return: the various losses over the batch
         """
         with AutoDifferentiator() as auto_diff:
-            loss = self._compute_physics_informed_loss(batch)
+            loss = self._compute_physics_informed_loss(batch, True)
 
         optimizer.minimize(
             loss.weighted_total_loss, self.trainable_variables, tape=auto_diff
@@ -408,7 +408,9 @@ class PIDeepONet(DeepONet):
         return loss
 
     @tf.function
-    def _compute_physics_informed_loss(self, batch: DataBatch) -> Loss:
+    def _compute_physics_informed_loss(
+        self, batch: DataBatch, training: bool
+    ) -> Loss:
         """
         Computes and returns the total physics-informed loss over the batch
         consisting of the mean squared differential equation error, the mean
@@ -416,13 +418,17 @@ class PIDeepONet(DeepONet):
         squared Dirichlet and Neumann boundary condition errors.
 
         :param batch: the batch to compute the losses over
+        :param training: whether to call the underlying DeepONet in training
+            mode
         :return: the total physics-informed loss over the batch
         """
         domain_batch, initial_batch, boundary_batch = batch
-        diff_eq_loss = self._compute_differential_equation_loss(domain_batch)
-        ic_loss = self._compute_initial_condition_loss(initial_batch)
+        diff_eq_loss = self._compute_differential_equation_loss(
+            domain_batch, training
+        )
+        ic_loss = self._compute_initial_condition_loss(initial_batch, training)
         bc_losses = (
-            self._compute_boundary_condition_loss(boundary_batch)
+            self._compute_boundary_condition_loss(boundary_batch, training)
             if boundary_batch
             else None
         )
@@ -438,12 +444,14 @@ class PIDeepONet(DeepONet):
 
     @tf.function
     def _compute_differential_equation_loss(
-        self, batch: DomainDataBatch
+        self, batch: DomainDataBatch, training: bool
     ) -> tf.Tensor:
         """
         Computes and returns the mean squared differential equation error.
 
         :param batch: the domain data batch
+        :param training: whether to call the underlying DeepONet in training
+            mode
         :return: the mean squared differential equation error
         """
         with AutoDifferentiator(persistent=True) as auto_diff:
@@ -451,7 +459,9 @@ class PIDeepONet(DeepONet):
             if batch.x is not None:
                 auto_diff.watch(batch.x)
 
-            y_hat = self.call((batch.u, batch.t, batch.x))
+            y_hat = self.__call__(
+                (batch.u, batch.t, batch.x), training=training
+            )
 
             symbol_map_arg = PIDONSymbolMapArg(
                 auto_diff, batch.t, batch.x, y_hat
@@ -471,33 +481,39 @@ class PIDeepONet(DeepONet):
 
     @tf.function
     def _compute_initial_condition_loss(
-        self, batch: InitialDataBatch
+        self, batch: InitialDataBatch, training: bool
     ) -> tf.Tensor:
         """
         Computes and returns the mean squared initial condition error.
 
         :param batch: the initial condition data batch
+        :param training: whether to call the underlying DeepONet in training
+            mode
         :return: the mean squared initial condition error
         """
-        y_hat = self.call((batch.u, batch.t, batch.x))
+        y_hat = self.__call__((batch.u, batch.t, batch.x), training=training)
         squared_ic_error = tf.square(y_hat - batch.y)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
     @tf.function
     def _compute_boundary_condition_loss(
-        self, batch: BoundaryDataBatch
+        self, batch: BoundaryDataBatch, training: bool
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """
         Computes and returns the mean squared Dirichlet boundary condition
         error and the mean squared Neumann boundary condition error.
 
         :param batch: the boundary data batch
+        :param training: whether to call the underlying DeepONet in training
+            mode
         :return: the mean squared Dirichlet and Neumann boundary condition
             errors
         """
         with AutoDifferentiator() as auto_diff:
             auto_diff.watch(batch.x)
-            y_hat = self.call((batch.u, batch.t, batch.x))
+            y_hat = self.__call__(
+                (batch.u, batch.t, batch.x), training=training
+            )
 
         d_y_over_d_n_hat = auto_diff.batch_gradient(batch.x, y_hat, batch.axes)
 

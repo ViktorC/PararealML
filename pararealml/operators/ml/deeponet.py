@@ -91,6 +91,8 @@ class DeepONet(tf.keras.Model):
         inputs: Union[
             tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
         ],
+        training: Optional[bool] = None,
+        mask: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:
         if isinstance(inputs, tuple):
             u = inputs[0]
@@ -103,9 +105,13 @@ class DeepONet(tf.keras.Model):
             branch_input = inputs[:, :branch_net_input_size, ...]
             trunk_input = inputs[:, branch_net_input_size:, ...]
 
-        branch_output = self._branch_net.call(branch_input)
-        trunk_output = self._trunk_net.call(trunk_input)
+        branch_output = self._branch_net(
+            branch_input, training=training, mask=mask
+        )
+        trunk_output = self._trunk_net(
+            trunk_input, training=training, mask=mask
+        )
         combiner_input = tf.concat(
             [branch_output, trunk_output, branch_output * trunk_output], axis=1
         )
-        return self._combiner_net.call(combiner_input)
+        return self._combiner_net(combiner_input, training=training, mask=mask)

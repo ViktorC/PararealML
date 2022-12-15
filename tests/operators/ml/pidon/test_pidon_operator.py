@@ -96,7 +96,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
 
     assert len(training_loss_history) == 500
     assert test_loss_history is None
-    assert final_training_loss.weighted_total_loss.numpy() < 1e-4
+    assert final_training_loss.weighted_total_loss.numpy() < 2e-4
     assert final_test_loss is None
 
     ivp = InitialValueProblem(
