@@ -54,28 +54,7 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
         )
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
-        kwargs = self.filter_sk_params(tf.keras.Model.call, kwargs)
-
-        if (
-            self._max_predict_batch_size is None
-            or len(x) <= self._max_predict_batch_size
-        ):
-            return self.model.call(
-                tf.convert_to_tensor(x, tf.float32), **kwargs
-            ).numpy()
-
-        batch_start_ind = 0
-        outputs = []
-        while batch_start_ind < len(x):
-            batch_end_ind = min(
-                batch_start_ind + self._max_predict_batch_size, len(x)
-            )
-            batch = x[batch_start_ind:batch_end_ind]
-            outputs.append(
-                self.model.call(
-                    tf.convert_to_tensor(batch, tf.float32), **kwargs
-                ).numpy()
-            )
-            batch_start_ind += len(batch)
-
-        return np.concatenate(outputs, axis=0)
+        if self._max_predict_batch_size:
+            kwargs["batch_size"] = self._max_predict_batch_size
+        kwargs = self.filter_sk_params(tf.keras.Model.predict, kwargs)
+        return self.model.predict(x, **kwargs)
