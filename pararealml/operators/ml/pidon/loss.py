@@ -13,6 +13,7 @@ class Loss(NamedTuple):
     diff_eq_loss: tf.Tensor
     ic_loss: tf.Tensor
     bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]]
+    model_loss: tf.Tensor
     weighted_total_loss: tf.Tensor
 
     def __str__(self):
@@ -21,13 +22,12 @@ class Loss(NamedTuple):
             + f"DE: {self.diff_eq_loss}; "
             + f"IC: {self.ic_loss}"
         )
-
         if self.bc_losses:
             string += (
                 f"; Dirichlet BC: {self.bc_losses[0]}; "
                 + f"Neumann BC: {self.bc_losses[1]}"
             )
-
+        string += f"; Model: {self.model_loss}"
         return string
 
     @classmethod
@@ -37,6 +37,7 @@ class Loss(NamedTuple):
         diff_eq_loss: tf.Tensor,
         ic_loss: tf.Tensor,
         bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
+        model_loss: tf.Tensor,
         diff_eq_loss_weights: Sequence[float],
         ic_loss_weights: Sequence[float],
         bc_loss_weights: Sequence[float],
@@ -55,6 +56,7 @@ class Loss(NamedTuple):
             the total physics-informed loss
         :param bc_loss_weights: the weights of the boundary condition part of
             the total physics-informed loss
+        :param model_loss: model loss such as regularization penalty
         :return: the losses including the weighted total
         """
         weighted_total_loss = tf.multiply(
@@ -64,7 +66,10 @@ class Loss(NamedTuple):
             weighted_total_loss += tf.multiply(
                 tf.constant(bc_loss_weights), bc_losses[0] + bc_losses[1]
             )
-        return Loss(diff_eq_loss, ic_loss, bc_losses, weighted_total_loss)
+        weighted_total_loss += model_loss
+        return Loss(
+            diff_eq_loss, ic_loss, bc_losses, model_loss, weighted_total_loss
+        )
 
     @classmethod
     @tf.function
@@ -91,12 +96,14 @@ class Loss(NamedTuple):
         ic_losses = []
         dirichlet_bc_losses = []
         neumann_bc_losses = []
+        model_losses = []
         for loss in losses:
             diff_eq_losses.append(loss.diff_eq_loss)
             ic_losses.append(loss.ic_loss)
             if loss.bc_losses:
                 dirichlet_bc_losses.append(loss.bc_losses[0])
                 neumann_bc_losses.append(loss.bc_losses[1])
+            model_losses.append(loss.model_loss)
 
         mean_diff_eq_loss = tf.reduce_mean(tf.stack(diff_eq_losses), axis=0)
         mean_ic_loss = tf.reduce_mean(tf.stack(ic_losses), axis=0)
@@ -108,11 +115,13 @@ class Loss(NamedTuple):
                 tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0),
             )
         )
+        mean_model_loss = tf.reduce_mean(tf.stack(model_losses), axis=0)
 
         return cls.construct(
             mean_diff_eq_loss,
             mean_ic_loss,
             mean_bc_losses,
+            mean_model_loss,
             diff_eq_loss_weights,
             ic_loss_weights,
             bc_loss_weights,

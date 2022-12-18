@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import tensorflow as tf
 from tensorflow import optimizers
 
 from pararealml import SymbolicEquationSystem
@@ -390,7 +391,14 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
             trunk_net=create_fnn_regressor(
                 [diff_eq.x_dimension + 1, 30, 30, 20],
             ),
-            combiner_net=create_fnn_regressor([60, diff_eq.y_dimension]),
+            combiner_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(60),
+                    tf.keras.layers.Dense(
+                        diff_eq.y_dimension, kernel_regularizer="l2"
+                    ),
+                ]
+            ),
         ),
         optimization_args=OptimizationArgs(
             optimizer=optimizers.Adam(learning_rate=2e-5), epochs=3

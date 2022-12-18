@@ -432,17 +432,22 @@ class PIDeepONet(DeepONet):
             if boundary_batch
             else None
         )
+        model_loss = (
+            tf.reshape(tf.add_n(self.losses), (1,))
+            if self.losses
+            else tf.constant([0.0])
+        )
 
         return Loss.construct(
             diff_eq_loss,
             ic_loss,
             bc_losses,
+            model_loss,
             self._diff_eq_loss_weights,
             self._ic_loss_weights,
             self._bc_loss_weights,
         )
 
-    @tf.function
     def _compute_differential_equation_loss(
         self, batch: DomainDataBatch, training: bool
     ) -> tf.Tensor:
@@ -459,7 +464,7 @@ class PIDeepONet(DeepONet):
             if batch.x is not None:
                 auto_diff.watch(batch.x)
 
-            y_hat = self.__call__(
+            y_hat = self.propagate(
                 (batch.u, batch.t, batch.x), training=training
             )
 
@@ -479,7 +484,6 @@ class PIDeepONet(DeepONet):
         squared_diff_eq_error = tf.square(diff_eq_residual)
         return tf.reduce_mean(squared_diff_eq_error, axis=0)
 
-    @tf.function
     def _compute_initial_condition_loss(
         self, batch: InitialDataBatch, training: bool
     ) -> tf.Tensor:
@@ -491,11 +495,10 @@ class PIDeepONet(DeepONet):
             mode
         :return: the mean squared initial condition error
         """
-        y_hat = self.__call__((batch.u, batch.t, batch.x), training=training)
+        y_hat = self.propagate((batch.u, batch.t, batch.x), training=training)
         squared_ic_error = tf.square(y_hat - batch.y)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
-    @tf.function
     def _compute_boundary_condition_loss(
         self, batch: BoundaryDataBatch, training: bool
     ) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -511,7 +514,7 @@ class PIDeepONet(DeepONet):
         """
         with AutoDifferentiator() as auto_diff:
             auto_diff.watch(batch.x)
-            y_hat = self.__call__(
+            y_hat = self.propagate(
                 (batch.u, batch.t, batch.x), training=training
             )
 

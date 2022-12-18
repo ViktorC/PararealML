@@ -53,10 +53,11 @@ def test_deeponet():
     concatenated_inputs = tf.concat(inputs, axis=1)
 
     assert np.allclose(
-        net.call(inputs).numpy(), net.call(concatenated_inputs).numpy()
+        net.propagate(inputs).numpy(),
+        net.propagate(concatenated_inputs).numpy(),
     )
 
-    assert np.allclose(net.call(inputs).numpy(), [[1310.0] * 5] * 3)
+    assert np.allclose(net.propagate(inputs).numpy(), [[1310.0] * 5] * 3)
 
 
 def test_deeponet_with_none_input_element():
@@ -90,5 +91,6 @@ def test_deeponet_with_none_input_element():
     concatenated_inputs = tf.concat([u, t], axis=1)
 
     assert np.allclose(
-        net.call(inputs).numpy(), net.call(concatenated_inputs).numpy()
+        net.propagate(inputs).numpy(),
+        net.propagate(concatenated_inputs).numpy(),
     )
