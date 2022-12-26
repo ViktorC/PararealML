@@ -13,7 +13,7 @@ class Loss(NamedTuple):
     diff_eq_loss: tf.Tensor
     ic_loss: tf.Tensor
     bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]]
-    model_loss: tf.Tensor
+    model_loss: Optional[tf.Tensor]
     weighted_total_loss: tf.Tensor
 
     def __str__(self):
@@ -27,7 +27,8 @@ class Loss(NamedTuple):
                 f"; Dirichlet BC: {self.bc_losses[0]}; "
                 + f"Neumann BC: {self.bc_losses[1]}"
             )
-        string += f"; Model: {self.model_loss}"
+        if self.model_loss is not None:
+            string += f"; Model: {self.model_loss}"
         return string
 
     @classmethod
@@ -37,7 +38,7 @@ class Loss(NamedTuple):
         diff_eq_loss: tf.Tensor,
         ic_loss: tf.Tensor,
         bc_losses: Optional[Tuple[tf.Tensor, tf.Tensor]],
-        model_loss: tf.Tensor,
+        model_loss: Optional[tf.Tensor],
         diff_eq_loss_weights: Sequence[float],
         ic_loss_weights: Sequence[float],
         bc_loss_weights: Sequence[float],
@@ -66,7 +67,8 @@ class Loss(NamedTuple):
             weighted_total_loss += tf.multiply(
                 tf.constant(bc_loss_weights), bc_losses[0] + bc_losses[1]
             )
-        weighted_total_loss += model_loss
+        if model_loss is not None:
+            weighted_total_loss += model_loss
         return Loss(
             diff_eq_loss, ic_loss, bc_losses, model_loss, weighted_total_loss
         )
@@ -103,7 +105,8 @@ class Loss(NamedTuple):
             if loss.bc_losses:
                 dirichlet_bc_losses.append(loss.bc_losses[0])
                 neumann_bc_losses.append(loss.bc_losses[1])
-            model_losses.append(loss.model_loss)
+            if loss.model_loss is not None:
+                model_losses.append(loss.model_loss)
 
         mean_diff_eq_loss = tf.reduce_mean(tf.stack(diff_eq_losses), axis=0)
         mean_ic_loss = tf.reduce_mean(tf.stack(ic_losses), axis=0)
@@ -115,7 +118,11 @@ class Loss(NamedTuple):
                 tf.reduce_mean(tf.stack(neumann_bc_losses), axis=0),
             )
         )
-        mean_model_loss = tf.reduce_mean(tf.stack(model_losses), axis=0)
+        mean_model_loss = (
+            tf.reduce_mean(tf.stack(model_losses), axis=0)
+            if model_losses
+            else None
+        )
 
         return cls.construct(
             mean_diff_eq_loss,

@@ -264,9 +264,7 @@ class PIDeepONet(DeepONet):
         ) -> Tuple[tf.Tensor, tf.Tensor]:
             self.set_trainable_parameters(parameters)
             with AutoDifferentiator() as auto_diff:
-                loss = self._compute_physics_informed_loss(
-                    full_training_data_batch, True
-                )
+                loss = self._compute_batch_loss(full_training_data_batch, True)
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
 
             gradients = auto_diff.gradient(value, self.trainable_variables)
@@ -365,7 +363,7 @@ class PIDeepONet(DeepONet):
         :return: the mean physics-informed loss
         """
         loss_function = (
-            partial(self._compute_physics_informed_loss, training=False)
+            partial(self._compute_batch_loss, training=False)
             if optimizer is None
             else partial(self._train, optimizer=optimizer)
         )
@@ -399,7 +397,7 @@ class PIDeepONet(DeepONet):
         :return: the various losses over the batch
         """
         with AutoDifferentiator() as auto_diff:
-            loss = self._compute_physics_informed_loss(batch, True)
+            loss = self._compute_batch_loss(batch, True)
 
         optimizer.minimize(
             loss.weighted_total_loss, self.trainable_variables, tape=auto_diff
@@ -408,9 +406,7 @@ class PIDeepONet(DeepONet):
         return loss
 
     @tf.function
-    def _compute_physics_informed_loss(
-        self, batch: DataBatch, training: bool
-    ) -> Loss:
+    def _compute_batch_loss(self, batch: DataBatch, training: bool) -> Loss:
         """
         Computes and returns the total physics-informed loss over the batch
         consisting of the mean squared differential equation error, the mean
@@ -433,9 +429,7 @@ class PIDeepONet(DeepONet):
             else None
         )
         model_loss = (
-            tf.reshape(tf.add_n(self.losses), (1,))
-            if self.losses
-            else tf.constant([0.0])
+            tf.reshape(tf.add_n(self.losses), (1,)) if self.losses else None
         )
 
         return Loss.construct(
