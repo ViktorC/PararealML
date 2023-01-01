@@ -245,14 +245,14 @@ class PIDONOperator(Operator):
             )
         )
 
-        training_loss_history, test_loss_history = model.fit(
+        training_loss_history, test_loss_history = model.train(
             training_data=training_data,
             test_data=test_data,
             **optimization_args._asdict(),
         )
 
         if secondary_optimization_args:
-            model.fit_with_lbfgs(
+            model.train_with_lbfgs(
                 training_data=training_data,
                 **secondary_optimization_args._asdict(),
             )
