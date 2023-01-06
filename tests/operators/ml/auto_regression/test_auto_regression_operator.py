@@ -227,7 +227,10 @@ def test_ar_operator_on_pde():
             combiner_net=tf.keras.Sequential(
                 [
                     tf.keras.layers.Input(3 * diff_eq.y_dimension * 10),
-                    tf.keras.layers.Dense(diff_eq.y_dimension),
+                    tf.keras.layers.Dense(
+                        diff_eq.y_dimension,
+                        kernel_regularizer=tf.keras.regularizers.L2(l2=1e-5),
+                    ),
                 ]
             ),
         )
