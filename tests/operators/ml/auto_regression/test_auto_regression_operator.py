@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
+import tensorflow as tf
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from tensorflow import optimizers
 
 from pararealml.boundary_condition import (
     DirichletBoundaryCondition,
@@ -34,7 +34,6 @@ from pararealml.operators.ml.auto_regression import (
 from pararealml.operators.ml.deeponet import DeepONet
 from pararealml.operators.ode.ode_operator import ODEOperator
 from pararealml.utils.rand import set_random_seed
-from pararealml.utils.tf import create_fnn_regressor
 
 
 def perturbation_function(_: float, y: np.ndarray) -> np.ndarray:
@@ -209,24 +208,32 @@ def test_ar_operator_on_pde():
 
     def build_model():
         model = DeepONet(
-            branch_net=create_fnn_regressor(
+            branch_net=tf.keras.Sequential(
                 [
-                    np.prod(cp.y_shape(True)).item(),
-                    100,
-                    50,
-                    diff_eq.y_dimension * 10,
+                    tf.keras.layers.Input(np.prod(cp.y_shape(True)).item()),
+                    tf.keras.layers.Dense(100, activation="tanh"),
+                    tf.keras.layers.Dense(50, activation="tanh"),
+                    tf.keras.layers.Dense(diff_eq.y_dimension * 10),
                 ]
             ),
-            trunk_net=create_fnn_regressor(
-                [diff_eq.x_dimension, 50, 50, diff_eq.y_dimension * 10]
+            trunk_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.Input(diff_eq.x_dimension),
+                    tf.keras.layers.Dense(50, activation="tanh"),
+                    tf.keras.layers.Dense(50, activation="tanh"),
+                    tf.keras.layers.Dense(diff_eq.y_dimension * 10),
+                ]
             ),
-            combiner_net=create_fnn_regressor(
-                [3 * diff_eq.y_dimension * 10, diff_eq.y_dimension]
+            combiner_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.Input(3 * diff_eq.y_dimension * 10),
+                    tf.keras.layers.Dense(diff_eq.y_dimension),
+                ]
             ),
         )
         model.compile(
-            optimizer=optimizers.Adam(
-                learning_rate=optimizers.schedules.ExponentialDecay(
+            optimizer=tf.optimizers.Adam(
+                learning_rate=tf.optimizers.schedules.ExponentialDecay(
                     1e-2, decay_steps=500, decay_rate=0.95
                 )
             ),
@@ -284,17 +291,16 @@ def test_ar_operator_on_pde_in_time_variant_mode():
     ref_solution = oracle.solve(ivp)
 
     def build_model():
-        model = create_fnn_regressor(
+        model = tf.keras.Sequential(
             [
-                np.prod(cp.y_shape(True)).item() + diff_eq.x_dimension + 1,
-                50,
-                50,
-                diff_eq.y_dimension,
+                tf.keras.layers.Dense(50, activation="tanh"),
+                tf.keras.layers.Dense(50, activation="tanh"),
+                tf.keras.layers.Dense(diff_eq.y_dimension),
             ]
         )
         model.compile(
-            optimizer=optimizers.Adam(
-                learning_rate=optimizers.schedules.ExponentialDecay(
+            optimizer=tf.optimizers.Adam(
+                learning_rate=tf.optimizers.schedules.ExponentialDecay(
                     1e-2, decay_steps=500, decay_rate=0.95
                 )
             ),

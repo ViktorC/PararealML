@@ -1,10 +1,9 @@
 import numpy as np
-from tensorflow import optimizers
+import tensorflow as tf
 
 from pararealml import *
 from pararealml.operators.fdm import *
 from pararealml.operators.ml.pidon import *
-from pararealml.utils.tf import create_fnn_regressor
 
 diff_eq = DiffusionEquation(1, 0.2)
 mesh = Mesh([(0.0, 1.0)], (0.1,))
@@ -41,18 +40,25 @@ pidon.train(
         n_batches=1,
     ),
     model_args=ModelArgs(
-        branch_net=create_fnn_regressor(
-            [np.prod(cp.y_vertices_shape).item()] + [50] * 8,
+        branch_net=tf.keras.Sequential(
+            [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+            + [tf.keras.layers.Dense(50, activation="tanh") for _ in range(8)]
         ),
-        trunk_net=create_fnn_regressor(
-            [diff_eq.x_dimension + 1] + [50] * 8,
+        trunk_net=tf.keras.Sequential(
+            [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+            + [tf.keras.layers.Dense(50, activation="tanh") for _ in range(8)]
         ),
-        combiner_net=create_fnn_regressor([150, diff_eq.y_dimension]),
+        combiner_net=tf.keras.Sequential(
+            [
+                tf.keras.layers.InputLayer(150),
+                tf.keras.layers.Dense(diff_eq.y_dimension),
+            ]
+        ),
         ic_loss_weight=10.0,
     ),
     optimization_args=OptimizationArgs(
-        optimizer=optimizers.Adam(
-            learning_rate=optimizers.schedules.ExponentialDecay(
+        optimizer=tf.optimizers.Adam(
+            learning_rate=tf.optimizers.schedules.ExponentialDecay(
                 2e-3, decay_steps=25, decay_rate=0.98
             )
         ),
