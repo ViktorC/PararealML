@@ -1,5 +1,7 @@
+import joblib
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
+import tensorflow as tf
+from sklearn.model_selection import GridSearchCV
 
 from pararealml import *
 from pararealml.operators.fdm import *
@@ -9,7 +11,7 @@ from pararealml.utils.rand import SEEDS, set_random_seed
 set_random_seed(SEEDS[0])
 
 diff_eq = DiffusionEquation(2)
-mesh = Mesh([(0.0, 10.0), (0.0, 10.0)], [0.2, 0.2])
+mesh = Mesh([(0.0, 10.0), (0.0, 10.0)], [1.0, 1.0])
 bcs = [
     (
         DirichletBoundaryCondition(
@@ -42,14 +44,39 @@ v_max = np.max(fdm_sol_y)
 for i, plot in enumerate(fdm_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"diffusion_fdm_{i}").close()
 
+
+def build_model(hidden_layer_size: int, optimizer: str, loss: str):
+    regressor = tf.keras.Sequential(
+        [
+            tf.keras.layers.Dense(hidden_layer_size, activation="tanh"),
+            tf.keras.layers.Dense(diff_eq.y_dimension),
+        ]
+    )
+    regressor.compile(optimizer=optimizer, loss=loss)
+    return regressor
+
+
 ar_op = AutoRegressionOperator(0.5, fdm_op.vertex_oriented)
 ar_op.train(
     ivp,
     fdm_op,
-    RandomForestRegressor(n_jobs=4, verbose=True),
+    GridSearchCV(
+        SKLearnKerasRegressor(build_model),
+        {
+            "hidden_layer_size": [10, 50, 100],
+            "optimizer": ["adam"],
+            "loss": ["mse"],
+            "epochs": [100, 200, 500],
+        },
+        cv=5,
+        verbose=5,
+    ),
     10,
     lambda t, y: y + np.random.normal(0.0, t / 3.0, size=y.shape),
 )
 ar_sol = ar_op.solve(ivp)
+
+joblib.dump(ar_op.model, "model.tar")
+
 for i, plot in enumerate(ar_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"diffusion_ar_{i}").close()
