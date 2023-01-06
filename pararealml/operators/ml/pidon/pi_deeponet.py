@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -195,14 +194,16 @@ class PIDeepONet(DeepONet):
         for epoch in range(epochs):
             self._logger.info(f"Epoch: {epoch}")
 
-            training_loss = self._compute_total_loss(
+            training_loss = self._compute_and_minimize_total_loss(
                 training_data, optimizer=optimizer_instance
             )
             self._logger.info("Training MSE - %s", training_loss)
             training_loss_history.append(training_loss)
 
             if test_data:
-                test_loss = self._compute_total_loss(test_data, optimizer=None)
+                test_loss = self._compute_and_minimize_total_loss(
+                    test_data, optimizer=None
+                )
                 self._logger.info("Test MSE -  %s", test_loss)
                 test_loss_history.append(test_loss)
 
@@ -305,7 +306,7 @@ class PIDeepONet(DeepONet):
         :return: the mean physics-informed loss
         """
         self._logger.debug("Evaluation")
-        loss = self._compute_total_loss(data, optimizer=None)
+        loss = self._compute_and_minimize_total_loss(data, optimizer=None)
         self._logger.debug("Total MSE - %s", loss)
         return loss
 
@@ -350,30 +351,25 @@ class PIDeepONet(DeepONet):
 
         return lhs_functions
 
-    def _compute_total_loss(
+    def _compute_and_minimize_total_loss(
         self,
         data: DataSetIterator,
         optimizer: Optional[tf.optimizers.Optimizer],
     ) -> Loss:
         """
-        Computes the mean physics-informed loss over a data set.
+        Computes the mean loss over the data set and, if an optimizer is
+        provided, minimizes this loss via mini-batch gradient descent.
 
         :param data: the data set to compute the loss over
         :param optimizer: an optional optimizer instance; if one is provided,
             the model parameters are updated after each batch
         :return: the mean loss over the data set
         """
-        loss_function = (
-            partial(self._compute_batch_loss, training=False)
-            if optimizer is None
-            else partial(
-                self._compute_and_minimize_batch_loss, optimizer=optimizer
-            )
-        )
-
         batch_losses = []
         for batch_ind, batch in enumerate(data):
-            batch_loss = loss_function(batch)
+            batch_loss = self._compute_and_minimize_batch_loss(
+                batch, optimizer
+            )
             batch_losses.append(batch_loss)
             self._logger.debug(
                 "Batch %s/%s MSE - %s", batch_ind + 1, len(data), batch_loss
@@ -388,17 +384,20 @@ class PIDeepONet(DeepONet):
 
     @tf.function
     def _compute_and_minimize_batch_loss(
-        self, batch: DataBatch, optimizer: tf.optimizers.Optimizer
+        self, batch: DataBatch, optimizer: Optional[tf.optimizers.Optimizer]
     ) -> Loss:
         """
         Performs a forward pass over the batch, computes the batch loss, and
-        updates the model parameters.
+        if an optimizer is provided, updates the model parameters.
 
         :param batch: the batch to compute the losses over
         :param optimizer: the optimizer to use to update parameters of the
-            model
+            model; if it is None, the model's parameters are not updated
         :return: the mean loss over the batch
         """
+        if not optimizer:
+            return self._compute_batch_loss(batch, False)
+
         with AutoDifferentiator() as auto_diff:
             loss = self._compute_batch_loss(batch, True)
 
@@ -408,7 +407,6 @@ class PIDeepONet(DeepONet):
 
         return loss
 
-    @tf.function
     def _compute_batch_loss(self, batch: DataBatch, training: bool) -> Loss:
         """
         Computes and returns the physics-informed loss over the batch
@@ -462,7 +460,7 @@ class PIDeepONet(DeepONet):
             if batch.x is not None:
                 auto_diff.watch(batch.x)
 
-            y_hat = self.propagate(
+            y_hat = self.__call__(
                 (batch.u, batch.t, batch.x), training=training
             )
 
@@ -493,7 +491,7 @@ class PIDeepONet(DeepONet):
             mode
         :return: the mean squared initial condition error
         """
-        y_hat = self.propagate((batch.u, batch.t, batch.x), training=training)
+        y_hat = self.__call__((batch.u, batch.t, batch.x), training=training)
         squared_ic_error = tf.square(y_hat - batch.y)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
@@ -512,7 +510,7 @@ class PIDeepONet(DeepONet):
         """
         with AutoDifferentiator() as auto_diff:
             auto_diff.watch(batch.x)
-            y_hat = self.propagate(
+            y_hat = self.__call__(
                 (batch.u, batch.t, batch.x), training=training
             )
 

@@ -8,6 +8,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -112,7 +113,7 @@ class PIDONOperator(Operator):
         y = np.empty((len(t),) + y_shape)
 
         for i, t_i in enumerate(t):
-            y_i_tensor = self._model.__call__((u_tensor, t_tensor, x_tensor))
+            y_i_tensor = self._infer((u_tensor, t_tensor, x_tensor))
             y[i, ...] = y_i_tensor.numpy().reshape(y_shape)
 
             if i < len(t) - 1:
@@ -268,6 +269,18 @@ class PIDONOperator(Operator):
             final_training_loss,
             final_test_loss,
         )
+
+    @tf.function
+    def _infer(
+        self, inputs: Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
+    ) -> tf.Tensor:
+        """
+        Propagates the inputs through the physics-informed DeepONet.
+
+        :param inputs: the model inputs
+        :return: the model outputs
+        """
+        return self.model.__call__(inputs)
 
 
 class DataArgs(NamedTuple):

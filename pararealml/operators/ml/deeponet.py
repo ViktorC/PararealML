@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import tensorflow as tf
 
@@ -59,7 +59,6 @@ class DeepONet(tf.keras.Model):
         """
         return self._combiner_net
 
-    @tf.function
     def get_trainable_parameters(self) -> tf.Tensor:
         """
         All the trainable parameters of the model flattened into a single-row
@@ -70,7 +69,6 @@ class DeepONet(tf.keras.Model):
             axis=1,
         )
 
-    @tf.function
     def set_trainable_parameters(self, value: tf.Tensor):
         """
         Sets the trainable parameters of the model to the values provided.
@@ -85,7 +83,6 @@ class DeepONet(tf.keras.Model):
             )
             offset += var_size
 
-    @tf.function
     def call(
         self,
         inputs: Union[
@@ -94,27 +91,6 @@ class DeepONet(tf.keras.Model):
         training: Optional[bool] = None,
         mask: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:
-        return self.propagate(inputs, training, mask)
-
-    def propagate(
-        self,
-        inputs: Union[
-            tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
-        ],
-        training: Optional[bool] = None,
-        mask: Any = None,
-    ) -> tf.Tensor:
-        """
-        Performs forward propagation without JIT compilation.
-
-        :param inputs: a single tensor or a tuple of tensor containing the
-            sensor readings, the temporal coordinates and optionally, the
-            spatial coordinates
-        :param training: whether to perform the forward propagation in training
-            mode
-        :param mask: any masks to apply to the subnets
-        :return: the output of the forward propagation
-        """
         if isinstance(inputs, tuple):
             u = inputs[0]
             t = inputs[1]
