@@ -1,4 +1,6 @@
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Callable, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -12,9 +14,7 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
 
     def __init__(
         self,
-        model: tf.keras.Model,
-        optimizer: Union[str, tf.optimizers.Optimizer] = "adam",
-        loss: str = "mse",
+        build_fn: Callable[..., tf.keras.Model],
         epochs: int = 1000,
         batch_size: int = 64,
         verbose: bool = False,
@@ -22,9 +22,8 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
         **kwargs: Any,
     ):
         """
-        :param model: the Keras regression model
-        :param optimizer: the optimizer to use
-        :param loss: the loss function to use
+        :param build_fn: a function that compiles and returns the Keras model
+            to wrap
         :param epochs: the number of training epochs
         :param batch_size: the training batch size
         :param verbose: whether training information should be printed to the
@@ -33,49 +32,43 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
             predictions
         :param kwargs: additional parameters to the Keras regression model
         """
-        if max_predict_batch_size is not None and max_predict_batch_size < 1:
-            raise ValueError(
-                "the maximum prediction batch size "
-                f"({max_predict_batch_size}) must be greater than 0"
-            )
-
-        self._max_predict_batch_size = max_predict_batch_size
-
-        def build_model() -> tf.keras.Model:
-            model.compile(optimizer=optimizer, loss=loss)
-            return model
-
         super(SKLearnKerasRegressor, self).__init__(
-            build_fn=build_model,
+            build_fn=build_fn,
             epochs=epochs,
             batch_size=batch_size,
             verbose=verbose,
             **kwargs,
         )
 
-    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
-        kwargs = self.filter_sk_params(tf.keras.Model.call, kwargs)
+        self.max_predict_batch_size = max_predict_batch_size
 
+    def predict(self, x: np.ndarray) -> np.ndarray:
         if (
-            self._max_predict_batch_size is None
-            or len(x) <= self._max_predict_batch_size
+            self.max_predict_batch_size is None
+            or len(x) <= self.max_predict_batch_size
         ):
-            return self.model(
-                tf.convert_to_tensor(x, tf.float32), **kwargs
-            ).numpy()
+            return self._infer(tf.convert_to_tensor(x, tf.float32)).numpy()
 
         batch_start_ind = 0
         outputs = []
         while batch_start_ind < len(x):
             batch_end_ind = min(
-                batch_start_ind + self._max_predict_batch_size, len(x)
+                batch_start_ind + self.max_predict_batch_size, len(x)
             )
             batch = x[batch_start_ind:batch_end_ind]
             outputs.append(
-                self.model(
-                    tf.convert_to_tensor(batch, tf.float32), **kwargs
-                ).numpy()
+                self._infer(tf.convert_to_tensor(batch, tf.float32)).numpy()
             )
             batch_start_ind += len(batch)
 
         return np.concatenate(outputs, axis=0)
+
+    @tf.function
+    def _infer(self, inputs: tf.Tensor) -> tf.Tensor:
+        """
+        Propagates the inputs through the underlying model.
+
+        :param inputs: the model inputs
+        :return: the model outputs
+        """
+        return self.model(inputs)

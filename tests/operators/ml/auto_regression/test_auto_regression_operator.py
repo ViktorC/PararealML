@@ -207,32 +207,39 @@ def test_ar_operator_on_pde():
     oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.1)
     ref_solution = oracle.solve(ivp)
 
-    ar = AutoRegressionOperator(2.5, True)
-    ar.train(
-        ivp,
-        oracle,
-        SKLearnKerasRegressor(
-            DeepONet(
-                branch_net=create_fnn_regressor(
-                    [
-                        np.prod(cp.y_shape(True)).item(),
-                        100,
-                        50,
-                        diff_eq.y_dimension * 10,
-                    ]
-                ),
-                trunk_net=create_fnn_regressor(
-                    [diff_eq.x_dimension, 50, 50, diff_eq.y_dimension * 10]
-                ),
-                combiner_net=create_fnn_regressor(
-                    [3 * diff_eq.y_dimension * 10, diff_eq.y_dimension]
-                ),
+    def build_model():
+        model = DeepONet(
+            branch_net=create_fnn_regressor(
+                [
+                    np.prod(cp.y_shape(True)).item(),
+                    100,
+                    50,
+                    diff_eq.y_dimension * 10,
+                ]
             ),
+            trunk_net=create_fnn_regressor(
+                [diff_eq.x_dimension, 50, 50, diff_eq.y_dimension * 10]
+            ),
+            combiner_net=create_fnn_regressor(
+                [3 * diff_eq.y_dimension * 10, diff_eq.y_dimension]
+            ),
+        )
+        model.compile(
             optimizer=optimizers.Adam(
                 learning_rate=optimizers.schedules.ExponentialDecay(
                     1e-2, decay_steps=500, decay_rate=0.95
                 )
             ),
+            loss="mse",
+        )
+        return model
+
+    ar = AutoRegressionOperator(2.5, True)
+    ar.train(
+        ivp,
+        oracle,
+        SKLearnKerasRegressor(
+            build_model,
             batch_size=968,
             epochs=500,
             max_predict_batch_size=300,
@@ -276,24 +283,31 @@ def test_ar_operator_on_pde_in_time_variant_mode():
     oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.1)
     ref_solution = oracle.solve(ivp)
 
-    ar = AutoRegressionOperator(2.5, True, time_variant=True)
-    ar.train(
-        ivp,
-        oracle,
-        SKLearnKerasRegressor(
-            create_fnn_regressor(
-                [
-                    np.prod(cp.y_shape(True)).item() + diff_eq.x_dimension + 1,
-                    50,
-                    50,
-                    diff_eq.y_dimension,
-                ]
-            ),
+    def build_model():
+        model = create_fnn_regressor(
+            [
+                np.prod(cp.y_shape(True)).item() + diff_eq.x_dimension + 1,
+                50,
+                50,
+                diff_eq.y_dimension,
+            ]
+        )
+        model.compile(
             optimizer=optimizers.Adam(
                 learning_rate=optimizers.schedules.ExponentialDecay(
                     1e-2, decay_steps=500, decay_rate=0.95
                 )
             ),
+            loss="mse",
+        )
+        return model
+
+    ar = AutoRegressionOperator(2.5, True, time_variant=True)
+    ar.train(
+        ivp,
+        oracle,
+        SKLearnKerasRegressor(
+            build_model,
             batch_size=500,
             epochs=500,
         ),
