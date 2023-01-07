@@ -41,11 +41,11 @@ pidon.train(
     ),
     model_args=ModelArgs(
         branch_net=tf.keras.Sequential(
-            [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+            [tf.keras.layers.InputLayer(np.prod(cp.y_vertices_shape).item())]
             + [tf.keras.layers.Dense(50, activation="tanh") for _ in range(8)]
         ),
         trunk_net=tf.keras.Sequential(
-            [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+            [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
             + [tf.keras.layers.Dense(50, activation="tanh") for _ in range(8)]
         ),
         combiner_net=tf.keras.Sequential(

@@ -66,7 +66,11 @@ def test_pidon_operator_on_ode_with_analytic_solution():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(
                         50,
@@ -84,7 +88,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
                 ]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(
                         50,
@@ -103,7 +107,7 @@ def test_pidon_operator_on_ode_with_analytic_solution():
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(3),
+                    tf.keras.layers.InputLayer(3),
                     tf.keras.layers.Dense(diff_eq.y_dimension),
                 ]
             ),
@@ -184,14 +188,18 @@ def test_pidon_operator_on_ode_system():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(20, activation="tanh")
                     for _ in range(4)
                 ]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(20, activation="tanh")
                     for _ in range(4)
@@ -199,7 +207,7 @@ def test_pidon_operator_on_ode_system():
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(60),
+                    tf.keras.layers.InputLayer(60),
                     tf.keras.layers.Dense(diff_eq.y_dimension),
                 ]
             ),
@@ -275,14 +283,18 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(50, activation="tanh")
                     for _ in range(3)
                 ]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(50, activation="tanh")
                     for _ in range(3)
@@ -290,7 +302,7 @@ def test_pidon_operator_on_pde_with_dynamic_boundary_conditions():
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(150),
+                    tf.keras.layers.InputLayer(150),
                     tf.keras.layers.Dense(diff_eq.y_dimension),
                 ]
             ),
@@ -367,7 +379,11 @@ def test_pidon_operator_on_pde_system():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(
                         50,
@@ -379,7 +395,7 @@ def test_pidon_operator_on_pde_system():
                 + [tf.keras.layers.Dense(25, kernel_initializer="he_uniform")]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(
                         50,
@@ -392,7 +408,7 @@ def test_pidon_operator_on_pde_system():
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(75),
+                    tf.keras.layers.InputLayer(75),
                     tf.keras.layers.Dense(
                         25,
                         kernel_initializer="he_uniform",
@@ -461,7 +477,11 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -469,7 +489,7 @@ def test_pidon_operator_on_pde_with_t_and_x_dependent_rhs():
                 + [tf.keras.layers.Dense(20, activation="tanh")]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -548,7 +568,11 @@ def test_pidon_operator_on_polar_pde():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -556,7 +580,7 @@ def test_pidon_operator_on_polar_pde():
                 + [tf.keras.layers.Dense(20, activation="tanh")]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -641,7 +665,11 @@ def test_pidon_operator_on_cylindrical_pde():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -649,7 +677,7 @@ def test_pidon_operator_on_cylindrical_pde():
                 + [tf.keras.layers.Dense(20, activation="tanh")]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -734,7 +762,11 @@ def test_pidon_operator_on_spherical_pde():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item())]
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -742,7 +774,7 @@ def test_pidon_operator_on_spherical_pde():
                 + [tf.keras.layers.Dense(20, activation="tanh")]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(30, activation="tanh")
                     for _ in range(2)
@@ -817,14 +849,14 @@ def test_pidon_operator_in_ar_mode_training_with_invalid_t_interval():
             model_args=ModelArgs(
                 branch_net=tf.keras.Sequential(
                     [
-                        tf.keras.layers.Input(
+                        tf.keras.layers.InputLayer(
                             np.prod(cp.y_vertices_shape).item()
                         ),
                         tf.keras.layers.Dense(1, activation="tanh"),
                     ]
                 ),
                 trunk_net=tf.keras.Sequential(
-                    [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                    [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                     + [
                         tf.keras.layers.Dense(50, activation="tanh")
                         for _ in range(3)
@@ -870,14 +902,14 @@ def test_pidon_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
             model_args=ModelArgs(
                 branch_net=tf.keras.Sequential(
                     [
-                        tf.keras.layers.Input(
+                        tf.keras.layers.InputLayer(
                             np.prod(cp.y_vertices_shape).item()
                         ),
                         tf.keras.layers.Dense(1, activation="tanh"),
                     ]
                 ),
                 trunk_net=tf.keras.Sequential(
-                    [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                    [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                     + [
                         tf.keras.layers.Dense(50, activation="tanh")
                         for _ in range(3)
@@ -929,7 +961,7 @@ def test_pidon_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
             model_args=ModelArgs(
                 branch_net=tf.keras.Sequential(
                     [
-                        tf.keras.layers.Input(
+                        tf.keras.layers.InputLayer(
                             np.prod(cp.y_vertices_shape).item()
                         )
                     ]
@@ -939,7 +971,7 @@ def test_pidon_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
                     ]
                 ),
                 trunk_net=tf.keras.Sequential(
-                    [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                    [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                     + [
                         tf.keras.layers.Dense(50, activation="tanh")
                         for _ in range(3)
@@ -987,12 +1019,14 @@ def test_pidon_operator_in_ar_mode_on_ode():
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(np.prod(cp.y_vertices_shape).item()),
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    ),
                     tf.keras.layers.Dense(1, activation="tanh"),
                 ]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(50, activation="tanh")
                     for _ in range(3)
@@ -1064,14 +1098,14 @@ def test_pidon_operator_in_ar_mode_on_pde():
         ),
         model_args=ModelArgs(
             branch_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(np.prod(cp.y_cells_shape).item())]
+                [tf.keras.layers.InputLayer(np.prod(cp.y_cells_shape).item())]
                 + [
                     tf.keras.layers.Dense(50, activation="tanh")
                     for _ in range(3)
                 ]
             ),
             trunk_net=tf.keras.Sequential(
-                [tf.keras.layers.Input(diff_eq.x_dimension + 1)]
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
                     tf.keras.layers.Dense(50, activation="tanh")
                     for _ in range(3)

@@ -210,7 +210,9 @@ def test_ar_operator_on_pde():
         model = DeepONet(
             branch_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(np.prod(cp.y_shape(True)).item()),
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_shape(True)).item()
+                    ),
                     tf.keras.layers.Dense(100, activation="tanh"),
                     tf.keras.layers.Dense(50, activation="tanh"),
                     tf.keras.layers.Dense(diff_eq.y_dimension * 10),
@@ -218,7 +220,7 @@ def test_ar_operator_on_pde():
             ),
             trunk_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(diff_eq.x_dimension),
+                    tf.keras.layers.InputLayer(diff_eq.x_dimension),
                     tf.keras.layers.Dense(50, activation="tanh"),
                     tf.keras.layers.Dense(50, activation="tanh"),
                     tf.keras.layers.Dense(diff_eq.y_dimension * 10),
@@ -226,7 +228,7 @@ def test_ar_operator_on_pde():
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(3 * diff_eq.y_dimension * 10),
+                    tf.keras.layers.InputLayer(3 * diff_eq.y_dimension * 10),
                     tf.keras.layers.Dense(
                         diff_eq.y_dimension,
                         kernel_regularizer=tf.keras.regularizers.L2(l2=1e-5),

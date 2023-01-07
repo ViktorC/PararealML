@@ -16,19 +16,19 @@ def test_pi_deeponet_with_mismatched_branch_and_trunk_net_output_shapes():
         PIDeepONet(
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(1),
+                    tf.keras.layers.InputLayer(1),
                     tf.keras.layers.Dense(5),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(1),
+                    tf.keras.layers.InputLayer(1),
                     tf.keras.layers.Dense(3),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(15),
+                    tf.keras.layers.InputLayer(15),
                     tf.keras.layers.Dense(1),
                 ]
             ),
@@ -43,19 +43,19 @@ def test_pi_deeponet_with_wrong_combiner_net_output_shape():
         PIDeepONet(
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(1),
+                    tf.keras.layers.InputLayer(1),
                     tf.keras.layers.Dense(5),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(1),
+                    tf.keras.layers.InputLayer(1),
                     tf.keras.layers.Dense(5),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(15),
+                    tf.keras.layers.InputLayer(15),
                     tf.keras.layers.Dense(2),
                 ]
             ),
@@ -70,19 +70,19 @@ def test_pi_deeponet_with_wrong_loss_weight_length():
         PIDeepONet(
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(3),
+                    tf.keras.layers.InputLayer(3),
                     tf.keras.layers.Dense(3),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(1),
+                    tf.keras.layers.InputLayer(1),
                     tf.keras.layers.Dense(3),
                 ]
             ),
             tf.keras.Sequential(
                 [
-                    tf.keras.layers.Input(9),
+                    tf.keras.layers.InputLayer(9),
                     tf.keras.layers.Dense(3),
                 ]
             ),
@@ -96,19 +96,19 @@ def test_pi_deeponet_loss_weight_broadcasting():
     pidon = PIDeepONet(
         tf.keras.Sequential(
             [
-                tf.keras.layers.Input(3),
+                tf.keras.layers.InputLayer(3),
                 tf.keras.layers.Dense(3),
             ]
         ),
         tf.keras.Sequential(
             [
-                tf.keras.layers.Input(1),
+                tf.keras.layers.InputLayer(1),
                 tf.keras.layers.Dense(3),
             ]
         ),
         tf.keras.Sequential(
             [
-                tf.keras.layers.Input(9),
+                tf.keras.layers.InputLayer(9),
                 tf.keras.layers.Dense(3),
             ]
         ),
