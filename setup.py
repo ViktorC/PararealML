@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pararealml',
-    version='0.2.0',
+    version='0.3.0',
     description='A machine learning boosted parallel-in-time differential '
                 'equation solver framework',
     url='https://github.com/ViktorC/PararealML',
