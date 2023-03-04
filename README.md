@@ -28,7 +28,7 @@ The library provides out-of-the-box implementations for a number of differential
  * `ConvectionDiffusionEquation`
  * `WaveEquation`
  * `CahnHilliardEquation`
- * `BurgerEquation`
+ * `BurgersEquation`
  * `ShallowWaterEquation`
  * `NavierStokesEquation`
 

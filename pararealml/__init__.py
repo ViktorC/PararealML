@@ -15,7 +15,7 @@ from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.constraint import Constraint, apply_constraints_along_last_axis
 from pararealml.differential_equation import (
     LHS,
-    BurgerEquation,
+    BurgersEquation,
     CahnHilliardEquation,
     ConvectionDiffusionEquation,
     DifferentialEquation,
@@ -92,7 +92,7 @@ __all__ = [
     "ConvectionDiffusionEquation",
     "WaveEquation",
     "CahnHilliardEquation",
-    "BurgerEquation",
+    "BurgersEquation",
     "ShallowWaterEquation",
     "NavierStokesEquation",
     "InitialCondition",

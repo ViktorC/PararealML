@@ -3,7 +3,7 @@ import numpy as np
 from pararealml import *
 from pararealml.operators.fdm import *
 
-diff_eq = BurgerEquation(3, 100)
+diff_eq = BurgersEquation(3, 100)
 mesh = Mesh(
     [(1.0, 5.0), (0.0, 2.0 * np.pi), (0.25 * np.pi, 0.75 * np.pi)],
     [0.5, np.pi / 10.0, np.pi / 10.0],

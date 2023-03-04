@@ -8,7 +8,7 @@ from pararealml.boundary_condition import (
 )
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import (
-    BurgerEquation,
+    BurgersEquation,
     LorenzEquation,
     LotkaVolterraEquation,
     NBodyGravitationalEquation,
@@ -320,7 +320,7 @@ def test_solution_generate_plots_for_3d_pde_with_scalar_fields():
 
 
 def test_solution_generate_plots_for_3d_pde_with_vector_field():
-    diff_eq = BurgerEquation(3)
+    diff_eq = BurgersEquation(3)
     mesh = Mesh([(0.0, 2.0)] * 3, [1.0] * 3)
     bcs = [
         (

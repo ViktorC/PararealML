@@ -731,7 +731,7 @@ class CahnHilliardEquation(DifferentialEquation):
         )
 
 
-class BurgerEquation(DifferentialEquation):
+class BurgersEquation(DifferentialEquation):
     """
     A system of partial differential equations providing a simplified model
     of fluid flow.
@@ -750,7 +750,7 @@ class BurgerEquation(DifferentialEquation):
 
         self._re = re
 
-        super(BurgerEquation, self).__init__(
+        super(BurgersEquation, self).__init__(
             x_dimension, x_dimension, [tuple(range(x_dimension))]
         )
 

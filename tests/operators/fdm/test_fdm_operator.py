@@ -8,7 +8,7 @@ from pararealml.boundary_condition import (
 )
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import (
-    BurgerEquation,
+    BurgersEquation,
     CahnHilliardEquation,
     DifferentialEquation,
     DiffusionEquation,
@@ -109,7 +109,7 @@ def test_fdm_operator_on_ode():
 
 
 def test_fdm_operator_on_1d_pde():
-    diff_eq = BurgerEquation(1, 1000.0)
+    diff_eq = BurgersEquation(1, 1000.0)
     mesh = Mesh([(0.0, 10.0)], [0.1])
     bcs = [
         (
