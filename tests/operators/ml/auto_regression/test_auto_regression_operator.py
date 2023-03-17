@@ -13,6 +13,7 @@ from pararealml.differential_equation import (
     DiffusionEquation,
     LorenzEquation,
     LotkaVolterraEquation,
+    PopulationGrowthEquation,
     WaveEquation,
 )
 from pararealml.initial_condition import (
@@ -33,6 +34,7 @@ from pararealml.operators.ml.auto_regression import (
 )
 from pararealml.operators.ml.deeponet import DeepONet
 from pararealml.operators.ode.ode_operator import ODEOperator
+from pararealml.solution import Solution
 from pararealml.utils.rand import set_random_seed
 
 
@@ -99,6 +101,39 @@ def test_ar_operator_data_generation_in_parallel():
 
     assert inputs.shape == (80, 3)
     assert targets.shape == (80, 3)
+
+
+def test_ar_operator_data_generation_with_error_handling():
+    set_random_seed(0)
+
+    class ODEOperatorWithRandomError(ODEOperator):
+        def solve(
+            self, ivp: InitialValueProblem, parallel_enabled: bool = True
+        ) -> Solution:
+            if np.random.rand() > 0.5:
+                raise RuntimeError
+            return super(ODEOperatorWithRandomError, self).solve(
+                ivp, parallel_enabled
+            )
+
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = DiscreteInitialCondition(cp, np.array([10.0]))
+    test_ivp = InitialValueProblem(cp, (0.0, 20.0), ic)
+    oracle = ODEOperatorWithRandomError("DOP853", 0.01)
+    ar = AutoRegressionOperator(2.5, True)
+
+    inputs, targets = ar.generate_data(
+        test_ivp,
+        oracle,
+        20,
+        perturbation_function,
+        repeat_on_error=True,
+        seeds=[0],
+    )
+
+    assert inputs.shape == (160, 1)
+    assert targets.shape == (160, 1)
 
 
 def test_ar_operator_on_ode():

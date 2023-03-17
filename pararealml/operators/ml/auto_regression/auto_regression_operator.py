@@ -1,3 +1,5 @@
+import os
+import warnings
 from multiprocessing import Process, Queue, connection
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
@@ -93,6 +95,8 @@ class AutoRegressionOperator(Operator):
         iterations: int,
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
+        repeat_on_error: bool = False,
+        verbose: bool = True,
         n_jobs: int = 1,
         seeds: Optional[Sequence[int]] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -110,6 +114,11 @@ class AutoRegressionOperator(Operator):
             of the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
+        :param repeat_on_error: whether to repeat the initial condition
+            perturbation and the target computation for any sub-IVP if an error
+            is raised
+        :param verbose: whether to print information about failed sub-IVP
+            solutions
         :param n_jobs: the number of parallel processes to use for the data
             generation; if it is greater than one, all arguments of this method
             must be pickleable
@@ -140,6 +149,8 @@ class AutoRegressionOperator(Operator):
                 iterations,
                 perturbation_function,
                 isolate_perturbations,
+                repeat_on_error,
+                verbose,
                 seeds[0],
                 queue,
             )
@@ -160,6 +171,8 @@ class AutoRegressionOperator(Operator):
                     len(iterations_indices),
                     perturbation_function,
                     isolate_perturbations,
+                    repeat_on_error,
+                    verbose,
                     seeds[process_rank],
                     queue,
                 ),
@@ -221,7 +234,10 @@ class AutoRegressionOperator(Operator):
         iterations: int,
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
+        repeat_on_error: bool = False,
+        verbose: bool = True,
         n_jobs: int = 1,
+        seeds: Optional[Sequence[int]] = None,
         test_size: float = 0.2,
         score_func: Callable[
             [np.ndarray, np.ndarray], float
@@ -251,9 +267,17 @@ class AutoRegressionOperator(Operator):
             version of the initial values
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
+        :param repeat_on_error: whether to repeat the initial condition
+            perturbation and the target computation for any sub-IVP if an error
+            is raised
+        :param verbose: whether to print information about failed sub-IVP
+            solutions during data generation
         :param n_jobs: the number of parallel processes to use for the data
             generation; if it is greater than one, all arguments relating to
             the data generation must be pickleable
+        :param seeds: a sequence of NumPy random seeds to use in the data
+            generation processes; the length of this sequence must match the
+            number of jobs
         :param test_size: the fraction of all data points that should be used
             for testing
         :param score_func: the prediction scoring function to use
@@ -265,7 +289,10 @@ class AutoRegressionOperator(Operator):
             iterations,
             perturbation_function,
             isolate_perturbations=isolate_perturbations,
+            repeat_on_error=repeat_on_error,
+            verbose=verbose,
             n_jobs=n_jobs,
+            seeds=seeds,
         )
         return self.fit_model(model, data, test_size, score_func)
 
@@ -298,6 +325,8 @@ class AutoRegressionOperator(Operator):
         iterations: int,
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool,
+        repeat_on_error: bool,
+        verbose: bool,
         seed: Optional[int],
         queue: Queue,
     ):
@@ -315,10 +344,18 @@ class AutoRegressionOperator(Operator):
             of the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
             propagating through to the subsequent sub-IVPs
+        :param repeat_on_error: whether to repeat the initial condition
+            perturbation and the target computation for any sub-IVP if an error
+            is raised
+        :param verbose: whether to print information about failed sub-IVP
+            solutions
         :param seed: the NumPy random seed to use for the data generation
         :param queue: a queue to add the results to in the form of a tuple of
             the inputs and the target outputs
         """
+        successful_sub_ivp_solutions = 0
+        failed_sub_ivp_solutions = 0
+
         if seed is not None:
             np.random.seed(seed)
 
@@ -345,48 +382,70 @@ class AutoRegressionOperator(Operator):
             y_i = y_0
 
             for i, t_i in enumerate(t):
-                perturbed_y_i = perturbation_function(t_i, y_i)
-                if perturbed_y_i.shape != y_i.shape:
-                    raise ValueError(
-                        f"perturbed y shape {perturbed_y_i.shape} must match "
-                        f"input y shape {y_i.shape}"
+                target_generation_successful = False
+                while not target_generation_successful:
+                    perturbed_y_i = perturbation_function(t_i, y_i)
+                    if perturbed_y_i.shape != y_i.shape:
+                        raise ValueError(
+                            f"perturbed y shape {perturbed_y_i.shape} must "
+                            f"match input y shape {y_i.shape}"
+                        )
+
+                    sub_ivp = InitialValueProblem(
+                        cp,
+                        (t_i, t_i + self._d_t),
+                        DiscreteInitialCondition(
+                            cp, perturbed_y_i, self._vertex_oriented
+                        ),
                     )
 
-                sub_ivp = InitialValueProblem(
-                    cp,
-                    (t_i, t_i + self._d_t),
-                    DiscreteInitialCondition(
-                        cp, perturbed_y_i, self._vertex_oriented
-                    ),
-                )
-                y_next = oracle.solve(sub_ivp).discrete_y(
-                    self._vertex_oriented
-                )[-1, ...]
+                    try:
+                        sub_ivp_solution = oracle.solve(sub_ivp)
+                        successful_sub_ivp_solutions += 1
+                    except Exception as exception:
+                        if repeat_on_error:
+                            if verbose:
+                                warnings.warn(str(exception))
+                            failed_sub_ivp_solutions += 1
+                            continue
 
-                t_offset = offset + i * n_spatial_points
-                inputs[
-                    t_offset : t_offset + n_spatial_points,
-                    : inputs.shape[1] - x_dim - self._time_variant,
-                ] = perturbed_y_i.reshape((1, -1))
-                targets[
-                    t_offset : t_offset + n_spatial_points, :
-                ] = y_next.reshape((-1, y_dim))
+                        raise exception
 
-                if isolate_perturbations and i < len(t) - 1:
-                    y_next = unperturbed_sub_y0s[i]
-                    if y_next is None:
-                        sub_ivp = InitialValueProblem(
-                            cp,
-                            (t_i, t_i + self._d_t),
-                            DiscreteInitialCondition(
-                                cp, y_i, self._vertex_oriented
-                            ),
-                        )
-                        y_next = oracle.solve(sub_ivp).discrete_y(
-                            self._vertex_oriented
-                        )[-1, ...]
-                        unperturbed_sub_y0s[i] = y_next
+                    y_next = sub_ivp_solution.discrete_y(
+                        self._vertex_oriented
+                    )[-1, ...]
 
-                y_i = y_next
+                    t_offset = offset + i * n_spatial_points
+                    inputs[
+                        t_offset : t_offset + n_spatial_points,
+                        : inputs.shape[1] - x_dim - self._time_variant,
+                    ] = perturbed_y_i.reshape((1, -1))
+                    targets[
+                        t_offset : t_offset + n_spatial_points, :
+                    ] = y_next.reshape((-1, y_dim))
 
+                    if isolate_perturbations and i < len(t) - 1:
+                        y_next = unperturbed_sub_y0s[i]
+                        if y_next is None:
+                            sub_ivp = InitialValueProblem(
+                                cp,
+                                (t_i, t_i + self._d_t),
+                                DiscreteInitialCondition(
+                                    cp, y_i, self._vertex_oriented
+                                ),
+                            )
+                            y_next = oracle.solve(sub_ivp).discrete_y(
+                                self._vertex_oriented
+                            )[-1, ...]
+                            unperturbed_sub_y0s[i] = y_next
+
+                    y_i = y_next
+                    target_generation_successful = True
+
+        if verbose:
+            print(
+                f"Process ID: {os.getpid()}; successful sub-IVP solutions: "
+                f"{successful_sub_ivp_solutions}; failed sub-IVP solutions: "
+                f"{failed_sub_ivp_solutions}"
+            )
         queue.put((inputs, targets))
