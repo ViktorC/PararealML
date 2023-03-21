@@ -369,3 +369,23 @@ def test_ar_operator_on_pde_in_time_variant_mode():
     diff = ref_solution.diff([ml_solution])
     assert np.all(diff.matching_time_points == np.linspace(2.5, 10.0, 4))
     assert np.max(np.abs(diff.differences[0])) < 0.01
+
+
+def test_ar_operator_training_on_ode_without_test_data():
+    diff_eq = PopulationGrowthEquation()
+    cp = ConstrainedProblem(diff_eq)
+    ic = DiscreteInitialCondition(cp, np.array([5.0]))
+    ivp = InitialValueProblem(cp, (0.0, 50.0), ic)
+    oracle = ODEOperator("DOP853", 0.025)
+    ar = AutoRegressionOperator(6.25, True)
+
+    train_loss, test_loss = ar.train(
+        ivp,
+        oracle,
+        RandomForestRegressor(),
+        50,
+        perturbation_function,
+        test_size=0.0,
+    )
+    assert train_loss is not None
+    assert test_loss is None
