@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+import inspect
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import numpy as np
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
 
 
-class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
+class SKLearnKerasRegressor:
     """
     A wrapper for Keras regression models to implement the implicit
     Scikit-learn model interface.
@@ -15,32 +17,156 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
     def __init__(
         self,
         build_fn: Callable[..., tf.keras.Model],
+        batch_size: int = 256,
         epochs: int = 1000,
-        batch_size: int = 64,
-        verbose: bool = False,
+        verbose: Union[int, str] = "auto",
+        callbacks: Sequence[tf.keras.callbacks.Callback] = (),
+        validation_split: float = 0.0,
+        lazy_load_to_gpu: bool = False,
+        prefetch_buffer_size: Optional[int] = None,
+        sample_weight: Optional[np.ndarray] = None,
         max_predict_batch_size: Optional[int] = None,
-        **kwargs: Any,
+        **build_args: Any,
     ):
         """
         :param build_fn: a function that compiles and returns the Keras model
             to wrap
-        :param epochs: the number of training epochs
         :param batch_size: the training batch size
-        :param verbose: whether training information should be printed to the
-            stdout stream
+        :param epochs: the number of training epochs
+        :param verbose: controls the level of training information printed to
+            the stdout stream
+        :param callbacks: any callbacks for the training of the model
+        :param validation_split: the proportion of the training data to use for
+            validation
+        :param sample_weight: an optional array of values to use to weight the
+            losses over individual samples
+        :param lazy_load_to_gpu: whether to avoid loading the entire training
+            data set onto the GPU all at once by using lazy loading instead
+        :param prefetch_buffer_size: the number of samples to prefetch if using
+            lazy loading to the GPU
         :param max_predict_batch_size: the maximum batch size to use for
             predictions
-        :param kwargs: additional parameters to the Keras regression model
+        :param build_args: all the parameters to pass to `build_fn`
         """
-        super(SKLearnKerasRegressor, self).__init__(
-            build_fn=build_fn,
-            epochs=epochs,
-            batch_size=batch_size,
-            verbose=verbose,
-            **kwargs,
-        )
-
+        self.build_fn = build_fn
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.verbose = verbose
+        self.callbacks = callbacks
+        self.validation_split = validation_split
+        self.lazy_load_to_gpu = lazy_load_to_gpu
+        self.prefetch_buffer_size = prefetch_buffer_size
+        self.sample_weight = sample_weight
         self.max_predict_batch_size = max_predict_batch_size
+        self.build_args = build_args
+
+        self._model: Optional[tf.keras.Model] = None
+
+    @property
+    def model(self) -> tf.keras.Model:
+        """
+        The underlying Tensorflow model.
+        """
+        return self._model
+
+    @model.setter
+    def model(self, model: tf.keras.Model):
+        self._model = model
+
+    def get_params(self, **_: Any) -> Dict[str, Any]:
+        params = {
+            "build_fn": self.build_fn,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "verbose": self.verbose,
+            "callbacks": self.callbacks,
+            "validation_split": self.validation_split,
+            "lazy_load_to_gpu": self.lazy_load_to_gpu,
+            "prefetch_buffer_size": self.prefetch_buffer_size,
+            "sample_weight": self.sample_weight,
+            "max_predict_batch_size": self.max_predict_batch_size,
+        }
+        params.update(self.build_args)
+        return params
+
+    def set_params(self, **parameters: Any) -> SKLearnKerasRegressor:
+        build_fn_arg_names = list(
+            inspect.signature(self.build_fn).parameters.keys()
+        )
+        build_args = {}
+        for key, value in parameters.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            elif key in build_fn_arg_names:
+                build_args[key] = value
+            else:
+                raise ValueError(f"invalid parameter '{key}'")
+
+        self.build_args.update(build_args)
+        return self
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> SKLearnKerasRegressor:
+        self._model = self.build_fn(**self.build_args)
+
+        if self.lazy_load_to_gpu:
+            with tf.device("CPU"):
+                if self.validation_split:
+                    (
+                        x_train,
+                        x_validate,
+                        y_train,
+                        y_validate,
+                    ) = train_test_split(
+                        x,
+                        y,
+                        train_size=1.0 - self.validation_split,
+                        test_size=self.validation_split,
+                    )
+                    training_dataset = tf.data.Dataset.from_tensor_slices(
+                        (x_train, y_train)
+                    ).batch(self.batch_size)
+                    validation_dataset = tf.data.Dataset.from_tensor_slices(
+                        (x_validate, y_validate)
+                    ).batch(self.batch_size)
+
+                else:
+                    training_dataset = tf.data.Dataset.from_tensor_slices(
+                        (x, y)
+                    ).batch(self.batch_size)
+                    validation_dataset = None
+
+                if self.prefetch_buffer_size:
+                    training_dataset = training_dataset.prefetch(
+                        self.prefetch_buffer_size
+                    )
+                    validation_dataset = (
+                        validation_dataset.prefetch(self.prefetch_buffer_size)
+                        if self.validation_split
+                        else None
+                    )
+
+            self._model.fit(
+                training_dataset,
+                epochs=self.epochs,
+                validation_data=validation_dataset,
+                sample_weight=self.sample_weight,
+                callbacks=self.callbacks,
+                verbose=self.verbose,
+            )
+
+        else:
+            self._model.fit(
+                x,
+                y,
+                epochs=self.epochs,
+                batch_size=self.batch_size,
+                validation_split=self.validation_split,
+                sample_weight=self.sample_weight,
+                callbacks=self.callbacks,
+                verbose=self.verbose,
+            )
+
+        return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         if (
@@ -63,6 +189,19 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
 
         return np.concatenate(outputs, axis=0)
 
+    def score(self, x: np.ndarray, y: np.ndarray) -> float:
+        with tf.device("CPU"):
+            dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(
+                self.batch_size
+            )
+            if self.prefetch_buffer_size:
+                dataset = dataset.prefetch(self.prefetch_buffer_size)
+
+        loss = self._model.evaluate(dataset)
+        if isinstance(loss, Sequence):
+            return -loss[0]
+        return -loss
+
     @tf.function
     def _infer(self, inputs: tf.Tensor) -> tf.Tensor:
         """
@@ -71,4 +210,4 @@ class SKLearnKerasRegressor(tf.keras.wrappers.scikit_learn.KerasRegressor):
         :param inputs: the model inputs
         :return: the model outputs
         """
-        return self.model(inputs)
+        return self._model(inputs)
