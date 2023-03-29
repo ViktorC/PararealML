@@ -1,7 +1,6 @@
-import os
 import warnings
 from multiprocessing import Process, Queue, connection
-from typing import Any, Callable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Optional, Sequence, Tuple
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -14,14 +13,18 @@ from pararealml.operator import Operator, discretize_time_domain
 from pararealml.solution import Solution
 
 
-class AutoRegressionOperator(Operator):
+class SupervisedMLOperator(Operator):
     """
-    A supervised machine learning operator that uses auto regression to model
-    a high fidelity operator for solving initial value problems.
+    A supervised machine learning operator that models a high fidelity operator
+    for solving initial value problems.
     """
 
     def __init__(
-        self, d_t: float, vertex_oriented: bool, time_variant: bool = False
+        self,
+        d_t: float,
+        vertex_oriented: bool,
+        time_variant: bool = False,
+        auto_regressive: bool = True,
     ):
         """
         :param d_t: the temporal step size to use
@@ -30,17 +33,31 @@ class AutoRegressionOperator(Operator):
             meshes
         :param time_variant: whether the time value should be used as a
             predictor
+        :param auto_regressive: whether to use the operator in auto-regressive
+            mode
         """
-        super(AutoRegressionOperator, self).__init__(d_t, vertex_oriented)
+        if not auto_regressive and not time_variant:
+            raise ValueError(
+                "operator must be time variant if auto-regression is disabled"
+            )
 
+        super(SupervisedMLOperator, self).__init__(d_t, vertex_oriented)
         self._time_variant = time_variant
+        self._auto_regressive = auto_regressive
         self._model: Optional[Any] = None
+
+    @property
+    def auto_regressive(self) -> bool:
+        """
+        Whether the operator is auto-regressive.
+        """
+        return self._auto_regressive
 
     @property
     def time_variant(self) -> bool:
         """
-        Whether the auto-regression operator uses time as a predictor of the
-        solution at the next time step.
+        Whether the operator uses time as a predictor of the solution at the
+        next time step.
         """
         return self._time_variant
 
@@ -67,25 +84,30 @@ class AutoRegressionOperator(Operator):
         y_shape = cp.y_shape(self._vertex_oriented)
 
         inputs = self._create_input_placeholder(cp)
-        t = discretize_time_domain(ivp.t_interval, self._d_t)
-        y = np.empty((len(t) - 1,) + y_shape)
+        t = discretize_time_domain(ivp.t_interval, self._d_t)[1:]
+        y = np.empty((len(t),) + y_shape)
 
-        y_i = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        y_i_minus_1 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
 
-        for i, t_i in enumerate(t[:-1]):
+        for i, t_i in enumerate(t):
             if self._time_variant:
                 inputs[:, -diff_eq.x_dimension - 1] = t_i
-                inputs[:, : -diff_eq.x_dimension - 1] = y_i.reshape((1, -1))
+                inputs[:, : -diff_eq.x_dimension - 1] = y_i_minus_1.reshape(
+                    (1, -1)
+                )
             else:
                 inputs[
                     :, : inputs.shape[1] - diff_eq.x_dimension
-                ] = y_i.reshape((1, -1))
+                ] = y_i_minus_1.reshape((1, -1))
 
             y_i = self._model.predict(inputs)
             y[i, ...] = y_i.reshape(y_shape)
 
+            if self._auto_regressive:
+                y_i_minus_1 = y_i
+
         return Solution(
-            ivp, t[1:], y, vertex_oriented=self._vertex_oriented, d_t=self._d_t
+            ivp, t, y, vertex_oriented=self._vertex_oriented, d_t=self._d_t
         )
 
     def generate_data(
@@ -96,7 +118,6 @@ class AutoRegressionOperator(Operator):
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
         repeat_on_error: bool = False,
-        verbose: bool = True,
         n_jobs: int = 1,
         seeds: Optional[Sequence[int]] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -109,16 +130,15 @@ class AutoRegressionOperator(Operator):
         :param oracle: the operator providing the training data
         :param iterations: the number of data generation iterations
         :param perturbation_function: a function that takes a time argument,
-            representing the start of a sub-IVP's time domain, and the discrete
-            initial conditions for the sub-IVP and returns a perturbed version
-            of the initial conditions
+            representing the start of an IVP's time domain, and the discrete
+            initial conditions for the IVP and returns a perturbed version of
+            the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
-            propagating through to the subsequent sub-IVPs
+            propagating through to the subsequent sub-IVPs if in
+            auto-regressive mode
         :param repeat_on_error: whether to repeat the initial condition
-            perturbation and the target computation for any sub-IVP if an error
+            perturbation and the target computation for any IVP if an error
             is raised
-        :param verbose: whether to print information about failed sub-IVP
-            solutions
         :param n_jobs: the number of parallel processes to use for the data
             generation; if it is greater than one, all arguments of this method
             must be pickleable
@@ -150,7 +170,6 @@ class AutoRegressionOperator(Operator):
                 perturbation_function,
                 isolate_perturbations,
                 repeat_on_error,
-                verbose,
                 seeds[0],
                 queue,
             )
@@ -172,7 +191,6 @@ class AutoRegressionOperator(Operator):
                     perturbation_function,
                     isolate_perturbations,
                     repeat_on_error,
-                    verbose,
                     seeds[process_rank],
                     queue,
                 ),
@@ -249,7 +267,6 @@ class AutoRegressionOperator(Operator):
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool = False,
         repeat_on_error: bool = False,
-        verbose: bool = True,
         n_jobs: int = 1,
         seeds: Optional[Sequence[int]] = None,
         test_size: float = 0.2,
@@ -261,11 +278,15 @@ class AutoRegressionOperator(Operator):
         Fits a regression model to training data generated by the oracle.
 
         The inputs of the model are time t, spatial coordinates x, and the
-        values of the solution at all points of the IVP's mesh at time t
+        values of the solution at all points of the IVP's mesh at time t - d_t
         (for ODEs, no spatial coordinates are included in the features and the
         solution is evaluated merely at t). The model outputs are the predicted
-        values of the solution at x and t + d_t (for ODEs, it is again just the
-        solution at t + d_t).
+        values of the solution at t and x (for ODEs, it is again just the
+        solution at t). The time t is an optional input, for problems with no
+        explicit dependence on t in the right hand sides of the differential
+        equation or the boundary conditions, it may be omitted. In this case,
+        the solution is modelled as a function of only the initial conditions
+        (and x for PDEs).
 
         The training data is generated by using the oracle to repeatedly solve
         sub-IVPs with perturbed initial conditions and a time domain extent
@@ -276,16 +297,15 @@ class AutoRegressionOperator(Operator):
         :param model: the model to fit to the training data
         :param iterations: the number of data generation iterations
         :param perturbation_function: a function that takes a time argument,
-            representing the start of a sub-IVP's time domain, and the discrete
-            initial values for the sub-IVP's solution and returns a perturbed
-            version of the initial values
+            representing the start of an IVP's time domain, and the discrete
+            initial conditions for the IVP and returns a perturbed version of
+            the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
-            propagating through to the subsequent sub-IVPs
+            propagating through to the subsequent sub-IVPs if in
+            auto-regressive mode
         :param repeat_on_error: whether to repeat the initial condition
-            perturbation and the target computation for any sub-IVP if an error
+            perturbation and the target computation for any IVP if an error
             is raised
-        :param verbose: whether to print information about failed sub-IVP
-            solutions during data generation
         :param n_jobs: the number of parallel processes to use for the data
             generation; if it is greater than one, all arguments relating to
             the data generation must be pickleable
@@ -304,7 +324,6 @@ class AutoRegressionOperator(Operator):
             perturbation_function,
             isolate_perturbations=isolate_perturbations,
             repeat_on_error=repeat_on_error,
-            verbose=verbose,
             n_jobs=n_jobs,
             seeds=seeds,
         )
@@ -342,7 +361,6 @@ class AutoRegressionOperator(Operator):
         perturbation_function: Callable[[float, np.ndarray], np.ndarray],
         isolate_perturbations: bool,
         repeat_on_error: bool,
-        verbose: bool,
         seed: Optional[int],
         queue: Queue,
     ):
@@ -355,23 +373,19 @@ class AutoRegressionOperator(Operator):
         :param oracle: the operator providing the training data
         :param iterations: the number of data generation iterations
         :param perturbation_function: a function that takes a time argument,
-            representing the start of a sub-IVP's time domain, and the discrete
-            initial conditions for the sub-IVP and returns a perturbed version
-            of the initial conditions
+            representing the start of an IVP's time domain, and the discrete
+            initial conditions for the IVP and returns a perturbed version of
+            the initial conditions
         :param isolate_perturbations: whether to stop perturbations from
-            propagating through to the subsequent sub-IVPs
+            propagating through to the subsequent sub-IVPs if in
+            auto-regressive mode
         :param repeat_on_error: whether to repeat the initial condition
-            perturbation and the target computation for any sub-IVP if an error
+            perturbation and the target computation for any IVP if an error
             is raised
-        :param verbose: whether to print information about failed sub-IVP
-            solutions
         :param seed: the NumPy random seed to use for the data generation
         :param queue: a queue to add the results to in the form of a tuple of
             the inputs and the target outputs
         """
-        successful_sub_ivp_solutions = 0
-        failed_sub_ivp_solutions = 0
-
         if seed is not None:
             np.random.seed(seed)
 
@@ -380,57 +394,66 @@ class AutoRegressionOperator(Operator):
         x_dim = diff_eq.x_dimension
         y_dim = diff_eq.y_dimension
 
-        t = discretize_time_domain(ivp.t_interval, self._d_t)[:-1]
+        t = discretize_time_domain(ivp.t_interval, self._d_t)
         y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
-        unperturbed_sub_y0s: List[Optional[np.ndarray]] = [None] * (len(t) - 1)
+
+        unperturbed_sub_y_0s: Optional[np.ndarray] = None
+        if self._auto_regressive and isolate_perturbations:
+            unperturbed_sub_y_0s = self._perturb_and_solve_ivp(
+                InitialValueProblem(
+                    ivp.constrained_problem,
+                    (t[0], t[-2]),
+                    ivp.initial_condition,
+                ),
+                lambda _, y: y,
+                oracle,
+                False,
+            ).discrete_y(self._vertex_oriented)[
+                np.rint((t[1:-1] - t[0]) / oracle.d_t).astype(int) - 1,
+                ...,
+            ]
 
         single_time_point_inputs = self._create_input_placeholder(cp)
         n_spatial_points = single_time_point_inputs.shape[0]
-        single_epoch_inputs = np.tile(single_time_point_inputs, (len(t), 1))
-
+        single_epoch_inputs = np.tile(
+            single_time_point_inputs, (len(t) - 1, 1)
+        )
         if self._time_variant:
-            single_epoch_inputs[:, -x_dim - 1] = np.repeat(t, n_spatial_points)
+            single_epoch_inputs[:, -x_dim - 1] = np.repeat(
+                t[1:], n_spatial_points
+            )
 
         inputs = np.tile(single_epoch_inputs, (iterations, 1))
         targets = np.empty((inputs.shape[0], y_dim))
         for iteration in range(iterations):
-            offset = iteration * n_spatial_points * len(t)
-            y_i = y_0
+            offset = iteration * n_spatial_points * (len(t) - 1)
 
-            for i, t_i in enumerate(t):
-                target_generation_successful = False
-                while not target_generation_successful:
-                    perturbed_y_i = perturbation_function(t_i, y_i)
-                    if perturbed_y_i.shape != y_i.shape:
-                        raise ValueError(
-                            f"perturbed y shape {perturbed_y_i.shape} must "
-                            f"match input y shape {y_i.shape}"
-                        )
-
-                    sub_ivp = InitialValueProblem(
-                        cp,
-                        (t_i, t_i + self._d_t),
-                        DiscreteInitialCondition(
-                            cp, perturbed_y_i, self._vertex_oriented
+            if self._auto_regressive:
+                y_i = y_0
+                for i, t_i in enumerate(t[:-1]):
+                    perturbed_sub_ivp_solution = self._perturb_and_solve_ivp(
+                        InitialValueProblem(
+                            cp,
+                            (t_i, t_i + self._d_t),
+                            DiscreteInitialCondition(
+                                cp, y_i, self._vertex_oriented
+                            ),
                         ),
+                        perturbation_function,
+                        oracle,
+                        repeat_on_error,
                     )
-
-                    try:
-                        sub_ivp_solution = oracle.solve(sub_ivp)
-                        successful_sub_ivp_solutions += 1
-                    except Exception as exception:
-                        if repeat_on_error:
-                            if verbose:
-                                warnings.warn(str(exception))
-                            failed_sub_ivp_solutions += 1
-                            continue
-
-                        raise exception
-
-                    y_next = sub_ivp_solution.discrete_y(
+                    perturbed_sub_ivp = (
+                        perturbed_sub_ivp_solution.initial_value_problem
+                    )
+                    perturbed_y_i = (
+                        perturbed_sub_ivp.initial_condition.discrete_y_0(
+                            self._vertex_oriented
+                        )
+                    )
+                    perturbed_y_next = perturbed_sub_ivp_solution.discrete_y(
                         self._vertex_oriented
-                    )[-1, ...]
-
+                    )[-1]
                     t_offset = offset + i * n_spatial_points
                     inputs[
                         t_offset : t_offset + n_spatial_points,
@@ -438,30 +461,89 @@ class AutoRegressionOperator(Operator):
                     ] = perturbed_y_i.reshape((1, -1))
                     targets[
                         t_offset : t_offset + n_spatial_points, :
-                    ] = y_next.reshape((-1, y_dim))
+                    ] = perturbed_y_next.reshape((-1, y_dim))
+                    y_i = (
+                        unperturbed_sub_y_0s[i]
+                        if isolate_perturbations and i < len(t) - 2
+                        else perturbed_y_next
+                    )
 
-                    if isolate_perturbations and i < len(t) - 1:
-                        y_next = unperturbed_sub_y0s[i]
-                        if y_next is None:
-                            sub_ivp = InitialValueProblem(
-                                cp,
-                                (t_i, t_i + self._d_t),
-                                DiscreteInitialCondition(
-                                    cp, y_i, self._vertex_oriented
-                                ),
-                            )
-                            y_next = oracle.solve(sub_ivp).discrete_y(
-                                self._vertex_oriented
-                            )[-1, ...]
-                            unperturbed_sub_y0s[i] = y_next
+            else:
+                perturbed_ivp_solution = self._perturb_and_solve_ivp(
+                    ivp,
+                    perturbation_function,
+                    oracle,
+                    repeat_on_error,
+                )
+                perturbed_ivp = perturbed_ivp_solution.initial_value_problem
+                perturbed_y_0 = perturbed_ivp.initial_condition.discrete_y_0(
+                    self._vertex_oriented
+                )
+                perturbed_y = perturbed_ivp_solution.discrete_y(
+                    self._vertex_oriented
+                )
+                inputs[
+                    offset : offset + (len(t) - 1) * n_spatial_points,
+                    : inputs.shape[1] - x_dim - self._time_variant,
+                ] = perturbed_y_0.reshape((1, -1))
+                targets[
+                    offset : offset + (len(t) - 1) * n_spatial_points, :
+                ] = perturbed_y[
+                    np.rint((t[1:] - t[0]) / oracle.d_t).astype(int) - 1, ...
+                ].reshape(
+                    (-1, y_dim)
+                )
 
-                    y_i = y_next
-                    target_generation_successful = True
-
-        if verbose:
-            print(
-                f"Process ID: {os.getpid()}; successful sub-IVP solutions: "
-                f"{successful_sub_ivp_solutions}; failed sub-IVP solutions: "
-                f"{failed_sub_ivp_solutions}"
-            )
         queue.put((inputs, targets))
+
+    def _perturb_and_solve_ivp(
+        self,
+        ivp: InitialValueProblem,
+        perturbation_function: Callable[[float, np.ndarray], np.ndarray],
+        oracle: Operator,
+        repeat_on_error: bool,
+    ) -> Solution:
+        """
+        Takes the provided IVP, perturbs its initial conditions, and solves the
+        perturbed IVP.
+
+        :param ivp: the IVP to solve after perturbing its initial conditions
+        :param perturbation_function: a function that takes a time argument,
+            representing the start of the IVP's time domain, and the discrete
+            initial conditions for the IVP and returns a perturbed version
+            of the initial conditions
+        :param oracle: the operator to solve the perturbed IVP with
+        :param repeat_on_error: whether to repeat the initial condition
+            perturbation and the IVP solution if an exception is raised
+        :return: the solution of the perturbed IVP
+        """
+        while True:
+            y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+            perturbed_y_0 = perturbation_function(ivp.t_interval[0], y_0)
+            if perturbed_y_0.shape != y_0.shape:
+                raise ValueError(
+                    f"perturbed y shape {perturbed_y_0.shape} must "
+                    f"match input y shape {y_0.shape}"
+                )
+
+            perturbed_ivp = InitialValueProblem(
+                ivp.constrained_problem,
+                ivp.t_interval,
+                DiscreteInitialCondition(
+                    ivp.constrained_problem,
+                    perturbed_y_0,
+                    self._vertex_oriented,
+                ),
+            )
+
+            try:
+                return oracle.solve(perturbed_ivp)
+            except Exception as exception:
+                if repeat_on_error:
+                    warnings.warn(
+                        "Failed to solve IVP with perturbed initial "
+                        f"conditions; {str(exception)}"
+                    )
+                    continue
+
+                raise exception

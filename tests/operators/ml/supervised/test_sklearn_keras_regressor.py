@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import GridSearchCV
 
-from pararealml.operators.ml.auto_regression import SKLearnKerasRegressor
+from pararealml.operators.ml.supervised import SKLearnKerasRegressor
 from pararealml.utils.rand import set_random_seed
 
 FEATURES = np.random.rand(100, 5)

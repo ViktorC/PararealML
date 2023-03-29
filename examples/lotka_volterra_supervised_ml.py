@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
 from pararealml import *
-from pararealml.operators.ml.auto_regression import *
+from pararealml.operators.ml.supervised import *
 from pararealml.operators.ode import *
 from pararealml.utils.rand import SEEDS, set_random_seed
 
@@ -21,8 +21,8 @@ v_max = np.max(ode_sol_y)
 for i, plot in enumerate(ode_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"lotka_volterra_ode_{i}").close()
 
-ar_op = AutoRegressionOperator(0.1, ode_op.vertex_oriented)
-ar_op.train(
+sml_op = SupervisedMLOperator(0.1, ode_op.vertex_oriented)
+sml_op.train(
     ivp,
     ode_op,
     RandomForestRegressor(n_estimators=250, n_jobs=4, verbose=True),
@@ -30,6 +30,6 @@ ar_op.train(
     lambda t, y: y + np.random.normal(0.0, t / 99.0, size=y.shape),
     isolate_perturbations=True,
 )
-ar_sol = ar_op.solve(ivp)
-for i, plot in enumerate(ar_sol.generate_plots(v_min=v_min, v_max=v_max)):
+sml_sol = sml_op.solve(ivp)
+for i, plot in enumerate(sml_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"lotka_volterra_ar_{i}").close()

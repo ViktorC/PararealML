@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 from pararealml import *
 from pararealml.operators.fdm import *
-from pararealml.operators.ml.auto_regression import *
+from pararealml.operators.ml.supervised import *
 from pararealml.utils.rand import SEEDS, set_random_seed
 
 set_random_seed(SEEDS[0])
@@ -46,8 +46,8 @@ v_max = np.max(fdm_sol_y)
 for i, plot in enumerate(fdm_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"cahn_hilliard_fdm_{i}").close()
 
-ar_op = AutoRegressionOperator(1.25, fdm_op.vertex_oriented)
-ar_op.train(
+sml_op = SupervisedMLOperator(1.25, fdm_op.vertex_oriented)
+sml_op.train(
     ivp,
     fdm_op,
     RandomForestRegressor(
@@ -56,6 +56,6 @@ ar_op.train(
     10,
     lambda t, y: y + np.random.normal(0.0, t / 375.0, size=y.shape),
 )
-ar_sol = ar_op.solve(ivp)
-for i, plot in enumerate(ar_sol.generate_plots(v_min=v_min, v_max=v_max)):
+sml_sol = sml_op.solve(ivp)
+for i, plot in enumerate(sml_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"cahn_hilliard_ar_{i}").close()

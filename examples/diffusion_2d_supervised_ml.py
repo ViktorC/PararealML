@@ -5,7 +5,7 @@ from sklearn.model_selection import GridSearchCV
 
 from pararealml import *
 from pararealml.operators.fdm import *
-from pararealml.operators.ml.auto_regression import *
+from pararealml.operators.ml.supervised import *
 from pararealml.utils.rand import SEEDS, set_random_seed
 
 set_random_seed(SEEDS[0])
@@ -56,8 +56,8 @@ def build_model(hidden_layer_size: int, optimizer: str, loss: str):
     return regressor
 
 
-ar_op = AutoRegressionOperator(0.5, fdm_op.vertex_oriented)
-ar_op.train(
+sml_op = SupervisedMLOperator(0.5, fdm_op.vertex_oriented)
+sml_op.train(
     ivp,
     fdm_op,
     GridSearchCV(
@@ -74,9 +74,9 @@ ar_op.train(
     10,
     lambda t, y: y + np.random.normal(0.0, t / 3.0, size=y.shape),
 )
-ar_sol = ar_op.solve(ivp)
+sml_sol = sml_op.solve(ivp)
 
-joblib.dump(ar_op.model, "model.tar")
+joblib.dump(sml_op.model, "model.tar")
 
-for i, plot in enumerate(ar_sol.generate_plots(v_min=v_min, v_max=v_max)):
+for i, plot in enumerate(sml_sol.generate_plots(v_min=v_min, v_max=v_max)):
     plot.save(f"diffusion_ar_{i}").close()
