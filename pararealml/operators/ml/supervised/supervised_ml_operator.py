@@ -235,7 +235,6 @@ class SupervisedMLOperator(Operator):
             x_train, x_test, y_train, y_test = train_test_split(
                 data[0],
                 data[1],
-                train_size=1.0 - test_size,
                 test_size=test_size,
             )
         else:

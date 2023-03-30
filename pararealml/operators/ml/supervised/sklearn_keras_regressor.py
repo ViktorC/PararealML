@@ -7,6 +7,8 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
+CPU_DEVICE_TYPE = "CPU"
+
 
 class SKLearnKerasRegressor:
     """
@@ -24,7 +26,6 @@ class SKLearnKerasRegressor:
         validation_split: float = 0.0,
         lazy_load_to_gpu: bool = False,
         prefetch_buffer_size: Optional[int] = None,
-        sample_weight: Optional[np.ndarray] = None,
         max_predict_batch_size: Optional[int] = None,
         **build_args: Any,
     ):
@@ -38,8 +39,6 @@ class SKLearnKerasRegressor:
         :param callbacks: any callbacks for the training of the model
         :param validation_split: the proportion of the training data to use for
             validation
-        :param sample_weight: an optional array of values to use to weight the
-            losses over individual samples
         :param lazy_load_to_gpu: whether to avoid loading the entire training
             data set onto the GPU all at once by using lazy loading instead
         :param prefetch_buffer_size: the number of samples to prefetch if using
@@ -56,7 +55,6 @@ class SKLearnKerasRegressor:
         self.validation_split = validation_split
         self.lazy_load_to_gpu = lazy_load_to_gpu
         self.prefetch_buffer_size = prefetch_buffer_size
-        self.sample_weight = sample_weight
         self.max_predict_batch_size = max_predict_batch_size
         self.build_args = build_args
 
@@ -83,7 +81,6 @@ class SKLearnKerasRegressor:
             "validation_split": self.validation_split,
             "lazy_load_to_gpu": self.lazy_load_to_gpu,
             "prefetch_buffer_size": self.prefetch_buffer_size,
-            "sample_weight": self.sample_weight,
             "max_predict_batch_size": self.max_predict_batch_size,
         }
         params.update(self.build_args)
@@ -109,7 +106,7 @@ class SKLearnKerasRegressor:
         self._model = self.build_fn(**self.build_args)
 
         if self.lazy_load_to_gpu:
-            with tf.device("CPU"):
+            with tf.device(CPU_DEVICE_TYPE):
                 if self.validation_split:
                     (
                         x_train,
@@ -119,7 +116,6 @@ class SKLearnKerasRegressor:
                     ) = train_test_split(
                         x,
                         y,
-                        train_size=1.0 - self.validation_split,
                         test_size=self.validation_split,
                     )
                     training_dataset = tf.data.Dataset.from_tensor_slices(
@@ -149,7 +145,6 @@ class SKLearnKerasRegressor:
                 training_dataset,
                 epochs=self.epochs,
                 validation_data=validation_dataset,
-                sample_weight=self.sample_weight,
                 callbacks=self.callbacks,
                 verbose=self.verbose,
             )
@@ -161,7 +156,6 @@ class SKLearnKerasRegressor:
                 epochs=self.epochs,
                 batch_size=self.batch_size,
                 validation_split=self.validation_split,
-                sample_weight=self.sample_weight,
                 callbacks=self.callbacks,
                 verbose=self.verbose,
             )
@@ -190,14 +184,18 @@ class SKLearnKerasRegressor:
         return np.concatenate(outputs, axis=0)
 
     def score(self, x: np.ndarray, y: np.ndarray) -> float:
-        with tf.device("CPU"):
-            dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(
-                self.batch_size
-            )
-            if self.prefetch_buffer_size:
-                dataset = dataset.prefetch(self.prefetch_buffer_size)
+        if self.lazy_load_to_gpu:
+            with tf.device(CPU_DEVICE_TYPE):
+                dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(
+                    self.batch_size
+                )
+                if self.prefetch_buffer_size:
+                    dataset = dataset.prefetch(self.prefetch_buffer_size)
 
-        loss = self._model.evaluate(dataset)
+            loss = self._model.evaluate(dataset)
+        else:
+            loss = self._model.evaluate(x, y)
+
         if isinstance(loss, Sequence):
             return -loss[0]
         return -loss
