@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from pararealml import *
 from pararealml.operators.fdm import *
-from pararealml.operators.ml.pidon import *
+from pararealml.operators.ml.physics_informed import *
 
 diff_eq = PopulationGrowthEquation(2.5)
 cp = ConstrainedProblem(diff_eq)
@@ -12,12 +12,12 @@ t_interval = (0.0, 1.0)
 fdm = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.001)
 
 sampler = UniformRandomCollocationPointSampler()
-pidon = PIDONOperator(sampler, 0.001, True)
+piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 training_y_0_functions = [
     lambda _, _y_0=y_0: np.array([_y_0]) for y_0 in np.arange(0.3, 1.8, 0.1)
 ]
 test_y_0_functions = [lambda _: np.array([0.7]), lambda _: np.array([1.3])]
-pidon.train(
+piml.train(
     cp,
     t_interval,
     training_data_args=DataArgs(
@@ -30,19 +30,31 @@ pidon.train(
         y_0_functions=test_y_0_functions, n_domain_points=50, n_batches=1
     ),
     model_args=ModelArgs(
-        branch_net=tf.keras.Sequential(
-            [tf.keras.layers.InputLayer(np.prod(cp.y_vertices_shape).item())]
-            + [tf.keras.layers.Dense(100, activation="tanh") for _ in range(6)]
-        ),
-        trunk_net=tf.keras.Sequential(
-            [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
-            + [tf.keras.layers.Dense(100, activation="tanh") for _ in range(6)]
-        ),
-        combiner_net=tf.keras.Sequential(
-            [
-                tf.keras.layers.InputLayer(300),
-                tf.keras.layers.Dense(diff_eq.y_dimension),
-            ]
+        base_model=DeepONet(
+            branch_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_vertices_shape).item()
+                    )
+                ]
+                + [
+                    tf.keras.layers.Dense(100, activation="tanh")
+                    for _ in range(6)
+                ]
+            ),
+            trunk_net=tf.keras.Sequential(
+                [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
+                + [
+                    tf.keras.layers.Dense(100, activation="tanh")
+                    for _ in range(6)
+                ]
+            ),
+            combiner_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(300),
+                    tf.keras.layers.Dense(diff_eq.y_dimension),
+                ]
+            ),
         ),
     ),
     optimization_args=OptimizationArgs(
@@ -64,6 +76,6 @@ for y_0 in [0.7, 1.0, 1.3]:
     for i, plot in enumerate(fdm_solution.generate_plots()):
         plot.save("pg_fdm_{:.1f}_{}".format(y_0, i)).close()
 
-    pidon_solution = pidon.solve(ivp)
-    for i, plot in enumerate(pidon_solution.generate_plots()):
+    piml_solution = piml.solve(ivp)
+    for i, plot in enumerate(piml_solution.generate_plots()):
         plot.save("pg_pidon_{:.1f}_{}".format(y_0, i)).close()

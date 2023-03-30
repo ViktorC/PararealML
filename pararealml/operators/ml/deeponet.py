@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import tensorflow as tf
 
@@ -59,48 +59,15 @@ class DeepONet(tf.keras.Model):
         """
         return self._combiner_net
 
-    def get_trainable_parameters(self) -> tf.Tensor:
-        """
-        All the trainable parameters of the model flattened into a single-row
-        matrix.
-        """
-        return tf.concat(
-            [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
-            axis=1,
-        )
-
-    def set_trainable_parameters(self, value: tf.Tensor):
-        """
-        Sets the trainable parameters of the model to the values provided.
-
-        :param value: the parameters values flattened into a single-row matrix
-        """
-        offset = 0
-        for var in self.trainable_variables:
-            var_size = tf.reduce_prod(var.shape)
-            var.assign(
-                tf.reshape(value[0, offset : offset + var_size], var.shape)
-            )
-            offset += var_size
-
     def call(
         self,
-        inputs: Union[
-            tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
-        ],
+        inputs: tf.Tensor,
         training: Optional[bool] = None,
         mask: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:
-        if isinstance(inputs, tuple):
-            u = inputs[0]
-            t = inputs[1]
-            x = inputs[2]
-            branch_input = u
-            trunk_input = t if x is None else tf.concat([t, x], axis=1)
-        else:
-            branch_net_input_size = self._branch_net.layers[0].input_shape[1]
-            branch_input = inputs[:, :branch_net_input_size, ...]
-            trunk_input = inputs[:, branch_net_input_size:, ...]
+        branch_net_input_size = self._branch_net.layers[0].input_shape[1]
+        branch_input = inputs[:, :branch_net_input_size, ...]
+        trunk_input = inputs[:, branch_net_input_size:, ...]
 
         branch_output = self._branch_net(
             branch_input, training=training, mask=mask

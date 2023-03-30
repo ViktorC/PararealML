@@ -1,7 +1,7 @@
 import numpy as np
 
 from pararealml.mesh import Mesh
-from pararealml.operators.ml.pidon.collocation_point_sampler import (
+from pararealml.operators.ml.physics_informed.collocation_point_sampler import (  # noqa: 501
     UniformRandomCollocationPointSampler,
 )
 

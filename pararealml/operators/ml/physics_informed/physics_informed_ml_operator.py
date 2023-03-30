@@ -22,19 +22,21 @@ from pararealml.initial_value_problem import (
     TemporalDomainInterval,
 )
 from pararealml.operator import Operator, discretize_time_domain
-from pararealml.operators.ml.pidon.collocation_point_sampler import (
+from pararealml.operators.ml.physics_informed.collocation_point_sampler import (  # noqa: 501
     CollocationPointSampler,
 )
-from pararealml.operators.ml.pidon.data_set import DataSet
-from pararealml.operators.ml.pidon.loss import Loss
-from pararealml.operators.ml.pidon.pi_deeponet import PIDeepONet
+from pararealml.operators.ml.physics_informed.data_set import DataSet
+from pararealml.operators.ml.physics_informed.loss import Loss
+from pararealml.operators.ml.physics_informed.physics_informed_regressor import (  # noqa: 501
+    PhysicsInformedRegressor,
+)
 from pararealml.solution import Solution
 
 
-class PIDONOperator(Operator):
+class PhysicsInformedMLOperator(Operator):
     """
-    A physics-informed DeepONet based unsupervised machine learning operator
-    for solving initial value problems.
+    A physics-informed machine learning operator for solving initial value
+    problems.
     """
 
     def __init__(
@@ -42,7 +44,7 @@ class PIDONOperator(Operator):
         sampler: CollocationPointSampler,
         d_t: float,
         vertex_oriented: bool,
-        auto_regression_mode: bool = False,
+        auto_regressive: bool = False,
     ):
         """
         :param sampler: the collocation point sampler to use to generate the
@@ -51,34 +53,32 @@ class PIDONOperator(Operator):
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
-        :param auto_regression_mode: whether the operator is to function in
-            auto-regression mode using its prediction at the previous time
+        :param auto_regressive: whether the operator is to function in
+            auto-regressive mode using its prediction at the previous time
             step as the initial conditions for its prediction at the next time
             step
         """
-        super(PIDONOperator, self).__init__(d_t, vertex_oriented)
-
+        super(PhysicsInformedMLOperator, self).__init__(d_t, vertex_oriented)
         self._sampler = sampler
-        self._auto_regression_mode = auto_regression_mode
-
-        self._model: Optional[PIDeepONet] = None
-
-    @property
-    def auto_regression_mode(self) -> bool:
-        """
-        Whether the operator functions in auto-regression mode.
-        """
-        return self._auto_regression_mode
+        self._auto_regressive = auto_regressive
+        self._model: Optional[PhysicsInformedRegressor] = None
 
     @property
-    def model(self) -> Optional[PIDeepONet]:
+    def auto_regressive(self) -> bool:
         """
-        The physics-informed DeepONet model behind the operator.
+        Whether the operator functions in auto-regressive mode.
+        """
+        return self._auto_regressive
+
+    @property
+    def model(self) -> Optional[PhysicsInformedRegressor]:
+        """
+        The physics-informed regresion model behind the operator.
         """
         return self._model
 
     @model.setter
-    def model(self, model: Optional[PIDeepONet]):
+    def model(self, model: Optional[PhysicsInformedRegressor]):
         self._model = model
 
     def solve(
@@ -104,7 +104,7 @@ class PIDONOperator(Operator):
             u_tensor = tf.convert_to_tensor(u, tf.float32)
 
         t_tensor = tf.constant(
-            self._d_t if self._auto_regression_mode else t[0],
+            self._d_t if self._auto_regressive else t[0],
             dtype=tf.float32,
             shape=(u_tensor.shape[0], 1),
         )
@@ -117,7 +117,7 @@ class PIDONOperator(Operator):
             y[i, ...] = y_i_tensor.numpy().reshape(y_shape)
 
             if i < len(t) - 1:
-                if self._auto_regression_mode:
+                if self._auto_regressive:
                     u_tensor = (
                         tf.tile(
                             tf.reshape(y_i_tensor, (1, -1)),
@@ -151,7 +151,7 @@ class PIDONOperator(Operator):
         ] = None,
     ) -> TrainingResults:
         """
-        Trains a physics-informed DeepONet model on the provided constrained
+        Trains a physics-informed regresion model on the provided constrained
         problem, time interval, and initial condition functions using the model
         and training arguments. It also saves the trained model to use as the
         predictor for solving IVPs.
@@ -160,15 +160,15 @@ class PIDONOperator(Operator):
         :param t_interval: the time interval to train the operator on
         :param training_data_args: the training data generation and batch size
             arguments
-        :param optimization_args: the physics-informed DeepONet model
+        :param optimization_args: the physics-informed regresion model
             optimization arguments
-        :param model_args: the physics-informed DeepONet model arguments; if
+        :param model_args: the physics-informed regresion model arguments; if
             the operator already has a model, it can be None
         :param test_data_args: the test data generation and batch size
             arguments
-        :param secondary_optimization_args: the physics-informed DeepONet model
-            optimization arguments for fine tuning the model parameters using
-            a (quasi) second order optimization method
+        :param secondary_optimization_args: the physics-informed regresion
+            model optimization arguments for fine tuning the model parameters
+            using a (quasi) second order optimization method
         :return: the training results
         """
         if model_args is None and self._model is None:
@@ -177,10 +177,10 @@ class PIDONOperator(Operator):
                 "is None"
             )
 
-        if self._auto_regression_mode:
+        if self._auto_regressive:
             if t_interval != (0.0, self._d_t):
                 raise ValueError(
-                    "in auto-regression mode, the training time interval "
+                    "in auto-regressive mode, the training time interval "
                     f"{t_interval} must range from 0 to the time step size of "
                     f"the operator ({self._d_t})"
                 )
@@ -190,7 +190,7 @@ class PIDONOperator(Operator):
             eq_sys = diff_eq.symbolic_equation_system
             if any([t_symbol in rhs.free_symbols for rhs in eq_sys.rhs]):
                 raise ValueError(
-                    "auto-regression mode is not compatible with differential "
+                    "auto-regressive mode is not compatible with differential "
                     "equations whose right-hand sides contain any t terms"
                 )
 
@@ -199,7 +199,7 @@ class PIDONOperator(Operator):
                 and not cp.are_all_boundary_conditions_static
             ):
                 raise ValueError(
-                    "auto-regression mode is not compatible with dynamic "
+                    "auto-regressive mode is not compatible with dynamic "
                     "boundary conditions"
                 )
 
@@ -239,7 +239,7 @@ class PIDONOperator(Operator):
         model = (
             self._model
             if model_args is None
-            else PIDeepONet(
+            else PhysicsInformedRegressor(
                 cp=cp,
                 vertex_oriented=self._vertex_oriented,
                 **model_args._asdict(),
@@ -275,7 +275,7 @@ class PIDONOperator(Operator):
         self, inputs: Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
     ) -> tf.Tensor:
         """
-        Propagates the inputs through the physics-informed DeepONet.
+        Propagates the inputs through the physics-informed regression model.
 
         :param inputs: the model inputs
         :return: the model outputs
@@ -285,7 +285,8 @@ class PIDONOperator(Operator):
 
 class DataArgs(NamedTuple):
     """
-    Arguments pertaining to the generation and traversal of PIDON data sets.
+    Arguments pertaining to the generation and traversal of physics-informed
+    regresion data sets.
     """
 
     y_0_functions: Iterable[VectorizedInitialConditionFunction]
@@ -298,12 +299,11 @@ class DataArgs(NamedTuple):
 
 class ModelArgs(NamedTuple):
     """
-    Arguments pertaining to the architecture of a PIDON model.
+    Arguments pertaining to the architecture of the physics-informed regresion
+    model.
     """
 
-    branch_net: tf.keras.Model
-    trunk_net: tf.keras.Model
-    combiner_net: tf.keras.Model
+    base_model: tf.keras.Model
     diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0
     ic_loss_weight: Union[float, Sequence[float]] = 1.0
     bc_loss_weight: Union[float, Sequence[float]] = 1.0
@@ -311,7 +311,8 @@ class ModelArgs(NamedTuple):
 
 class OptimizationArgs(NamedTuple):
     """
-    Arguments pertaining to the training of a PIDON model.
+    Arguments pertaining to the training of the physics-informed regresion
+    model.
     """
 
     optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
@@ -321,8 +322,9 @@ class OptimizationArgs(NamedTuple):
 
 class SecondaryOptimizationArgs(NamedTuple):
     """
-    Arguments pertaining to the training of a PIDON model using a second order
-    optimization method to fine tune the model parameters.
+    Arguments pertaining to the training of the physics-informed regresion
+    model using a second order optimization method to fine tune the model
+    parameters.
     """
 
     max_iterations: int = 50
@@ -334,7 +336,7 @@ class SecondaryOptimizationArgs(NamedTuple):
 
 class TrainingResults(NamedTuple):
     """
-    The results of the training of the PIDON operator.
+    The results of the training of the physics-informed ML operator.
     """
 
     training_loss_history: List[Loss]

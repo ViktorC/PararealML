@@ -7,7 +7,7 @@ import tensorflow as tf
 
 class Loss(NamedTuple):
     """
-    A collection of the various losses of a physics-informed DeepONet.
+    A collection of the various losses of a physics-informed regression model.
     """
 
     diff_eq_loss: tf.Tensor

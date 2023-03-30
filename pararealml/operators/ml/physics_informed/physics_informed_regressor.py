@@ -7,37 +7,32 @@ import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LHS
-from pararealml.operators.ml.deeponet import DeepONet
-from pararealml.operators.ml.pidon.auto_differentiator import (
+from pararealml.operators.ml.physics_informed.ad_symbol_mapper import (
+    ADSymbolMapArg,
+    ADSymbolMapFunction,
+    ADSymbolMapper,
+)
+from pararealml.operators.ml.physics_informed.auto_differentiator import (
     AutoDifferentiator,
 )
-from pararealml.operators.ml.pidon.data_set import (
+from pararealml.operators.ml.physics_informed.data_set import (
     BoundaryDataBatch,
     DataBatch,
     DataSetIterator,
     DomainDataBatch,
     InitialDataBatch,
 )
-from pararealml.operators.ml.pidon.loss import Loss
-from pararealml.operators.ml.pidon.pidon_symbol_mapper import (
-    PIDONSymbolMapArg,
-    PIDONSymbolMapFunction,
-    PIDONSymbolMapper,
-)
+from pararealml.operators.ml.physics_informed.loss import Loss
 
 
-class PIDeepONet(DeepONet):
+class PhysicsInformedRegressor(tf.keras.Model):
     """
-    A Physics-Informed DeepONet model.
-
-    See: https://arxiv.org/abs/2103.10974
+    A physics-informed regression model.
     """
 
     def __init__(
         self,
-        branch_net: tf.keras.Model,
-        trunk_net: tf.keras.Model,
-        combiner_net: tf.keras.Model,
+        base_model: tf.keras.Model,
         cp: ConstrainedProblem,
         diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0,
         ic_loss_weight: Union[float, Sequence[float]] = 1.0,
@@ -45,12 +40,7 @@ class PIDeepONet(DeepONet):
         vertex_oriented: bool = False,
     ):
         """
-        :param branch_net: the model's branch net that processes the initial
-            condition sensor readings
-        :param trunk_net: the model's trunk net that processes the domain
-            coordinates
-        :param combiner_net: the model's combiner net that combines the outputs
-            of the branch and trunk nets
+        :param base_model: the base regression model
         :param cp: the constrained problem to build a physics-informed neural
             network around
         :param diff_eq_loss_weight: the weight of the differential equation
@@ -67,25 +57,16 @@ class PIDeepONet(DeepONet):
         x_dim = diff_eq.x_dimension
         y_dim = diff_eq.y_dimension
 
-        branch_net_output_shape = branch_net.compute_output_shape(
-            (None, np.prod(cp.y_shape(vertex_oriented)))
+        inputs = tf.keras.layers.Input(
+            shape=(np.prod(cp.y_shape(vertex_oriented)) + x_dim + 1,)
         )
-        trunk_net_output_shape = trunk_net.compute_output_shape(
-            (None, x_dim + 1)
-        )
-        if branch_net_output_shape != trunk_net_output_shape:
+        base_model_output_shape = tf.keras.Model(
+            inputs=inputs, outputs=base_model.call(inputs)
+        ).output.shape
+        if base_model_output_shape != (None, y_dim):
             raise ValueError(
-                f"branch net output shape {branch_net_output_shape} and "
-                f"trunk net output shape {trunk_net_output_shape} must match"
-            )
-
-        combiner_net_output_shape = combiner_net.compute_output_shape(
-            (None,) + tuple(3 * np.array(branch_net_output_shape[1:]))
-        )
-        if combiner_net_output_shape != (None, y_dim):
-            raise ValueError(
-                f"combiner net output shape {combiner_net_output_shape} "
-                f"must be {(None, y_dim)}"
+                "base regression model output shape "
+                f"{base_model_output_shape} must be {(None, y_dim)}"
             )
 
         diff_eq_loss_weights = (
@@ -113,16 +94,24 @@ class PIDeepONet(DeepONet):
                 f"length of all loss weights must match y dimension ({y_dim})"
             )
 
-        super(PIDeepONet, self).__init__(branch_net, trunk_net, combiner_net)
+        super(PhysicsInformedRegressor, self).__init__()
 
+        self._base_model = base_model
         self._cp = cp
         self._diff_eq_loss_weights = diff_eq_loss_weights
         self._ic_loss_weights = ic_loss_weights
         self._bc_loss_weights = bc_loss_weights
 
-        self._symbol_mapper = PIDONSymbolMapper(cp)
+        self._symbol_mapper = ADSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
         self._logger = logging.getLogger(__name__)
+
+    @property
+    def base_model(self) -> tf.keras.Model:
+        """
+        The base regression model.
+        """
+        return self._base_model
 
     @property
     def constrained_problem(self) -> ConstrainedProblem:
@@ -154,6 +143,23 @@ class PIDeepONet(DeepONet):
         physics-informed loss.
         """
         return self._bc_loss_weights
+
+    def call(
+        self,
+        inputs: Union[
+            tf.Tensor, Tuple[tf.Tensor, tf.Tensor, Optional[tf.Tensor]]
+        ],
+        training: Optional[bool] = None,
+        mask: Optional[tf.Tensor] = None,
+    ) -> tf.Tensor:
+        if isinstance(inputs, tuple):
+            u = inputs[0]
+            t = inputs[1]
+            x = inputs[2]
+            input_tensor = tf.concat((u, t) if x is None else inputs, axis=1)
+        else:
+            input_tensor = inputs
+        return self._base_model(input_tensor, training=training, mask=mask)
 
     def train(
         self,
@@ -216,11 +222,11 @@ class PIDeepONet(DeepONet):
                         or test_loss_sum <= best_test_loss_sum
                     ):
                         best_test_loss_sum = test_loss_sum
-                        best_weights = self.get_trainable_parameters()
+                        best_weights = self._get_trainable_parameters()
                         best_epoch = epoch
 
         if test_data and restore_best_weights:
-            self.set_trainable_parameters(best_weights)
+            self._set_trainable_parameters(best_weights)
             self._logger.info("Best Epoch: %s", best_epoch)
             self._logger.info(
                 "Training MSE - %s", training_loss_history[best_epoch]
@@ -264,7 +270,7 @@ class PIDeepONet(DeepONet):
         def value_and_gradients_function(
             parameters: tf.Tensor,
         ) -> Tuple[tf.Tensor, tf.Tensor]:
-            self.set_trainable_parameters(parameters)
+            self._set_trainable_parameters(parameters)
             with AutoDifferentiator() as auto_diff:
                 loss = self._compute_batch_loss(full_training_data_batch, True)
                 value = tf.reduce_sum(loss.weighted_total_loss, keepdims=True)
@@ -279,14 +285,14 @@ class PIDeepONet(DeepONet):
         self._logger.info("L-BFGS Optimization")
         results = tfp.optimizer.lbfgs_minimize(
             value_and_gradients_function=value_and_gradients_function,
-            initial_position=self.get_trainable_parameters(),
+            initial_position=self._get_trainable_parameters(),
             max_iterations=max_iterations,
             max_line_search_iterations=max_line_search_iterations,
             parallel_iterations=parallel_iterations,
             num_correction_pairs=num_correction_pairs,
             tolerance=gradient_tol,
         )
-        self.set_trainable_parameters(results.position)
+        self._set_trainable_parameters(results.position)
         self._logger.info(
             "Iterations: %s; Objective Evaluations: %s; Objective Value: %s; "
             "Converged: %s; Failed: %s",
@@ -312,7 +318,7 @@ class PIDeepONet(DeepONet):
 
     def _create_diff_eq_lhs_functions(
         self,
-    ) -> Sequence[PIDONSymbolMapFunction]:
+    ) -> Sequence[ADSymbolMapFunction]:
         """
         Creates a sequence of symbol map functions representing the left-hand
         side of the differential equation system.
@@ -350,6 +356,30 @@ class PIDeepONet(DeepONet):
                 )
 
         return lhs_functions
+
+    def _get_trainable_parameters(self) -> tf.Tensor:
+        """
+        All the trainable parameters of the model flattened into a single-row
+        matrix.
+        """
+        return tf.concat(
+            [tf.reshape(var, (1, -1)) for var in self.trainable_variables],
+            axis=1,
+        )
+
+    def _set_trainable_parameters(self, value: tf.Tensor):
+        """
+        Sets the trainable parameters of the model to the values provided.
+
+        :param value: the parameters values flattened into a single-row matrix
+        """
+        offset = 0
+        for var in self.trainable_variables:
+            var_size = tf.reduce_prod(var.shape)
+            var.assign(
+                tf.reshape(value[0, offset : offset + var_size], var.shape)
+            )
+            offset += var_size
 
     def _compute_and_minimize_total_loss(
         self,
@@ -464,9 +494,7 @@ class PIDeepONet(DeepONet):
                 (batch.u, batch.t, batch.x), training=training
             )
 
-            symbol_map_arg = PIDONSymbolMapArg(
-                auto_diff, batch.t, batch.x, y_hat
-            )
+            symbol_map_arg = ADSymbolMapArg(auto_diff, batch.t, batch.x, y_hat)
             rhs = self._symbol_mapper.map(symbol_map_arg)
 
             diff_eq_residual = tf.concat(

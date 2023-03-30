@@ -4,15 +4,15 @@ import numpy as np
 import tensorflow as tf
 
 from pararealml.constrained_problem import ConstrainedProblem
-from pararealml.operators.ml.pidon.auto_differentiator import (
+from pararealml.operators.ml.physics_informed.auto_differentiator import (
     AutoDifferentiator,
 )
 from pararealml.operators.symbol_mapper import SymbolMapper
 
 
-class PIDONSymbolMapArg(NamedTuple):
+class ADSymbolMapArg(NamedTuple):
     """
-    The arguments to the PIDON map functions.
+    The arguments to the auto-differentiated symbol map functions.
     """
 
     auto_diff: AutoDifferentiator
@@ -21,12 +21,12 @@ class PIDONSymbolMapArg(NamedTuple):
     y_hat: tf.Tensor
 
 
-PIDONSymbolMapFunction = Callable[[PIDONSymbolMapArg], tf.Tensor]
+ADSymbolMapFunction = Callable[[ADSymbolMapArg], tf.Tensor]
 
 
-class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
+class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
     """
-    A symbol mapper implementation for the PIDON operator.
+    A symbol mapper implementation using auto-differentiation.
     """
 
     def __init__(self, cp: ConstrainedProblem):
@@ -34,20 +34,20 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
         :param cp: the constrained problem to create a symbol mapper for
         """
         diff_eq = cp.differential_equation
-        super(PIDONSymbolMapper, self).__init__(diff_eq)
+        super(ADSymbolMapper, self).__init__(diff_eq)
 
         if diff_eq.x_dimension:
             self._coordinate_system_type = cp.mesh.coordinate_system_type
         else:
             self._coordinate_system_type = None
 
-    def t_map_function(self) -> PIDONSymbolMapFunction:
+    def t_map_function(self) -> ADSymbolMapFunction:
         return lambda arg: arg.t
 
-    def y_map_function(self, y_ind: int) -> PIDONSymbolMapFunction:
+    def y_map_function(self, y_ind: int) -> ADSymbolMapFunction:
         return lambda arg: arg.y_hat[:, y_ind : y_ind + 1]
 
-    def x_map_function(self, x_axis: int) -> PIDONSymbolMapFunction:
+    def x_map_function(self, x_axis: int) -> ADSymbolMapFunction:
         return lambda arg: arg.x[:, x_axis : x_axis + 1]
 
     def y_gradient_map_function(self, y_ind: int, x_axis: int) -> Callable:
@@ -60,7 +60,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
 
     def y_hessian_map_function(
         self, y_ind: int, x_axis1: int, x_axis2: int
-    ) -> PIDONSymbolMapFunction:
+    ) -> ADSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_hessian(
             arg.x,
             arg.y_hat[:, y_ind : y_ind + 1],
@@ -73,7 +73,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
         self,
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
-    ) -> PIDONSymbolMapFunction:
+    ) -> ADSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_divergence(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]
@@ -87,7 +87,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
         curl_ind: int,
-    ) -> PIDONSymbolMapFunction:
+    ) -> ADSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_curl(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]
@@ -97,7 +97,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
             self._coordinate_system_type,
         )
 
-    def y_laplacian_map_function(self, y_ind: int) -> PIDONSymbolMapFunction:
+    def y_laplacian_map_function(self, y_ind: int) -> ADSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_laplacian(
             arg.x,
             arg.y_hat[:, y_ind : y_ind + 1],
@@ -109,7 +109,7 @@ class PIDONSymbolMapper(SymbolMapper[PIDONSymbolMapArg, tf.Tensor]):
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
         vector_laplacian_ind: int,
-    ) -> PIDONSymbolMapFunction:
+    ) -> ADSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_vector_laplacian(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]

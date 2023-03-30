@@ -9,7 +9,7 @@ import tensorflow as tf
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.initial_condition import VectorizedInitialConditionFunction
 from pararealml.initial_value_problem import TemporalDomainInterval
-from pararealml.operators.ml.pidon.collocation_point_sampler import (
+from pararealml.operators.ml.physics_informed.collocation_point_sampler import (  # noqa: 501
     CollocationPointSampler,
 )
 
@@ -17,7 +17,7 @@ from pararealml.operators.ml.pidon.collocation_point_sampler import (
 class DataSet:
     """
     A generator and container of all the data necessary to train a
-    physics-informed DeepONet with variable initial conditions.
+    physics-informed regresion model with variable initial conditions.
     """
 
     def __init__(

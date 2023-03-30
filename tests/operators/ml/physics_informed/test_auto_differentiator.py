@@ -3,7 +3,7 @@ import pytest
 import tensorflow as tf
 
 from pararealml import CoordinateSystem
-from pararealml.operators.ml.pidon.auto_differentiator import (
+from pararealml.operators.ml.physics_informed.auto_differentiator import (
     AutoDifferentiator,
 )
 

@@ -14,10 +14,10 @@ from pararealml.differential_equation import (
     PopulationGrowthEquation,
 )
 from pararealml.mesh import Mesh
-from pararealml.operators.ml.pidon.collocation_point_sampler import (
+from pararealml.operators.ml.physics_informed.collocation_point_sampler import (  # noqa: 501
     UniformRandomCollocationPointSampler,
 )
-from pararealml.operators.ml.pidon.data_set import DataSet
+from pararealml.operators.ml.physics_informed.data_set import DataSet
 
 
 def test_data_set_ode():
