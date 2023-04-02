@@ -10,9 +10,9 @@ from pararealml.operators.ml.physics_informed.auto_differentiator import (
 from pararealml.operators.symbol_mapper import SymbolMapper
 
 
-class ADSymbolMapArg(NamedTuple):
+class PhysicsInformedMLSymbolMapArg(NamedTuple):
     """
-    The arguments to the auto-differentiated symbol map functions.
+    The arguments to the physics-informed ML symbol map functions.
     """
 
     auto_diff: AutoDifferentiator
@@ -21,12 +21,17 @@ class ADSymbolMapArg(NamedTuple):
     y_hat: tf.Tensor
 
 
-ADSymbolMapFunction = Callable[[ADSymbolMapArg], tf.Tensor]
+PhysicsInformedMLSymbolMapFunction = Callable[
+    [PhysicsInformedMLSymbolMapArg], tf.Tensor
+]
 
 
-class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
+class PhysicsInformedMLSymbolMapper(
+    SymbolMapper[PhysicsInformedMLSymbolMapArg, tf.Tensor]
+):
     """
-    A symbol mapper implementation using auto-differentiation.
+    A symbol mapper implementation for the physics-informed ML operator using
+    auto-differentiation.
     """
 
     def __init__(self, cp: ConstrainedProblem):
@@ -34,20 +39,22 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
         :param cp: the constrained problem to create a symbol mapper for
         """
         diff_eq = cp.differential_equation
-        super(ADSymbolMapper, self).__init__(diff_eq)
+        super(PhysicsInformedMLSymbolMapper, self).__init__(diff_eq)
 
         if diff_eq.x_dimension:
             self._coordinate_system_type = cp.mesh.coordinate_system_type
         else:
             self._coordinate_system_type = None
 
-    def t_map_function(self) -> ADSymbolMapFunction:
+    def t_map_function(self) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.t
 
-    def y_map_function(self, y_ind: int) -> ADSymbolMapFunction:
+    def y_map_function(self, y_ind: int) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.y_hat[:, y_ind : y_ind + 1]
 
-    def x_map_function(self, x_axis: int) -> ADSymbolMapFunction:
+    def x_map_function(
+        self, x_axis: int
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.x[:, x_axis : x_axis + 1]
 
     def y_gradient_map_function(self, y_ind: int, x_axis: int) -> Callable:
@@ -60,7 +67,7 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
 
     def y_hessian_map_function(
         self, y_ind: int, x_axis1: int, x_axis2: int
-    ) -> ADSymbolMapFunction:
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_hessian(
             arg.x,
             arg.y_hat[:, y_ind : y_ind + 1],
@@ -73,7 +80,7 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
         self,
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
-    ) -> ADSymbolMapFunction:
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_divergence(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]
@@ -87,7 +94,7 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
         curl_ind: int,
-    ) -> ADSymbolMapFunction:
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_curl(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]
@@ -97,7 +104,9 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
             self._coordinate_system_type,
         )
 
-    def y_laplacian_map_function(self, y_ind: int) -> ADSymbolMapFunction:
+    def y_laplacian_map_function(
+        self, y_ind: int
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_laplacian(
             arg.x,
             arg.y_hat[:, y_ind : y_ind + 1],
@@ -109,7 +118,7 @@ class ADSymbolMapper(SymbolMapper[ADSymbolMapArg, tf.Tensor]):
         y_indices: Sequence[int],
         indices_contiguous: Union[bool, np.bool_],
         vector_laplacian_ind: int,
-    ) -> ADSymbolMapFunction:
+    ) -> PhysicsInformedMLSymbolMapFunction:
         return lambda arg: arg.auto_diff.batch_vector_laplacian(
             arg.x,
             arg.y_hat[:, y_indices[0] : y_indices[-1] + 1]

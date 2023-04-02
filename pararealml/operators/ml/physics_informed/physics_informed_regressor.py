@@ -7,11 +7,6 @@ import tensorflow_probability as tfp
 
 from pararealml.constrained_problem import ConstrainedProblem
 from pararealml.differential_equation import LHS
-from pararealml.operators.ml.physics_informed.ad_symbol_mapper import (
-    ADSymbolMapArg,
-    ADSymbolMapFunction,
-    ADSymbolMapper,
-)
 from pararealml.operators.ml.physics_informed.auto_differentiator import (
     AutoDifferentiator,
 )
@@ -23,6 +18,11 @@ from pararealml.operators.ml.physics_informed.data_set import (
     InitialDataBatch,
 )
 from pararealml.operators.ml.physics_informed.loss import Loss
+from pararealml.operators.ml.physics_informed.physics_informed_ml_symbol_mapper import (  # noqa: 501
+    PhysicsInformedMLSymbolMapArg,
+    PhysicsInformedMLSymbolMapFunction,
+    PhysicsInformedMLSymbolMapper,
+)
 
 
 class PhysicsInformedRegressor(tf.keras.Model):
@@ -102,7 +102,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
         self._ic_loss_weights = ic_loss_weights
         self._bc_loss_weights = bc_loss_weights
 
-        self._symbol_mapper = ADSymbolMapper(cp)
+        self._symbol_mapper = PhysicsInformedMLSymbolMapper(cp)
         self._diff_eq_lhs_functions = self._create_diff_eq_lhs_functions()
         self._logger = logging.getLogger(__name__)
 
@@ -318,7 +318,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
 
     def _create_diff_eq_lhs_functions(
         self,
-    ) -> Sequence[ADSymbolMapFunction]:
+    ) -> Sequence[PhysicsInformedMLSymbolMapFunction]:
         """
         Creates a sequence of symbol map functions representing the left-hand
         side of the differential equation system.
@@ -494,7 +494,9 @@ class PhysicsInformedRegressor(tf.keras.Model):
                 (batch.u, batch.t, batch.x), training=training
             )
 
-            symbol_map_arg = ADSymbolMapArg(auto_diff, batch.t, batch.x, y_hat)
+            symbol_map_arg = PhysicsInformedMLSymbolMapArg(
+                auto_diff, batch.t, batch.x, y_hat
+            )
             rhs = self._symbol_mapper.map(symbol_map_arg)
 
             diff_eq_residual = tf.concat(
