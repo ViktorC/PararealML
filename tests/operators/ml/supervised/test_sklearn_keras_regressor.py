@@ -64,7 +64,7 @@ def test_sklearn_keras_regressor_with_lazy_loading():
         max_predict_batch_size=10,
         validation_split=0.1,
         lazy_load_to_gpu=True,
-        prefetch_buffer_size=20,
+        prefetch_buffer_size=1,
         hidden_layer_size=100,
         optimizer="adam",
         loss="mse",

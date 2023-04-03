@@ -41,7 +41,7 @@ class SKLearnKerasRegressor:
             validation
         :param lazy_load_to_gpu: whether to avoid loading the entire training
             data set onto the GPU all at once by using lazy loading instead
-        :param prefetch_buffer_size: the number of samples to prefetch if using
+        :param prefetch_buffer_size: the number of batches to prefetch if using
             lazy loading to the GPU
         :param max_predict_batch_size: the maximum batch size to use for
             predictions
