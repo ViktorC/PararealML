@@ -182,6 +182,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
             input_tensor = inputs
         return self._model(input_tensor, training=training, mask=mask)
 
+    @tf.function
     def train_step(
         self, data: Dict[str, Dict[str, tf.Tensor]]
     ) -> Dict[str, np.ndarray]:
@@ -195,6 +196,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
         )
         return {metric.name: metric.result() for metric in self.metrics}
 
+    @tf.function
     def test_step(
         self, data: Dict[str, Dict[str, tf.Tensor]]
     ) -> Dict[str, np.ndarray]:
