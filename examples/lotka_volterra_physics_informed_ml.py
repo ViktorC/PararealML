@@ -24,7 +24,7 @@ training_y_0_functions = [
     lambda _: np.array([52.5, 25.0]),
     lambda _: np.array([52.5, 27.5]),
 ]
-test_y_0_functions = [
+validation_y_0_functions = [
     lambda _: np.array([47.5, 22.5]),
     lambda _: np.array([50.0, 25.0]),
     lambda _: np.array([52.5, 27.5]),
@@ -38,11 +38,11 @@ piml.train(
         n_batches=2,
         n_ic_repeats=2,
     ),
-    test_data_args=DataArgs(
-        y_0_functions=test_y_0_functions, n_domain_points=50, n_batches=1
+    validation_data_args=DataArgs(
+        y_0_functions=validation_y_0_functions, n_domain_points=50, n_batches=1
     ),
     model_args=ModelArgs(
-        base_model=DeepONet(
+        model=DeepONet(
             branch_net=tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(
@@ -50,20 +50,21 @@ piml.train(
                     )
                 ]
                 + [
-                    tf.keras.layers.Dense(100, activation="tanh")
+                    tf.keras.layers.Dense(50, activation="softplus")
                     for _ in range(6)
                 ]
             ),
             trunk_net=tf.keras.Sequential(
                 [tf.keras.layers.InputLayer(diff_eq.x_dimension + 1)]
                 + [
-                    tf.keras.layers.Dense(100, activation="tanh")
+                    tf.keras.layers.Dense(50, activation="softplus")
                     for _ in range(6)
                 ]
             ),
             combiner_net=tf.keras.Sequential(
                 [
-                    tf.keras.layers.InputLayer(300),
+                    tf.keras.layers.InputLayer(150),
+                    tf.keras.layers.Dense(50, activation="softplus"),
                     tf.keras.layers.Dense(diff_eq.y_dimension),
                 ]
             ),
@@ -72,12 +73,11 @@ piml.train(
     optimization_args=OptimizationArgs(
         optimizer=tf.optimizers.Adam(
             learning_rate=tf.optimizers.schedules.ExponentialDecay(
-                2e-4, decay_steps=120, decay_rate=0.97
+                1e-3, decay_steps=100, decay_rate=0.95
             )
         ),
         epochs=2000,
     ),
-    secondary_optimization_args=SecondaryOptimizationArgs(max_iterations=500),
 )
 
 for y_0 in [(47.5, 27.5), (50.0, 25.0), (52.5, 22.5)]:

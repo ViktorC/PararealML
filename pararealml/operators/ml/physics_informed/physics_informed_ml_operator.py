@@ -4,7 +4,6 @@ from typing import (
     Any,
     Dict,
     Iterable,
-    List,
     NamedTuple,
     Optional,
     Sequence,
@@ -25,8 +24,9 @@ from pararealml.operator import Operator, discretize_time_domain
 from pararealml.operators.ml.physics_informed.collocation_point_sampler import (  # noqa: 501
     CollocationPointSampler,
 )
-from pararealml.operators.ml.physics_informed.data_set import DataSet
-from pararealml.operators.ml.physics_informed.loss import Loss
+from pararealml.operators.ml.physics_informed.dataset_generator import (
+    DatasetGenerator,
+)
 from pararealml.operators.ml.physics_informed.physics_informed_regressor import (  # noqa: 501
     PhysicsInformedRegressor,
 )
@@ -141,15 +141,12 @@ class PhysicsInformedMLOperator(Operator):
         self,
         cp: ConstrainedProblem,
         t_interval: TemporalDomainInterval,
-        *,
         training_data_args: DataArgs,
         optimization_args: OptimizationArgs,
         model_args: Optional[ModelArgs] = None,
+        validation_data_args: Optional[DataArgs] = None,
         test_data_args: Optional[DataArgs] = None,
-        secondary_optimization_args: Optional[
-            SecondaryOptimizationArgs
-        ] = None,
-    ) -> TrainingResults:
+    ) -> Tuple[tf.keras.callbacks.History, Optional[Sequence[float]]]:
         """
         Trains a physics-informed regresion model on the provided constrained
         problem, time interval, and initial condition functions using the model
@@ -158,18 +155,14 @@ class PhysicsInformedMLOperator(Operator):
 
         :param cp: the constrained problem to train the operator on
         :param t_interval: the time interval to train the operator on
-        :param training_data_args: the training data generation and batch size
-            arguments
+        :param training_data_args: the training data generation arguments
         :param optimization_args: the physics-informed regresion model
             optimization arguments
         :param model_args: the physics-informed regresion model arguments; if
             the operator already has a model, it can be None
-        :param test_data_args: the test data generation and batch size
-            arguments
-        :param secondary_optimization_args: the physics-informed regresion
-            model optimization arguments for fine tuning the model parameters
-            using a (quasi) second order optimization method
-        :return: the training results
+        :param validation_data_args: the validation data generation arguments
+        :param test_data_args: the test data generation arguments
+        :return: the training history and optionally the test loss
         """
         if model_args is None and self._model is None:
             raise ValueError(
@@ -203,72 +196,96 @@ class PhysicsInformedMLOperator(Operator):
                     "boundary conditions"
                 )
 
-        training_data_set = DataSet(
-            cp,
-            t_interval,
-            point_sampler=self._sampler,
-            y_0_functions=training_data_args.y_0_functions,
-            n_domain_points=training_data_args.n_domain_points,
-            n_boundary_points=training_data_args.n_boundary_points,
-            vertex_oriented=self._vertex_oriented,
-        )
-        training_data = training_data_set.get_iterator(
-            training_data_args.n_batches,
-            n_ic_repeats=training_data_args.n_ic_repeats,
-            shuffle=training_data_args.shuffle,
-        )
-
-        if test_data_args:
-            test_data_set = DataSet(
-                cp,
-                t_interval,
+        training_dataset = (
+            DatasetGenerator(
+                cp=cp,
+                t_interval=t_interval,
+                y_0_functions=training_data_args.y_0_functions,
                 point_sampler=self._sampler,
-                y_0_functions=test_data_args.y_0_functions,
-                n_domain_points=test_data_args.n_domain_points,
-                n_boundary_points=test_data_args.n_boundary_points,
+                n_domain_points=training_data_args.n_domain_points,
+                n_boundary_points=training_data_args.n_boundary_points,
                 vertex_oriented=self._vertex_oriented,
             )
-            test_data = test_data_set.get_iterator(
-                test_data_args.n_batches,
-                n_ic_repeats=test_data_args.n_ic_repeats,
-                shuffle=test_data_args.shuffle,
+            .generate(
+                n_batches=training_data_args.n_batches,
+                n_ic_repeats=training_data_args.n_ic_repeats,
+                shuffle=training_data_args.shuffle,
+            )
+            .prefetch(training_data_args.prefetch_buffer_size)
+        )
+
+        if validation_data_args:
+            validation_dataset = (
+                DatasetGenerator(
+                    cp=cp,
+                    t_interval=t_interval,
+                    y_0_functions=validation_data_args.y_0_functions,
+                    point_sampler=self._sampler,
+                    n_domain_points=validation_data_args.n_domain_points,
+                    n_boundary_points=validation_data_args.n_boundary_points,
+                    vertex_oriented=self._vertex_oriented,
+                )
+                .generate(
+                    n_batches=validation_data_args.n_batches,
+                    n_ic_repeats=validation_data_args.n_ic_repeats,
+                    shuffle=validation_data_args.shuffle,
+                )
+                .prefetch(validation_data_args.prefetch_buffer_size)
             )
         else:
-            test_data = None
+            validation_dataset = None
 
         model = (
             self._model
             if model_args is None
             else PhysicsInformedRegressor(
                 cp=cp,
+                model=model_args.model,
+                diff_eq_loss_weight=model_args.diff_eq_loss_weight,
+                ic_loss_weight=model_args.ic_loss_weight,
+                bc_loss_weight=model_args.bc_loss_weight,
                 vertex_oriented=self._vertex_oriented,
-                **model_args._asdict(),
             )
         )
-
-        training_loss_history, test_loss_history = model.train(
-            training_data=training_data,
-            test_data=test_data,
-            **optimization_args._asdict(),
+        model.compile(
+            optimizer=tf.keras.optimizers.get(optimization_args.optimizer)
         )
 
-        if secondary_optimization_args:
-            model.train_with_lbfgs(
-                training_data=training_data,
-                **secondary_optimization_args._asdict(),
-            )
+        history = model.fit(
+            training_dataset,
+            validation_data=validation_dataset,
+            epochs=optimization_args.epochs,
+            callbacks=optimization_args.callbacks,
+            verbose=optimization_args.verbose,
+        )
 
-        final_training_loss = model.evaluate(training_data)
-        final_test_loss = model.evaluate(test_data) if test_data else None
+        if test_data_args:
+            test_dataset = (
+                DatasetGenerator(
+                    cp=cp,
+                    t_interval=t_interval,
+                    y_0_functions=test_data_args.y_0_functions,
+                    point_sampler=self._sampler,
+                    n_domain_points=test_data_args.n_domain_points,
+                    n_boundary_points=test_data_args.n_boundary_points,
+                    vertex_oriented=self._vertex_oriented,
+                )
+                .generate(
+                    n_batches=test_data_args.n_batches,
+                    n_ic_repeats=test_data_args.n_ic_repeats,
+                    shuffle=test_data_args.shuffle,
+                )
+                .prefetch(test_data_args.prefetch_buffer_size)
+            )
+            test_loss = model.evaluate(
+                test_dataset, verbose=optimization_args.verbose
+            )
+        else:
+            test_loss = None
 
         self._model = model
 
-        return TrainingResults(
-            training_loss_history,
-            test_loss_history,
-            final_training_loss,
-            final_test_loss,
-        )
+        return history, test_loss
 
     @tf.function
     def _infer(
@@ -285,8 +302,8 @@ class PhysicsInformedMLOperator(Operator):
 
 class DataArgs(NamedTuple):
     """
-    Arguments pertaining to the generation and traversal of physics-informed
-    regresion data sets.
+    Arguments pertaining to the generation of physics-informed regresion
+    datasets.
     """
 
     y_0_functions: Iterable[VectorizedInitialConditionFunction]
@@ -295,6 +312,7 @@ class DataArgs(NamedTuple):
     n_boundary_points: int = 0
     n_ic_repeats: int = 1
     shuffle: bool = True
+    prefetch_buffer_size: int = 1
 
 
 class ModelArgs(NamedTuple):
@@ -303,7 +321,7 @@ class ModelArgs(NamedTuple):
     model.
     """
 
-    base_model: tf.keras.Model
+    model: tf.keras.Model
     diff_eq_loss_weight: Union[float, Sequence[float]] = 1.0
     ic_loss_weight: Union[float, Sequence[float]] = 1.0
     bc_loss_weight: Union[float, Sequence[float]] = 1.0
@@ -317,29 +335,5 @@ class OptimizationArgs(NamedTuple):
 
     optimizer: Union[str, Dict[str, Any], tf.optimizers.Optimizer]
     epochs: int
-    restore_best_weights: bool = True
-
-
-class SecondaryOptimizationArgs(NamedTuple):
-    """
-    Arguments pertaining to the training of the physics-informed regresion
-    model using a second order optimization method to fine tune the model
-    parameters.
-    """
-
-    max_iterations: int = 50
-    max_line_search_iterations: int = 50
-    parallel_iterations: int = 1
-    num_correction_pairs: int = 10
-    gradient_tol: float = 1e-8
-
-
-class TrainingResults(NamedTuple):
-    """
-    The results of the training of the physics-informed ML operator.
-    """
-
-    training_loss_history: List[Loss]
-    test_loss_history: Optional[List[Loss]]
-    final_training_loss: Loss
-    final_test_loss: Optional[Loss]
+    callbacks: Sequence[tf.keras.callbacks.Callback] = ()
+    verbose: Union[str, int] = "auto"

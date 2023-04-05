@@ -8,18 +8,14 @@ from pararealml.operators.ml.physics_informed.collocation_point_sampler import (
     CollocationPointSampler,
     UniformRandomCollocationPointSampler,
 )
-from pararealml.operators.ml.physics_informed.data_set import (
-    DataBatch,
-    DataSet,
+from pararealml.operators.ml.physics_informed.dataset_generator import (
+    DatasetGenerator,
 )
-from pararealml.operators.ml.physics_informed.loss import Loss
 from pararealml.operators.ml.physics_informed.physics_informed_ml_operator import (  # noqa: 501
     DataArgs,
     ModelArgs,
     OptimizationArgs,
     PhysicsInformedMLOperator,
-    SecondaryOptimizationArgs,
-    TrainingResults,
 )
 from pararealml.operators.ml.physics_informed.physics_informed_regressor import (  # noqa: 501
     PhysicsInformedRegressor,
@@ -30,14 +26,10 @@ __all__ = [
     "AutoDifferentiator",
     "CollocationPointSampler",
     "UniformRandomCollocationPointSampler",
-    "DataBatch",
-    "DataSet",
-    "Loss",
+    "DatasetGenerator",
     "PhysicsInformedRegressor",
     "DataArgs",
     "ModelArgs",
     "OptimizationArgs",
-    "SecondaryOptimizationArgs",
-    "TrainingResults",
     "PhysicsInformedMLOperator",
 ]

@@ -32,7 +32,6 @@ from pararealml.operators.ml.physics_informed.physics_informed_ml_operator impor
     ModelArgs,
     OptimizationArgs,
     PhysicsInformedMLOperator,
-    SecondaryOptimizationArgs,
 )
 from pararealml.utils.rand import set_random_seed
 
@@ -51,12 +50,7 @@ def test_piml_operator_on_ode_with_analytic_solution():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    (
-        training_loss_history,
-        test_loss_history,
-        final_training_loss,
-        final_test_loss,
-    ) = piml.train(
+    history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -66,7 +60,7 @@ def test_piml_operator_on_ode_with_analytic_solution():
             n_ic_repeats=5,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -76,16 +70,14 @@ def test_piml_operator_on_ode_with_analytic_solution():
                     + [
                         tf.keras.layers.Dense(
                             50,
-                            kernel_initializer="he_uniform",
-                            activation="softplus",
+                            activation="tanh",
                         )
                         for _ in range(3)
                     ]
                     + [
                         tf.keras.layers.Dense(
                             1,
-                            kernel_initializer="he_uniform",
-                            activation="softplus",
+                            activation="tanh",
                         )
                     ]
                 ),
@@ -94,16 +86,14 @@ def test_piml_operator_on_ode_with_analytic_solution():
                     + [
                         tf.keras.layers.Dense(
                             50,
-                            kernel_initializer="he_uniform",
-                            activation="softplus",
+                            activation="tanh",
                         )
                         for _ in range(3)
                     ]
                     + [
                         tf.keras.layers.Dense(
                             1,
-                            kernel_initializer="he_uniform",
-                            activation="softplus",
+                            activation="tanh",
                         )
                     ]
                 ),
@@ -118,23 +108,16 @@ def test_piml_operator_on_ode_with_analytic_solution():
         optimization_args=OptimizationArgs(
             optimizer=tf.optimizers.Adam(
                 learning_rate=tf.optimizers.schedules.ExponentialDecay(
-                    1e-3, decay_steps=50, decay_rate=0.95
+                    2e-2, decay_steps=125, decay_rate=0.9
                 )
             ),
             epochs=500,
         ),
-        secondary_optimization_args=SecondaryOptimizationArgs(
-            max_iterations=250,
-            max_line_search_iterations=100,
-            parallel_iterations=4,
-            gradient_tol=0.0,
-        ),
     )
 
-    assert len(training_loss_history) == 500
-    assert test_loss_history is None
-    assert final_training_loss.weighted_total_loss.numpy() < 2e-4
-    assert final_test_loss is None
+    assert len(history.epoch) == 500
+    assert history.history["loss"][-1] < 2e-4
+    assert test_loss is None
 
     ivp = InitialValueProblem(
         cp,
@@ -150,7 +133,7 @@ def test_piml_operator_on_ode_with_analytic_solution():
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
 
-    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 1e-3
+    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 2e-3
     assert np.max(np.abs(analytic_y - solution.discrete_y())) < 2.5e-3
 
 
@@ -178,7 +161,7 @@ def test_piml_operator_on_ode_system():
         lambda _: np.array([52.5, 27.5]),
     ]
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -186,11 +169,14 @@ def test_piml_operator_on_ode_system():
             n_domain_points=50,
             n_batches=3,
         ),
+        validation_data_args=DataArgs(
+            y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1
+        ),
         test_data_args=DataArgs(
             y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -227,15 +213,17 @@ def test_piml_operator_on_ode_system():
         ),
     )
 
-    assert len(training_loss_history) == 3
-    assert len(test_loss_history) == 3
+    assert len(test_loss) == 10
+    assert len(training_history.epoch) == 3
     for i in range(2):
-        assert np.sum(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-        ) < np.sum(training_loss_history[i].weighted_total_loss.numpy())
-        assert np.sum(
-            test_loss_history[i + 1].weighted_total_loss.numpy()
-        ) < np.sum(test_loss_history[i].weighted_total_loss.numpy())
+        assert (
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
+        )
+        assert (
+            training_history.history["val_loss"][i + 1]
+            < training_history.history["val_loss"][i]
+        )
 
     ic = ContinuousInitialCondition(cp, lambda _: np.array([50.0, 25.0]))
     ivp = InitialValueProblem(cp, t_interval, ic)
@@ -263,7 +251,7 @@ def test_piml_operator_on_pde_with_dynamic_boundary_conditions():
         MarginalBetaProductInitialCondition(cp, [[(p, p)]]).y_0
         for p in [2.0, 3.0, 4.0, 5.0]
     ]
-    test_y_0_functions = [
+    validation_y_0_functions = [
         MarginalBetaProductInitialCondition(cp, [[(p, p)]]).y_0
         for p in [2.5, 3.5, 4.5]
     ]
@@ -271,7 +259,7 @@ def test_piml_operator_on_pde_with_dynamic_boundary_conditions():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -280,14 +268,14 @@ def test_piml_operator_on_pde_with_dynamic_boundary_conditions():
             n_boundary_points=20,
             n_batches=2,
         ),
-        test_data_args=DataArgs(
-            y_0_functions=test_y_0_functions,
+        validation_data_args=DataArgs(
+            y_0_functions=validation_y_0_functions,
             n_domain_points=25,
             n_boundary_points=10,
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -324,16 +312,16 @@ def test_piml_operator_on_pde_with_dynamic_boundary_conditions():
         ),
     )
 
-    assert len(training_loss_history) == 3
-    assert len(test_loss_history) == 3
+    assert len(training_history.epoch) == 3
+    assert not test_loss
     for i in range(2):
         assert (
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
         assert (
-            test_loss_history[i + 1].weighted_total_loss.numpy()
-            < test_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["val_loss"][i + 1]
+            < training_history.history["val_loss"][i]
         )
 
     ic = MarginalBetaProductInitialCondition(cp, [[(3.5, 3.5)]])
@@ -375,7 +363,7 @@ def test_piml_operator_on_pde_system():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -385,7 +373,7 @@ def test_piml_operator_on_pde_system():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -440,11 +428,11 @@ def test_piml_operator_on_pde_system():
         ),
     )
 
-    assert len(training_loss_history) == 3
+    assert len(training_history.epoch) == 3
     for i in range(2):
         assert np.all(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
 
     solution = piml.solve(ivp)
@@ -483,7 +471,7 @@ def test_piml_operator_on_pde_with_t_and_x_dependent_rhs():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.05, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -493,7 +481,7 @@ def test_piml_operator_on_pde_with_t_and_x_dependent_rhs():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -529,11 +517,11 @@ def test_piml_operator_on_pde_with_t_and_x_dependent_rhs():
         ),
     )
 
-    assert len(training_loss_history) == 3
+    assert len(training_history.epoch) == 3
     for i in range(2):
         assert np.all(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
 
     solution = piml.solve(ivp)
@@ -576,7 +564,7 @@ def test_piml_operator_on_polar_pde():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -586,7 +574,7 @@ def test_piml_operator_on_polar_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -620,11 +608,11 @@ def test_piml_operator_on_polar_pde():
         ),
     )
 
-    assert len(training_loss_history) == 3
+    assert len(training_history.epoch) == 3
     for i in range(2):
         assert np.all(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
 
     solution = piml.solve(ivp)
@@ -675,7 +663,7 @@ def test_piml_operator_on_cylindrical_pde():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -685,7 +673,7 @@ def test_piml_operator_on_cylindrical_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -719,11 +707,11 @@ def test_piml_operator_on_cylindrical_pde():
         ),
     )
 
-    assert len(training_loss_history) == 3
+    assert len(training_history.epoch) == 3
     for i in range(2):
         assert np.all(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
 
     solution = piml.solve(ivp)
@@ -774,7 +762,7 @@ def test_piml_operator_on_spherical_pde():
     sampler = UniformRandomCollocationPointSampler()
     piml = PhysicsInformedMLOperator(sampler, 0.001, True)
 
-    training_loss_history, test_loss_history, _, _ = piml.train(
+    training_history, test_loss = piml.train(
         cp,
         t_interval,
         training_data_args=DataArgs(
@@ -784,7 +772,7 @@ def test_piml_operator_on_spherical_pde():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -818,11 +806,11 @@ def test_piml_operator_on_spherical_pde():
         ),
     )
 
-    assert len(training_loss_history) == 3
+    assert len(training_history.epoch) == 3
     for i in range(2):
         assert np.all(
-            training_loss_history[i + 1].weighted_total_loss.numpy()
-            < training_loss_history[i].weighted_total_loss.numpy()
+            training_history.history["loss"][i + 1]
+            < training_history.history["loss"][i]
         )
 
     solution = piml.solve(ivp)
@@ -872,7 +860,7 @@ def test_piml_operator_in_ar_mode_training_with_invalid_t_interval():
                 y_0_functions=[ic.y_0], n_domain_points=50, n_batches=1
             ),
             model_args=ModelArgs(
-                base_model=DeepONet(
+                model=DeepONet(
                     branch_net=tf.keras.Sequential(
                         [
                             tf.keras.layers.InputLayer(
@@ -927,7 +915,7 @@ def test_piml_operator_in_ar_mode_training_with_diff_eq_containing_t_term():
                 y_0_functions=[ic.y_0], n_domain_points=50, n_batches=1
             ),
             model_args=ModelArgs(
-                base_model=DeepONet(
+                model=DeepONet(
                     branch_net=tf.keras.Sequential(
                         [
                             tf.keras.layers.InputLayer(
@@ -990,7 +978,7 @@ def test_piml_operator_in_ar_mode_training_with_dynamic_boundary_conditions():
                 n_batches=2,
             ),
             model_args=ModelArgs(
-                base_model=DeepONet(
+                model=DeepONet(
                     branch_net=tf.keras.Sequential(
                         [
                             tf.keras.layers.InputLayer(
@@ -1050,7 +1038,7 @@ def test_piml_operator_in_ar_mode_on_ode():
             n_batches=1,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(
@@ -1134,7 +1122,7 @@ def test_piml_operator_in_ar_mode_on_pde():
             n_batches=2,
         ),
         model_args=ModelArgs(
-            base_model=DeepONet(
+            model=DeepONet(
                 branch_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(

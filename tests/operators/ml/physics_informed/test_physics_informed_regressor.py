@@ -18,7 +18,7 @@ def test_physics_informed_regressor_with_wrong_base_model_input_shape():
 
     with pytest.raises(ValueError):
         PhysicsInformedRegressor(
-            base_model=DeepONet(
+            model=DeepONet(
                 tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(3),
@@ -47,7 +47,7 @@ def test_physics_informed_regressor_with_wrong_base_model_output_shape():
 
     with pytest.raises(ValueError):
         PhysicsInformedRegressor(
-            base_model=DeepONet(
+            model=DeepONet(
                 tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(1),
@@ -76,7 +76,7 @@ def test_physics_informed_regressor_with_wrong_loss_weight_length():
 
     with pytest.raises(ValueError):
         PhysicsInformedRegressor(
-            base_model=DeepONet(
+            model=DeepONet(
                 tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(3),
@@ -104,7 +104,7 @@ def test_physics_informed_regressor_with_wrong_loss_weight_length():
 def test_physics_informed_regressor_loss_weight_broadcasting():
     cp = ConstrainedProblem(LorenzEquation())
     model = PhysicsInformedRegressor(
-        base_model=DeepONet(
+        model=DeepONet(
             tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(3),
@@ -136,7 +136,7 @@ def test_physics_informed_regressor_loss_weight_broadcasting():
 def test_physics_informed_regressor_with_none_input_element():
     cp = ConstrainedProblem(LorenzEquation())
     model = PhysicsInformedRegressor(
-        base_model=DeepONet(
+        model=DeepONet(
             branch_net=tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(3),

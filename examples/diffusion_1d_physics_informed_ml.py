@@ -40,7 +40,7 @@ piml.train(
         n_batches=1,
     ),
     model_args=ModelArgs(
-        base_model=DeepONet(
+        model=DeepONet(
             branch_net=tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(
