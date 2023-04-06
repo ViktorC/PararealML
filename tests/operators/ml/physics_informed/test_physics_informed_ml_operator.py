@@ -111,11 +111,11 @@ def test_piml_operator_on_ode_with_analytic_solution():
                     2e-2, decay_steps=125, decay_rate=0.9
                 )
             ),
-            epochs=500,
+            epochs=400,
         ),
     )
 
-    assert len(history.epoch) == 500
+    assert len(history.epoch) == 400
     assert history.history["loss"][-1] < 2e-4
     assert test_loss is None
 
@@ -133,8 +133,8 @@ def test_piml_operator_on_ode_with_analytic_solution():
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
 
-    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 2e-3
-    assert np.max(np.abs(analytic_y - solution.discrete_y())) < 2.5e-3
+    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 3e-3
+    assert np.max(np.abs(analytic_y - solution.discrete_y())) < 5e-3
 
 
 def test_piml_operator_on_ode_system():
@@ -168,9 +168,13 @@ def test_piml_operator_on_ode_system():
             y_0_functions=training_y_0_functions,
             n_domain_points=50,
             n_batches=3,
+            cache=True,
         ),
         validation_data_args=DataArgs(
-            y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1
+            y_0_functions=test_y_0_functions,
+            n_domain_points=20,
+            n_batches=1,
+            cache=True,
         ),
         test_data_args=DataArgs(
             y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1

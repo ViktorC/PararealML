@@ -196,44 +196,13 @@ class PhysicsInformedMLOperator(Operator):
                     "boundary conditions"
                 )
 
-        training_dataset = (
-            DatasetGenerator(
-                cp=cp,
-                t_interval=t_interval,
-                y_0_functions=training_data_args.y_0_functions,
-                point_sampler=self._sampler,
-                n_domain_points=training_data_args.n_domain_points,
-                n_boundary_points=training_data_args.n_boundary_points,
-                vertex_oriented=self._vertex_oriented,
-            )
-            .generate(
-                n_batches=training_data_args.n_batches,
-                n_ic_repeats=training_data_args.n_ic_repeats,
-                shuffle=training_data_args.shuffle,
-            )
-            .prefetch(training_data_args.prefetch_buffer_size)
+        training_dataset = self._create_dataset(
+            cp, t_interval, training_data_args
         )
-
-        if validation_data_args:
-            validation_dataset = (
-                DatasetGenerator(
-                    cp=cp,
-                    t_interval=t_interval,
-                    y_0_functions=validation_data_args.y_0_functions,
-                    point_sampler=self._sampler,
-                    n_domain_points=validation_data_args.n_domain_points,
-                    n_boundary_points=validation_data_args.n_boundary_points,
-                    vertex_oriented=self._vertex_oriented,
-                )
-                .generate(
-                    n_batches=validation_data_args.n_batches,
-                    n_ic_repeats=validation_data_args.n_ic_repeats,
-                    shuffle=validation_data_args.shuffle,
-                )
-                .prefetch(validation_data_args.prefetch_buffer_size)
-            )
-        else:
-            validation_dataset = None
+        validation_dataset = self._create_dataset(
+            cp, t_interval, validation_data_args
+        )
+        test_dataset = self._create_dataset(cp, t_interval, test_data_args)
 
         model = (
             self._model
@@ -250,7 +219,6 @@ class PhysicsInformedMLOperator(Operator):
         model.compile(
             optimizer=tf.keras.optimizers.get(optimization_args.optimizer)
         )
-
         history = model.fit(
             training_dataset,
             validation_data=validation_dataset,
@@ -259,29 +227,11 @@ class PhysicsInformedMLOperator(Operator):
             verbose=optimization_args.verbose,
         )
 
-        if test_data_args:
-            test_dataset = (
-                DatasetGenerator(
-                    cp=cp,
-                    t_interval=t_interval,
-                    y_0_functions=test_data_args.y_0_functions,
-                    point_sampler=self._sampler,
-                    n_domain_points=test_data_args.n_domain_points,
-                    n_boundary_points=test_data_args.n_boundary_points,
-                    vertex_oriented=self._vertex_oriented,
-                )
-                .generate(
-                    n_batches=test_data_args.n_batches,
-                    n_ic_repeats=test_data_args.n_ic_repeats,
-                    shuffle=test_data_args.shuffle,
-                )
-                .prefetch(test_data_args.prefetch_buffer_size)
-            )
-            test_loss = model.evaluate(
-                test_dataset, verbose=optimization_args.verbose
-            )
-        else:
-            test_loss = None
+        test_loss = (
+            model.evaluate(test_dataset, verbose=optimization_args.verbose)
+            if test_dataset
+            else None
+        )
 
         self._model = model
 
@@ -299,6 +249,43 @@ class PhysicsInformedMLOperator(Operator):
         """
         return self.model.__call__(inputs)
 
+    def _create_dataset(
+        self,
+        cp: ConstrainedProblem,
+        t_interval: Tuple[float, float],
+        data_args: Optional[DataArgs],
+    ) -> Optional[tf.data.Dataset]:
+        """
+        Creates a Tensorflow dataset given the constrained problem, time
+        domain and that data arguments.
+
+        :param cp: the constrained problem
+        :param t_interval: the time domain
+        :param data_args: the data generation arguments
+        :return: a Tensorflow dataset
+        """
+        if not data_args:
+            return None
+
+        dataset = DatasetGenerator(
+            cp=cp,
+            t_interval=t_interval,
+            y_0_functions=data_args.y_0_functions,
+            point_sampler=self._sampler,
+            n_domain_points=data_args.n_domain_points,
+            n_boundary_points=data_args.n_boundary_points,
+            vertex_oriented=self._vertex_oriented,
+        ).generate(
+            n_batches=data_args.n_batches,
+            n_ic_repeats=data_args.n_ic_repeats,
+            shuffle=data_args.shuffle,
+            n_parallel_map_calls=data_args.n_parallel_map_calls,
+            deterministic_mapped_order=data_args.deterministic_mapped_order,
+        )
+        if data_args.cache:
+            dataset = dataset.cache()
+        return dataset.prefetch(data_args.prefetch_buffer_size)
+
 
 class DataArgs(NamedTuple):
     """
@@ -313,6 +300,10 @@ class DataArgs(NamedTuple):
     n_ic_repeats: int = 1
     shuffle: bool = True
     prefetch_buffer_size: int = 1
+    n_parallel_map_calls: int = 1
+    deterministic_mapped_order: bool = True
+    cache: bool = False
+    cache_file_path: str = ""
 
 
 class ModelArgs(NamedTuple):

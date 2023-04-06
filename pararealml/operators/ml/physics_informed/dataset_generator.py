@@ -120,7 +120,12 @@ class DatasetGenerator:
         return self._boundary_collocation_data
 
     def generate(
-        self, n_batches: int, n_ic_repeats: int = 1, shuffle: bool = True
+        self,
+        n_batches: int,
+        n_ic_repeats: int = 1,
+        shuffle: bool = True,
+        n_parallel_map_calls: int = 1,
+        deterministic_mapped_order: bool = True,
     ) -> tf.data.Dataset:
         """
         Returns a Tensorflow dataset representing batches of the Cartesian
@@ -131,6 +136,11 @@ class DatasetGenerator:
         :param n_ic_repeats: the number of times to repeat the initial
             collocation data samples in an epoch
         :param shuffle: whether to shuffle the data
+        :param n_parallel_map_calls: the number of parallel calls to use for
+            mapping the input data
+        :param deterministic_mapped_order: whether the order of the entries
+            should be deterministic; disabling determinism can improve
+            performance
         :return: a Tensorflow dataset
         """
         iv_data_size = self._initial_value_data.shape[0]
@@ -209,7 +219,9 @@ class DatasetGenerator:
                             if x_dim
                             else {}
                         ),
-                    }
+                    },
+                    num_parallel_calls=n_parallel_map_calls,
+                    deterministic=deterministic_mapped_order,
                 )
                 .batch(domain_batch_size)
             )
@@ -242,7 +254,9 @@ class DatasetGenerator:
                             if x_dim
                             else {}
                         ),
-                    }
+                    },
+                    num_parallel_calls=n_parallel_map_calls,
+                    deterministic=deterministic_mapped_order,
                 )
                 .batch(initial_batch_size)
             )
@@ -288,7 +302,9 @@ class DatasetGenerator:
                                 ),
                                 (),
                             ),
-                        }
+                        },
+                        num_parallel_calls=n_parallel_map_calls,
+                        deterministic=deterministic_mapped_order,
                     )
                     .batch(boundary_batch_size)
                 )
