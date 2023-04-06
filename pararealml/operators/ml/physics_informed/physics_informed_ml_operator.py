@@ -283,7 +283,7 @@ class PhysicsInformedMLOperator(Operator):
             deterministic_mapped_order=data_args.deterministic_mapped_order,
         )
         if data_args.cache:
-            dataset = dataset.cache()
+            dataset = dataset.cache(data_args.cache_file_path)
         return dataset.prefetch(data_args.prefetch_buffer_size)
 
 
