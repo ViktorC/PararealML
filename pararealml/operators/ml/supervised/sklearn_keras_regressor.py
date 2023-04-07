@@ -24,8 +24,9 @@ class SKLearnKerasRegressor:
         verbose: Union[int, str] = "auto",
         callbacks: Sequence[tf.keras.callbacks.Callback] = (),
         validation_split: float = 0.0,
+        validation_frequency: int = 1,
         lazy_load_to_gpu: bool = False,
-        prefetch_buffer_size: Optional[int] = None,
+        prefetch_buffer_size: int = 1,
         max_predict_batch_size: Optional[int] = None,
         **build_args: Any,
     ):
@@ -34,10 +35,12 @@ class SKLearnKerasRegressor:
             to wrap
         :param batch_size: the training batch size
         :param epochs: the number of training epochs
-        :param verbose: controls the level of training information printed to
-            the stdout stream
+        :param verbose: controls the level of training and evaluation
+            information printed to the stdout stream
         :param callbacks: any callbacks for the training of the model
         :param validation_split: the proportion of the training data to use for
+            validation
+        :param validation_frequency: the number of training epochs between each
             validation
         :param lazy_load_to_gpu: whether to avoid loading the entire training
             data set onto the GPU all at once by using lazy loading instead
@@ -53,6 +56,7 @@ class SKLearnKerasRegressor:
         self.verbose = verbose
         self.callbacks = callbacks
         self.validation_split = validation_split
+        self.validation_frequency = validation_frequency
         self.lazy_load_to_gpu = lazy_load_to_gpu
         self.prefetch_buffer_size = prefetch_buffer_size
         self.max_predict_batch_size = max_predict_batch_size
@@ -118,28 +122,26 @@ class SKLearnKerasRegressor:
                         y,
                         test_size=self.validation_split,
                     )
-                    training_dataset = tf.data.Dataset.from_tensor_slices(
-                        (x_train, y_train)
-                    ).batch(self.batch_size)
-                    validation_dataset = tf.data.Dataset.from_tensor_slices(
-                        (x_validate, y_validate)
-                    ).batch(self.batch_size)
-
-                else:
-                    training_dataset = tf.data.Dataset.from_tensor_slices(
-                        (x, y)
-                    ).batch(self.batch_size)
-                    validation_dataset = None
-
-                if self.prefetch_buffer_size:
-                    training_dataset = training_dataset.prefetch(
-                        self.prefetch_buffer_size
+                    training_dataset = (
+                        tf.data.Dataset.from_tensor_slices((x_train, y_train))
+                        .batch(self.batch_size)
+                        .prefetch(self.prefetch_buffer_size)
                     )
                     validation_dataset = (
-                        validation_dataset.prefetch(self.prefetch_buffer_size)
-                        if self.validation_split
-                        else None
+                        tf.data.Dataset.from_tensor_slices(
+                            (x_validate, y_validate)
+                        )
+                        .batch(self.batch_size)
+                        .prefetch(self.prefetch_buffer_size)
                     )
+
+                else:
+                    training_dataset = (
+                        tf.data.Dataset.from_tensor_slices((x, y))
+                        .batch(self.batch_size)
+                        .prefetch(self.prefetch_buffer_size)
+                    )
+                    validation_dataset = None
 
             self._model.fit(
                 training_dataset,
@@ -156,6 +158,7 @@ class SKLearnKerasRegressor:
                 epochs=self.epochs,
                 batch_size=self.batch_size,
                 validation_split=self.validation_split,
+                validation_freq=self.validation_frequency,
                 callbacks=self.callbacks,
                 verbose=self.verbose,
             )
@@ -186,15 +189,15 @@ class SKLearnKerasRegressor:
     def score(self, x: np.ndarray, y: np.ndarray) -> float:
         if self.lazy_load_to_gpu:
             with tf.device(CPU_DEVICE_TYPE):
-                dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(
-                    self.batch_size
+                dataset = (
+                    tf.data.Dataset.from_tensor_slices((x, y))
+                    .batch(self.batch_size)
+                    .prefetch(self.prefetch_buffer_size)
                 )
-                if self.prefetch_buffer_size:
-                    dataset = dataset.prefetch(self.prefetch_buffer_size)
 
-            loss = self._model.evaluate(dataset)
+            loss = self._model.evaluate(dataset, verbose=self.verbose)
         else:
-            loss = self._model.evaluate(x, y)
+            loss = self._model.evaluate(x, y, verbose=self.verbose)
 
         if isinstance(loss, Sequence):
             return -loss[0]
