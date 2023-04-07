@@ -8,8 +8,9 @@ from pararealml.operators.ml.physics_informed.collocation_point_sampler import (
     CollocationPointSampler,
     UniformRandomCollocationPointSampler,
 )
-from pararealml.operators.ml.physics_informed.dataset_generator import (
-    DatasetGenerator,
+from pararealml.operators.ml.physics_informed.dataset import (
+    Dataset,
+    DatasetIterator,
 )
 from pararealml.operators.ml.physics_informed.physics_informed_ml_operator import (  # noqa: 501
     DataArgs,
@@ -26,7 +27,8 @@ __all__ = [
     "AutoDifferentiator",
     "CollocationPointSampler",
     "UniformRandomCollocationPointSampler",
-    "DatasetGenerator",
+    "Dataset",
+    "DatasetIterator",
     "PhysicsInformedRegressor",
     "DataArgs",
     "ModelArgs",

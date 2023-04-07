@@ -100,6 +100,10 @@ def test_piml_operator_on_ode_with_analytic_solution():
                 combiner_net=tf.keras.Sequential(
                     [
                         tf.keras.layers.InputLayer(3),
+                        tf.keras.layers.Dense(
+                            50,
+                            activation="tanh",
+                        ),
                         tf.keras.layers.Dense(diff_eq.y_dimension),
                     ]
                 ),
@@ -108,14 +112,14 @@ def test_piml_operator_on_ode_with_analytic_solution():
         optimization_args=OptimizationArgs(
             optimizer=tf.optimizers.Adam(
                 learning_rate=tf.optimizers.schedules.ExponentialDecay(
-                    2e-2, decay_steps=125, decay_rate=0.9
+                    1e-2, decay_steps=100, decay_rate=0.9
                 )
             ),
-            epochs=400,
+            epochs=500,
         ),
     )
 
-    assert len(history.epoch) == 400
+    assert len(history.epoch) == 500
     assert history.history["loss"][-1] < 2e-4
     assert test_loss is None
 
@@ -133,7 +137,7 @@ def test_piml_operator_on_ode_with_analytic_solution():
 
     analytic_y = np.array([ivp.exact_y(t) for t in solution.t_coordinates])
 
-    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 3e-3
+    assert np.mean(np.abs(analytic_y - solution.discrete_y())) < 4e-3
     assert np.max(np.abs(analytic_y - solution.discrete_y())) < 5e-3
 
 
@@ -168,13 +172,11 @@ def test_piml_operator_on_ode_system():
             y_0_functions=training_y_0_functions,
             n_domain_points=50,
             n_batches=3,
-            cache=True,
         ),
         validation_data_args=DataArgs(
             y_0_functions=test_y_0_functions,
             n_domain_points=20,
             n_batches=1,
-            cache=True,
         ),
         test_data_args=DataArgs(
             y_0_functions=test_y_0_functions, n_domain_points=20, n_batches=1

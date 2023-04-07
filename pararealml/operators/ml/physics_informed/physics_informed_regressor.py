@@ -184,7 +184,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
 
     @tf.function
     def train_step(
-        self, data: Dict[str, Dict[str, tf.Tensor]]
+        self, data: Sequence[Sequence[tf.Tensor]]
     ) -> Dict[str, np.ndarray]:
         with tf.GradientTape() as tape:
             loss = self._compute_batch_loss(data, training=True)
@@ -198,7 +198,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
 
     @tf.function
     def test_step(
-        self, data: Dict[str, Dict[str, tf.Tensor]]
+        self, data: Sequence[Sequence[tf.Tensor]]
     ) -> Dict[str, np.ndarray]:
         self._compute_batch_loss(data, training=False)
         return {metric.name: metric.result() for metric in self.metrics}
@@ -219,7 +219,9 @@ class PhysicsInformedRegressor(tf.keras.Model):
             if lhs_type == LHS.D_Y_OVER_D_T:
                 lhs_functions.append(
                     lambda arg, _y_ind=y_ind: arg.auto_diff.batch_gradient(
-                        arg.t, arg.y_hat[:, _y_ind : _y_ind + 1], 0
+                        arg.t,
+                        arg.y_hat[:, _y_ind : _y_ind + 1],
+                        0,
                     )
                 )
 
@@ -246,7 +248,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
 
     def _compute_batch_loss(
         self,
-        batch: Dict[str, Dict[str, tf.Tensor]],
+        batch: Sequence[Sequence[tf.Tensor]],
         training: bool,
     ) -> tf.Tensor:
         """
@@ -264,15 +266,13 @@ class PhysicsInformedRegressor(tf.keras.Model):
         diff_eq = self._cp.differential_equation
 
         diff_eq_loss = self._compute_differential_equation_loss(
-            batch["domain"], training
+            batch[0], training
         )
         weighted_total_loss = tf.multiply(
             tf.constant(self._diff_eq_loss_weights), diff_eq_loss
         )
 
-        ic_loss = self._compute_initial_condition_loss(
-            batch["initial"], training
-        )
+        ic_loss = self._compute_initial_condition_loss(batch[1], training)
         weighted_total_loss += tf.multiply(
             tf.constant(self._ic_loss_weights), ic_loss
         )
@@ -285,9 +285,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
             (
                 dirichlet_bc_loss,
                 neumann_bc_loss,
-            ) = self._compute_boundary_condition_loss(
-                batch["boundary"], training
-            )
+            ) = self._compute_boundary_condition_loss(batch[2], training)
             weighted_total_loss += tf.multiply(
                 tf.constant(self._bc_loss_weights),
                 dirichlet_bc_loss + neumann_bc_loss,
@@ -312,7 +310,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
         return loss
 
     def _compute_differential_equation_loss(
-        self, domain_batch: Dict[str, tf.Tensor], training: bool
+        self, domain_batch: Sequence[tf.Tensor], training: bool
     ) -> tf.Tensor:
         """
         Computes and returns the mean squared differential equation error.
@@ -322,9 +320,15 @@ class PhysicsInformedRegressor(tf.keras.Model):
             mode
         :return: the mean squared differential equation error
         """
-        u = domain_batch["u"]
-        t = domain_batch["t"]
-        x = domain_batch.get("x", None)
+        u, t, x = domain_batch
+        t = tf.ensure_shape(t, (None, 1))
+        x = (
+            tf.ensure_shape(
+                x, (None, self._cp.differential_equation.x_dimension)
+            )
+            if x is not None
+            else x
+        )
 
         with AutoDifferentiator(persistent=True) as auto_diff:
             auto_diff.watch(t)
@@ -350,7 +354,7 @@ class PhysicsInformedRegressor(tf.keras.Model):
         return tf.reduce_mean(squared_diff_eq_error, axis=0)
 
     def _compute_initial_condition_loss(
-        self, initial_batch: Dict[str, tf.Tensor], training: bool
+        self, initial_batch: Sequence[tf.Tensor], training: bool
     ) -> tf.Tensor:
         """
         Computes and returns the mean squared initial condition error.
@@ -360,19 +364,20 @@ class PhysicsInformedRegressor(tf.keras.Model):
             mode
         :return: the mean squared initial condition error
         """
+        u, t, x, y = initial_batch
         y_hat = self.__call__(
             (
-                initial_batch["u"],
-                initial_batch["t"],
-                initial_batch.get("x", None),
+                u,
+                t,
+                x,
             ),
             training=training,
         )
-        squared_ic_error = tf.square(y_hat - initial_batch["y"])
+        squared_ic_error = tf.square(y_hat - y)
         return tf.reduce_mean(squared_ic_error, axis=0)
 
     def _compute_boundary_condition_loss(
-        self, boundary_batch: Dict[str, tf.Tensor], training: bool
+        self, boundary_batch: Sequence[tf.Tensor], training: bool
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """
         Computes and returns the mean squared Dirichlet boundary condition
@@ -384,18 +389,13 @@ class PhysicsInformedRegressor(tf.keras.Model):
         :return: the mean squared Dirichlet and Neumann boundary condition
             errors
         """
-        u = boundary_batch["u"]
-        t = boundary_batch["t"]
-        x = boundary_batch["x"]
-        y = boundary_batch["y"]
-        d_y_over_d_n = boundary_batch["d_y_over_d_n"]
-        axes = boundary_batch["axes"]
+        u, t, x, y, d_y_over_d_n, axis = boundary_batch
 
         with AutoDifferentiator() as auto_diff:
             auto_diff.watch(x)
             y_hat = self.__call__((u, t, x), training=training)
 
-        d_y_over_d_n_hat = auto_diff.batch_gradient(x, y_hat, axes)
+        d_y_over_d_n_hat = auto_diff.batch_gradient(x, y_hat, axis)
 
         dirichlet_bc_error = y_hat - y
         dirichlet_bc_error = tf.where(
