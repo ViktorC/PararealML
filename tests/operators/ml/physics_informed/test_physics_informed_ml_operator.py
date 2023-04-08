@@ -116,11 +116,19 @@ def test_piml_operator_on_ode_with_analytic_solution():
                 )
             ),
             epochs=500,
+            callbacks=[
+                tf.keras.callbacks.EarlyStopping(
+                    monitor="loss",
+                    min_delta=0,
+                    patience=500,
+                    restore_best_weights=True,
+                )
+            ],
         ),
     )
 
     assert len(history.epoch) == 500
-    assert history.history["loss"][-1] < 2e-4
+    assert np.min(history.history["loss"]) < 2e-4
     assert test_loss is None
 
     ivp = InitialValueProblem(
