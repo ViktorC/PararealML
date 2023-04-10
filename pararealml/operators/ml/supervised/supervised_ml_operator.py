@@ -1,6 +1,6 @@
 import warnings
 from multiprocessing import Process, Queue, connection
-from typing import Any, Callable, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -160,10 +160,11 @@ class SupervisedMLOperator(Operator):
         else:
             seeds = [None] * n_jobs
 
-        queue: Queue[Tuple[np.ndarray, np.ndarray]] = Queue()
+        queue: Queue[Tuple[int, np.ndarray, np.ndarray]] = Queue()
 
         if n_jobs == 1:
             self._generate_data(
+                0,
                 ivp,
                 oracle,
                 iterations,
@@ -173,41 +174,49 @@ class SupervisedMLOperator(Operator):
                 seeds[0],
                 queue,
             )
-            return queue.get()
+            return queue.get()[1:]
 
         model = self._model
         self._model = None
 
-        process_sentinels = []
-        for process_rank, iterations_indices in enumerate(
-            np.array_split(np.arange(iterations), n_jobs)
-        ):
-            process = Process(
-                target=self._generate_data,
-                args=(
-                    ivp,
-                    oracle,
-                    len(iterations_indices),
-                    perturbation_function,
-                    isolate_perturbations,
-                    repeat_on_error,
-                    seeds[process_rank],
-                    queue,
-                ),
+        try:
+            process_sentinels = []
+            for process_rank, iterations_indices in enumerate(
+                np.array_split(np.arange(iterations), n_jobs)
+            ):
+                process = Process(
+                    target=self._generate_data,
+                    args=(
+                        process_rank,
+                        ivp,
+                        oracle,
+                        len(iterations_indices),
+                        perturbation_function,
+                        isolate_perturbations,
+                        repeat_on_error,
+                        seeds[process_rank],
+                        queue,
+                    ),
+                )
+                process.daemon = True
+                process.start()
+                process_sentinels.append(process.sentinel)
+
+            generated_data = [queue.get() for _ in range(n_jobs)]
+            connection.wait(process_sentinels)
+
+            all_inputs: List[Optional[np.ndarray]] = [None] * n_jobs
+            all_targets: List[Optional[np.ndarray]] = [None] * n_jobs
+            for (rank, inputs, targets) in generated_data:
+                all_inputs[rank] = inputs
+                all_targets[rank] = targets
+
+            return np.concatenate(all_inputs, axis=0), np.concatenate(
+                all_targets, axis=0
             )
-            process.daemon = True
-            process.start()
-            process_sentinels.append(process.sentinel)
 
-        input_target_pairs = [queue.get() for _ in range(n_jobs)]
-        connection.wait(process_sentinels)
-
-        self._model = model
-
-        all_inputs, all_targets = zip(*input_target_pairs)
-        return np.concatenate(all_inputs, axis=0), np.concatenate(
-            all_targets, axis=0
-        )
+        finally:
+            self._model = model
 
     def fit_model(
         self,
@@ -354,6 +363,7 @@ class SupervisedMLOperator(Operator):
 
     def _generate_data(
         self,
+        rank: int,
         ivp: InitialValueProblem,
         oracle: Operator,
         iterations: int,
@@ -368,6 +378,7 @@ class SupervisedMLOperator(Operator):
         oracle to repeatedly solve sub-IVPs with perturbed initial conditions
         and a time domain extent matching the step size of this operator.
 
+        :param rank: the rank of the executing process
         :param ivp: the IVP to train the regression model on
         :param oracle: the operator providing the training data
         :param iterations: the number of data generation iterations
@@ -493,7 +504,7 @@ class SupervisedMLOperator(Operator):
                     (-1, y_dim)
                 )
 
-        queue.put((inputs, targets))
+        queue.put((rank, inputs, targets))
 
     def _perturb_and_solve_ivp(
         self,
