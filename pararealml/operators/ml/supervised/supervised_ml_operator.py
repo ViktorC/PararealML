@@ -394,7 +394,7 @@ class SupervisedMLOperator(Operator):
             is raised
         :param seed: the NumPy random seed to use for the data generation
         :param queue: a queue to add the results to in the form of a tuple of
-            the inputs and the target outputs
+            the process rank, the inputs, and the target outputs
         """
         if seed is not None:
             np.random.seed(seed)
