@@ -1,0 +1,3 @@
+2023-04-11 23:56:01.720088: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+piml initial condition data generation completed in 0.4094056999999989s

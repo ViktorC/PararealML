@@ -1,0 +1,131 @@
+2023-04-11 21:58:35.316519: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-11 21:58:35.316517: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-11 21:58:35.316537: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-11 21:58:35.316539: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Coarse - sub-solution end-point RMS differences:
+[[[0.00385109,0.00159079],
+  [0.00527592,0.00071744],
+  [0.00735742,0.00283203],
+  [0.00616862,0.01154405]],
+
+ [[0.00813837,0.00334937],
+  [0.0111729 ,0.00147336],
+  [0.01562489,0.00590114],
+  [0.01319683,0.024382  ]],
+
+ [[0.00394703,0.00163974],
+  [0.00530315,0.00072212],
+  [0.00742214,0.00288865],
+  [0.00618928,0.01147843]],
+
+ [[0.00019587,0.00024512],
+  [0.00110948,0.00044341],
+  [0.00052078,0.00054458],
+  [0.00070781,0.00131713]]]
+
+Parareal iterations 1 - sub-solution end-point RMS differences:
+[[[0.00000000e+00,0.00000000e+00],
+  [2.68547264e-06,5.00634877e-06],
+  [1.52157197e-05,1.45032540e-05],
+  [3.58345212e-05,1.20179680e-05]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [1.19313762e-05,2.22637357e-05],
+  [6.76768311e-05,6.49924480e-05],
+  [1.60183655e-04,5.18654688e-05]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [2.07469039e-06,6.87947405e-06],
+  [1.39891526e-05,1.20997539e-05],
+  [2.52841449e-05,1.38193415e-05]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [3.83579471e-06,3.29826894e-06],
+  [2.13397574e-05,4.57926032e-07],
+  [2.03431166e-05,2.21898193e-05]]]
+
+Parareal iterations 1 - full solution RMS differences:
+[[0.00520992,0.00531412],
+ [0.01108456,0.01124357],
+ [0.00525229,0.00536646],
+ [0.00086339,0.00060462]]
+
+Parareal iterations 2 - sub-solution end-point RMS differences:
+[[[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [4.76244305e-09,7.83778331e-09],
+  [2.63637485e-08,3.80736176e-09]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [4.44256378e-08,7.37587578e-08],
+  [2.46183472e-07,3.31996133e-08]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [1.00474086e-07,4.46426684e-07],
+  [6.00663588e-08,3.43449547e-07]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [2.83642073e-08,3.43408862e-07],
+  [4.16496095e-07,1.63478280e-08]]]
+
+Parareal iterations 2 - full solution RMS differences:
+[[8.05489447e-06,7.72389791e-06],
+ [3.58700638e-05,3.43150880e-05],
+ [7.52645355e-06,7.19082932e-06],
+ [1.15810989e-05,1.32447372e-05]]
+
+Parareal iterations 3 - sub-solution end-point RMS differences:
+[[[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [2.69428924e-12,2.00950367e-13]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [5.14241982e-11,5.69344571e-12]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [4.93894827e-07,2.03914883e-07]],
+
+ [[0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [0.00000000e+00,0.00000000e+00],
+  [7.47791602e-08,1.14553524e-07]]]
+
+Parareal iterations 3 - full solution RMS differences:
+[[2.39685251e-09,2.14310965e-09],
+ [2.23900297e-08,1.99709331e-08],
+ [2.25524980e-07,1.32863475e-07],
+ [6.21869706e-08,6.07682117e-08]]
+
+Parareal iterations 4 - sub-solution end-point RMS differences:
+[[[0.,0.],
+  [0.,0.],
+  [0.,0.],
+  [0.,0.]],
+
+ [[0.,0.],
+  [0.,0.],
+  [0.,0.],
+  [0.,0.]],
+
+ [[0.,0.],
+  [0.,0.],
+  [0.,0.],
+  [0.,0.]]]
+
+Parareal iterations 4 - full solution RMS differences:
+[[0.,0.],
+ [0.,0.],
+ [0.,0.],
+ [0.,0.]]

@@ -1,0 +1,1337 @@
+2023-04-16 00:28:17.019210: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-16 00:28:17.019897: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-16 00:28:17.023412: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-04-16 00:28:17.024010: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+rank 0 fine fdm completed in 3.7519799999999996s
+rank 0 coarse fdm completed in 0.4782921000000009s
+rank 0 coarse fast fdm completed in 0.1818825000000004s
+rank 0 coarse sml completed in 0.5178457000000023s
+rank 0 coarse piml completed in 0.2761144999999985s
+parareal fdm completed in 1.6595146000036038s
+parareal fast fdm completed in 4.337214099999983s
+parareal sml completed in 1.114419400022598s
+parareal piml completed in 1.1020762999833096s
+rank 0 fine fdm completed in 3.5369354999999985s
+rank 0 coarse fdm completed in 0.2943479999999994s
+rank 0 coarse fast fdm completed in 0.21256860000000088s
+rank 0 coarse sml completed in 0.014063199999998943s
+rank 0 coarse piml completed in 0.013456000000001467s
+parareal fdm completed in 1.611686299991561s
+parareal fast fdm completed in 4.127133800007869s
+parareal sml completed in 1.0354093999776524s
+parareal piml completed in 1.0393270000058692s
+rank 0 fine fdm completed in 3.1579426999999995s
+rank 0 coarse fdm completed in 0.31334149999999994s
+rank 0 coarse fast fdm completed in 0.1400676999999959s
+rank 0 coarse sml completed in 0.011832500000004131s
+rank 0 coarse piml completed in 0.013230899999996382s
+parareal fdm completed in 1.6847516000270844s
+parareal fast fdm completed in 4.1169325999799185s
+parareal sml completed in 1.1281815999827813s
+parareal piml completed in 1.0681323000171687s
+rank 0 fine fdm completed in 3.3625586s
+rank 0 coarse fdm completed in 0.38063629999999904s
+rank 0 coarse fast fdm completed in 0.15166310000000038s
+rank 0 coarse sml completed in 0.013716999999999757s
+rank 0 coarse piml completed in 0.012408600000000547s
+parareal fdm completed in 1.7402108999958728s
+parareal fast fdm completed in 4.640749199985294s
+parareal sml completed in 1.1770392000034917s
+parareal piml completed in 1.1289042999851517s
+rank 0 fine fdm completed in 3.7099277999999956s
+rank 0 coarse fdm completed in 0.3608339000000029s
+rank 0 coarse fast fdm completed in 0.19557600000000264s
+rank 0 coarse sml completed in 0.01751170000000002s
+rank 0 coarse piml completed in 0.012468199999986496s
+parareal fdm completed in 1.756341300002532s
+parareal fast fdm completed in 4.812136199994711s
+parareal sml completed in 1.1206393000029493s
+parareal piml completed in 1.1204326000006404s
+rank 0 fine fdm completed in 3.6216019999999958s
+rank 0 coarse fdm completed in 0.3234268000000071s
+rank 0 coarse fast fdm completed in 0.15315059999998937s
+rank 0 coarse sml completed in 0.013600500000009674s
+rank 0 coarse piml completed in 0.010809800000004088s
+parareal fdm completed in 1.6389937000058126s
+parareal fast fdm completed in 4.012269900005776s
+parareal sml completed in 1.060998600005405s
+parareal piml completed in 1.0093813999847043s
+rank 0 fine fdm completed in 3.326648700000007s
+rank 0 coarse fdm completed in 0.3442393999999922s
+rank 0 coarse fast fdm completed in 0.1602046999999942s
+rank 0 coarse sml completed in 0.012245700000008242s
+rank 0 coarse piml completed in 0.01229089999999644s
+parareal fdm completed in 1.5216954000061378s
+parareal fast fdm completed in 3.975475599989295s
+parareal sml completed in 1.0773445000231732s
+parareal piml completed in 0.9976385000045411s
+rank 0 fine fdm completed in 3.3604878000000014s
+rank 0 coarse fdm completed in 0.34820799999999963s
+rank 0 coarse fast fdm completed in 0.18264010000000042s
+rank 0 coarse sml completed in 0.014549500000001103s
+rank 0 coarse piml completed in 0.01239850000000331s
+parareal fdm completed in 1.5762134999968112s
+parareal fast fdm completed in 4.356448199978331s
+parareal sml completed in 1.0930705000064336s
+parareal piml completed in 1.0209999000071548s
+rank 0 fine fdm completed in 3.3320532999999983s
+rank 0 coarse fdm completed in 0.29554309999998907s
+rank 0 coarse fast fdm completed in 0.14983129999998823s
+rank 0 coarse sml completed in 0.013751700000000255s
+rank 0 coarse piml completed in 0.013222700000000032s
+parareal fdm completed in 1.5422773000027519s
+parareal fast fdm completed in 4.0748108999978285s
+parareal sml completed in 1.1069843000150286s
+parareal piml completed in 1.008949000010034s
+rank 0 fine fdm completed in 3.2312663000000015s
+rank 0 coarse fdm completed in 0.36131300000000977s
+rank 0 coarse fast fdm completed in 0.15717170000000635s
+rank 0 coarse sml completed in 0.012416400000006433s
+rank 0 coarse piml completed in 0.011581900000010137s
+parareal fdm completed in 1.5676696000155061s
+parareal fast fdm completed in 4.0274309999949764s
+parareal sml completed in 1.1122631000180263s
+parareal piml completed in 1.005048799997894s
+rank 0 fine fdm completed in 4.203549600000002s
+rank 0 coarse fdm completed in 0.2947711000000197s
+rank 0 coarse fast fdm completed in 0.12634199999999396s
+rank 0 coarse sml completed in 0.014159700000021758s
+rank 0 coarse piml completed in 0.010011900000023388s
+parareal fdm completed in 1.5905087999999523s
+parareal fast fdm completed in 4.029171200003475s
+parareal sml completed in 0.9925450999871828s
+parareal piml completed in 1.0252639999962412s
+rank 0 fine fdm completed in 3.149810000000002s
+rank 0 coarse fdm completed in 0.33769549999999526s
+rank 0 coarse fast fdm completed in 0.1463355000000206s
+rank 0 coarse sml completed in 0.012565800000004401s
+rank 0 coarse piml completed in 0.01366140000001792s
+parareal fdm completed in 1.589376899995841s
+parareal fast fdm completed in 4.115919000003487s
+parareal sml completed in 0.9732822999940254s
+parareal piml completed in 0.9992772999976296s
+rank 0 fine fdm completed in 3.261929000000009s
+rank 0 coarse fdm completed in 0.2940868999999964s
+rank 0 coarse fast fdm completed in 0.18558170000000018s
+rank 0 coarse sml completed in 0.014247699999998531s
+rank 0 coarse piml completed in 0.014898200000004636s
+parareal fdm completed in 1.547347699990496s
+parareal fast fdm completed in 4.232727099995827s
+parareal sml completed in 1.0198088999895845s
+parareal piml completed in 1.0556014999747276s
+rank 0 fine fdm completed in 3.7026045000000067s
+rank 0 coarse fdm completed in 0.39930409999999483s
+rank 0 coarse fast fdm completed in 0.17209669999999733s
+rank 0 coarse sml completed in 0.012501000000014528s
+rank 0 coarse piml completed in 0.012140200000004597s
+parareal fdm completed in 1.7423203000216745s
+parareal fast fdm completed in 4.460354599985294s
+parareal sml completed in 1.1251564999984112s
+parareal piml completed in 1.110999600001378s
+rank 0 fine fdm completed in 3.500764800000013s
+rank 0 coarse fdm completed in 0.41842840000001047s
+rank 0 coarse fast fdm completed in 0.20737750000000688s
+rank 0 coarse sml completed in 0.012861700000001974s
+rank 0 coarse piml completed in 0.012830100000002176s
+parareal fdm completed in 1.743216200004099s
+parareal fast fdm completed in 4.526539000013145s
+parareal sml completed in 1.0962842000008095s
+parareal piml completed in 1.0403767000243533s
+rank 0 fine fdm completed in 3.4000878000000228s
+rank 0 coarse fdm completed in 0.3555666999999971s
+rank 0 coarse fast fdm completed in 0.17744840000000295s
+rank 0 coarse sml completed in 0.01115000000001487s
+rank 0 coarse piml completed in 0.009770199999991291s
+parareal fdm completed in 1.6047968000057153s
+parareal fast fdm completed in 3.9691469999961555s
+parareal sml completed in 1.011826799978735s
+parareal piml completed in 1.0201207000063732s
+rank 0 fine fdm completed in 3.297890499999994s
+rank 0 coarse fdm completed in 0.30044359999999415s
+rank 0 coarse fast fdm completed in 0.18986879999999928s
+rank 0 coarse sml completed in 0.012204499999995733s
+rank 0 coarse piml completed in 0.00966509999997811s
+parareal fdm completed in 1.5674271000025328s
+parareal fast fdm completed in 4.089466500008712s
+parareal sml completed in 1.0142521999950986s
+parareal piml completed in 0.9925450999871828s
+rank 0 fine fdm completed in 3.442118899999997s
+rank 0 coarse fdm completed in 0.34735480000000507s
+rank 0 coarse fast fdm completed in 0.124930599999999s
+rank 0 coarse sml completed in 0.013840899999991052s
+rank 0 coarse piml completed in 0.010361799999998311s
+parareal fdm completed in 1.5668136000167578s
+parareal fast fdm completed in 4.111279300006572s
+parareal sml completed in 1.1837917999946512s
+parareal piml completed in 1.2235862000088673s
+rank 0 fine fdm completed in 3.826104999999984s
+rank 0 coarse fdm completed in 0.3378484000000128s
+rank 0 coarse fast fdm completed in 0.16919380000001638s
+rank 0 coarse sml completed in 0.011618499999997312s
+rank 0 coarse piml completed in 0.009614200000015671s
+parareal fdm completed in 1.5887370000127703s
+parareal fast fdm completed in 4.158671500015771s
+parareal sml completed in 1.0027629999967758s
+parareal piml completed in 1.1699795000022277s
+rank 0 fine fdm completed in 3.62465610000001s
+rank 0 coarse fdm completed in 0.324495799999994s
+rank 0 coarse fast fdm completed in 0.1879763999999966s
+rank 0 coarse sml completed in 0.01291210000002252s
+rank 0 coarse piml completed in 0.012415099999998347s
+parareal fdm completed in 1.5824188999831676s
+parareal fast fdm completed in 5.211592299980111s
+parareal sml completed in 1.0112884999834932s
+parareal piml completed in 1.0545578000019304s
+rank 0 fine fdm completed in 4.27338499999999s
+rank 0 coarse fdm completed in 0.3361572000000024s
+rank 0 coarse fast fdm completed in 0.16834690000001729s
+rank 0 coarse sml completed in 0.012873399999989488s
+rank 0 coarse piml completed in 0.012092900000027385s
+parareal fdm completed in 1.63522210001247s
+parareal fast fdm completed in 4.187363699980779s
+parareal sml completed in 1.0482186000153888s
+parareal piml completed in 1.016233900008956s
+rank 0 fine fdm completed in 3.3476057999999966s
+rank 0 coarse fdm completed in 0.3482288000000153s
+rank 0 coarse fast fdm completed in 0.1818206000000373s
+rank 0 coarse sml completed in 0.011962999999980184s
+rank 0 coarse piml completed in 0.011636899999984962s
+parareal fdm completed in 1.6570693999819923s
+parareal fast fdm completed in 4.08726519998163s
+parareal sml completed in 1.0555159999930765s
+parareal piml completed in 0.9928382000070997s
+rank 0 fine fdm completed in 3.0650056000000063s
+rank 0 coarse fdm completed in 0.38594269999998687s
+rank 0 coarse fast fdm completed in 0.14726139999999077s
+rank 0 coarse sml completed in 0.01506219999998848s
+rank 0 coarse piml completed in 0.012278799999990042s
+parareal fdm completed in 1.5886293000075966s
+parareal fast fdm completed in 4.343238899979042s
+parareal sml completed in 1.095019800006412s
+parareal piml completed in 1.1404155000054743s
+rank 0 fine fdm completed in 3.7205782999999997s
+rank 0 coarse fdm completed in 0.375705900000014s
+rank 0 coarse fast fdm completed in 0.1590872000000445s
+rank 0 coarse sml completed in 0.01562890000002426s
+rank 0 coarse piml completed in 0.01224149999995916s
+parareal fdm completed in 1.7621148000180256s
+parareal fast fdm completed in 4.55752069997834s
+parareal sml completed in 1.094796999997925s
+parareal piml completed in 1.1051581999927294s
+rank 0 fine fdm completed in 3.569384800000023s
+rank 0 coarse fdm completed in 0.36525230000000874s
+rank 0 coarse fast fdm completed in 0.16856429999995726s
+rank 0 coarse sml completed in 0.013291799999990417s
+rank 0 coarse piml completed in 0.012893300000030194s
+parareal fdm completed in 1.7730562000069767s
+parareal fast fdm completed in 4.406165799999144s
+parareal sml completed in 1.029235099995276s
+parareal piml completed in 1.0947418000141624s
+rank 0 fine fdm completed in 3.4002307000000087s
+rank 0 coarse fdm completed in 0.3241057999999839s
+rank 0 coarse fast fdm completed in 0.20832590000003393s
+rank 0 coarse sml completed in 0.012047799999947983s
+rank 0 coarse piml completed in 0.009978600000010829s
+parareal fdm completed in 1.6408235999988392s
+parareal fast fdm completed in 4.10563700000057s
+parareal sml completed in 1.0657914000039455s
+parareal piml completed in 1.0095826000033412s
+rank 0 fine fdm completed in 3.346109200000001s
+rank 0 coarse fdm completed in 0.31973350000004075s
+rank 0 coarse fast fdm completed in 0.175143300000002s
+rank 0 coarse sml completed in 0.018419900000026246s
+rank 0 coarse piml completed in 0.01610789999995177s
+parareal fdm completed in 1.563472100009676s
+parareal fast fdm completed in 4.09886369999731s
+parareal sml completed in 1.031378300016513s
+parareal piml completed in 1.096198999992339s
+rank 0 fine fdm completed in 3.373911899999996s
+rank 0 coarse fdm completed in 0.3363009000000261s
+rank 0 coarse fast fdm completed in 0.16271599999998898s
+rank 0 coarse sml completed in 0.013163200000008146s
+rank 0 coarse piml completed in 0.010847299999966253s
+parareal fdm completed in 1.6057342999847606s
+parareal fast fdm completed in 4.157731199986301s
+parareal sml completed in 1.1193911000154912s
+parareal piml completed in 1.012979000021005s
+rank 0 fine fdm completed in 3.356358499999999s
+rank 0 coarse fdm completed in 0.32984220000003006s
+rank 0 coarse fast fdm completed in 0.1927524000000176s
+rank 0 coarse sml completed in 0.011024899999995341s
+rank 0 coarse piml completed in 0.010080399999992551s
+parareal fdm completed in 1.6139197000011336s
+parareal fast fdm completed in 4.126158600003691s
+parareal sml completed in 1.0683913999819197s
+parareal piml completed in 1.08854739999515s
+rank 0 fine fdm completed in 3.4102426000000037s
+rank 0 coarse fdm completed in 0.35395410000000993s
+rank 0 coarse fast fdm completed in 0.1748876999999993s
+rank 0 coarse sml completed in 0.013744199999962348s
+rank 0 coarse piml completed in 0.011250299999971958s
+parareal fdm completed in 1.584491000015987s
+parareal fast fdm completed in 4.176341800019145s
+parareal sml completed in 1.0328097000019625s
+parareal piml completed in 1.2533358999935444s
+rank 0 fine fdm completed in 4.010258399999998s
+rank 0 coarse fdm completed in 0.3358867000000032s
+rank 0 coarse fast fdm completed in 0.17509469999998828s
+rank 0 coarse sml completed in 0.017299600000001192s
+rank 0 coarse piml completed in 0.01561739999999645s
+parareal fdm completed in 1.6803292999975383s
+parareal fast fdm completed in 4.181183999986388s
+parareal sml completed in 1.047711299994262s
+parareal piml completed in 1.0845389000023715s
+rank 0 fine fdm completed in 3.512342999999987s
+rank 0 coarse fdm completed in 0.29864240000000564s
+rank 0 coarse fast fdm completed in 0.16535820000001422s
+rank 0 coarse sml completed in 0.012993699999981345s
+rank 0 coarse piml completed in 0.015473999999983334s
+parareal fdm completed in 1.6054554999864195s
+parareal fast fdm completed in 4.080904800008284s
+parareal sml completed in 1.098437999986345s
+parareal piml completed in 1.0665830000070855s
+rank 0 fine fdm completed in 3.4446568000000184s
+rank 0 coarse fdm completed in 0.3658274000000006s
+rank 0 coarse fast fdm completed in 0.14188729999995076s
+rank 0 coarse sml completed in 0.013972700000010718s
+rank 0 coarse piml completed in 0.01200579999999718s
+parareal fdm completed in 1.6430427999875974s
+parareal fast fdm completed in 4.327315699978499s
+parareal sml completed in 1.1484400999906939s
+parareal piml completed in 1.1070776999986265s
+rank 0 fine fdm completed in 3.704711599999996s
+rank 0 coarse fdm completed in 0.3883634000000029s
+rank 0 coarse fast fdm completed in 0.23430760000002238s
+rank 0 coarse sml completed in 0.013754700000049525s
+rank 0 coarse piml completed in 0.014710200000024543s
+parareal fdm completed in 1.7113825000124052s
+parareal fast fdm completed in 4.574755499983439s
+parareal sml completed in 1.2044011000252794s
+parareal piml completed in 1.1059497999958694s
+rank 0 fine fdm completed in 3.579863200000034s
+rank 0 coarse fdm completed in 0.3982445999999982s
+rank 0 coarse fast fdm completed in 0.2135304999999903s
+rank 0 coarse sml completed in 0.013430200000016157s
+rank 0 coarse piml completed in 0.012416799999982686s
+parareal fdm completed in 1.755756200000178s
+parareal fast fdm completed in 4.109535900002811s
+parareal sml completed in 1.0498546999879181s
+parareal piml completed in 1.1315345000184607s
+rank 0 fine fdm completed in 3.2977214000000004s
+rank 0 coarse fdm completed in 0.3407367000000363s
+rank 0 coarse fast fdm completed in 0.19599249999998847s
+rank 0 coarse sml completed in 0.01324350000004415s
+rank 0 coarse piml completed in 0.010506400000053873s
+parareal fdm completed in 1.5304905000084545s
+parareal fast fdm completed in 4.219945799995912s
+parareal sml completed in 1.042118399986066s
+parareal piml completed in 1.033324599993648s
+rank 0 fine fdm completed in 3.3366371000000186s
+rank 0 coarse fdm completed in 0.346554000000026s
+rank 0 coarse fast fdm completed in 0.1529502000000207s
+rank 0 coarse sml completed in 0.011663800000007996s
+rank 0 coarse piml completed in 0.009759900000005928s
+parareal fdm completed in 1.6071080999972764s
+parareal fast fdm completed in 4.182476100017084s
+parareal sml completed in 1.1156800000171643s
+parareal piml completed in 1.0541362999938428s
+rank 0 fine fdm completed in 3.302625199999966s
+rank 0 coarse fdm completed in 0.36104719999997315s
+rank 0 coarse fast fdm completed in 0.18943930000000364s
+rank 0 coarse sml completed in 0.015559200000041074s
+rank 0 coarse piml completed in 0.011829700000021148s
+parareal fdm completed in 1.5795116000226699s
+parareal fast fdm completed in 4.268483200023184s
+parareal sml completed in 1.094460699998308s
+parareal piml completed in 1.0063245999917854s
+rank 0 fine fdm completed in 3.224073199999964s
+rank 0 coarse fdm completed in 0.3439917999999693s
+rank 0 coarse fast fdm completed in 0.19060509999997066s
+rank 0 coarse sml completed in 0.013716600000009294s
+rank 0 coarse piml completed in 0.012656699999979537s
+parareal fdm completed in 1.553844800015213s
+parareal fast fdm completed in 4.134628700005123s
+parareal sml completed in 1.042141799989622s
+parareal piml completed in 1.0337919000012334s
+rank 0 fine fdm completed in 3.379684800000007s
+rank 0 coarse fdm completed in 0.32784300000002986s
+rank 0 coarse fast fdm completed in 0.16948439999998755s
+rank 0 coarse sml completed in 0.01388910000002852s
+rank 0 coarse piml completed in 0.011287200000026587s
+parareal fdm completed in 1.6062480000255164s
+parareal fast fdm completed in 4.059865600022022s
+parareal sml completed in 1.0399783000175375s
+parareal piml completed in 1.0381156000075862s
+rank 0 fine fdm completed in 3.4005156000000056s
+rank 0 coarse fdm completed in 0.3397874999999999s
+rank 0 coarse fast fdm completed in 0.1679533999999876s
+rank 0 coarse sml completed in 0.013408199999958015s
+rank 0 coarse piml completed in 0.012949600000013106s
+parareal fdm completed in 1.5694932999904267s
+parareal fast fdm completed in 4.152509500010638s
+parareal sml completed in 1.0871156000066549s
+parareal piml completed in 1.0509040000033565s
+rank 0 fine fdm completed in 3.2890055000000302s
+rank 0 coarse fdm completed in 0.34130530000004455s
+rank 0 coarse fast fdm completed in 0.17488639999999123s
+rank 0 coarse sml completed in 0.012597499999969841s
+rank 0 coarse piml completed in 0.011957300000062787s
+parareal fdm completed in 1.5909402999968734s
+parareal fast fdm completed in 4.120671199983917s
+parareal sml completed in 1.0364929999923334s
+parareal piml completed in 1.050885600008769s
+rank 0 fine fdm completed in 3.1609064000000444s
+rank 0 coarse fdm completed in 0.27595800000005966s
+rank 0 coarse fast fdm completed in 0.1779781999999841s
+rank 0 coarse sml completed in 0.013399499999991349s
+rank 0 coarse piml completed in 0.012360899999976027s
+parareal fdm completed in 1.5142616999801248s
+parareal fast fdm completed in 4.348178499989444s
+parareal sml completed in 1.1419973000010941s
+parareal piml completed in 1.1166538999823388s
+rank 0 fine fdm completed in 3.748776199999952s
+rank 0 coarse fdm completed in 0.3520578000000114s
+rank 0 coarse fast fdm completed in 0.19013879999999972s
+rank 0 coarse sml completed in 0.015358200000036959s
+rank 0 coarse piml completed in 0.01181890000009389s
+parareal fdm completed in 1.7505379999929573s
+parareal fast fdm completed in 4.546168200002285s
+parareal sml completed in 1.1293089999817312s
+parareal piml completed in 1.1553821999987122s
+rank 0 fine fdm completed in 3.744153600000004s
+rank 0 coarse fdm completed in 0.42748500000004697s
+rank 0 coarse fast fdm completed in 0.1640464999999267s
+rank 0 coarse sml completed in 0.012255900000013753s
+rank 0 coarse piml completed in 0.011140999999952328s
+parareal fdm completed in 1.7469708000135142s
+parareal fast fdm completed in 4.292540399997961s
+parareal sml completed in 1.0374331999919377s
+parareal piml completed in 1.0919608999975026s
+rank 0 fine fdm completed in 3.1971416999999747s
+rank 0 coarse fdm completed in 0.3490555000000768s
+rank 0 coarse fast fdm completed in 0.15759170000001177s
+rank 0 coarse sml completed in 0.014139499999942018s
+rank 0 coarse piml completed in 0.015058100000032937s
+parareal fdm completed in 1.5815981000196189s
+parareal fast fdm completed in 4.190431399998488s
+parareal sml completed in 1.046443500003079s
+parareal piml completed in 1.066974899993511s
+rank 0 fine fdm completed in 3.2951579000000493s
+rank 0 coarse fdm completed in 0.33079400000008263s
+rank 0 coarse fast fdm completed in 0.15413790000002336s
+rank 0 coarse sml completed in 0.01666669999997339s
+rank 0 coarse piml completed in 0.013871899999912785s
+parareal fdm completed in 1.5633491999760736s
+parareal fast fdm completed in 4.155909599998267s
+parareal sml completed in 1.0208782000117935s
+parareal piml completed in 1.0109354000014719s
+rank 0 fine fdm completed in 3.2717176999999538s
+rank 0 coarse fdm completed in 0.32697989999996935s
+rank 0 coarse fast fdm completed in 0.1791900999999143s
+rank 0 coarse sml completed in 0.012936999999965337s
+rank 0 coarse piml completed in 0.017131899999981215s
+parareal fdm completed in 1.6206576999975368s
+parareal fast fdm completed in 4.271233600011328s
+parareal sml completed in 1.0400880000088364s
+parareal piml completed in 1.0510480999946594s
+rank 0 fine fdm completed in 3.2119160000000875s
+rank 0 coarse fdm completed in 0.27927390000002106s
+rank 0 coarse fast fdm completed in 0.185239700000011s
+rank 0 coarse sml completed in 0.01784009999994396s
+rank 0 coarse piml completed in 0.011725100000035127s
+parareal fdm completed in 1.5517126000195276s
+parareal fast fdm completed in 4.113930199993774s
+parareal sml completed in 0.9912050999992061s
+parareal piml completed in 1.0422346999985166s
+rank 0 fine fdm completed in 3.434198400000014s
+rank 0 coarse fdm completed in 0.34009839999998803s
+rank 0 coarse fast fdm completed in 0.15706299999999374s
+rank 0 coarse sml completed in 0.011368699999934506s
+rank 0 coarse piml completed in 0.010201100000017504s
+parareal fdm completed in 1.5928646999818739s
+parareal fast fdm completed in 3.9640130000188947s
+parareal sml completed in 1.0224678999802563s
+parareal piml completed in 1.0736735000100452s
+rank 0 fine fdm completed in 3.518104400000084s
+rank 0 coarse fdm completed in 0.36259690000008504s
+rank 0 coarse fast fdm completed in 0.19261579999999867s
+rank 0 coarse sml completed in 0.011555100000009588s
+rank 0 coarse piml completed in 0.009791800000016337s
+parareal fdm completed in 1.6023558000160847s
+parareal fast fdm completed in 4.082236999995075s
+parareal sml completed in 1.0426290000032168s
+parareal piml completed in 1.0177436999802012s
+rank 0 fine fdm completed in 3.3842015000000174s
+rank 0 coarse fdm completed in 0.29570560000001933s
+rank 0 coarse fast fdm completed in 0.17424479999999676s
+rank 0 coarse sml completed in 0.01875669999992624s
+rank 0 coarse piml completed in 0.013291100000060396s
+parareal fdm completed in 1.6429978999949526s
+parareal fast fdm completed in 4.1254846999945585s
+parareal sml completed in 1.0336169000074733s
+parareal piml completed in 1.0226123000029474s
+rank 0 fine fdm completed in 3.2535347000000456s
+rank 0 coarse fdm completed in 0.30160460000001876s
+rank 0 coarse fast fdm completed in 0.1858214000000089s
+rank 0 coarse sml completed in 0.01735529999996288s
+rank 0 coarse piml completed in 0.016353500000036547s
+parareal fdm completed in 1.620991799980402s
+parareal fast fdm completed in 4.249002800002927s
+parareal sml completed in 1.1229771999933291s
+parareal piml completed in 1.1391220999939833s
+rank 0 fine fdm completed in 3.7294628000000785s
+rank 0 coarse fdm completed in 0.3527546000000257s
+rank 0 coarse fast fdm completed in 0.18147290000001703s
+rank 0 coarse sml completed in 0.016214300000001458s
+rank 0 coarse piml completed in 0.015678100000059203s
+parareal fdm completed in 1.7967147000017576s
+parareal fast fdm completed in 4.510771200002637s
+parareal sml completed in 1.1365465999988373s
+parareal piml completed in 1.0882097000139765s
+rank 0 fine fdm completed in 3.5653750000000173s
+rank 0 coarse fdm completed in 0.3230101999999988s
+rank 0 coarse fast fdm completed in 0.1952466000000186s
+rank 0 coarse sml completed in 0.014198999999962325s
+rank 0 coarse piml completed in 0.015364999999974316s
+parareal fdm completed in 1.7769265999959316s
+parareal fast fdm completed in 4.396602399996482s
+parareal sml completed in 1.295135599997593s
+parareal piml completed in 1.0328075000143144s
+fine fdm execution time - mean: 3.462822576000008s; sd: 0.25034974636731105s
+coarse fdm execution time - mean: 0.34127106800001256s; sd: 0.032503557047611153s
+coarse fast fdm execution time - mean: 0.17390664999999841s; sd: 0.020853053108939507s
+coarse sml execution time - mean: 0.013788395999995658s; sd: 0.0018632625177283587s
+coarse piml execution time - mean: 0.012400786000004587s; sd: 0.0019659545860464464s
+parareal fdm execution time - mean: 1.6237977560021681s; sd: 0.07441098115105385s
+parareal fast fdm execution time - mean: 4.2251273739984025s; sd: 0.21258605334793385s
+parareal sml execution time - mean: 1.0717953839997063s; sd: 0.0593574211785185s
+parareal piml execution time - mean: 1.0643376580008772s; sd: 0.05803002708965752s
+rank 2 fine fdm completed in 3.7426934000000003s
+rank 2 coarse fdm completed in 0.42158550000000083s
+rank 2 coarse fast fdm completed in 0.1968058999999993s
+rank 2 coarse sml completed in 0.5693734999999993s
+rank 2 coarse piml completed in 0.31033769999999805s
+rank 2 fine fdm completed in 3.4423223999999983s
+rank 2 coarse fdm completed in 0.3306792000000023s
+rank 2 coarse fast fdm completed in 0.1920971999999992s
+rank 2 coarse sml completed in 0.013203799999999433s
+rank 2 coarse piml completed in 0.011362599999998224s
+rank 2 fine fdm completed in 3.2857754999999997s
+rank 2 coarse fdm completed in 0.3667907000000028s
+rank 2 coarse fast fdm completed in 0.16050089999999528s
+rank 2 coarse sml completed in 0.011291900000003352s
+rank 2 coarse piml completed in 0.010089499999999418s
+rank 2 fine fdm completed in 3.6292437000000035s
+rank 2 coarse fdm completed in 0.39751370000000463s
+rank 2 coarse fast fdm completed in 0.14361159999999984s
+rank 2 coarse sml completed in 0.016675399999996898s
+rank 2 coarse piml completed in 0.01667189999999863s
+rank 2 fine fdm completed in 3.665368800000003s
+rank 2 coarse fdm completed in 0.37316140000000075s
+rank 2 coarse fast fdm completed in 0.21392600000000073s
+rank 2 coarse sml completed in 0.01435360000000685s
+rank 2 coarse piml completed in 0.014881299999998987s
+rank 2 fine fdm completed in 3.388565700000001s
+rank 2 coarse fdm completed in 0.34748960000000295s
+rank 2 coarse fast fdm completed in 0.15353530000000148s
+rank 2 coarse sml completed in 0.01361539999999195s
+rank 2 coarse piml completed in 0.011722300000002406s
+rank 2 fine fdm completed in 3.2762419999999963s
+rank 2 coarse fdm completed in 0.3170977999999991s
+rank 2 coarse fast fdm completed in 0.19712780000000407s
+rank 2 coarse sml completed in 0.012970199999998044s
+rank 2 coarse piml completed in 0.012347300000001837s
+rank 2 fine fdm completed in 3.535421900000003s
+rank 2 coarse fdm completed in 0.3939034999999933s
+rank 2 coarse fast fdm completed in 0.17119300000000237s
+rank 2 coarse sml completed in 0.01581199999999683s
+rank 2 coarse piml completed in 0.00999389999999778s
+rank 2 fine fdm completed in 3.4630051000000037s
+rank 2 coarse fdm completed in 0.3756963000000013s
+rank 2 coarse fast fdm completed in 0.14917359999999746s
+rank 2 coarse sml completed in 0.012302999999988629s
+rank 2 coarse piml completed in 0.010256200000000604s
+rank 2 fine fdm completed in 3.288887200000005s
+rank 2 coarse fdm completed in 0.36575969999999813s
+rank 2 coarse fast fdm completed in 0.16504030000000114s
+rank 2 coarse sml completed in 0.013255499999999643s
+rank 2 coarse piml completed in 0.012109600000002274s
+rank 2 fine fdm completed in 3.410313599999995s
+rank 2 coarse fdm completed in 0.3130032999999912s
+rank 2 coarse fast fdm completed in 0.2178485999999964s
+rank 2 coarse sml completed in 0.01674830000001748s
+rank 2 coarse piml completed in 0.01396599999998216s
+rank 2 fine fdm completed in 3.2463055000000054s
+rank 2 coarse fdm completed in 0.355294200000003s
+rank 2 coarse fast fdm completed in 0.16930940000000305s
+rank 2 coarse sml completed in 0.012571100000002389s
+rank 2 coarse piml completed in 0.010408600000005208s
+rank 2 fine fdm completed in 3.2494390999999894s
+rank 2 coarse fdm completed in 0.3175152999999966s
+rank 2 coarse fast fdm completed in 0.18339609999998174s
+rank 2 coarse sml completed in 0.014821599999976343s
+rank 2 coarse piml completed in 0.013125000000002274s
+rank 2 fine fdm completed in 3.625713300000001s
+rank 2 coarse fdm completed in 0.3930418000000202s
+rank 2 coarse fast fdm completed in 0.1912097000000017s
+rank 2 coarse sml completed in 0.012204900000000407s
+rank 2 coarse piml completed in 0.011692300000021305s
+rank 2 fine fdm completed in 3.843377299999986s
+rank 2 coarse fdm completed in 0.3451378000000034s
+rank 2 coarse fast fdm completed in 0.16285679999998592s
+rank 2 coarse sml completed in 0.014037500000000591s
+rank 2 coarse piml completed in 0.010671799999983023s
+rank 2 fine fdm completed in 3.286677200000014s
+rank 2 coarse fdm completed in 0.31715290000002483s
+rank 2 coarse fast fdm completed in 0.171032399999973s
+rank 2 coarse sml completed in 0.013142799999997123s
+rank 2 coarse piml completed in 0.012588999999991302s
+rank 2 fine fdm completed in 3.2415432999999894s
+rank 2 coarse fdm completed in 0.32706550000000334s
+rank 2 coarse fast fdm completed in 0.1832080000000076s
+rank 2 coarse sml completed in 0.0146253999999999s
+rank 2 coarse piml completed in 0.010326800000001413s
+rank 2 fine fdm completed in 3.1910529000000167s
+rank 2 coarse fdm completed in 0.3136437000000001s
+rank 2 coarse fast fdm completed in 0.16240270000000123s
+rank 2 coarse sml completed in 0.011714699999998857s
+rank 2 coarse piml completed in 0.012799499999999853s
+rank 2 fine fdm completed in 3.607575699999984s
+rank 2 coarse fdm completed in 0.3908055999999931s
+rank 2 coarse fast fdm completed in 0.1644012999999802s
+rank 2 coarse sml completed in 0.012169499999998834s
+rank 2 coarse piml completed in 0.011573599999991302s
+rank 2 fine fdm completed in 3.657961599999993s
+rank 2 coarse fdm completed in 0.31690119999998956s
+rank 2 coarse fast fdm completed in 0.22120350000000144s
+rank 2 coarse sml completed in 0.011483599999991156s
+rank 2 coarse piml completed in 0.009963900000002468s
+rank 2 fine fdm completed in 4.229458400000027s
+rank 2 coarse fdm completed in 0.2975603999999521s
+rank 2 coarse fast fdm completed in 0.1468792999999664s
+rank 2 coarse sml completed in 0.012911500000029719s
+rank 2 coarse piml completed in 0.012766499999997905s
+rank 2 fine fdm completed in 3.262434600000006s
+rank 2 coarse fdm completed in 0.2859887000000185s
+rank 2 coarse fast fdm completed in 0.1632208999999989s
+rank 2 coarse sml completed in 0.013529800000014802s
+rank 2 coarse piml completed in 0.014600200000018049s
+rank 2 fine fdm completed in 3.3168035000000486s
+rank 2 coarse fdm completed in 0.35751840000000357s
+rank 2 coarse fast fdm completed in 0.17125429999998687s
+rank 2 coarse sml completed in 0.012529300000039711s
+rank 2 coarse piml completed in 0.011600100000009661s
+rank 2 fine fdm completed in 3.7050285999999915s
+rank 2 coarse fdm completed in 0.3310428999999999s
+rank 2 coarse fast fdm completed in 0.19971139999995557s
+rank 2 coarse sml completed in 0.012768100000016602s
+rank 2 coarse piml completed in 0.014865699999973003s
+rank 2 fine fdm completed in 3.688366999999971s
+rank 2 coarse fdm completed in 0.34648600000002716s
+rank 2 coarse fast fdm completed in 0.2232430999999906s
+rank 2 coarse sml completed in 0.016612000000009175s
+rank 2 coarse piml completed in 0.013059899999973368s
+rank 2 fine fdm completed in 3.3439335000000483s
+rank 2 coarse fdm completed in 0.34451040000004696s
+rank 2 coarse fast fdm completed in 0.15474130000001196s
+rank 2 coarse sml completed in 0.016568500000005315s
+rank 2 coarse piml completed in 0.015497499999980846s
+rank 2 fine fdm completed in 3.168265799999972s
+rank 2 coarse fdm completed in 0.3407202000000211s
+rank 2 coarse fast fdm completed in 0.16381360000002587s
+rank 2 coarse sml completed in 0.013554100000021663s
+rank 2 coarse piml completed in 0.012887300000045343s
+rank 2 fine fdm completed in 3.254624100000001s
+rank 2 coarse fdm completed in 0.333982600000013s
+rank 2 coarse fast fdm completed in 0.20272140000002992s
+rank 2 coarse sml completed in 0.012554599999987204s
+rank 2 coarse piml completed in 0.012827700000002551s
+rank 2 fine fdm completed in 3.345083299999999s
+rank 2 coarse fdm completed in 0.29146599999995715s
+rank 2 coarse fast fdm completed in 0.16128610000004073s
+rank 2 coarse sml completed in 0.012265700000000379s
+rank 2 coarse piml completed in 0.012954799999988609s
+rank 2 fine fdm completed in 3.4832104000000186s
+rank 2 coarse fdm completed in 0.34939500000001544s
+rank 2 coarse fast fdm completed in 0.16612159999999676s
+rank 2 coarse sml completed in 0.011620300000004136s
+rank 2 coarse piml completed in 0.00971020000002909s
+rank 2 fine fdm completed in 3.884958499999982s
+rank 2 coarse fdm completed in 0.3224213999999961s
+rank 2 coarse fast fdm completed in 0.182478500000002s
+rank 2 coarse sml completed in 0.012671199999999772s
+rank 2 coarse piml completed in 0.011221500000033302s
+rank 2 fine fdm completed in 3.480239900000015s
+rank 2 coarse fdm completed in 0.33549799999997276s
+rank 2 coarse fast fdm completed in 0.1939691000000039s
+rank 2 coarse sml completed in 0.015099599999985003s
+rank 2 coarse piml completed in 0.012619999999969878s
+rank 2 fine fdm completed in 3.261278500000003s
+rank 2 coarse fdm completed in 0.32559040000001005s
+rank 2 coarse fast fdm completed in 0.1785380000000032s
+rank 2 coarse sml completed in 0.012345299999992676s
+rank 2 coarse piml completed in 0.012822999999968943s
+rank 2 fine fdm completed in 3.698835700000018s
+rank 2 coarse fdm completed in 0.3438549999999623s
+rank 2 coarse fast fdm completed in 0.18030429999998887s
+rank 2 coarse sml completed in 0.01248049999998102s
+rank 2 coarse piml completed in 0.012296100000014576s
+rank 2 fine fdm completed in 3.7135128000000464s
+rank 2 coarse fdm completed in 0.39313469999996187s
+rank 2 coarse fast fdm completed in 0.2097262999999998s
+rank 2 coarse sml completed in 0.01202699999998913s
+rank 2 coarse piml completed in 0.01252569999996922s
+rank 2 fine fdm completed in 3.2657715999999937s
+rank 2 coarse fdm completed in 0.31655079999995905s
+rank 2 coarse fast fdm completed in 0.13189660000000458s
+rank 2 coarse sml completed in 0.012705100000005132s
+rank 2 coarse piml completed in 0.013891199999989112s
+rank 2 fine fdm completed in 3.2817479999999932s
+rank 2 coarse fdm completed in 0.3258638999999448s
+rank 2 coarse fast fdm completed in 0.15768810000002986s
+rank 2 coarse sml completed in 0.012821200000018962s
+rank 2 coarse piml completed in 0.011519500000019889s
+rank 2 fine fdm completed in 3.269686400000012s
+rank 2 coarse fdm completed in 0.35386469999997416s
+rank 2 coarse fast fdm completed in 0.15958899999998266s
+rank 2 coarse sml completed in 0.01331360000000359s
+rank 2 coarse piml completed in 0.0131771999999728s
+rank 2 fine fdm completed in 3.31820909999999s
+rank 2 coarse fdm completed in 0.3499106000000438s
+rank 2 coarse fast fdm completed in 0.17702639999998837s
+rank 2 coarse sml completed in 0.015812799999991967s
+rank 2 coarse piml completed in 0.011364299999968352s
+rank 2 fine fdm completed in 3.2201597999999763s
+rank 2 coarse fdm completed in 0.349775099999988s
+rank 2 coarse fast fdm completed in 0.17158269999998765s
+rank 2 coarse sml completed in 0.012077199999964705s
+rank 2 coarse piml completed in 0.012067299999955594s
+rank 2 fine fdm completed in 3.451273200000003s
+rank 2 coarse fdm completed in 0.3287161000000083s
+rank 2 coarse fast fdm completed in 0.16103769999995166s
+rank 2 coarse sml completed in 0.012773100000003978s
+rank 2 coarse piml completed in 0.013106400000026497s
+rank 2 fine fdm completed in 3.3319592999999372s
+rank 2 coarse fdm completed in 0.3655835999999226s
+rank 2 coarse fast fdm completed in 0.17201090000003205s
+rank 2 coarse sml completed in 0.011381799999981013s
+rank 2 coarse piml completed in 0.010609600000066166s
+rank 2 fine fdm completed in 3.325856300000055s
+rank 2 coarse fdm completed in 0.33858889999999064s
+rank 2 coarse fast fdm completed in 0.14473710000004303s
+rank 2 coarse sml completed in 0.012789900000029775s
+rank 2 coarse piml completed in 0.012354800000025534s
+rank 2 fine fdm completed in 3.845445199999972s
+rank 2 coarse fdm completed in 0.3996094000000312s
+rank 2 coarse fast fdm completed in 0.16570490000003701s
+rank 2 coarse sml completed in 0.01261049999993702s
+rank 2 coarse piml completed in 0.011902800000029856s
+rank 2 fine fdm completed in 3.829826799999978s
+rank 2 coarse fdm completed in 0.36654780000003484s
+rank 2 coarse fast fdm completed in 0.16170580000004975s
+rank 2 coarse sml completed in 0.01255300000002535s
+rank 2 coarse piml completed in 0.010230899999896792s
+rank 2 fine fdm completed in 3.3041695000000573s
+rank 2 coarse fdm completed in 0.3146734000000606s
+rank 2 coarse fast fdm completed in 0.17172019999998156s
+rank 2 coarse sml completed in 0.01175660000001244s
+rank 2 coarse piml completed in 0.011829000000034284s
+rank 2 fine fdm completed in 3.255853200000047s
+rank 2 coarse fdm completed in 0.3265290000000505s
+rank 2 coarse fast fdm completed in 0.18855010000004313s
+rank 2 coarse sml completed in 0.015566400000011527s
+rank 2 coarse piml completed in 0.014961399999947389s
+rank 2 fine fdm completed in 3.3218841999999995s
+rank 2 coarse fdm completed in 0.3634030000000621s
+rank 2 coarse fast fdm completed in 0.1844616999999289s
+rank 2 coarse sml completed in 0.012607799999955205s
+rank 2 coarse piml completed in 0.010274799999933748s
+rank 2 fine fdm completed in 3.1531836999999996s
+rank 2 coarse fdm completed in 0.3381625999999187s
+rank 2 coarse fast fdm completed in 0.1653184000000465s
+rank 2 coarse sml completed in 0.013176300000054653s
+rank 2 coarse piml completed in 0.017832800000064708s
+rank 2 fine fdm completed in 3.209741300000019s
+rank 2 coarse fdm completed in 0.3621673000000101s
+rank 2 coarse fast fdm completed in 0.1402732000000242s
+rank 2 coarse sml completed in 0.01236790000007204s
+rank 2 coarse piml completed in 0.011608400000000074s
+rank 2 fine fdm completed in 3.508020800000054s
+rank 2 coarse fdm completed in 0.33239160000005086s
+rank 2 coarse fast fdm completed in 0.13467209999998886s
+rank 2 coarse sml completed in 0.01337660000001506s
+rank 2 coarse piml completed in 0.013368200000059005s
+rank 2 fine fdm completed in 3.2649891000000935s
+rank 2 coarse fdm completed in 0.33351219999997284s
+rank 2 coarse fast fdm completed in 0.18628199999989192s
+rank 2 coarse sml completed in 0.015212500000075124s
+rank 2 coarse piml completed in 0.01273869999999988s
+rank 2 fine fdm completed in 3.2159928999999465s
+rank 2 coarse fdm completed in 0.33607309999990775s
+rank 2 coarse fast fdm completed in 0.18906140000001415s
+rank 2 coarse sml completed in 0.01736500000004071s
+rank 2 coarse piml completed in 0.0162703999999394s
+rank 2 fine fdm completed in 3.557985300000041s
+rank 2 coarse fdm completed in 0.36783150000007936s
+rank 2 coarse fast fdm completed in 0.16179640000007112s
+rank 2 coarse sml completed in 0.012996700000030614s
+rank 2 coarse piml completed in 0.012706099999945764s
+rank 2 fine fdm completed in 3.5840436999999383s
+rank 2 coarse fdm completed in 0.35663709999994353s
+rank 2 coarse fast fdm completed in 0.19203049999998711s
+rank 2 coarse sml completed in 0.011718599999994694s
+rank 2 coarse piml completed in 0.01079400000003261s
+rank 1 fine fdm completed in 3.6170314999999995s
+rank 1 coarse fdm completed in 0.40059819999999924s
+rank 1 coarse fast fdm completed in 0.20361130000000038s
+rank 1 coarse sml completed in 0.6155390999999995s
+rank 1 coarse piml completed in 0.2730956000000013s
+rank 1 fine fdm completed in 3.4200649s
+rank 1 coarse fdm completed in 0.344639100000002s
+rank 1 coarse fast fdm completed in 0.16293800000000047s
+rank 1 coarse sml completed in 0.013012400000000923s
+rank 1 coarse piml completed in 0.01236769999999865s
+rank 1 fine fdm completed in 3.2646780999999976s
+rank 1 coarse fdm completed in 0.34094280000000055s
+rank 1 coarse fast fdm completed in 0.16788729999999674s
+rank 1 coarse sml completed in 0.013532800000000123s
+rank 1 coarse piml completed in 0.011547499999998934s
+rank 1 fine fdm completed in 3.5792254999999997s
+rank 1 coarse fdm completed in 0.4527454999999989s
+rank 1 coarse fast fdm completed in 0.13878150000000034s
+rank 1 coarse sml completed in 0.018932799999994643s
+rank 1 coarse piml completed in 0.01595609999999681s
+rank 1 fine fdm completed in 3.903452399999992s
+rank 1 coarse fdm completed in 0.34589770000000897s
+rank 1 coarse fast fdm completed in 0.16222299999999734s
+rank 1 coarse sml completed in 0.012711800000005269s
+rank 1 coarse piml completed in 0.011508700000007366s
+rank 1 fine fdm completed in 3.5470346999999975s
+rank 1 coarse fdm completed in 0.3002024000000034s
+rank 1 coarse fast fdm completed in 0.17069739999999456s
+rank 1 coarse sml completed in 0.01624370000000397s
+rank 1 coarse piml completed in 0.014948799999999096s
+rank 1 fine fdm completed in 3.4145084000000026s
+rank 1 coarse fdm completed in 0.34472130000000334s
+rank 1 coarse fast fdm completed in 0.1710965999999985s
+rank 1 coarse sml completed in 0.016265300000000593s
+rank 1 coarse piml completed in 0.010891399999991336s
+rank 1 fine fdm completed in 3.490710100000001s
+rank 1 coarse fdm completed in 0.27671619999999564s
+rank 1 coarse fast fdm completed in 0.16030329999999537s
+rank 1 coarse sml completed in 0.013668500000008521s
+rank 1 coarse piml completed in 0.01219340000000102s
+rank 1 fine fdm completed in 3.416050499999997s
+rank 1 coarse fdm completed in 0.38269680000000506s
+rank 1 coarse fast fdm completed in 0.1571581999999978s
+rank 1 coarse sml completed in 0.013035299999998529s
+rank 1 coarse piml completed in 0.012825300000002926s
+rank 1 fine fdm completed in 3.1877840999999876s
+rank 1 coarse fdm completed in 0.3520776000000012s
+rank 1 coarse fast fdm completed in 0.14108330000000535s
+rank 1 coarse sml completed in 0.01492120000000341s
+rank 1 coarse piml completed in 0.012883599999994999s
+rank 1 fine fdm completed in 3.413562799999994s
+rank 1 coarse fdm completed in 0.33332270000002495s
+rank 1 coarse fast fdm completed in 0.13462749999999346s
+rank 1 coarse sml completed in 0.012230500000015354s
+rank 1 coarse piml completed in 0.012762199999997392s
+rank 1 fine fdm completed in 3.234264299999978s
+rank 1 coarse fdm completed in 0.2768543999999906s
+rank 1 coarse fast fdm completed in 0.17182560000000535s
+rank 1 coarse sml completed in 0.013025499999997692s
+rank 1 coarse piml completed in 0.01246740000001978s
+rank 1 fine fdm completed in 3.1120029000000216s
+rank 1 coarse fdm completed in 0.3672184999999786s
+rank 1 coarse fast fdm completed in 0.1616924999999867s
+rank 1 coarse sml completed in 0.013636099999985163s
+rank 1 coarse piml completed in 0.012253900000018803s
+rank 1 fine fdm completed in 3.5622491000000025s
+rank 1 coarse fdm completed in 0.3574725000000001s
+rank 1 coarse fast fdm completed in 0.19548389999999927s
+rank 1 coarse sml completed in 0.013713599999988446s
+rank 1 coarse piml completed in 0.013060999999993328s
+rank 1 fine fdm completed in 3.7078558999999984s
+rank 1 coarse fdm completed in 0.35501709999999775s
+rank 1 coarse fast fdm completed in 0.15377050000000736s
+rank 1 coarse sml completed in 0.012662900000009358s
+rank 1 coarse piml completed in 0.011980700000009392s
+rank 1 fine fdm completed in 3.3208480000000122s
+rank 1 coarse fdm completed in 0.33841849999998885s
+rank 1 coarse fast fdm completed in 0.18588219999998046s
+rank 1 coarse sml completed in 0.016788300000001755s
+rank 1 coarse piml completed in 0.016161999999980026s
+rank 1 fine fdm completed in 3.1668922000000066s
+rank 1 coarse fdm completed in 0.3391623999999922s
+rank 1 coarse fast fdm completed in 0.13198590000001786s
+rank 1 coarse sml completed in 0.013000500000003967s
+rank 1 coarse piml completed in 0.011731999999994969s
+rank 1 fine fdm completed in 3.2170970999999895s
+rank 1 coarse fdm completed in 0.31133849999997665s
+rank 1 coarse fast fdm completed in 0.16465679999998883s
+rank 1 coarse sml completed in 0.013892100000020946s
+rank 1 coarse piml completed in 0.014100500000012062s
+rank 1 fine fdm completed in 3.740214999999978s
+rank 1 coarse fdm completed in 0.3190110000000175s
+rank 1 coarse fast fdm completed in 0.1670287999999971s
+rank 1 coarse sml completed in 0.013065100000005714s
+rank 1 coarse piml completed in 0.011714600000004793s
+rank 1 fine fdm completed in 3.6202174999999954s
+rank 1 coarse fdm completed in 0.30247730000002093s
+rank 1 coarse fast fdm completed in 0.18418169999998213s
+rank 1 coarse sml completed in 0.013489100000015242s
+rank 1 coarse piml completed in 0.012826000000018212s
+rank 1 fine fdm completed in 4.383516799999995s
+rank 1 coarse fdm completed in 0.3717002000000207s
+rank 1 coarse fast fdm completed in 0.16476840000001403s
+rank 1 coarse sml completed in 0.012417300000038267s
+rank 1 coarse piml completed in 0.010148399999991398s
+rank 1 fine fdm completed in 3.2809940999999867s
+rank 1 coarse fdm completed in 0.29388529999999946s
+rank 1 coarse fast fdm completed in 0.17434500000001663s
+rank 1 coarse sml completed in 0.013921299999992698s
+rank 1 coarse piml completed in 0.012573900000006688s
+rank 1 fine fdm completed in 3.3057195000000092s
+rank 1 coarse fdm completed in 0.30598620000000665s
+rank 1 coarse fast fdm completed in 0.15239330000002838s
+rank 1 coarse sml completed in 0.014122899999961191s
+rank 1 coarse piml completed in 0.012417900000002646s
+rank 1 fine fdm completed in 3.7392204999999876s
+rank 1 coarse fdm completed in 0.3926433999999972s
+rank 1 coarse fast fdm completed in 0.18927910000002157s
+rank 1 coarse sml completed in 0.013188600000034967s
+rank 1 coarse piml completed in 0.010335600000018985s
+rank 1 fine fdm completed in 3.6801055000000247s
+rank 1 coarse fdm completed in 0.39034860000003846s
+rank 1 coarse fast fdm completed in 0.17801620000000185s
+rank 1 coarse sml completed in 0.013611800000035146s
+rank 1 coarse piml completed in 0.014946699999995872s
+rank 1 fine fdm completed in 3.3767883999999526s
+rank 1 coarse fdm completed in 0.2923030999999696s
+rank 1 coarse fast fdm completed in 0.17064529999998967s
+rank 1 coarse sml completed in 0.015335499999991953s
+rank 1 coarse piml completed in 0.015153399999974226s
+rank 1 fine fdm completed in 3.270207599999992s
+rank 1 coarse fdm completed in 0.344036200000005s
+rank 1 coarse fast fdm completed in 0.1800773999999592s
+rank 1 coarse sml completed in 0.013788599999998041s
+rank 1 coarse piml completed in 0.013003099999991719s
+rank 1 fine fdm completed in 3.3922155000000203s
+rank 1 coarse fdm completed in 0.3539814000000092s
+rank 1 coarse fast fdm completed in 0.16101340000000164s
+rank 1 coarse sml completed in 0.012108599999976377s
+rank 1 coarse piml completed in 0.01020600000003924s
+rank 1 fine fdm completed in 3.270185300000037s
+rank 1 coarse fdm completed in 0.30275260000001936s
+rank 1 coarse fast fdm completed in 0.17207790000003342s
+rank 1 coarse sml completed in 0.012535899999988942s
+rank 1 coarse piml completed in 0.012920699999995122s
+rank 1 fine fdm completed in 3.2418289999999956s
+rank 1 coarse fdm completed in 0.3556297000000086s
+rank 1 coarse fast fdm completed in 0.1692264999999793s
+rank 1 coarse sml completed in 0.013931399999989935s
+rank 1 coarse piml completed in 0.012903199999982462s
+rank 1 fine fdm completed in 3.9454860999999823s
+rank 1 coarse fdm completed in 0.39684729999999035s
+rank 1 coarse fast fdm completed in 0.17687889999996287s
+rank 1 coarse sml completed in 0.015457599999990634s
+rank 1 coarse piml completed in 0.015754200000003493s
+rank 1 fine fdm completed in 3.537570100000039s
+rank 1 coarse fdm completed in 0.2917209000000298s
+rank 1 coarse fast fdm completed in 0.20091110000004164s
+rank 1 coarse sml completed in 0.013537600000006478s
+rank 1 coarse piml completed in 0.009580400000004374s
+rank 1 fine fdm completed in 3.4344901999999706s
+rank 1 coarse fdm completed in 0.3782492999999931s
+rank 1 coarse fast fdm completed in 0.1707215000000133s
+rank 1 coarse sml completed in 0.011885600000027807s
+rank 1 coarse piml completed in 0.00951649999996107s
+rank 1 fine fdm completed in 3.7655295000000137s
+rank 1 coarse fdm completed in 0.333487899999966s
+rank 1 coarse fast fdm completed in 0.19036660000000438s
+rank 1 coarse sml completed in 0.014568199999985154s
+rank 1 coarse piml completed in 0.012772399999960271s
+rank 1 fine fdm completed in 3.8124789000000305s
+rank 1 coarse fdm completed in 0.4255169000000478s
+rank 1 coarse fast fdm completed in 0.1612996999999723s
+rank 1 coarse sml completed in 0.013303000000007614s
+rank 1 coarse piml completed in 0.011893499999985124s
+rank 1 fine fdm completed in 3.195732899999996s
+rank 1 coarse fdm completed in 0.342431500000032s
+rank 1 coarse fast fdm completed in 0.21319640000001527s
+rank 1 coarse sml completed in 0.01298109999999042s
+rank 1 coarse piml completed in 0.01194479999998066s
+rank 1 fine fdm completed in 3.2401489000000083s
+rank 1 coarse fdm completed in 0.3185063000000241s
+rank 1 coarse fast fdm completed in 0.17330620000001318s
+rank 1 coarse sml completed in 0.013277899999991405s
+rank 1 coarse piml completed in 0.011630300000035732s
+rank 1 fine fdm completed in 3.137278600000002s
+rank 1 coarse fdm completed in 0.3567518000000405s
+rank 1 coarse fast fdm completed in 0.18801439999998593s
+rank 1 coarse sml completed in 0.01335119999998824s
+rank 1 coarse piml completed in 0.015047800000047573s
+rank 1 fine fdm completed in 3.272266000000002s
+rank 1 coarse fdm completed in 0.3666647000000012s
+rank 1 coarse fast fdm completed in 0.19600960000002488s
+rank 1 coarse sml completed in 0.013334299999996801s
+rank 1 coarse piml completed in 0.013468600000010156s
+rank 1 fine fdm completed in 3.3696482999999944s
+rank 1 coarse fdm completed in 0.3517219999999952s
+rank 1 coarse fast fdm completed in 0.1877499999999941s
+rank 1 coarse sml completed in 0.012769399999967845s
+rank 1 coarse piml completed in 0.009687199999973473s
+rank 1 fine fdm completed in 3.4851337000000058s
+rank 1 coarse fdm completed in 0.3501424000000384s
+rank 1 coarse fast fdm completed in 0.2029251999999815s
+rank 1 coarse sml completed in 0.01431519999999864s
+rank 1 coarse piml completed in 0.01007270000002336s
+rank 1 fine fdm completed in 3.413332700000012s
+rank 1 coarse fdm completed in 0.3536331999999902s
+rank 1 coarse fast fdm completed in 0.1586083999999346s
+rank 1 coarse sml completed in 0.014391199999977289s
+rank 1 coarse piml completed in 0.011435499999947751s
+rank 1 fine fdm completed in 3.401360400000044s
+rank 1 coarse fdm completed in 0.3614780000000337s
+rank 1 coarse fast fdm completed in 0.16152390000002015s
+rank 1 coarse sml completed in 0.01566200000002027s
+rank 1 coarse piml completed in 0.016155700000012985s
+rank 1 fine fdm completed in 3.5927321000000347s
+rank 1 coarse fdm completed in 0.40992420000009133s
+rank 1 coarse fast fdm completed in 0.1712429000000384s
+rank 1 coarse sml completed in 0.013782900000023801s
+rank 1 coarse piml completed in 0.012343700000087665s
+rank 1 fine fdm completed in 3.5789389000000256s
+rank 1 coarse fdm completed in 0.34389600000008613s
+rank 1 coarse fast fdm completed in 0.16145399999993515s
+rank 1 coarse sml completed in 0.014414600000009159s
+rank 1 coarse piml completed in 0.012906100000009246s
+rank 1 fine fdm completed in 3.308307500000069s
+rank 1 coarse fdm completed in 0.3456563999999389s
+rank 1 coarse fast fdm completed in 0.18292350000001534s
+rank 1 coarse sml completed in 0.013093799999978728s
+rank 1 coarse piml completed in 0.011397200000033081s
+rank 1 fine fdm completed in 3.2804343000000245s
+rank 1 coarse fdm completed in 0.34126359999993383s
+rank 1 coarse fast fdm completed in 0.20214599999997063s
+rank 1 coarse sml completed in 0.012042000000064945s
+rank 1 coarse piml completed in 0.01115859999993063s
+rank 1 fine fdm completed in 3.3676335999999765s
+rank 1 coarse fdm completed in 0.3236778000000413s
+rank 1 coarse fast fdm completed in 0.20543980000002193s
+rank 1 coarse sml completed in 0.01177800000004936s
+rank 1 coarse piml completed in 0.009616300000061528s
+rank 1 fine fdm completed in 3.2598440000000437s
+rank 1 coarse fdm completed in 0.3692165999999588s
+rank 1 coarse fast fdm completed in 0.16567969999994148s
+rank 1 coarse sml completed in 0.014526300000056835s
+rank 1 coarse piml completed in 0.012710599999991246s
+rank 1 fine fdm completed in 3.299002200000018s
+rank 1 coarse fdm completed in 0.3335809000000154s
+rank 1 coarse fast fdm completed in 0.16531250000002728s
+rank 1 coarse sml completed in 0.012544399999910638s
+rank 1 coarse piml completed in 0.012337999999999738s
+rank 1 fine fdm completed in 3.2811411000000135s
+rank 1 coarse fdm completed in 0.3580132000000731s
+rank 1 coarse fast fdm completed in 0.1550869000000148s
+rank 1 coarse sml completed in 0.013262899999972433s
+rank 1 coarse piml completed in 0.012955699999906756s
+rank 1 fine fdm completed in 3.2869080000000395s
+rank 1 coarse fdm completed in 0.3160744000000477s
+rank 1 coarse fast fdm completed in 0.17111799999997857s
+rank 1 coarse sml completed in 0.013140099999986887s
+rank 1 coarse piml completed in 0.015436000000022432s
+rank 1 fine fdm completed in 3.185818499999982s
+rank 1 coarse fdm completed in 0.3503848000000289s
+rank 1 coarse fast fdm completed in 0.14346150000005764s
+rank 1 coarse sml completed in 0.013629700000024059s
+rank 1 coarse piml completed in 0.013719400000013593s
+rank 1 fine fdm completed in 3.6589086999999836s
+rank 1 coarse fdm completed in 0.395505299999968s
+rank 1 coarse fast fdm completed in 0.21862529999998515s
+rank 1 coarse sml completed in 0.01737910000008469s
+rank 1 coarse piml completed in 0.013980800000013005s
+rank 1 fine fdm completed in 3.5313050999999405s
+rank 1 coarse fdm completed in 0.4186895000000277s
+rank 1 coarse fast fdm completed in 0.14212259999999333s
+rank 1 coarse sml completed in 0.01821800000004714s
+rank 1 coarse piml completed in 0.012956700000017918s
+rank 3 fine fdm completed in 3.5214119000000004s
+rank 3 coarse fdm completed in 0.4581912999999993s
+rank 3 coarse fast fdm completed in 0.18189399999999978s
+rank 3 coarse sml completed in 0.6623950000000001s
+rank 3 coarse piml completed in 0.28155419999999864s
+rank 3 fine fdm completed in 3.592481099999997s
+rank 3 coarse fdm completed in 0.32193599999999734s
+rank 3 coarse fast fdm completed in 0.19465860000000035s
+rank 3 coarse sml completed in 0.012913600000000969s
+rank 3 coarse piml completed in 0.01089590000000129s
+rank 3 fine fdm completed in 3.2446193000000036s
+rank 3 coarse fdm completed in 0.30118889999999965s
+rank 3 coarse fast fdm completed in 0.15123600000000437s
+rank 3 coarse sml completed in 0.012859100000000012s
+rank 3 coarse piml completed in 0.012275500000001216s
+rank 3 fine fdm completed in 3.484846300000001s
+rank 3 coarse fdm completed in 0.3129710999999986s
+rank 3 coarse fast fdm completed in 0.18156520000000143s
+rank 3 coarse sml completed in 0.012104700000001856s
+rank 3 coarse piml completed in 0.013667599999998004s
+rank 3 fine fdm completed in 3.538128499999999s
+rank 3 coarse fdm completed in 0.40059569999999667s
+rank 3 coarse fast fdm completed in 0.17387259999999571s
+rank 3 coarse sml completed in 0.01289970000000551s
+rank 3 coarse piml completed in 0.012652599999995573s
+rank 3 fine fdm completed in 3.4825461999999874s
+rank 3 coarse fdm completed in 0.36671100000000934s
+rank 3 coarse fast fdm completed in 0.16319310000000087s
+rank 3 coarse sml completed in 0.015763800000001993s
+rank 3 coarse piml completed in 0.01651440000000548s
+rank 3 fine fdm completed in 3.3963794000000007s
+rank 3 coarse fdm completed in 0.36585850000000164s
+rank 3 coarse fast fdm completed in 0.15420629999999846s
+rank 3 coarse sml completed in 0.013201799999990271s
+rank 3 coarse piml completed in 0.015784499999995205s
+rank 3 fine fdm completed in 3.519732300000001s
+rank 3 coarse fdm completed in 0.3894090999999946s
+rank 3 coarse fast fdm completed in 0.17243769999998904s
+rank 3 coarse sml completed in 0.013619800000000737s
+rank 3 coarse piml completed in 0.01416689999999221s
+rank 3 fine fdm completed in 3.5430992000000003s
+rank 3 coarse fdm completed in 0.3656696000000039s
+rank 3 coarse fast fdm completed in 0.15273899999999685s
+rank 3 coarse sml completed in 0.012351400000000012s
+rank 3 coarse piml completed in 0.009723100000002205s
+rank 3 fine fdm completed in 3.337568399999995s
+rank 3 coarse fdm completed in 0.3376935000000003s
+rank 3 coarse fast fdm completed in 0.17340640000000462s
+rank 3 coarse sml completed in 0.012870300000002999s
+rank 3 coarse piml completed in 0.009788700000001427s
+rank 3 fine fdm completed in 3.455280899999991s
+rank 3 coarse fdm completed in 0.33160349999999994s
+rank 3 coarse fast fdm completed in 0.15088599999998564s
+rank 3 coarse sml completed in 0.015173400000008996s
+rank 3 coarse piml completed in 0.015791199999995342s
+rank 3 fine fdm completed in 3.352511100000015s
+rank 3 coarse fdm completed in 0.3180966999999839s
+rank 3 coarse fast fdm completed in 0.15880420000002005s
+rank 3 coarse sml completed in 0.01217589999998836s
+rank 3 coarse piml completed in 0.009760499999998729s
+rank 3 fine fdm completed in 3.313656499999979s
+rank 3 coarse fdm completed in 0.30931449999999927s
+rank 3 coarse fast fdm completed in 0.1745501000000047s
+rank 3 coarse sml completed in 0.011024399999996604s
+rank 3 coarse piml completed in 0.0098139000000117s
+rank 3 fine fdm completed in 3.518143899999984s
+rank 3 coarse fdm completed in 0.3925931999999932s
+rank 3 coarse fast fdm completed in 0.1836407000000122s
+rank 3 coarse sml completed in 0.014016600000019253s
+rank 3 coarse piml completed in 0.013252800000003617s
+rank 3 fine fdm completed in 3.504262699999998s
+rank 3 coarse fdm completed in 0.3076398999999981s
+rank 3 coarse fast fdm completed in 0.19999529999998344s
+rank 3 coarse sml completed in 0.012976600000001781s
+rank 3 coarse piml completed in 0.013071099999990565s
+rank 3 fine fdm completed in 3.340033599999998s
+rank 3 coarse fdm completed in 0.3122455000000173s
+rank 3 coarse fast fdm completed in 0.1946815000000015s
+rank 3 coarse sml completed in 0.015502499999996644s
+rank 3 coarse piml completed in 0.015932899999995698s
+rank 3 fine fdm completed in 3.2064392000000055s
+rank 3 coarse fdm completed in 0.29670409999999947s
+rank 3 coarse fast fdm completed in 0.22936869999998066s
+rank 3 coarse sml completed in 0.01214790000000221s
+rank 3 coarse piml completed in 0.01360520000000065s
+rank 3 fine fdm completed in 3.2479503000000136s
+rank 3 coarse fdm completed in 0.2961332000000141s
+rank 3 coarse fast fdm completed in 0.15529259999999567s
+rank 3 coarse sml completed in 0.016076599999991004s
+rank 3 coarse piml completed in 0.011777300000005653s
+rank 3 fine fdm completed in 3.651812100000001s
+rank 3 coarse fdm completed in 0.35808959999999956s
+rank 3 coarse fast fdm completed in 0.190037000000018s
+rank 3 coarse sml completed in 0.011845399999998563s
+rank 3 coarse piml completed in 0.012233899999984033s
+rank 3 fine fdm completed in 3.614233799999994s
+rank 3 coarse fdm completed in 0.35823339999998893s
+rank 3 coarse fast fdm completed in 0.19267959999999107s
+rank 3 coarse sml completed in 0.012838299999998526s
+rank 3 coarse piml completed in 0.010853300000007948s
+rank 3 fine fdm completed in 4.3419904000000145s
+rank 3 coarse fdm completed in 0.3277773000000366s
+rank 3 coarse fast fdm completed in 0.19457970000001978s
+rank 3 coarse sml completed in 0.012865300000044044s
+rank 3 coarse piml completed in 0.01103249999999889s
+rank 3 fine fdm completed in 3.2410509999999704s
+rank 3 coarse fdm completed in 0.34706389999996645s
+rank 3 coarse fast fdm completed in 0.19075200000003179s
+rank 3 coarse sml completed in 0.012497299999949973s
+rank 3 coarse piml completed in 0.011922000000026856s
+rank 3 fine fdm completed in 3.3340564000000086s
+rank 3 coarse fdm completed in 0.3821472000000199s
+rank 3 coarse fast fdm completed in 0.16217870000002677s
+rank 3 coarse sml completed in 0.011830599999996139s
+rank 3 coarse piml completed in 0.010337699999979577s
+rank 3 fine fdm completed in 3.5563769999999977s
+rank 3 coarse fdm completed in 0.31681710000003704s
+rank 3 coarse fast fdm completed in 0.16449649999998428s
+rank 3 coarse sml completed in 0.01576599999998507s
+rank 3 coarse piml completed in 0.013245700000027227s
+rank 3 fine fdm completed in 3.722684099999981s
+rank 3 coarse fdm completed in 0.37961250000000746s
+rank 3 coarse fast fdm completed in 0.18064179999998942s
+rank 3 coarse sml completed in 0.014013599999998405s
+rank 3 coarse piml completed in 0.011163400000043566s
+rank 3 fine fdm completed in 3.3281732000000375s
+rank 3 coarse fdm completed in 0.3583535999999867s
+rank 3 coarse fast fdm completed in 0.20111480000002757s
+rank 3 coarse sml completed in 0.01247539999997116s
+rank 3 coarse piml completed in 0.011072800000022198s
+rank 3 fine fdm completed in 3.3350365999999667s
+rank 3 coarse fdm completed in 0.32677810000001273s
+rank 3 coarse fast fdm completed in 0.1775251000000253s
+rank 3 coarse sml completed in 0.017607099999963793s
+rank 3 coarse piml completed in 0.016853299999979754s
+rank 3 fine fdm completed in 3.196014699999978s
+rank 3 coarse fdm completed in 0.3425147000000379s
+rank 3 coarse fast fdm completed in 0.17219940000001088s
+rank 3 coarse sml completed in 0.012923600000021906s
+rank 3 coarse piml completed in 0.013049399999999878s
+rank 3 fine fdm completed in 3.294177399999967s
+rank 3 coarse fdm completed in 0.37151510000001053s
+rank 3 coarse fast fdm completed in 0.18270420000004606s
+rank 3 coarse sml completed in 0.013224100000002181s
+rank 3 coarse piml completed in 0.010782699999992928s
+rank 3 fine fdm completed in 3.294105800000011s
+rank 3 coarse fdm completed in 0.33053979999999683s
+rank 3 coarse fast fdm completed in 0.20784630000002835s
+rank 3 coarse sml completed in 0.01213409999996884s
+rank 3 coarse piml completed in 0.01214590000000726s
+rank 3 fine fdm completed in 3.856846800000028s
+rank 3 coarse fdm completed in 0.32115120000003117s
+rank 3 coarse fast fdm completed in 0.1743468999999891s
+rank 3 coarse sml completed in 0.013271599999995942s
+rank 3 coarse piml completed in 0.013030599999979131s
+rank 3 fine fdm completed in 3.450570599999992s
+rank 3 coarse fdm completed in 0.35615669999998545s
+rank 3 coarse fast fdm completed in 0.18091160000000173s
+rank 3 coarse sml completed in 0.017070600000010927s
+rank 3 coarse piml completed in 0.014196999999967375s
+rank 3 fine fdm completed in 3.38812200000001s
+rank 3 coarse fdm completed in 0.3466282999999635s
+rank 3 coarse fast fdm completed in 0.1759624999999687s
+rank 3 coarse sml completed in 0.012819100000001526s
+rank 3 coarse piml completed in 0.011750300000016978s
+rank 3 fine fdm completed in 3.743105500000013s
+rank 3 coarse fdm completed in 0.37599770000002763s
+rank 3 coarse fast fdm completed in 0.21444610000003195s
+rank 3 coarse sml completed in 0.017603300000018862s
+rank 3 coarse piml completed in 0.013900000000035106s
+rank 3 fine fdm completed in 3.6763654999999744s
+rank 3 coarse fdm completed in 0.3576247999999964s
+rank 3 coarse fast fdm completed in 0.1978561999999897s
+rank 3 coarse sml completed in 0.014022300000021914s
+rank 3 coarse piml completed in 0.013277200000004541s
+rank 3 fine fdm completed in 3.3773389000000407s
+rank 3 coarse fdm completed in 0.32712930000002416s
+rank 3 coarse fast fdm completed in 0.20235649999995076s
+rank 3 coarse sml completed in 0.01275620000001254s
+rank 3 coarse piml completed in 0.010280299999976705s
+rank 3 fine fdm completed in 3.129791999999952s
+rank 3 coarse fdm completed in 0.3195021999999881s
+rank 3 coarse fast fdm completed in 0.17962419999997792s
+rank 3 coarse sml completed in 0.012683900000013182s
+rank 3 coarse piml completed in 0.012596099999996113s
+rank 3 fine fdm completed in 3.3157319999999686s
+rank 3 coarse fdm completed in 0.34813359999998283s
+rank 3 coarse fast fdm completed in 0.17705219999999144s
+rank 3 coarse sml completed in 0.013979000000006181s
+rank 3 coarse piml completed in 0.015318299999989904s
+rank 3 fine fdm completed in 3.281355500000018s
+rank 3 coarse fdm completed in 0.2999559999999519s
+rank 3 coarse fast fdm completed in 0.20666869999996607s
+rank 3 coarse sml completed in 0.012352700000008099s
+rank 3 coarse piml completed in 0.012524900000016714s
+rank 3 fine fdm completed in 3.3375396000000137s
+rank 3 coarse fdm completed in 0.3129991000000132s
+rank 3 coarse fast fdm completed in 0.17267689999999902s
+rank 3 coarse sml completed in 0.012031299999989642s
+rank 3 coarse piml completed in 0.014407199999993736s
+rank 3 fine fdm completed in 3.4413308999999686s
+rank 3 coarse fdm completed in 0.3574199000000249s
+rank 3 coarse fast fdm completed in 0.22459030000004532s
+rank 3 coarse sml completed in 0.011938400000019556s
+rank 3 coarse piml completed in 0.012521000000049298s
+rank 3 fine fdm completed in 3.2063349999999673s
+rank 3 coarse fdm completed in 0.37423790000002555s
+rank 3 coarse fast fdm completed in 0.15309139999999388s
+rank 3 coarse sml completed in 0.01238290000003417s
+rank 3 coarse piml completed in 0.012166900000011083s
+rank 3 fine fdm completed in 3.381693900000073s
+rank 3 coarse fdm completed in 0.3847375000000284s
+rank 3 coarse fast fdm completed in 0.16482350000001134s
+rank 3 coarse sml completed in 0.01635190000001785s
+rank 3 coarse piml completed in 0.015019900000083908s
+rank 3 fine fdm completed in 3.7714101000000255s
+rank 3 coarse fdm completed in 0.330591199999958s
+rank 3 coarse fast fdm completed in 0.17267570000001342s
+rank 3 coarse sml completed in 0.012547799999993003s
+rank 3 coarse piml completed in 0.01591319999999996s
+rank 3 fine fdm completed in 3.6879780000000437s
+rank 3 coarse fdm completed in 0.3943666000000121s
+rank 3 coarse fast fdm completed in 0.2182386999999153s
+rank 3 coarse sml completed in 0.011943799999926341s
+rank 3 coarse piml completed in 0.012735000000020591s
+rank 3 fine fdm completed in 3.3538930999999366s
+rank 3 coarse fdm completed in 0.3699771999999939s
+rank 3 coarse fast fdm completed in 0.1602203999999574s
+rank 3 coarse sml completed in 0.012157900000033806s
+rank 3 coarse piml completed in 0.009721000000013191s
+rank 3 fine fdm completed in 3.3590249000000085s
+rank 3 coarse fdm completed in 0.33094559999995s
+rank 3 coarse fast fdm completed in 0.18099849999998696s
+rank 3 coarse sml completed in 0.011366400000042631s
+rank 3 coarse piml completed in 0.010720200000037039s
+rank 3 fine fdm completed in 3.320966300000009s
+rank 3 coarse fdm completed in 0.3250083000000359s
+rank 3 coarse fast fdm completed in 0.17767670000000635s
+rank 3 coarse sml completed in 0.013099699999997938s
+rank 3 coarse piml completed in 0.011683800000014344s
+rank 3 fine fdm completed in 3.3757795000000215s
+rank 3 coarse fdm completed in 0.36316009999995913s
+rank 3 coarse fast fdm completed in 0.1421684000000596s
+rank 3 coarse sml completed in 0.012799300000096991s
+rank 3 coarse piml completed in 0.009771300000011252s
+rank 3 fine fdm completed in 3.3554359000000886s
+rank 3 coarse fdm completed in 0.3273816999999326s
+rank 3 coarse fast fdm completed in 0.16500229999996918s
+rank 3 coarse sml completed in 0.01547219999997651s
+rank 3 coarse piml completed in 0.014212699999916367s
+rank 3 fine fdm completed in 3.4861484000000473s
+rank 3 coarse fdm completed in 0.3485292999999956s
+rank 3 coarse fast fdm completed in 0.18441440000003695s
+rank 3 coarse sml completed in 0.013072799999918061s
+rank 3 coarse piml completed in 0.013342599999987215s
+rank 3 fine fdm completed in 3.3434290999999803s
+rank 3 coarse fdm completed in 0.332973700000025s
+rank 3 coarse fast fdm completed in 0.17283869999994295s
+rank 3 coarse sml completed in 0.0159012999999959s
+rank 3 coarse piml completed in 0.015489600000023529s
+rank 3 fine fdm completed in 3.275844099999972s
+rank 3 coarse fdm completed in 0.31803560000003017s
+rank 3 coarse fast fdm completed in 0.1880058999998937s
+rank 3 coarse sml completed in 0.011467100000004393s
+rank 3 coarse piml completed in 0.009608000000071115s
+rank 3 fine fdm completed in 3.6020743999999922s
+rank 3 coarse fdm completed in 0.3967610000000832s
+rank 3 coarse fast fdm completed in 0.24555370000007315s
+rank 3 coarse sml completed in 0.013291799999933573s
+rank 3 coarse piml completed in 0.012967300000013893s
+rank 3 fine fdm completed in 3.7403948999999557s
+rank 3 coarse fdm completed in 0.3922092000000248s
+rank 3 coarse fast fdm completed in 0.15947889999995368s
+rank 3 coarse sml completed in 0.013195300000006682s
+rank 3 coarse piml completed in 0.012099800000100913s
