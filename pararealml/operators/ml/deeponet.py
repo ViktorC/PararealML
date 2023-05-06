@@ -22,6 +22,7 @@ class DeepONet(tf.keras.Model):
         branch_net: tf.keras.Model,
         trunk_net: tf.keras.Model,
         combiner_net: tf.keras.Model,
+        branch_net_input_size: Optional[int] = None,
     ):
         """
         :param branch_net: the model's branch net that processes the initial
@@ -30,11 +31,13 @@ class DeepONet(tf.keras.Model):
             coordinates
         :param combiner_net: the model's combiner net that combines the outputs
             of the branch and trunk nets
+        :param branch_net_input_size: the size of the branch net's input
         """
         super(DeepONet, self).__init__()
         self._branch_net = branch_net
         self._trunk_net = trunk_net
         self._combiner_net = combiner_net
+        self._branch_net_input_size = branch_net_input_size
 
     @property
     def branch_net(self) -> tf.keras.Model:
@@ -59,13 +62,24 @@ class DeepONet(tf.keras.Model):
         """
         return self._combiner_net
 
+    @property
+    def branch_net_input_size(self) -> Optional[int]:
+        """
+        The input size of the branch net if one is explicitly provided.
+        """
+        return self._branch_net_input_size
+
     def call(
         self,
         inputs: tf.Tensor,
         training: Optional[bool] = None,
         mask: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:
-        branch_net_input_size = self._branch_net.layers[0].input_shape[1]
+        branch_net_input_size = (
+            self._branch_net.layers[0].input_shape[1]
+            if self._branch_net_input_size is None
+            else self._branch_net_input_size
+        )
         branch_input = inputs[:, :branch_net_input_size, ...]
         trunk_input = inputs[:, branch_net_input_size:, ...]
 
