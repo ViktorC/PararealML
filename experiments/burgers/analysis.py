@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Optional
 
 import numpy as np
 from matplotlib import cm
@@ -103,28 +103,51 @@ class BurgersExperimentAnalyzer(ExperimentAnalyzer):
                     ).close()
 
     def plot_sml_feature_distribution(self):
+        n_iterations = 325
+        n_sub_ivps = 4
         cp = self._ivp.constrained_problem
         features = np.load(self._sml_features_path)[
             :: np.prod(cp.mesh.shape(self._coarse_sml.vertex_oriented)).item(),
             : -cp.differential_equation.x_dimension,
         ]
         self._plot_generated_data_distribution(
-            features, 325, 4, "sml_features"
+            features, n_iterations, n_sub_ivps, "sml_features"
+        )
+        self._plot_generated_data_distribution(
+            features, n_iterations * n_sub_ivps, None, "sml_features_all"
         )
 
     def plot_sml_label_distribution(self):
+        n_iterations = 325
+        n_sub_ivps = 4
+        labels = np.load(self._sml_labels_path)
         self._plot_generated_data_distribution(
-            np.load(self._sml_labels_path), 325, 4, "sml_labels"
+            labels, n_iterations, n_sub_ivps, "sml_labels"
+        )
+        self._plot_generated_data_distribution(
+            labels, n_iterations * n_sub_ivps, None, "sml_labels_all"
         )
 
     def plot_piml_initial_condition_distribution(self):
-        pass
+        initial_conditions = np.load(self._piml_initial_conditions_path)
+        n_samples = 1300
+        initial_condition_samples = initial_conditions[
+            np.random.choice(
+                range(len(initial_conditions)), size=n_samples, replace=False
+            )
+        ]
+        self._plot_generated_data_distribution(
+            initial_condition_samples,
+            n_samples,
+            None,
+            "piml_initial_conditions_sample",
+        )
 
     def _plot_generated_data_distribution(
         self,
         generated_data: np.ndarray,
         n_iterations: int,
-        n_sub_ivps: int,
+        n_sub_ivps: Optional[int],
         data_name: str,
     ):
         cp = self._ivp.constrained_problem
@@ -132,12 +155,12 @@ class BurgersExperimentAnalyzer(ExperimentAnalyzer):
             self._coarse_sml.vertex_oriented
         )
         generated_data = generated_data.reshape(
-            (n_iterations, n_sub_ivps)
+            (n_iterations, n_sub_ivps if n_sub_ivps else 1)
             + cp.y_shape(self._coarse_sml.vertex_oriented)
         )
         fig = plt.figure()
         for y_ind in range(cp.differential_equation.y_dimension):
-            for sub_ivp_ind in range(n_sub_ivps):
+            for sub_ivp_ind in range(n_sub_ivps if n_sub_ivps else 1):
                 ax = fig.add_subplot(projection="3d")
                 for iteration in range(n_iterations):
                     initial_condition = generated_data[
@@ -154,7 +177,8 @@ class BurgersExperimentAnalyzer(ExperimentAnalyzer):
                 fig.tight_layout()
                 fig.savefig(
                     f"{self._experiment_name}_{data_name}_"
-                    f"sub_ivp{sub_ivp_ind}_y{y_ind}.png"
+                    + (f"sub_ivp{sub_ivp_ind}_" if n_sub_ivps else "")
+                    + f"y{y_ind}.png"
                 )
                 fig.clear()
 
