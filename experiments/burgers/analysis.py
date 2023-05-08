@@ -2,6 +2,7 @@ from typing import Sequence
 
 import numpy as np
 from matplotlib import cm
+from matplotlib import pyplot as plt
 
 from experiments.burgers.ivp import ivp
 from experiments.burgers.operators import (
@@ -102,13 +103,60 @@ class BurgersExperimentAnalyzer(ExperimentAnalyzer):
                     ).close()
 
     def plot_sml_feature_distribution(self):
-        pass
+        cp = self._ivp.constrained_problem
+        features = np.load(self._sml_features_path)[
+            :: np.prod(cp.mesh.shape(self._coarse_sml.vertex_oriented)).item(),
+            : -cp.differential_equation.x_dimension,
+        ]
+        self._plot_generated_data_distribution(
+            features, 325, 4, "sml_features"
+        )
 
     def plot_sml_label_distribution(self):
-        pass
+        self._plot_generated_data_distribution(
+            np.load(self._sml_labels_path), 325, 4, "sml_labels"
+        )
 
     def plot_piml_initial_condition_distribution(self):
         pass
+
+    def _plot_generated_data_distribution(
+        self,
+        generated_data: np.ndarray,
+        n_iterations: int,
+        n_sub_ivps: int,
+        data_name: str,
+    ):
+        cp = self._ivp.constrained_problem
+        coordinate_grids = cp.mesh.coordinate_grids(
+            self._coarse_sml.vertex_oriented
+        )
+        generated_data = generated_data.reshape(
+            (n_iterations, n_sub_ivps)
+            + cp.y_shape(self._coarse_sml.vertex_oriented)
+        )
+        fig = plt.figure()
+        for y_ind in range(cp.differential_equation.y_dimension):
+            for sub_ivp_ind in range(n_sub_ivps):
+                ax = fig.add_subplot(projection="3d")
+                for iteration in range(n_iterations):
+                    initial_condition = generated_data[
+                        iteration, sub_ivp_ind, ..., y_ind
+                    ].reshape((-1,))
+                    ax.scatter(
+                        *coordinate_grids, initial_condition, s=0.5, c="blue"
+                    )
+
+                ax.set_xlabel("x")
+                ax.set_ylabel("y")
+                ax.set_zlabel("z")
+
+                fig.tight_layout()
+                fig.savefig(
+                    f"{self._experiment_name}_{data_name}_"
+                    f"sub_ivp{sub_ivp_ind}_y{y_ind}.png"
+                )
+                fig.clear()
 
 
 if __name__ == "__main__":
