@@ -30,7 +30,7 @@ INFERENCE_TIME_PATTERN = r"(.+) execution time - mean: (.+)s; sd: (.+)s"
 MARKER_TYPES = ["o", "v", "s", "d"]
 LINE_STYLES = ["-", "--", ":", "-."]
 
-COARSE_OPERATOR_TYPES = ["FDM", "fast FDM", "SML", "PIML"]
+COARSE_OPERATOR_TYPES = ["FDM", "fast FDM", "SAR", "PIAR"]
 OPERATOR_NAME_MAP = dict(
     zip(["fdm", "fast fdm", "sml", "piml"], COARSE_OPERATOR_TYPES)
 )
