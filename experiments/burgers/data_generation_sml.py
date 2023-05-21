@@ -35,11 +35,11 @@ def perturbate_initial_conditions(
             gaussian_filter(
                 sol_snapshot_diff, sigma=np.random.uniform(0.25, 1.5)
             )
-            if np.random.uniform() > 0.5
+            if np.random.uniform() >= 0.5
             else sol_snapshot_diff
         )
         correction[..., i] = smoothened_sol_snapshot_diff * np.random.uniform(
-            0.0, 9.0 / 2.5
+            0.0, 3.6
         )
 
     return y + correction
