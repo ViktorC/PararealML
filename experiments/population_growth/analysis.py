@@ -1,8 +1,8 @@
 from typing import Sequence
 
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy.stats import gaussian_kde
 
 from experiments.experiment_analyzer import ExperimentAnalyzer
 from experiments.population_growth.ivp import ivp
@@ -64,8 +64,7 @@ class PopulationGrowthExperimentAnalyzer(ExperimentAnalyzer):
         sml_features = np.load(self._sml_features_path)
         self._plot_1d_distribution(
             np.squeeze(sml_features),
-            100,
-            "initial value",
+            "Initial value",
             f"{self._experiment_name}_sml_feature_distribution.png",
         )
 
@@ -73,8 +72,7 @@ class PopulationGrowthExperimentAnalyzer(ExperimentAnalyzer):
         sml_labels = np.load(self._sml_labels_path)
         self._plot_1d_distribution(
             np.squeeze(sml_labels),
-            100,
-            "target",
+            "Target",
             f"{self._experiment_name}_sml_label_distribution.png",
         )
 
@@ -82,32 +80,20 @@ class PopulationGrowthExperimentAnalyzer(ExperimentAnalyzer):
         piml_initial_conditions = np.load(self._piml_initial_conditions_path)
         self._plot_1d_distribution(
             np.squeeze(piml_initial_conditions),
-            100,
-            "initial value",
+            "Initial value",
             f"{self._experiment_name}_piml_initial_condition_distribution.png",
         )
 
     @staticmethod
     def _plot_1d_distribution(
         data: np.ndarray,
-        n_bins: int,
         x_label: str,
         output_path: str,
     ):
-        fig, ax = plt.subplots()
-
-        ax.hist(data, bins=n_bins)
-        ax.set_xlabel(x_label)
-        ax.set_ylabel("frequency")
-
-        kde_x = np.linspace(np.min(data), np.max(data), 1000)
-        kde_y = gaussian_kde(data)(kde_x)
-        ax_twin = ax.twinx()
-        ax_twin.plot(kde_x, kde_y, color="orange")
-        ax_twin.set_ylabel("kernel density estimate")
-
-        fig.tight_layout()
-        fig.savefig(output_path)
+        ax = sns.histplot(data, kde=True, stat="density")
+        ax.set(xlabel=x_label)
+        plt.savefig(output_path)
+        plt.close()
 
 
 if __name__ == "__main__":

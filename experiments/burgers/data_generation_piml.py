@@ -44,9 +44,7 @@ def generate_initial_conditions(
                 )
                 correction[
                     ..., k
-                ] = smoothened_sol_snapshot_diff * np.random.uniform(
-                    0.0, 3.6
-                )
+                ] = smoothened_sol_snapshot_diff * np.random.uniform(0.0, 3.6)
 
             initial_conditions[i * n_initial_conditions_per_sub_ivp + j] = (
                 base_y_0 + correction

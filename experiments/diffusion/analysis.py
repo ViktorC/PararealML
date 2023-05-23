@@ -1,5 +1,5 @@
 import warnings
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import numpy as np
 from matplotlib import cm

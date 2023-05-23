@@ -1,8 +1,8 @@
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy.stats import gaussian_kde
 
 from experiments.experiment_analyzer import ExperimentAnalyzer
 from experiments.van_der_pol.ivp import ivp
@@ -69,8 +69,6 @@ class VanDerPolExperimentAnalyzer(ExperimentAnalyzer):
         sml_features = np.load(self._sml_features_path)
         self._plot_2d_distribution(
             np.squeeze(sml_features),
-            1,
-            None,
             f"{self._experiment_name}_sml_feature_distribution.png",
         )
 
@@ -78,8 +76,6 @@ class VanDerPolExperimentAnalyzer(ExperimentAnalyzer):
         sml_labels = np.load(self._sml_labels_path)
         self._plot_2d_distribution(
             np.squeeze(sml_labels),
-            1,
-            None,
             f"{self._experiment_name}_sml_label_distribution.png",
         )
 
@@ -87,39 +83,25 @@ class VanDerPolExperimentAnalyzer(ExperimentAnalyzer):
         piml_initial_conditions = np.load(self._piml_initial_conditions_path)
         self._plot_2d_distribution(
             np.squeeze(piml_initial_conditions),
-            1,
-            None,
             f"{self._experiment_name}_piml_initial_condition_distribution.png",
         )
 
     @staticmethod
     def _plot_2d_distribution(
         data: np.ndarray,
-        marker_size: float,
-        marker_color: Optional[str],
         output_path: str,
     ):
-        fig, ax = plt.subplots()
-        ax.scatter(data[:, 0], data[:, 1], s=marker_size, c=marker_color)
-        ax.set_xlabel("y0")
-        ax.set_ylabel("y1")
-
-        x_min = np.min(data[:, 0])
-        x_max = np.max(data[:, 0])
-        y_min = np.min(data[:, 1])
-        y_max = np.max(data[:, 1])
-
-        x, y = np.mgrid[x_min:x_max:100j, y_min:y_max:100j]
-        points = np.vstack([x.ravel(), y.ravel()])
-        kde = gaussian_kde(np.vstack([data[:, 0], data[:, 1]]))(points)
-        ax.imshow(
-            np.rot90(np.reshape(kde.T, x.shape)),
-            cmap=plt.cm.gist_earth_r,
-            extent=[x_min, x_max, y_min, y_max],
-        )
-
-        fig.tight_layout()
-        fig.savefig(output_path)
+        with sns.axes_style("white"):
+            sns.jointplot(
+                {"y0": data[:, 0], "y1": data[:, 1]},
+                x="y0",
+                y="y1",
+                kind="kde",
+                fill=True,
+                thresh=0,
+            )
+        plt.savefig(output_path)
+        plt.close()
 
 
 if __name__ == "__main__":

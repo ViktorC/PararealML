@@ -6,6 +6,7 @@ from typing import Dict, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 from matplotlib import cm
 
 from pararealml.initial_value_problem import InitialValueProblem
@@ -34,6 +35,8 @@ COARSE_OPERATOR_TYPES = ["FDM", "fast FDM", "SAR", "PIAR"]
 OPERATOR_NAME_MAP = dict(
     zip(["fdm", "fast fdm", "sml", "piml"], COARSE_OPERATOR_TYPES)
 )
+
+sns.set()
 
 
 class ExperimentAnalyzer(ABC):
