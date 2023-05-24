@@ -430,9 +430,7 @@ def test_sml_operator_on_pde_with_input_d_t():
 
     diff_eq = DiffusionEquation(1)
     mesh = Mesh([(0.0, 10.0)], [1.0])
-    bcs = [
-        (ConstantFluxBoundaryCondition([0]),) * 2
-    ]
+    bcs = [(ConstantFluxBoundaryCondition([0]),) * 2]
     cp = ConstrainedProblem(diff_eq, mesh, bcs)
     ic = GaussianInitialCondition(
         cp,
@@ -466,7 +464,9 @@ def test_sml_operator_on_pde_with_input_d_t():
             combiner_net=tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(3 * 16),
-                    tf.keras.layers.Dense(diff_eq.y_dimension,),
+                    tf.keras.layers.Dense(
+                        diff_eq.y_dimension,
+                    ),
                 ]
             ),
         )
