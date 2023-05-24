@@ -23,18 +23,22 @@ class SupervisedMLOperator(Operator):
         self,
         d_t: float,
         vertex_oriented: bool,
-        time_variant: bool = False,
         auto_regressive: bool = True,
+        time_variant: bool = False,
+        input_d_t: bool = False,
     ):
         """
         :param d_t: the temporal step size to use
         :param vertex_oriented: whether the operator is to evaluate the
             solutions of IVPs at the vertices or cell centers of the spatial
             meshes
-        :param time_variant: whether the time value should be used as a
-            predictor
         :param auto_regressive: whether to use the operator in auto-regressive
             mode
+        :param time_variant: whether the time value should be used as a
+            predictor
+        :param input_d_t: whether to use the time step of the operator as an
+            input to the model; only applies if the operator is auto-regressive
+            and time invariant
         """
         if not auto_regressive and not time_variant:
             raise ValueError(
@@ -42,8 +46,9 @@ class SupervisedMLOperator(Operator):
             )
 
         super(SupervisedMLOperator, self).__init__(d_t, vertex_oriented)
-        self._time_variant = time_variant
         self._auto_regressive = auto_regressive
+        self._time_variant = time_variant
+        self._input_d_t = input_d_t
         self._model: Optional[Any] = None
 
     @property
@@ -60,6 +65,14 @@ class SupervisedMLOperator(Operator):
         next time step.
         """
         return self._time_variant
+
+    @property
+    def input_d_t(self) -> bool:
+        """
+        Whether to use the time step of the operator as an input to the model;
+        only applies if the operator is auto-regressive and time invariant.
+        """
+        return self._input_d_t
 
     @property
     def model(self) -> Optional[Any]:
@@ -87,24 +100,25 @@ class SupervisedMLOperator(Operator):
         t = discretize_time_domain(ivp.t_interval, self._d_t)[1:]
         y = np.empty((len(t),) + y_shape)
 
-        y_i_minus_1 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
+        y_0 = ivp.initial_condition.discrete_y_0(self._vertex_oriented)
 
         for i, t_i in enumerate(t):
+            inputs[
+                :,
+                : inputs.shape[1]
+                - diff_eq.x_dimension
+                - (self._time_variant or self._input_d_t),
+            ] = y_0.reshape((1, -1))
             if self._time_variant:
                 inputs[:, -diff_eq.x_dimension - 1] = t_i
-                inputs[:, : -diff_eq.x_dimension - 1] = y_i_minus_1.reshape(
-                    (1, -1)
-                )
-            else:
-                inputs[
-                    :, : inputs.shape[1] - diff_eq.x_dimension
-                ] = y_i_minus_1.reshape((1, -1))
+            elif self._input_d_t:
+                inputs[:, -diff_eq.x_dimension - 1] = self._d_t
 
             y_i = self._model.predict(inputs)
             y[i, ...] = y_i.reshape(y_shape)
 
             if self._auto_regressive:
-                y_i_minus_1 = y_i
+                y_0 = y_i
 
         return Solution(
             ivp, t, y, vertex_oriented=self._vertex_oriented, d_t=self._d_t
@@ -355,11 +369,11 @@ class SupervisedMLOperator(Operator):
         x = cp.mesh.all_index_coordinates(self._vertex_oriented, flatten=True)
         y = np.empty((len(x), diff_eq.y_dimension * len(x)))
 
-        if self._time_variant:
+        if self._time_variant or self._input_d_t:
             t = np.empty((len(x), 1))
             return np.hstack([y, t, x])
-
-        return np.hstack([y, x])
+        else:
+            return np.hstack([y, x])
 
     def _generate_data(
         self,
@@ -432,6 +446,8 @@ class SupervisedMLOperator(Operator):
             single_epoch_inputs[:, -x_dim - 1] = np.repeat(
                 t[1:], n_spatial_points
             )
+        elif self._input_d_t:
+            single_epoch_inputs[:, -x_dim - 1] = self._d_t
 
         inputs = np.tile(single_epoch_inputs, (iterations, 1))
         targets = np.empty((inputs.shape[0], y_dim))
@@ -467,7 +483,7 @@ class SupervisedMLOperator(Operator):
                     t_offset = offset + i * n_spatial_points
                     inputs[
                         t_offset : t_offset + n_spatial_points,
-                        : inputs.shape[1] - x_dim - self._time_variant,
+                        : y_dim * n_spatial_points,
                     ] = perturbed_y_i.reshape((1, -1))
                     targets[
                         t_offset : t_offset + n_spatial_points, :

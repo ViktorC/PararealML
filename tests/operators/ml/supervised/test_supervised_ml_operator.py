@@ -425,6 +425,84 @@ def test_sml_operator_on_pde_in_time_variant_mode():
     assert np.max(np.abs(diff.differences[0])) < 0.01
 
 
+def test_sml_operator_on_pde_with_input_d_t():
+    set_random_seed(0)
+
+    diff_eq = DiffusionEquation(1)
+    mesh = Mesh([(0.0, 10.0)], [1.0])
+    bcs = [
+        (ConstantFluxBoundaryCondition([0]),) * 2
+    ]
+    cp = ConstrainedProblem(diff_eq, mesh, bcs)
+    ic = GaussianInitialCondition(
+        cp,
+        [(np.array([5.0]), np.array([[2.0]]))],
+    )
+    ivp = InitialValueProblem(cp, (0.0, 5.0), ic)
+
+    oracle = FDMOperator(RK4(), ThreePointCentralDifferenceMethod(), 0.05)
+    ref_solution = oracle.solve(ivp)
+
+    def build_model():
+        model = DeepONet(
+            branch_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(
+                        np.prod(cp.y_shape(oracle.vertex_oriented)).item()
+                    ),
+                    tf.keras.layers.Dense(64, activation="tanh"),
+                    tf.keras.layers.Dense(32, activation="tanh"),
+                    tf.keras.layers.Dense(16, activation="tanh"),
+                ]
+            ),
+            trunk_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(diff_eq.x_dimension + 1),
+                    tf.keras.layers.Dense(64, activation="tanh"),
+                    tf.keras.layers.Dense(32, activation="tanh"),
+                    tf.keras.layers.Dense(16, activation="tanh"),
+                ]
+            ),
+            combiner_net=tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(3 * 16),
+                    tf.keras.layers.Dense(diff_eq.y_dimension,),
+                ]
+            ),
+        )
+        model.compile(
+            optimizer=tf.optimizers.Adam(
+                learning_rate=tf.optimizers.schedules.ExponentialDecay(
+                    5e-3, decay_steps=500, decay_rate=0.97
+                )
+            ),
+            loss="mse",
+        )
+        return model
+
+    ar = SupervisedMLOperator(1.25, oracle.vertex_oriented, input_d_t=True)
+    ar.train(
+        ivp,
+        oracle,
+        SKLearnKerasRegressor(
+            build_model,
+            batch_size=500,
+            epochs=500,
+        ),
+        20,
+        lambda t, y: y + np.random.normal(0.0, t / 75.0, size=y.shape),
+    )
+    ml_solution = ar.solve(ivp)
+
+    assert ml_solution.vertex_oriented
+    assert ml_solution.d_t == 1.25
+    assert ml_solution.discrete_y().shape == (4, 11, 1)
+
+    diff = ref_solution.diff([ml_solution])
+    assert np.all(diff.matching_time_points == np.linspace(1.25, 5.0, 4))
+    assert np.max(np.abs(diff.differences[0])) < 0.01
+
+
 def test_sml_operator_on_pde_in_non_auto_regressive_mode():
     set_random_seed(0)
 
