@@ -37,12 +37,16 @@ class SupervisedMLOperator(Operator):
         :param time_variant: whether the time value should be used as a
             predictor
         :param input_d_t: whether to use the time step of the operator as an
-            input to the model; only applies if the operator is auto-regressive
-            and time invariant
+            input to the model
         """
         if not auto_regressive and not time_variant:
             raise ValueError(
                 "operator must be time variant if auto-regression is disabled"
+            )
+
+        if time_variant and input_d_t:
+            raise ValueError(
+                "operator must be time invariant to use d_t as an input"
             )
 
         super(SupervisedMLOperator, self).__init__(d_t, vertex_oriented)
@@ -69,8 +73,7 @@ class SupervisedMLOperator(Operator):
     @property
     def input_d_t(self) -> bool:
         """
-        Whether to use the time step of the operator as an input to the model;
-        only applies if the operator is auto-regressive and time invariant.
+        Whether to use the time step of the operator as an input to the model.
         """
         return self._input_d_t
 

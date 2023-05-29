@@ -50,6 +50,13 @@ def test_sml_operator_in_non_auto_regressive_and_time_invariant_mode():
         )
 
 
+def test_sml_operator_in_time_variant_mode_using_d_t_as_input():
+    with pytest.raises(ValueError):
+        SupervisedMLOperator(
+            1.0, False, time_variant=True, auto_regressive=True, input_d_t=True
+        )
+
+
 def test_sml_operator_training_with_zero_iterations():
     diff_eq = LorenzEquation()
     cp = ConstrainedProblem(diff_eq)
