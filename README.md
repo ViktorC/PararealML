@@ -114,6 +114,6 @@ To install PararealML, an implementation of the MPI standard must be pre-install
  * To install the dependencies of the library, run `make install` (this requires an existing MPI installation and `mpicc`).
  * To perform linting, execute `make lint`.
  * The library uses type-hints throughout. For type checking, use the command `make type-check`.
- * The format any changed modules, run `make format`.
+ * To format any changed modules, run `make format`.
  * To run the unit tests, execute `make test`.
  * To run any of the example scripts using an arbitrary number of MPI processes, run `make run p={number of processes} example={name of example file without extension}` (e.g. `make run p=4 example=lorenz_parareal`).
